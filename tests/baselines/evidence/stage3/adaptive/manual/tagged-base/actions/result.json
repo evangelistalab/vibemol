@@ -1,0 +1,319 @@
+{
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "currentCacheBridgeRequired": false,
+  "method": "Native pointer/keyboard events and observable app-state waits; no source injection, sleeps or retries; no human interaction claimed.",
+  "cases": [
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "actions": [
+        {
+          "action": "COM via cached legacy button",
+          "meanCoordinateTolerance": 1e-10,
+          "before": [
+            [
+              3.2,
+              2.1,
+              1
+            ],
+            [
+              4.5,
+              2.8,
+              1.7
+            ],
+            [
+              2.7,
+              3.3,
+              1.8
+            ],
+            [
+              3.4,
+              2.7,
+              3
+            ]
+          ],
+          "after": [
+            [
+              -0.25,
+              -0.6249999999999996,
+              -0.875
+            ],
+            [
+              1.0499999999999998,
+              0.07500000000000018,
+              -0.17500000000000004
+            ],
+            [
+              -0.75,
+              0.5750000000000002,
+              -0.07499999999999996
+            ],
+            [
+              -0.050000000000000266,
+              -0.024999999999999467,
+              1.125
+            ]
+          ]
+        },
+        {
+          "action": "principal axes via cached legacy button",
+          "positions": [
+            [
+              1.0086396496275156,
+              -0.2459230734318123,
+              0.3753903290618097
+            ],
+            [
+              0.19991988611797237,
+              1.006061732085748,
+              -0.29431586835779383
+            ],
+            [
+              -0.14313063969100998,
+              -0.827235301550833,
+              -0.4403922976730452
+            ],
+            [
+              -1.0654288960544782,
+              0.06709664289689857,
+              0.3593178369690291
+            ]
+          ],
+          "offDiagonalTolerance": 1e-08,
+          "distanceTolerance": 1e-09
+        },
+        {
+          "action": "principal alignment Undo",
+          "exactCoordinateRestore": true
+        },
+        {
+          "action": "Build slash focus/close; Symmetry button and key close",
+          "passed": true
+        },
+        {
+          "action": "UFF optimize via cached legacy button",
+          "beforeBondLength": 2.4,
+          "afterBondLength": 1.0584331498176909
+        }
+      ],
+      "chipNodes": [
+        {
+          "id": "editAdaptiveAddAtomBtn",
+          "present": true,
+          "text": "add\n          Build\n        \n      \n      \n        /",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveSymmetryBtn",
+          "present": true,
+          "text": "hub\n          Symmetry\n        \n        \n      \n      \n        S",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveSymmetryMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveCleanStructureBtn",
+          "present": true,
+          "text": "cleaning_services\n          Optimize\n        \n        \n      \n      \n        O",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveCleanStructureMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveShiftComBtn",
+          "present": true,
+          "text": "center_focus_strong\n          COM \u2192 Origin\n        \n        \n      \n      \n        R",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveShiftComMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveAlignPrincipalBtn",
+          "present": true,
+          "text": "3d_rotation\n          Align\n        \n        \n      \n      \n        P",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveAlignPrincipalMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        }
+      ],
+      "identity": {
+        "historicalTaggedSourceWithoutBridge": true
+      },
+      "pageErrors": [],
+      "status": "passed"
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "actions": [
+        {
+          "action": "COM via cached legacy button",
+          "meanCoordinateTolerance": 1e-10,
+          "before": [
+            [
+              3.2,
+              2.1,
+              1
+            ],
+            [
+              4.5,
+              2.8,
+              1.7
+            ],
+            [
+              2.7,
+              3.3,
+              1.8
+            ],
+            [
+              3.4,
+              2.7,
+              3
+            ]
+          ],
+          "after": [
+            [
+              -0.25,
+              -0.6249999999999996,
+              -0.875
+            ],
+            [
+              1.0499999999999998,
+              0.07500000000000018,
+              -0.17500000000000004
+            ],
+            [
+              -0.75,
+              0.5750000000000002,
+              -0.07499999999999996
+            ],
+            [
+              -0.050000000000000266,
+              -0.024999999999999467,
+              1.125
+            ]
+          ]
+        },
+        {
+          "action": "principal axes via cached legacy button",
+          "positions": [
+            [
+              1.0086396496275156,
+              -0.2459230734318123,
+              0.3753903290618097
+            ],
+            [
+              0.19991988611797237,
+              1.006061732085748,
+              -0.29431586835779383
+            ],
+            [
+              -0.14313063969100998,
+              -0.827235301550833,
+              -0.4403922976730452
+            ],
+            [
+              -1.0654288960544782,
+              0.06709664289689857,
+              0.3593178369690291
+            ]
+          ],
+          "offDiagonalTolerance": 1e-08,
+          "distanceTolerance": 1e-09
+        },
+        {
+          "action": "principal alignment Undo",
+          "exactCoordinateRestore": true
+        },
+        {
+          "action": "Build slash focus/close; Symmetry button and key close",
+          "passed": true
+        },
+        {
+          "action": "UFF optimize via cached legacy button",
+          "beforeBondLength": 2.4,
+          "afterBondLength": 1.0584331498176909
+        }
+      ],
+      "chipNodes": [
+        {
+          "id": "editAdaptiveAddAtomBtn",
+          "present": true,
+          "text": "add\n          Build\n        \n      \n      \n        /",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveSymmetryBtn",
+          "present": true,
+          "text": "hub\n          Symmetry\n        \n        \n      \n      \n        S",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveSymmetryMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveCleanStructureBtn",
+          "present": true,
+          "text": "cleaning_services\n          Optimize\n        \n        \n      \n      \n        O",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveCleanStructureMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveShiftComBtn",
+          "present": true,
+          "text": "center_focus_strong\n          COM \u2192 Origin\n        \n        \n      \n      \n        R",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveShiftComMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveAlignPrincipalBtn",
+          "present": true,
+          "text": "3d_rotation\n          Align\n        \n        \n      \n      \n        P",
+          "hidden": false
+        },
+        {
+          "id": "editAdaptiveAlignPrincipalMeta",
+          "present": true,
+          "text": "",
+          "hidden": false
+        }
+      ],
+      "identity": {
+        "historicalTaggedSourceWithoutBridge": true
+      },
+      "pageErrors": [],
+      "status": "passed"
+    }
+  ]
+}

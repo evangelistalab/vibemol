@@ -1144,6 +1144,17 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    editAdaptiveAddAtomBtn: null,
+    editAdaptiveSymmetryBtn: null,
+    editAdaptiveSymmetryMetaEl: null,
+    editAdaptiveCleanStructureBtn: null,
+    editAdaptiveCleanStructureMetaEl: null,
+    editAdaptiveShiftComBtn: null,
+    editAdaptiveShiftComMetaEl: null,
+    editAdaptiveAlignPrincipalBtn: null,
+    editAdaptiveAlignPrincipalMetaEl: null,
+    editAdaptiveAddAtomPopoverEl: null,
+    editAdaptiveSymmetryPopoverEl: null,
     editBuildSearchEl: null,
     editBuildAtomsHostEl: null,
     editBuildFragmentsHostEl: null,
@@ -1194,19 +1205,8 @@
   let selectionMetalBondingCuePointerHandled = false;
   let selectionMetalBondingCuePopoverRenderKey = '';
   let editHaloController = null;
-  let editAdaptiveAddAtomBtn = null;
   let editToolUi = null;
   let lastHintMessage = '';
-  let editAdaptiveSymmetryBtn = null;
-  let editAdaptiveSymmetryMetaEl = null;
-  let editAdaptiveCleanStructureBtn = null;
-  let editAdaptiveCleanStructureMetaEl = null;
-  let editAdaptiveShiftComBtn = null;
-  let editAdaptiveShiftComMetaEl = null;
-  let editAdaptiveAlignPrincipalBtn = null;
-  let editAdaptiveAlignPrincipalMetaEl = null;
-  let editAdaptiveAddAtomPopoverEl = null;
-  let editAdaptiveSymmetryPopoverEl = null;
   let editSymmetryTargetSummaryEl = null;
   let editSymmetryExactResultCardEl = null;
   let editSymmetryExactResultEl = null;
@@ -1260,10 +1260,10 @@
       scheduleVibrationPanelLayoutSync(1);
     }
     updateDisplayWindowAdaptiveMenuUi();
-    if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editAdaptiveAddAtomPopoverEl && els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
     }
-    if (editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editAdaptiveSymmetryPopoverEl && els.editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSymmetryPopover();
     }
     const addAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
@@ -8086,19 +8086,19 @@
       hideSelectionMetalBondingCuePopover();
     }
   });
-  editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-  editAdaptiveSymmetryBtn = document.getElementById('editAdaptiveSymmetryBtn');
-  editAdaptiveSymmetryMetaEl = document.getElementById('editAdaptiveSymmetryMeta');
-  editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
-  editAdaptiveCleanStructureMetaEl = document.getElementById('editAdaptiveCleanStructureMeta');
-  editAdaptiveShiftComBtn = document.getElementById('editAdaptiveShiftComBtn');
-  editAdaptiveShiftComMetaEl = document.getElementById('editAdaptiveShiftComMeta');
-  editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
-  editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
+  cacheElement('editAdaptiveAddAtomBtn', 'editAdaptiveAddAtomBtn');
+  cacheElement('editAdaptiveSymmetryBtn', 'editAdaptiveSymmetryBtn');
+  cacheElement('editAdaptiveSymmetryMetaEl', 'editAdaptiveSymmetryMeta');
+  cacheElement('editAdaptiveCleanStructureBtn', 'editAdaptiveCleanStructureBtn');
+  cacheElement('editAdaptiveCleanStructureMetaEl', 'editAdaptiveCleanStructureMeta');
+  cacheElement('editAdaptiveShiftComBtn', 'editAdaptiveShiftComBtn');
+  cacheElement('editAdaptiveShiftComMetaEl', 'editAdaptiveShiftComMeta');
+  cacheElement('editAdaptiveAlignPrincipalBtn', 'editAdaptiveAlignPrincipalBtn');
+  cacheElement('editAdaptiveAlignPrincipalMetaEl', 'editAdaptiveAlignPrincipalMeta');
   const EDIT_ADAPTIVE_CHIP_DEFS = Object.freeze([
     {
       id: 'build',
-      getButtonEl: () => editAdaptiveAddAtomBtn,
+      getButtonEl: () => els.editAdaptiveAddAtomBtn,
       getMetaEl: () => null,
       getState(context) {
         return {
@@ -8117,8 +8117,8 @@
     },
     {
       id: 'symmetry',
-      getButtonEl: () => editAdaptiveSymmetryBtn,
-      getMetaEl: () => editAdaptiveSymmetryMetaEl,
+      getButtonEl: () => els.editAdaptiveSymmetryBtn,
+      getMetaEl: () => els.editAdaptiveSymmetryMetaEl,
       getState(context) {
         if (context.buildModeActive && !workspaceEnabled) {
           return {
@@ -8150,8 +8150,8 @@
     },
     {
       id: 'optimize',
-      getButtonEl: () => editAdaptiveCleanStructureBtn,
-      getMetaEl: () => editAdaptiveCleanStructureMetaEl,
+      getButtonEl: () => els.editAdaptiveCleanStructureBtn,
+      getMetaEl: () => els.editAdaptiveCleanStructureMetaEl,
       getState(context) {
         if (context.buildModeActive && !workspaceEnabled) {
           return {
@@ -8183,8 +8183,8 @@
     },
     {
       id: 'center-mass',
-      getButtonEl: () => editAdaptiveShiftComBtn,
-      getMetaEl: () => editAdaptiveShiftComMetaEl,
+      getButtonEl: () => els.editAdaptiveShiftComBtn,
+      getMetaEl: () => els.editAdaptiveShiftComMetaEl,
       getState(context) {
         return {
           visible: context.hasEditableAtoms && !context.buildModeActive,
@@ -8202,8 +8202,8 @@
     },
     {
       id: 'align',
-      getButtonEl: () => editAdaptiveAlignPrincipalBtn,
-      getMetaEl: () => editAdaptiveAlignPrincipalMetaEl,
+      getButtonEl: () => els.editAdaptiveAlignPrincipalBtn,
+      getMetaEl: () => els.editAdaptiveAlignPrincipalMetaEl,
       getState(context) {
         return {
           visible: context.hasEditableAtoms && !context.buildModeActive,
@@ -8220,8 +8220,8 @@
       },
     },
   ]);
-  editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
-  editAdaptiveSymmetryPopoverEl = document.getElementById('editAdaptiveSymmetryPopover');
+  cacheElement('editAdaptiveAddAtomPopoverEl', 'editAdaptiveAddAtomPopover');
+  cacheElement('editAdaptiveSymmetryPopoverEl', 'editAdaptiveSymmetryPopover');
   cacheElement('editBuildSearchEl', 'editBuildSearch');
   cacheElement('editBuildAtomsHostEl', 'editBuildAtomsHost');
   cacheElement('editBuildFragmentsHostEl', 'editBuildFragmentsHost');
@@ -11807,14 +11807,14 @@
         isOpen: () => !!propertiesInspector?.isOpen(),
         setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
       }, buildPanel: {
-        id: 'buildPanel', label: 'Build', buttonEl: editAdaptiveAddAtomBtn,
+        id: 'buildPanel', label: 'Build', buttonEl: els.editAdaptiveAddAtomBtn,
         isOpen: isBuildPopoverOpen,
         setOpen: open => {
           if (!open) hideBuildPopover();
           else if (!isBuildPopoverOpen()) showBuildPopover({ fromWorkbench: true, preserveFocus: true });
         },
       }, symmetryPanel: {
-        id: 'symmetryPanel', label: 'Symmetry', buttonEl: editAdaptiveSymmetryBtn,
+        id: 'symmetryPanel', label: 'Symmetry', buttonEl: els.editAdaptiveSymmetryBtn,
         isOpen: isSymmetryPopoverOpen,
         setOpen: open => {
           if (!open) hideSymmetryPopover();
@@ -11914,7 +11914,7 @@
     ),
     getRelatedElements: () => (
       currentMode === MODES.EDIT
-        ? [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl]
+        ? [els.editAdaptiveAddAtomPopoverEl, els.editAdaptiveSymmetryPopoverEl]
         : [moldenInspector, spinorInfoPanel, viewInspector]
     ),
   });
@@ -16635,8 +16635,8 @@
   }
 
   function syncBuildSearchNavigationUi() {
-    if (!editAdaptiveAddAtomPopoverEl) return;
-    editAdaptiveAddAtomPopoverEl.classList.toggle('is-search-navigating', isBuildSearchNavigationActive());
+    if (!els.editAdaptiveAddAtomPopoverEl) return;
+    els.editAdaptiveAddAtomPopoverEl.classList.toggle('is-search-navigating', isBuildSearchNavigationActive());
   }
 
   function makeBuildPaletteSelectionKey(selection) {
@@ -17252,8 +17252,8 @@
         const nextTarget = e && e.relatedTarget;
         if (
           nextTarget
-          && editAdaptiveAddAtomPopoverEl
-          && editAdaptiveAddAtomPopoverEl.contains(nextTarget)
+          && els.editAdaptiveAddAtomPopoverEl
+          && els.editAdaptiveAddAtomPopoverEl.contains(nextTarget)
         ) {
           syncBuildSearchNavigationUi();
           return;
@@ -17369,38 +17369,38 @@
     if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a template first, then align to X.'); };
     if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a template first, then align to Y.'); };
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
-    if (editAdaptiveAddAtomBtn) {
-      editAdaptiveAddAtomBtn.onclick = () => {
+    if (els.editAdaptiveAddAtomBtn) {
+      els.editAdaptiveAddAtomBtn.onclick = () => {
         if (window.VibeMolWorkbench?.restoreIfHidden('buildPanel')) return;
         if (isBuildPopoverOpen()) hideBuildPopover();
         else showBuildPopover();
       };
     }
-    if (editAdaptiveAddAtomPopoverEl) {
-      editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
+    if (els.editAdaptiveAddAtomPopoverEl) {
+      els.editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
         const buttonEl = e && e.target ? e.target.closest('#editAddQuick button, #editFragmentQuick button, #editMoleculeQuick button') : null;
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
       });
-      editAdaptiveAddAtomPopoverEl.addEventListener('keydown', (e) => {
+      els.editAdaptiveAddAtomPopoverEl.addEventListener('keydown', (e) => {
         if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         hideBuildPopover();
       });
     }
-    if (editAdaptiveSymmetryBtn) {
-      editAdaptiveSymmetryBtn.onclick = () => {
-        if (editAdaptiveSymmetryBtn.dataset.static === 'true') return;
+    if (els.editAdaptiveSymmetryBtn) {
+      els.editAdaptiveSymmetryBtn.onclick = () => {
+        if (els.editAdaptiveSymmetryBtn.dataset.static === 'true') return;
         if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
     }
-    if (editAdaptiveSymmetryPopoverEl) {
-      editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
+    if (els.editAdaptiveSymmetryPopoverEl) {
+      els.editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       });
-      editAdaptiveSymmetryPopoverEl.addEventListener('keydown', (e) => {
+      els.editAdaptiveSymmetryPopoverEl.addEventListener('keydown', (e) => {
         const key = String(e && e.key || '').toLowerCase();
         if (key !== 's' || (e && (e.ctrlKey || e.metaKey || e.altKey))) return;
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
@@ -17427,8 +17427,8 @@
     if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
     if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
     if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
-    if (editAdaptiveCleanStructureBtn) {
-      editAdaptiveCleanStructureBtn.onclick = () => {
+    if (els.editAdaptiveCleanStructureBtn) {
+      els.editAdaptiveCleanStructureBtn.onclick = () => {
         if (isBuildPopoverOpen() && !workspaceEnabled) {
           if (autoHydrogenController) autoHydrogenController.handleShortcut();
           return;
@@ -17436,8 +17436,8 @@
         optimizeActiveStructureWithUff();
       };
     }
-    if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
-    if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
+    if (els.editAdaptiveShiftComBtn) els.editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
+    if (els.editAdaptiveAlignPrincipalBtn) els.editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
     if (editAddAtomOperatorHeaderEl) {
       editAddAtomOperatorHeaderEl.onclick = () => {
         addAtomOperatorCollapsed = !addAtomOperatorCollapsed;
@@ -18374,11 +18374,11 @@
   }
 
   function positionBuildPopover() {
-    if (!editAdaptiveAddAtomPopoverEl || !editAdaptiveAddAtomBtn) return;
+    if (!els.editAdaptiveAddAtomPopoverEl || !els.editAdaptiveAddAtomBtn) return;
     if (window.VibeMolWorkbench?.isDocked('buildPanel')) return;
     positionFloatingPopoverUi({
-      popoverEl: editAdaptiveAddAtomPopoverEl,
-      triggerEl: editAdaptiveAddAtomBtn,
+      popoverEl: els.editAdaptiveAddAtomPopoverEl,
+      triggerEl: els.editAdaptiveAddAtomBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
       topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
@@ -18394,7 +18394,7 @@
   }
 
   function renderBuildPopover(options = {}) {
-    if (!editAdaptiveAddAtomPopoverEl || editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
+    if (!els.editAdaptiveAddAtomPopoverEl || els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
     syncBuildPopoverPanes();
     syncBuildSearchField();
     const activeQuery = getBuildPaletteFilterQuery();
@@ -18424,22 +18424,22 @@
   }
 
   function isBuildPopoverOpen() {
-    return !!(editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false');
+    return !!(els.editAdaptiveAddAtomPopoverEl && els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false');
   }
 
   function hideBuildPopover(options = {}) {
     const quiet = !!(options && options.quiet);
     clearBuildSearchKeyboardSelection();
     if (!workspaceEnabled) resetBuildSearchFieldOnHide();
-    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) els.editBuildSearchEl?.blur();
-    if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
+    else if (els.editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) els.editBuildSearchEl?.blur();
+    if (els.editAdaptiveAddAtomPopoverEl) els.editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
     restoreBuildPopoverPanes();
     syncBuildSearchNavigationUi();
     if (!quiet) updateEditAdaptiveMenuUi();
   }
 
   function showBuildPopover(options = {}) {
-    if (!editAdaptiveAddAtomPopoverEl) return;
+    if (!els.editAdaptiveAddAtomPopoverEl) return;
     if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     hideSelectionCoordinationCuePopover();
@@ -18450,7 +18450,7 @@
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
     syncBuildPopoverPanes();
-    editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
+    els.editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
     renderBuildPopover({
       selectionKey: String(options.selectionKey || '').trim(),
       preferPayloadSelection: options.preferPayloadSelection !== false,
@@ -18461,11 +18461,11 @@
   }
 
   function positionSymmetryPopover() {
-    if (!editAdaptiveSymmetryPopoverEl || !editAdaptiveSymmetryBtn) return;
+    if (!els.editAdaptiveSymmetryPopoverEl || !els.editAdaptiveSymmetryBtn) return;
     if (window.VibeMolWorkbench?.isDocked('symmetryPanel')) return;
     positionFloatingPopoverUi({
-      popoverEl: editAdaptiveSymmetryPopoverEl,
-      triggerEl: editAdaptiveSymmetryBtn,
+      popoverEl: els.editAdaptiveSymmetryPopoverEl,
+      triggerEl: els.editAdaptiveSymmetryBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
       topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
@@ -18475,7 +18475,7 @@
   }
 
   function isSymmetryPopoverOpen() {
-    return !!(editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
+    return !!(els.editAdaptiveSymmetryPopoverEl && els.editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
   }
 
   function resolveEditSymmetryTarget() {
@@ -18579,8 +18579,8 @@
     invalidateSymmetryPopoverAnalysisCache();
     // Clearing a chemistry operation must not close a Workbench panel. Only
     // hideSymmetryPopover handles an explicit close in that interface.
-    if (!workspaceEnabled && !keepPopover && editAdaptiveSymmetryPopoverEl) {
-      editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
+    if (!workspaceEnabled && !keepPopover && els.editAdaptiveSymmetryPopoverEl) {
+      els.editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
     }
     if (!quiet) updateEditAdaptiveMenuUi();
   }
@@ -18927,7 +18927,7 @@
 
   function renderSymmetryPopover() {
     if (currentMode !== MODES.EDIT) return;
-    if (!editAdaptiveSymmetryPopoverEl || editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
+    if (!els.editAdaptiveSymmetryPopoverEl || els.editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
     const target = resolveEditSymmetryTarget();
     syncSymmetryToleranceUi();
     if (!target) {
@@ -18975,14 +18975,14 @@
       symmetryPopoverSelectedElementId = '';
       clearSymmetryElementGuide();
       clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
-      editAdaptiveSymmetryPopoverEl?.setAttribute('aria-hidden', 'true');
+      els.editAdaptiveSymmetryPopoverEl?.setAttribute('aria-hidden', 'true');
       if (!options.quiet) updateEditAdaptiveMenuUi();
     };
     applyHide();
   }
 
   function showSymmetryPopover(options = {}) {
-    if (!editAdaptiveSymmetryPopoverEl) return;
+    if (!els.editAdaptiveSymmetryPopoverEl) return;
     if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
@@ -18994,7 +18994,7 @@
     hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover();
     invalidateSymmetryPopoverAnalysisCache();
-    editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
+    els.editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
     updateEditAdaptiveMenuUi();
@@ -33004,17 +33004,17 @@
         editSelectionFragmentCuePopoverEl: editSelectionFragmentCuePopoverEl,
         editSelectionCoordinationCuePopoverEl: editSelectionCoordinationCuePopoverEl,
         editSelectionMetalBondingCuePopoverEl: editSelectionMetalBondingCuePopoverEl,
-        editAdaptiveAddAtomBtn: editAdaptiveAddAtomBtn,
-        editAdaptiveSymmetryBtn: editAdaptiveSymmetryBtn,
-        editAdaptiveSymmetryMetaEl: editAdaptiveSymmetryMetaEl,
-        editAdaptiveCleanStructureBtn: editAdaptiveCleanStructureBtn,
-        editAdaptiveCleanStructureMetaEl: editAdaptiveCleanStructureMetaEl,
-        editAdaptiveShiftComBtn: editAdaptiveShiftComBtn,
-        editAdaptiveShiftComMetaEl: editAdaptiveShiftComMetaEl,
-        editAdaptiveAlignPrincipalBtn: editAdaptiveAlignPrincipalBtn,
-        editAdaptiveAlignPrincipalMetaEl: editAdaptiveAlignPrincipalMetaEl,
-        editAdaptiveAddAtomPopoverEl: editAdaptiveAddAtomPopoverEl,
-        editAdaptiveSymmetryPopoverEl: editAdaptiveSymmetryPopoverEl,
+        editAdaptiveAddAtomBtn: els.editAdaptiveAddAtomBtn,
+        editAdaptiveSymmetryBtn: els.editAdaptiveSymmetryBtn,
+        editAdaptiveSymmetryMetaEl: els.editAdaptiveSymmetryMetaEl,
+        editAdaptiveCleanStructureBtn: els.editAdaptiveCleanStructureBtn,
+        editAdaptiveCleanStructureMetaEl: els.editAdaptiveCleanStructureMetaEl,
+        editAdaptiveShiftComBtn: els.editAdaptiveShiftComBtn,
+        editAdaptiveShiftComMetaEl: els.editAdaptiveShiftComMetaEl,
+        editAdaptiveAlignPrincipalBtn: els.editAdaptiveAlignPrincipalBtn,
+        editAdaptiveAlignPrincipalMetaEl: els.editAdaptiveAlignPrincipalMetaEl,
+        editAdaptiveAddAtomPopoverEl: els.editAdaptiveAddAtomPopoverEl,
+        editAdaptiveSymmetryPopoverEl: els.editAdaptiveSymmetryPopoverEl,
         editBuildSearchEl: els.editBuildSearchEl,
         editBuildAtomsHostEl: els.editBuildAtomsHostEl,
         editBuildFragmentsHostEl: els.editBuildFragmentsHostEl,

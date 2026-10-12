@@ -1,0 +1,41 @@
+[element cache] workbench/light: {"DOM replacement": 5319, "mode switch": 408, "panel transition": 1052, "presented checkpoint": 39, "session restore": 1}
+[element cache] workbench/dark: {"DOM replacement": 5434, "mode switch": 408, "panel transition": 1064, "presented checkpoint": 39, "session restore": 1}
+[element cache] legacy/light: {"DOM replacement": 2969, "mode switch": 9, "panel transition": 669, "presented checkpoint": 32, "session restore": 1}
+[element cache] legacy/dark: {"DOM replacement": 3078, "mode switch": 9, "panel transition": 678, "presented checkpoint": 32, "session restore": 1}
+[characterize] sample/light: API, session, geometry, DOM and console captured
+[characterize] sample/dark: API, session, geometry, DOM and console captured
+[characterize] methane/light: API, session, geometry, DOM and console captured
+[characterize] methane/dark: API, session, geometry, DOM and console captured
+[characterize] two-component/light: API, session, geometry, DOM and console captured
+[characterize] two-component/dark: API, session, geometry, DOM and console captured
+[characterize] pubchem/light: API, session, geometry, DOM and console captured
+[characterize] pubchem/dark: API, session, geometry, DOM and console captured
+[characterize] session/light: API, session, geometry, DOM and console captured
+[characterize] session/dark: API, session, geometry, DOM and console captured
+[characterize] look/light: API, session, geometry, DOM and console captured
+[characterize] look/dark: API, session, geometry, DOM and console captured
+[characterize] trajectory/light: API, session, geometry, DOM and console captured
+[characterize] trajectory/dark: API, session, geometry, DOM and console captured
+[characterize] vibration/light: API, session, geometry, DOM and console captured
+[characterize] vibration/dark: API, session, geometry, DOM and console captured
+[element cache] workbench/light: {"DOM replacement": 5319, "mode switch": 408, "panel transition": 1064, "presented checkpoint": 39, "session restore": 1}
+[element cache] workbench/dark: {"DOM replacement": 5430, "mode switch": 408, "panel transition": 1052, "presented checkpoint": 39, "session restore": 1}
+[element cache] legacy/light: {"DOM replacement": 2965, "mode switch": 9, "panel transition": 669, "presented checkpoint": 32, "session restore": 1}
+[element cache] legacy/dark: {"DOM replacement": 3077, "mode switch": 9, "panel transition": 681, "presented checkpoint": 32, "session restore": 1}
+[characterize] sample/light: API, session, geometry, DOM and console captured
+[characterize] sample/dark: API, session, geometry, DOM and console captured
+[characterize] methane/light: API, session, geometry, DOM and console captured
+[characterize] methane/dark: API, session, geometry, DOM and console captured
+[characterize] two-component/light: API, session, geometry, DOM and console captured
+[characterize] two-component/dark: API, session, geometry, DOM and console captured
+[characterize] pubchem/light: API, session, geometry, DOM and console captured
+[characterize] pubchem/dark: API, session, geometry, DOM and console captured
+[characterize] session/light: API, session, geometry, DOM and console captured
+[characterize] session/dark: API, session, geometry, DOM and console captured
+[characterize] look/light: API, session, geometry, DOM and console captured
+[characterize] look/dark: API, session, geometry, DOM and console captured
+[characterize] trajectory/light: API, session, geometry, DOM and console captured
+[characterize] trajectory/dark: API, session, geometry, DOM and console captured
+[characterize] vibration/light: API, session, geometry, DOM and console captured
+[characterize] vibration/dark: API, session, geometry, DOM and console captured
+[characterize] 2 identical runs; 102 snapshots each; 0 diagnostic pixel differences.
