@@ -1,0 +1,37 @@
+[
+  {
+    "source": "tagged-base",
+    "suite": "edit_picking",
+    "exitCode": 0,
+    "seconds": 376.18,
+    "result": "out/test-artifacts/stage3/selection/manual/tagged-base/edit_picking/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "transform_selection",
+    "exitCode": 0,
+    "seconds": 42.15,
+    "result": "out/test-artifacts/stage3/selection/manual/tagged-base/transform_selection/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "build_orbit",
+    "exitCode": 0,
+    "seconds": 36.73,
+    "result": "out/test-artifacts/stage3/selection/manual/tagged-base/build_orbit/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "seconds": 34.95,
+    "result": "out/test-artifacts/stage3/selection/manual/tagged-base/floating_panels/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "selection_menus",
+    "exitCode": 1,
+    "seconds": 37.04,
+    "result": "out/test-artifacts/stage3/selection/manual/tagged-base/selection_menus/result.json"
+  }
+]

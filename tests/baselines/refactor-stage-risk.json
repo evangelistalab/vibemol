@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
+    "evidence": "tests/baselines/evidence/stage3/atoms/ci-38266303089/browser-results.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,7 +23,7 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Approved #8/#13 stack CI 38177282064 proves 34/3/37, both 102-capture goldens, and all 43 identities in eight contexts with minima. #11 fired at trajectory after the second download; the ordered stack landed on codex/app-js-decomposition with let 291.",
+    "provenance": "CI 34/3/37 on the unchanged Atoms candidate, all 37 once; only the specified workflows fail. Selection requires its own artifact.",
     "gate": {
       "passed": 34,
       "failed": 3,
@@ -52,7 +52,13 @@
         "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
         "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
-    ]
+    ],
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
+    "sourceAppSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    }
   },
   "stages": [
     {
@@ -288,6 +294,15 @@
             ],
             "scopeClosed": "adaptive group",
             "riskClosed": false
+          },
+          "atomsCiCheck": {
+            "recurred": false,
+            "bothMaterialFamiliesPathsReached": true,
+            "looksSeconds": 1924.7,
+            "looksMinutes": 32.08,
+            "wholeCiMinutes": 170.48,
+            "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
+            "riskClosed": false
           }
         }
       ],
@@ -465,7 +480,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "Known-absence guard amended after complete sweep; Atoms menu resumed while Element Colors remains held.",
+      "status": "Build, adaptive and Atoms integrated; Selection in local verification; Element Colors held.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -644,7 +659,7 @@
           "dependencyDefinition": "3 cache inputs plus existing cacheElement helper",
           "letBefore": 291,
           "letAfter": 288,
-          "status": "local checks, paired UI matrix and two characterizations passed; own CI pending",
+          "status": "Merged after its one exact CI candidate proved the full 34/3/37, 52-slot composition and unchanged golden conjunction.",
           "elementColorsHeld": true,
           "evidence": "tests/baselines/evidence/stage3/atoms/validation.json",
           "localIdentityComposition": {
@@ -658,14 +673,39 @@
             }
           },
           "conversionNetAppLines": 0,
-          "userRequestedQaInfrastructureNetAppLines": 32
+          "userRequestedQaInfrastructureNetAppLines": 32,
+          "pr": "https://github.com/evangelistalab/vibemol/pull/16",
+          "mergeCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+          "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
+          "ciEvidence": "tests/baselines/evidence/stage3/atoms/ci-38266303089/candidate-verification.json",
+          "appearanceMaterialPresetIntermittent": {
+            "recurred": false,
+            "bothMaterialFamiliesPathsReached": true,
+            "looksSeconds": 1924.7,
+            "looksMinutes": 32.08,
+            "wholeCiMinutes": 170.48
+          }
+        },
+        {
+          "order": 4,
+          "group": "editSelection*",
+          "cacheBindings": 13,
+          "dependencyCount": 14,
+          "dependencyDefinition": "13 cache inputs plus existing cacheElement helper",
+          "letBefore": 288,
+          "letAfter": 275,
+          "appAdded": 178,
+          "appRemoved": 178,
+          "status": "Local check/unit and characterization passed; stopped on tagged-base manual menu click interception before proposal; no PR/CI.",
+          "baseCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+          "evidence": "tests/baselines/evidence/stage3/selection/validation.json"
         }
       ],
       "remainingPanelGroupCount": 4,
       "primaryMetric": {
         "name": "mutable module-let declaration lines",
         "before": 306,
-        "current": 291,
+        "current": 288,
         "target": 265,
         "appLineGrowthExpected": true,
         "build": {
@@ -680,7 +720,7 @@
           "appRemoved": 85,
           "appNetGrowth": 0
         },
-        "appLinesCurrent": 33037,
+        "appLinesCurrent": 33069,
         "topLevelFunctionsCurrent": 1181
       },
       "orderedIntegration": {
@@ -698,7 +738,6 @@
       },
       "remainingAssignment": {
         "groups": [
-          "Atoms menu",
           "Selection",
           "Symmetry/shared launcher"
         ],
@@ -715,7 +754,7 @@
         "stopOnMaterialPresetRecurrence": true,
         "stopOnLogicChange": true,
         "cutFrom": "pushed codex/app-js-decomposition",
-        "status": "Atoms local checks, paired UI matrix and two characterizations passed; own full CI conjunction pending.",
+        "status": "Stopped during new manual menu probe on tagged base; classify targeting/dismissal versus defect before resuming.",
         "stopEvidence": "tests/baselines/evidence/stage3/colors-stop/stop-report.json",
         "heldGroup": "Element Colors",
         "knownAbsentIssueRequired": true,
@@ -734,8 +773,9 @@
           15
         ],
         "identityCountForRemainingGroups": 52,
-        "remainingActiveGroupCount": 3,
-        "conversionLineRule": "Reference substitutions are line-neutral. Separately record the user-requested identity expansion and issue-backed absence infrastructure."
+        "remainingActiveGroupCount": 2,
+        "conversionLineRule": "Reference substitutions are line-neutral. Separately record the user-requested identity expansion and issue-backed absence infrastructure.",
+        "manualStopEvidence": "tests/baselines/evidence/stage3/selection/manual-stop/stop-report.json"
       },
       "domRetirementSweep": {
         "sourceCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
@@ -989,30 +1029,20 @@
   },
   "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor.",
   "latestCiGateAttempt": {
-    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38177282064",
-    "headCommit": "1750dbf55858db66cd57f6d14b411584b9ef6abb",
-    "actual": {
-      "passed": 34,
-      "failed": 3,
-      "total": 37
-    },
-    "expected": {
-      "passed": 34,
-      "failed": 3,
-      "total": 37
-    },
-    "gateMet": true,
-    "unexpectedFailures": [],
-    "reason": "Complete same-artifact conjunction on the approved Build/adaptive stack, integrated in order; no different-tree evidence combined.",
-    "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
-    "characterization": "Two exactly identical 102-capture runs match unchanged goldens using the approved float policy.",
-    "renderer": "Linux x86_64 Chromium 153.0.8010.12, software SwiftShader",
+    "pr": 16,
+    "head": "6bfd947cbe701073289efe3a5b047be52d2d6a8b",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
+    "status": "full same-artifact conjunction passed; merged",
+    "counts": [
+      34,
+      3,
+      37
+    ],
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
       "site": "trajectory"
     },
-    "identityEvidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-cache-identity.json",
-    "candidateVerification": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/candidate-verification.json"
+    "evidence": "tests/baselines/evidence/stage3/atoms/ci-38266303089/candidate-verification.json"
   },
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",

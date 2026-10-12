@@ -1,0 +1,95 @@
+{
+  "group": "editAtomsMenu*",
+  "baseCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "inventory": [
+    {
+      "name": "editAtomsMenuEl",
+      "declarationLine": 1185,
+      "assignmentLine": 7891,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAtomsMenu*",
+      "kind": "DOM cache",
+      "id": "editAtomsMenu",
+      "queryLine": 7891,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": false,
+      "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+      "preStageAuditQueryLine": 7879,
+      "registrationLine": 7891,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAtomsMenuBodyEl",
+      "declarationLine": 1186,
+      "assignmentLine": 7892,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAtomsMenu*",
+      "kind": "DOM cache",
+      "id": "editAtomsMenuBody",
+      "queryLine": 7892,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": false,
+      "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+      "preStageAuditQueryLine": 7880,
+      "registrationLine": 7892,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAtomsMenuCurrentEl",
+      "declarationLine": 1187,
+      "assignmentLine": 7893,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAtomsMenu*",
+      "kind": "DOM cache",
+      "id": "editAtomsMenuCurrent",
+      "queryLine": 7893,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": false,
+      "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+      "preStageAuditQueryLine": 7881,
+      "registrationLine": 7893,
+      "registeredAtOriginalQueryPoint": true
+    }
+  ],
+  "functionsWhoseBodiesReferenceTheConvertedCache": [
+    {
+      "name": "positionEditAtomsMenu",
+      "beforeLine": 18004,
+      "afterLine": 18004
+    },
+    {
+      "name": "updateEditAtomsMenuUi",
+      "beforeLine": 18008,
+      "afterLine": 18008
+    }
+  ],
+  "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+  "lexicalReferenceSubstitutions": 9,
+  "auditedFunctionDeclarations": 1190,
+  "shadowedElsReferences": [],
+  "metrics": {
+    "before": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 291,
+      "constDeclarations": 590,
+      "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+    },
+    "after": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 288,
+      "constDeclarations": 590,
+      "sha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a"
+    }
+  },
+  "controllerLetsRetained": true,
+  "focusStateLetRetained": true,
+  "queryRegistrationAtOriginalWiringSites": true
+}

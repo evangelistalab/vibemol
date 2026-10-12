@@ -1144,6 +1144,19 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    editSelectionTranslateCueEl: null,
+    editSelectionTranslateCueButtonEl: null,
+    editSelectionRotateCueButtonEl: null,
+    editSelectionCoordinationCueButtonEl: null,
+    editSelectionMetalBondingCueButtonEl: null,
+    editSelectionBondOrbitCueButtonEl: null,
+    editSelectionBondDistanceCueButtonEl: null,
+    editSelectionBondOrderCueButtonEl: null,
+    editSelectionAddFragmentCueButtonEl: null,
+    editSelectionDeleteCueButtonEl: null,
+    editSelectionFragmentCuePopoverEl: null,
+    editSelectionCoordinationCuePopoverEl: null,
+    editSelectionMetalBondingCuePopoverEl: null,
     editAtomsMenuEl: null,
     editAtomsMenuBodyEl: null,
     editAtomsMenuCurrentEl: null,
@@ -1185,20 +1198,7 @@
   const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
-  let editSelectionTranslateCueEl = null;
   let editSelectionPositionUi = null;
-  let editSelectionTranslateCueButtonEl = null;
-  let editSelectionRotateCueButtonEl = null;
-  let editSelectionCoordinationCueButtonEl = null;
-  let editSelectionMetalBondingCueButtonEl = null;
-  let editSelectionBondOrbitCueButtonEl = null;
-  let editSelectionBondDistanceCueButtonEl = null;
-  let editSelectionBondOrderCueButtonEl = null;
-  let editSelectionAddFragmentCueButtonEl = null;
-  let editSelectionDeleteCueButtonEl = null;
-  let editSelectionFragmentCuePopoverEl = null;
-  let editSelectionCoordinationCuePopoverEl = null;
-  let editSelectionMetalBondingCuePopoverEl = null;
   let selectionCoordinationCuePointerHandled = false;
   let selectionCoordinationCuePopoverRenderKey = '';
   let selectionCoordinationCuePreviewRenderers = [];
@@ -1274,10 +1274,10 @@
     if (addMoleculeOperatorPanelEl && addMoleculeOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddMoleculeOperatorPanel();
     }
-    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionCoordinationCuePopover();
     }
-    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionMetalBondingCuePopover();
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
@@ -7891,24 +7891,24 @@
   cacheElement('editAtomsMenuEl', 'editAtomsMenu');
   cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
   cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
-  editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
+  cacheElement('editSelectionTranslateCueEl', 'editSelectionTranslateCue');
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
     getSnapshot: getSelectionPositionSnapshot,
     onCommit: (axis, value) => editTransformController?.setSelectionPosition(axis, value),
   });
-  editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
-  editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
-  editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
-  editSelectionMetalBondingCueButtonEl = document.getElementById('editSelectionMetalBondingCueButton');
-  editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
-  editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
-  editSelectionBondOrderCueButtonEl = document.getElementById('editSelectionBondOrderCueButton');
-  editSelectionAddFragmentCueButtonEl = document.getElementById('editSelectionAddFragmentCueButton');
-  editSelectionDeleteCueButtonEl = document.getElementById('editSelectionDeleteCueButton');
-  editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
-  editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
-  editSelectionMetalBondingCuePopoverEl = document.getElementById('editSelectionMetalBondingCuePopover');
+  cacheElement('editSelectionTranslateCueButtonEl', 'editSelectionTranslateCueButton');
+  cacheElement('editSelectionRotateCueButtonEl', 'editSelectionRotateCueButton');
+  cacheElement('editSelectionCoordinationCueButtonEl', 'editSelectionCoordinationCueButton');
+  cacheElement('editSelectionMetalBondingCueButtonEl', 'editSelectionMetalBondingCueButton');
+  cacheElement('editSelectionBondOrbitCueButtonEl', 'editSelectionBondOrbitCueButton');
+  cacheElement('editSelectionBondDistanceCueButtonEl', 'editSelectionBondDistanceCueButton');
+  cacheElement('editSelectionBondOrderCueButtonEl', 'editSelectionBondOrderCueButton');
+  cacheElement('editSelectionAddFragmentCueButtonEl', 'editSelectionAddFragmentCueButton');
+  cacheElement('editSelectionDeleteCueButtonEl', 'editSelectionDeleteCueButton');
+  cacheElement('editSelectionFragmentCuePopoverEl', 'editSelectionFragmentCuePopover');
+  cacheElement('editSelectionCoordinationCuePopoverEl', 'editSelectionCoordinationCuePopover');
+  cacheElement('editSelectionMetalBondingCuePopoverEl', 'editSelectionMetalBondingCuePopover');
 
   const bindSelectionCueButton = (buttonEl, action, clickAction = null) => {
     if (!buttonEl) return;
@@ -7938,38 +7938,38 @@
       if (typeof clickAction === 'function') clickAction();
     });
   };
-  bindSelectionCueButton(editSelectionTranslateCueButtonEl, 'translate', () => {
+  bindSelectionCueButton(els.editSelectionTranslateCueButtonEl, 'translate', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditSelectionDragMode('translate');
   });
-  bindSelectionCueButton(editSelectionRotateCueButtonEl, 'rotate', () => {
+  bindSelectionCueButton(els.editSelectionRotateCueButtonEl, 'rotate', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     if (getCurrentTransformSelectionContext()) setEditBondSideCueMode('axis');
     else setEditSelectionDragMode('rotate');
   });
-  bindSelectionCueButton(editSelectionBondOrbitCueButtonEl, 'bondQuaternion', () => {
+  bindSelectionCueButton(els.editSelectionBondOrbitCueButtonEl, 'bondQuaternion', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('orbit');
   });
-  bindSelectionCueButton(editSelectionBondDistanceCueButtonEl, 'bondDistance', () => {
+  bindSelectionCueButton(els.editSelectionBondDistanceCueButtonEl, 'bondDistance', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('distance');
   });
-  bindSelectionCueButton(editSelectionBondOrderCueButtonEl, 'bondOrder', () => {
+  bindSelectionCueButton(els.editSelectionBondOrderCueButtonEl, 'bondOrder', () => {
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     const resolved = getBondCenterSelectionResolved(vol);
     if (!resolved || !resolved.carrier || !bondEditing) return;
     bondEditing.showPopupForCarrier(resolved.carrier, { markClickHandled: true });
   });
-  if (editSelectionCoordinationCueButtonEl) {
-    editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionCoordinationCueButtonEl) {
+    els.editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       selectionCoordinationCuePointerHandled = true;
       toggleSelectionCoordinationCuePopover();
     });
-    editSelectionCoordinationCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionCoordinationCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       if (selectionCoordinationCuePointerHandled) {
@@ -7979,14 +7979,14 @@
       toggleSelectionCoordinationCuePopover();
     });
   }
-  if (editSelectionMetalBondingCueButtonEl) {
-    editSelectionMetalBondingCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionMetalBondingCueButtonEl) {
+    els.editSelectionMetalBondingCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       selectionMetalBondingCuePointerHandled = true;
       toggleSelectionMetalBondingCuePopover();
     });
-    editSelectionMetalBondingCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionMetalBondingCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       if (selectionMetalBondingCuePointerHandled) {
@@ -7996,12 +7996,12 @@
       toggleSelectionMetalBondingCuePopover();
     });
   }
-  if (editSelectionAddFragmentCueButtonEl) {
-    editSelectionAddFragmentCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionAddFragmentCueButtonEl) {
+    els.editSelectionAddFragmentCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionAddFragmentCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionAddFragmentCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
@@ -8009,12 +8009,12 @@
       setSelectionBuildCueActive(!isSelectionBuildCueActive(), { announce: true, syncSearch: false, preserveSelection: true });
     });
   }
-  if (editSelectionDeleteCueButtonEl) {
-    editSelectionDeleteCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionDeleteCueButtonEl) {
+    els.editSelectionDeleteCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionDeleteCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionDeleteCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
@@ -8030,16 +8030,16 @@
       }
     });
   }
-  if (editSelectionFragmentCuePopoverEl) {
-    editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
+  if (els.editSelectionFragmentCuePopoverEl) {
+    els.editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
       hideSelectionFragmentCuePopover(120);
     });
   }
-  if (editSelectionCoordinationCuePopoverEl) {
-    editSelectionCoordinationCuePopoverEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionCoordinationCuePopoverEl) {
+    els.editSelectionCoordinationCuePopoverEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionCoordinationCuePopoverEl.addEventListener('click', (e) => {
+    els.editSelectionCoordinationCuePopoverEl.addEventListener('click', (e) => {
       const target = e && e.target ? e.target.closest('[data-coordination-choice]') : null;
       if (!target) return;
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8052,11 +8052,11 @@
       }
     });
   }
-  if (editSelectionMetalBondingCuePopoverEl) {
-    editSelectionMetalBondingCuePopoverEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionMetalBondingCuePopoverEl) {
+    els.editSelectionMetalBondingCuePopoverEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionMetalBondingCuePopoverEl.addEventListener('click', (e) => {
+    els.editSelectionMetalBondingCuePopoverEl.addEventListener('click', (e) => {
       const target = e && e.target ? e.target.closest('[data-metal-bonding-choice]') : null;
       if (!target) return;
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8072,16 +8072,16 @@
   document.addEventListener('pointerdown', (evt) => {
     const target = evt && evt.target;
     if (
-      editSelectionCoordinationCuePopoverEl
-      && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false'
-      && !(editSelectionCoordinationCuePopoverEl.contains(target) || (editSelectionCoordinationCueButtonEl && editSelectionCoordinationCueButtonEl.contains(target)))
+      els.editSelectionCoordinationCuePopoverEl
+      && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(els.editSelectionCoordinationCuePopoverEl.contains(target) || (els.editSelectionCoordinationCueButtonEl && els.editSelectionCoordinationCueButtonEl.contains(target)))
     ) {
       hideSelectionCoordinationCuePopover();
     }
     if (
-      editSelectionMetalBondingCuePopoverEl
-      && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false'
-      && !(editSelectionMetalBondingCuePopoverEl.contains(target) || (editSelectionMetalBondingCueButtonEl && editSelectionMetalBondingCueButtonEl.contains(target)))
+      els.editSelectionMetalBondingCuePopoverEl
+      && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(els.editSelectionMetalBondingCuePopoverEl.contains(target) || (els.editSelectionMetalBondingCueButtonEl && els.editSelectionMetalBondingCueButtonEl.contains(target)))
     ) {
       hideSelectionMetalBondingCuePopover();
     }
@@ -18321,10 +18321,10 @@
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    if (!editSelectionTranslateCueEl) return;
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
-    editSelectionTranslateCueEl.style.left = '0px';
-    editSelectionTranslateCueEl.style.top = '0px';
+    if (!els.editSelectionTranslateCueEl) return;
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
+    els.editSelectionTranslateCueEl.style.left = '0px';
+    els.editSelectionTranslateCueEl.style.top = '0px';
   }
 
   function focusElementDeferred(el) {
@@ -19097,10 +19097,10 @@
       selectionFragmentCuePopoverHideTimer = 0;
     }
     const applyHide = () => {
-      if (editSelectionFragmentCuePopoverEl) {
-        editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'true');
+      if (els.editSelectionFragmentCuePopoverEl) {
+        els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'true');
       }
-      if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === editSelectionFragmentCuePopoverEl) {
+      if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === els.editSelectionFragmentCuePopoverEl) {
         restorePaneHomeHelper({
           paneEl: editAddFragmentPaneEl,
           homeParent: editAddFragmentPaneHomeParent,
@@ -19119,7 +19119,7 @@
   }
 
   function showSelectionFragmentCuePopover(options = {}) {
-    if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
+    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
     if (workspaceEnabled) {
       // The legacy cue and Build share this pane. Keep one owner in Workbench.
       showBuildPopover({ query: '' });
@@ -19134,19 +19134,19 @@
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideBuildPopover();
-    if (editAddFragmentPaneEl.parentElement !== editSelectionFragmentCuePopoverEl) {
-      editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
+    if (editAddFragmentPaneEl.parentElement !== els.editSelectionFragmentCuePopoverEl) {
+      els.editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
     }
-    editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
     positionSelectionFragmentCuePopover();
     if (options.focusSearch) focusElementDeferred(editFragmentSearchEl || null);
   }
 
   function positionSelectionFragmentCuePopover() {
-    if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl) return;
+    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionFragmentCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionFragmentCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(
       1,
       Math.round(window.innerWidth || 0),
@@ -19157,8 +19157,8 @@
       Math.round(window.innerHeight || 0),
       Math.round((document.documentElement && document.documentElement.clientHeight) || 0)
     );
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionFragmentCuePopoverEl.offsetWidth || 280));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionFragmentCuePopoverEl.offsetHeight || 160));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionFragmentCuePopoverEl.offsetWidth || 280));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionFragmentCuePopoverEl.offsetHeight || 160));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19174,8 +19174,8 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
-    editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
   }
 
   function getOpenCoordinationGhostTheme(options = {}) {
@@ -19382,9 +19382,9 @@
   }
 
   function renderSelectionCoordinationCuePreviewCanvases(state) {
-    if (!editSelectionCoordinationCuePopoverEl || !state) return;
+    if (!els.editSelectionCoordinationCuePopoverEl || !state) return;
     disposeSelectionCoordinationCuePreviews();
-    const hosts = Array.from(editSelectionCoordinationCuePopoverEl.querySelectorAll('.editCoordinationCuePreview'));
+    const hosts = Array.from(els.editSelectionCoordinationCuePopoverEl.querySelectorAll('.editCoordinationCuePreview'));
     for (const host of hosts) {
       const geometryId = String(host.getAttribute('data-preview-geometry') || '').trim();
       if (!geometryId) continue;
@@ -19478,21 +19478,21 @@
   }
 
   function hideSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'true');
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    els.editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'true');
     selectionCoordinationCuePopoverRenderKey = '';
     disposeSelectionCoordinationCuePreviews();
   }
 
   function positionSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    if (!els.editSelectionCoordinationCueButtonEl || !els.editSelectionCoordinationCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionCoordinationCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionCoordinationCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionCoordinationCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionCoordinationCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionCoordinationCuePopoverEl.offsetWidth || 320));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionCoordinationCuePopoverEl.offsetHeight || 240));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionCoordinationCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionCoordinationCuePopoverEl.offsetHeight || 240));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19505,13 +19505,13 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionCoordinationCuePopoverEl.style.left = `${left}px`;
-    editSelectionCoordinationCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionCoordinationCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionCoordinationCuePopoverEl.style.top = `${top}px`;
   }
 
   function renderSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    if (els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) {
       hideSelectionCoordinationCuePopover();
@@ -19543,7 +19543,7 @@
       ].join('');
     }).join('');
     if (renderKey !== selectionCoordinationCuePopoverRenderKey) {
-      editSelectionCoordinationCuePopoverEl.innerHTML = [
+      els.editSelectionCoordinationCuePopoverEl.innerHTML = [
         '<div class="editCoordinationCueHeader">Coordination</div>',
         `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
       ].join('');
@@ -19554,18 +19554,18 @@
   }
 
   function showSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    if (!els.editSelectionCoordinationCueButtonEl || !els.editSelectionCoordinationCuePopoverEl) return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) return;
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionCoordinationCuePopover();
   }
 
   function toggleSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    if (els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       hideSelectionCoordinationCuePopover();
       return;
     }
@@ -19602,20 +19602,20 @@
   }
 
   function hideSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'true');
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    els.editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'true');
     selectionMetalBondingCuePopoverRenderKey = '';
   }
 
   function positionSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    if (!els.editSelectionMetalBondingCueButtonEl || !els.editSelectionMetalBondingCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19628,13 +19628,13 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
-    editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
   }
 
   function renderSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    if (els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
     const state = getSelectionMetalBondingCueState();
     if (!state || !state.choices.length) {
       hideSelectionMetalBondingCuePopover();
@@ -19663,7 +19663,7 @@
         '</span>',
         '</button>',
       ].join('')).join('');
-      editSelectionMetalBondingCuePopoverEl.innerHTML = [
+      els.editSelectionMetalBondingCuePopoverEl.innerHTML = [
         '<div class="editCoordinationCueHeader">Metal bond mode</div>',
         `<div class="editCoordinationCueHeaderSubtext">${escapeHtml(getElementName(state.atomZ | 0) || getElementSymbol(state.atomZ | 0) || 'Metal')}</div>`,
         `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
@@ -19674,19 +19674,19 @@
   }
 
   function showSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    if (!els.editSelectionMetalBondingCueButtonEl || !els.editSelectionMetalBondingCuePopoverEl) return;
     const state = getSelectionMetalBondingCueState();
     if (!state || !state.choices.length) return;
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover({ quiet: true });
-    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionMetalBondingCuePopover();
   }
 
   function toggleSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    if (els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       hideSelectionMetalBondingCuePopover();
       return;
     }
@@ -19891,7 +19891,7 @@
   }
 
   function renderEditSelectionTranslateCue() {
-    if (!editSelectionTranslateCueEl) return;
+    if (!els.editSelectionTranslateCueEl) return;
     if (currentMode !== MODES.EDIT) {
       hideEditSelectionTranslateCue();
       return;
@@ -19929,32 +19929,32 @@
     const buildPayloadKind = String(buildPayload && buildPayload.kind || '').trim().toLowerCase();
     const buildCueSupported = buildPayloadKind === 'atom' || buildPayloadKind === 'fragment';
     const metalBondingCueState = getSelectionMetalBondingCueState();
-    if (editSelectionTranslateCueButtonEl) {
+    if (els.editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
-      editSelectionTranslateCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
+      els.editSelectionTranslateCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
     }
-    if (editSelectionRotateCueButtonEl) {
-      editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
+    if (els.editSelectionRotateCueButtonEl) {
+      els.editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
         ? (!buildCueActive && bondSideCueMode === 'axis')
         : (!buildCueActive && effectiveMode === 'rotate');
-      window.VibeMolEditUi.setCueState(editSelectionRotateCueButtonEl, rotateActive);
+      window.VibeMolEditUi.setCueState(els.editSelectionRotateCueButtonEl, rotateActive);
       const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
-      setTooltipText(editSelectionRotateCueButtonEl, rotateTooltip);
-      editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
+      setTooltipText(els.editSelectionRotateCueButtonEl, rotateTooltip);
+      els.editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
     }
-    if (editSelectionBondOrbitCueButtonEl) {
+    if (els.editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
-      editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      window.VibeMolEditUi.setCueState(editSelectionBondOrbitCueButtonEl, active);
+      els.editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondOrbitCueButtonEl, active);
     }
-    if (editSelectionBondDistanceCueButtonEl) {
+    if (els.editSelectionBondDistanceCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
-      editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      window.VibeMolEditUi.setCueState(editSelectionBondDistanceCueButtonEl, active);
+      els.editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondDistanceCueButtonEl, active);
     }
-    if (editSelectionBondOrderCueButtonEl) {
+    if (els.editSelectionBondOrderCueButtonEl) {
       const visible = !!isBondCenterSelection;
       const order = visible && !bondCenterSelection.metalPair ? (bondCenterSelection.order | 0) : '';
       const label = visible
@@ -19962,69 +19962,69 @@
           ? getMetalBondStyleLabel(bondCenterSelection.style)
           : `bond order (${order})`)
         : 'Adjust bond order';
-      editSelectionBondOrderCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionBondOrderCueButtonEl, visible);
-      editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
+      els.editSelectionBondOrderCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondOrderCueButtonEl, visible);
+      els.editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
       const bondOrderTooltip = visible ? `Adjust ${label}` : 'Adjust bond order';
-      setTooltipText(editSelectionBondOrderCueButtonEl, bondOrderTooltip);
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', bondOrderTooltip);
+      setTooltipText(els.editSelectionBondOrderCueButtonEl, bondOrderTooltip);
+      els.editSelectionBondOrderCueButtonEl.setAttribute('aria-label', bondOrderTooltip);
     }
-    if (editSelectionMetalBondingCueButtonEl) {
+    if (els.editSelectionMetalBondingCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
-      const active = visible && editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
-      editSelectionMetalBondingCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionMetalBondingCueButtonEl, !!active);
+      const active = visible && els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      els.editSelectionMetalBondingCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionMetalBondingCueButtonEl, !!active);
       if (!visible) hideSelectionMetalBondingCuePopover();
     }
     const coordinationCueState = getSelectionCoordinationCueState();
-    if (editSelectionCoordinationCueButtonEl) {
+    if (els.editSelectionCoordinationCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
-      const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
-      editSelectionCoordinationCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionCoordinationCueButtonEl, !!active);
+      const active = visible && els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      els.editSelectionCoordinationCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionCoordinationCueButtonEl, !!active);
       if (!visible) hideSelectionCoordinationCuePopover();
     }
-    if (editSelectionAddFragmentCueButtonEl) {
+    if (els.editSelectionAddFragmentCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       const cueLabel = buildCueSupported
         ? (buildPayloadKind === 'fragment'
           ? `Build ${buildPayload.name || 'fragment'} at open site`
           : `Build ${buildPayload.symbol || buildPayload.name || 'loaded element'} at open site`)
         : 'Choose an atom or fragment in Build first';
-      editSelectionAddFragmentCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
-      setTooltipText(editSelectionAddFragmentCueButtonEl, cueLabel);
+      els.editSelectionAddFragmentCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
+      els.editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
+      els.editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
+      setTooltipText(els.editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
         hideSelectionMetalBondingCuePopover();
       }
     }
-    if (editSelectionDeleteCueButtonEl) {
-      editSelectionDeleteCueButtonEl.hidden = false;
-      window.VibeMolEditUi.setCueState(editSelectionDeleteCueButtonEl, false);
+    if (els.editSelectionDeleteCueButtonEl) {
+      els.editSelectionDeleteCueButtonEl.hidden = false;
+      window.VibeMolEditUi.setCueState(els.editSelectionDeleteCueButtonEl, false);
     }
     const positionSnapshot = getSelectionPositionSnapshot();
     editSelectionPositionUi?.sync(positionSnapshot);
     if (positionSnapshot) {
-      setTooltipText(editSelectionTranslateCueEl, '');
+      setTooltipText(els.editSelectionTranslateCueEl, '');
     } else if (isBondCenterSelection) {
-      setTooltipText(editSelectionTranslateCueEl, bondCenterSelection.metalPair
+      setTooltipText(els.editSelectionTranslateCueEl, bondCenterSelection.metalPair
         ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
         : `Bond order ${bondCenterSelection.order | 0}`);
     } else if (isBondSideSelection) {
-      setTooltipText(editSelectionTranslateCueEl, bondSideCueMode === 'distance'
+      setTooltipText(els.editSelectionTranslateCueEl, bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
         : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis'));
     } else {
-      setTooltipText(editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
+      setTooltipText(els.editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
     }
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
     if (editSelectionPositionUi?.isEditing()) return;
-    const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
-    const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
+    const badgeWidth = Math.max(40, Math.round(els.editSelectionTranslateCueEl.getBoundingClientRect().width || els.editSelectionTranslateCueEl.offsetWidth || 42));
+    const badgeHeight = Math.max(40, Math.round(els.editSelectionTranslateCueEl.getBoundingClientRect().height || els.editSelectionTranslateCueEl.offsetHeight || 42));
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || document.documentElement.clientWidth));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || document.documentElement.clientHeight));
     const margin = 12;
@@ -20041,13 +20041,13 @@
     left = Math.max(margin, Math.min(maxLeft, left));
     if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
-    editSelectionTranslateCueEl.style.left = `${left}px`;
-    editSelectionTranslateCueEl.style.top = `${top}px`;
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
-    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    els.editSelectionTranslateCueEl.style.left = `${left}px`;
+    els.editSelectionTranslateCueEl.style.top = `${top}px`;
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    if (els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionCoordinationCuePopover();
     }
-    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionMetalBondingCuePopover();
     }
   }
@@ -28474,16 +28474,16 @@
     },
     getBondSideCueState: () => ({
       mode: getEffectiveEditBondSideCueMode(),
-      rotateVisible: !!(editSelectionRotateCueButtonEl && !editSelectionRotateCueButtonEl.hidden),
-      orbitVisible: !!(editSelectionBondOrbitCueButtonEl && !editSelectionBondOrbitCueButtonEl.hidden),
-      distanceVisible: !!(editSelectionBondDistanceCueButtonEl && !editSelectionBondDistanceCueButtonEl.hidden),
+      rotateVisible: !!(els.editSelectionRotateCueButtonEl && !els.editSelectionRotateCueButtonEl.hidden),
+      orbitVisible: !!(els.editSelectionBondOrbitCueButtonEl && !els.editSelectionBondOrbitCueButtonEl.hidden),
+      distanceVisible: !!(els.editSelectionBondDistanceCueButtonEl && !els.editSelectionBondDistanceCueButtonEl.hidden),
     }),
     getBondCenterCueState: () => {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
       const resolved = getBondCenterSelectionResolved(vol);
       return {
-        visible: !!(editSelectionBondOrderCueButtonEl && !editSelectionBondOrderCueButtonEl.hidden),
+        visible: !!(els.editSelectionBondOrderCueButtonEl && !els.editSelectionBondOrderCueButtonEl.hidden),
         order: resolved ? (resolved.order | 0) : -1,
         style: resolved ? String(resolved.style || '') : '',
         metalPair: !!(resolved && resolved.metalPair),
@@ -33023,19 +33023,19 @@
         editAtomsMenuEl: els.editAtomsMenuEl,
         editAtomsMenuBodyEl: els.editAtomsMenuBodyEl,
         editAtomsMenuCurrentEl: els.editAtomsMenuCurrentEl,
-        editSelectionTranslateCueEl: editSelectionTranslateCueEl,
-        editSelectionTranslateCueButtonEl: editSelectionTranslateCueButtonEl,
-        editSelectionRotateCueButtonEl: editSelectionRotateCueButtonEl,
-        editSelectionCoordinationCueButtonEl: editSelectionCoordinationCueButtonEl,
-        editSelectionMetalBondingCueButtonEl: editSelectionMetalBondingCueButtonEl,
-        editSelectionBondOrbitCueButtonEl: editSelectionBondOrbitCueButtonEl,
-        editSelectionBondDistanceCueButtonEl: editSelectionBondDistanceCueButtonEl,
-        editSelectionBondOrderCueButtonEl: editSelectionBondOrderCueButtonEl,
-        editSelectionAddFragmentCueButtonEl: editSelectionAddFragmentCueButtonEl,
-        editSelectionDeleteCueButtonEl: editSelectionDeleteCueButtonEl,
-        editSelectionFragmentCuePopoverEl: editSelectionFragmentCuePopoverEl,
-        editSelectionCoordinationCuePopoverEl: editSelectionCoordinationCuePopoverEl,
-        editSelectionMetalBondingCuePopoverEl: editSelectionMetalBondingCuePopoverEl,
+        editSelectionTranslateCueEl: els.editSelectionTranslateCueEl,
+        editSelectionTranslateCueButtonEl: els.editSelectionTranslateCueButtonEl,
+        editSelectionRotateCueButtonEl: els.editSelectionRotateCueButtonEl,
+        editSelectionCoordinationCueButtonEl: els.editSelectionCoordinationCueButtonEl,
+        editSelectionMetalBondingCueButtonEl: els.editSelectionMetalBondingCueButtonEl,
+        editSelectionBondOrbitCueButtonEl: els.editSelectionBondOrbitCueButtonEl,
+        editSelectionBondDistanceCueButtonEl: els.editSelectionBondDistanceCueButtonEl,
+        editSelectionBondOrderCueButtonEl: els.editSelectionBondOrderCueButtonEl,
+        editSelectionAddFragmentCueButtonEl: els.editSelectionAddFragmentCueButtonEl,
+        editSelectionDeleteCueButtonEl: els.editSelectionDeleteCueButtonEl,
+        editSelectionFragmentCuePopoverEl: els.editSelectionFragmentCuePopoverEl,
+        editSelectionCoordinationCuePopoverEl: els.editSelectionCoordinationCuePopoverEl,
+        editSelectionMetalBondingCuePopoverEl: els.editSelectionMetalBondingCuePopoverEl,
         editAdaptiveAddAtomBtn: els.editAdaptiveAddAtomBtn,
         editAdaptiveSymmetryBtn: els.editAdaptiveSymmetryBtn,
         editAdaptiveSymmetryMetaEl: els.editAdaptiveSymmetryMetaEl,
