@@ -1,0 +1,7 @@
+Four obsolete edit UI cache slots have no matching markup or production creation site on either default Workbench or explicit legacy launch: editAtomsMenuEl → editAtomsMenu, editAtomsMenuBodyEl → editAtomsMenuBody, editAtomsMenuCurrentEl → editAtomsMenuCurrent, and editSelectionFragmentCuePopoverEl → editSelectionFragmentCuePopover.
+
+The tagged-base/accepted Stage 3 audit already recorded these as null. The complete DOM census confirms both layouts remain null, and their existing guards preserve behavior. They are not user-facing failures. This issue supplies an explicit 0.9.x cleanup identity for the QA known-absence inventory; absence without an issue must not be silently accepted.
+
+Remove obsolete bindings, dead guarded paths and then their cache/QA inventory entries in a separate behavior/cleanup change. Keep the current null guards during Stage 3 reference-only conversions; do not recreate the old DOM. In the refactor, check that live lookup and cached value both stay null, fail if an unexpected node appears, and retain their explicit issue-backed status. The three Atoms menu conversions still contribute to the accepted 306 → 265 let target; this issue does not change that structural scope.
+
+Evidence: tests/baselines/evidence/stage3/lookup-site-audit.json and the before-resume complete DOM census under tests/baselines/evidence/stage3/cruft-sweep/.

@@ -212,14 +212,14 @@
       },
       "originalStage": 4,
       "periodicTableDependencyReview": {
-        "status": "required during remainder/Element Colors group; all nine existing node inputs are consts outside the 43-name set",
+        "status": "Measured 19 \u2192 11 on the held Element Colors proposal; controller hand-off has not landed.",
         "module": "assets/app/js/periodic-table.js",
         "beforeExplicitDependencies": 19,
         "beforeIndividualDomDependencies": 9,
         "unchangedNonDomDependencies": 10,
         "plannedDomDependency": "els",
         "estimatedAfterExplicitDependencies": 11,
-        "actualAfterExplicitDependencies": null,
+        "actualAfterExplicitDependencies": 11,
         "domFieldsToInventory": [
           "elementColorBtn",
           "elementColorOverlay",
@@ -231,8 +231,14 @@
           "elementColorResetOne",
           "elementColorResetAll"
         ],
-        "acceptance": "Revisit deps as part of this stage and record the actual dependency count in its PR and validation evidence. A shared cache replaces the nine node inputs; retain a field-by-field creation, assignment, replacement and listener-timing audit. The estimated count is not an achieved result.",
-        "futureExtractions": "PubChem and each Stage 5 feature must consume the established panel caches instead of adding lists of individual DOM-node parameters."
+        "acceptance": "Measured hand-off must be 11 or fewer explicit inputs; held proposal is 19 to 11. Integration remains at 19 until that proposal lands. Preserve creation, assignment, replacement and listener timing.",
+        "futureExtractions": "PubChem and each Stage 5 feature must consume the established panel caches instead of adding lists of individual DOM-node parameters.",
+        "proposedAfterExplicitDependencies": 11,
+        "landingStatus": "held until dead-reference disposition settled",
+        "integratedExplicitDependencies": 19,
+        "measurementEvidence": "tests/baselines/evidence/stage3/colors-stop/source-audit.json",
+        "cruftIssue": "https://github.com/evangelistalab/vibemol/issues/14",
+        "cleanupRecount": "Removing elementColorBtn makes ungrouped 18; ten non-DOM inputs + shared els still equals 11. Reaching 10 needs another input removed or a changed counting convention."
       },
       "openIntermittents": [
         {
@@ -459,7 +465,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "Build and adaptive landed together on codex/app-js-decomposition, let 291; four remaining groups form one authorized assignment.",
+      "status": "Known-absence guard amended after complete sweep; Atoms menu resumed while Element Colors remains held.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -475,7 +481,8 @@
         "report": "tests/baselines/evidence/stage3/lookup-site-audit.md",
         "runtimeProof": "tests/baselines/evidence/stage3/pre-code-node-proof.json",
         "productionChangesBeforeAudit": false,
-        "inventoryDescription": "40 accessors + 1 alias; two controller.panel checks added separately to reach 43 node-identity assertions"
+        "inventoryDescription": "40 accessors + 1 alias; two controller.panel checks added separately to reach 43 node-identity assertions",
+        "extendedInventory": "Original 43 slots plus all nine Element Colors const references, without landing their held conversion; Workbench 47 live + 5 issue-backed absent, legacy 48 + 4."
       },
       "supersededRequestedLetReduction": {
         "before": 313,
@@ -548,7 +555,22 @@
           "historicalNodeCount": 43,
           "resultingNodeCount": 52,
           "mustMatchBridgeIds": true
-        }
+        },
+        "composition": {
+          "workbench": {
+            "live": 47,
+            "knownAbsent": 5
+          },
+          "legacy": {
+            "live": 48,
+            "knownAbsent": 4
+          }
+        },
+        "knownAbsentIssues": [
+          14,
+          15
+        ],
+        "assertion": "Every live declared cache must exist and equal its live ID. Every known-absent slot is issue-backed, must remain absent, and must retain its declared null/disconnected disposition. Assert fixed per-layout composition, not a bare 52 total."
       },
       "soakPolicy": {
         "boundary": "one soak after all sub-PRs merge into the stage branch",
@@ -613,6 +635,30 @@
             "looksSeconds": 1463.1,
             "looksMinutes": 24.38
           }
+        },
+        {
+          "order": 3,
+          "group": "editAtomsMenu*",
+          "cacheBindings": 3,
+          "dependencyCount": 4,
+          "dependencyDefinition": "3 cache inputs plus existing cacheElement helper",
+          "letBefore": 291,
+          "letAfter": 288,
+          "status": "local checks, paired UI matrix and two characterizations passed; own CI pending",
+          "elementColorsHeld": true,
+          "evidence": "tests/baselines/evidence/stage3/atoms/validation.json",
+          "localIdentityComposition": {
+            "workbench": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "legacy": {
+              "live": 48,
+              "knownAbsent": 4
+            }
+          },
+          "conversionNetAppLines": 0,
+          "userRequestedQaInfrastructureNetAppLines": 32
         }
       ],
       "remainingPanelGroupCount": 4,
@@ -652,14 +698,12 @@
       },
       "remainingAssignment": {
         "groups": [
-          "Element Colors",
           "Atoms menu",
           "Selection",
           "Symmetry/shared launcher"
         ],
         "oneAssignment": true,
         "intermediateReviews": false,
-        "identityCountFromElementColors": 52,
         "identityContexts": 8,
         "periodicControllerDependencyLimit": 11,
         "maximumGroupDependenciesExclusive": 15,
@@ -670,7 +714,61 @@
         ],
         "stopOnMaterialPresetRecurrence": true,
         "stopOnLogicChange": true,
-        "cutFrom": "pushed codex/app-js-decomposition"
+        "cutFrom": "pushed codex/app-js-decomposition",
+        "status": "Atoms local checks, paired UI matrix and two characterizations passed; own full CI conjunction pending.",
+        "stopEvidence": "tests/baselines/evidence/stage3/colors-stop/stop-report.json",
+        "heldGroup": "Element Colors",
+        "knownAbsentIssueRequired": true,
+        "identityComposition": {
+          "workbench": {
+            "live": 47,
+            "knownAbsent": 5
+          },
+          "legacy": {
+            "live": 48,
+            "knownAbsent": 4
+          }
+        },
+        "knownAbsentIssues": [
+          14,
+          15
+        ],
+        "identityCountForRemainingGroups": 52,
+        "remainingActiveGroupCount": 3,
+        "conversionLineRule": "Reference substitutions are line-neutral. Separately record the user-requested identity expansion and issue-backed absence infrastructure."
+      },
+      "domRetirementSweep": {
+        "sourceCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+        "moduleBindingsInspected": 2215,
+        "directIdCacheBindings": 322,
+        "detachedReferences": 26,
+        "detachedIds": 25,
+        "knownAbsentStageSlots": {
+          "elementColorBtn": 14,
+          "editAtomsMenuEl": 15,
+          "editAtomsMenuBodyEl": 15,
+          "editAtomsMenuCurrentEl": 15,
+          "editSelectionFragmentCuePopoverEl": 15
+        },
+        "composition": {
+          "workbench": {
+            "live": 47,
+            "knownAbsent": 5
+          },
+          "legacy": {
+            "live": 48,
+            "knownAbsent": 4
+          }
+        },
+        "elementColorsMeasuredDependencies": {
+          "before": 19,
+          "after": 11,
+          "landed": false
+        },
+        "cruftIssue": "https://github.com/evangelistalab/vibemol/issues/14",
+        "absentSlotsIssue": "https://github.com/evangelistalab/vibemol/issues/15",
+        "workbenchEditorReachable": true,
+        "remainingGroupsContainAdditionalDetachedNodes": false
       }
     },
     {

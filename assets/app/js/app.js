@@ -1144,6 +1144,9 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    editAtomsMenuEl: null,
+    editAtomsMenuBodyEl: null,
+    editAtomsMenuCurrentEl: null,
     editAdaptiveAddAtomBtn: null,
     editAdaptiveSymmetryBtn: null,
     editAdaptiveSymmetryMetaEl: null,
@@ -1182,9 +1185,6 @@
   const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
-  let editAtomsMenuEl = null;
-  let editAtomsMenuBodyEl = null;
-  let editAtomsMenuCurrentEl = null;
   let editSelectionTranslateCueEl = null;
   let editSelectionPositionUi = null;
   let editSelectionTranslateCueButtonEl = null;
@@ -7888,9 +7888,9 @@
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
-  editAtomsMenuEl = document.getElementById('editAtomsMenu');
-  editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
-  editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
+  cacheElement('editAtomsMenuEl', 'editAtomsMenu');
+  cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
+  cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
   editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
@@ -18002,13 +18002,13 @@
   }
 
   function positionEditAtomsMenu() {
-    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
   }
 
   function updateEditAtomsMenuUi() {
-    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
     if (!editAddAtomPaneEl) return;
-    if (editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === editAtomsMenuBodyEl) {
+    if (els.editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === els.editAtomsMenuBodyEl) {
       restorePaneHomeHelper({
         paneEl: editAddAtomPaneEl,
         homeParent: editAddAtomPaneHomeParent,
@@ -32938,8 +32938,27 @@
   // Only the explicit QA launch exposes private cache values. The live DOM
   // is queried by the harness, independently of these cached references.
   if (launchParams.get('qa') === '1') {
-    window.__vmqaElementCaches = Object.freeze({
-      ids: Object.freeze({
+    // Issue-backed absence is distinct from a live cache, including the four
+    // obsolete edit slots that already stayed null before this refactor.
+    const knownAbsent = Object.freeze({
+      editAtomsMenuEl: Object.freeze({ id: 'editAtomsMenu', issue: 15, cached: 'null' }),
+      editAtomsMenuBodyEl: Object.freeze({ id: 'editAtomsMenuBody', issue: 15, cached: 'null' }),
+      editAtomsMenuCurrentEl: Object.freeze({ id: 'editAtomsMenuCurrent', issue: 15, cached: 'null' }),
+      editSelectionFragmentCuePopoverEl: Object.freeze({ id: 'editSelectionFragmentCuePopover', issue: 15, cached: 'null' }),
+      ...(workspaceEnabled ? {
+        elementColorBtn: Object.freeze({ id: 'elementColorBtn', issue: 14, cached: 'detached' }),
+      } : {}),
+    });
+    const inventoryIds = Object.freeze({
+        elementColorBtn: 'elementColorBtn',
+        elementColorOverlay: 'elementColorOverlay',
+        elementColorClose: 'elementColorClose',
+        periodicTableViewport: 'periodicTableViewport',
+        periodicTableCanvas: 'periodicTableCanvas',
+        elementColorName: 'elementColorName',
+        elementColorPicker: 'elementColorPicker',
+        elementColorResetOne: 'elementColorResetOne',
+        elementColorResetAll: 'elementColorResetAll',
         canvasAdaptiveMenuEl: 'displayWindowAdaptiveMenu',
         measurementsPanel: 'measurementsPanel',
         calculationsPanel: 'subspacePanel',
@@ -32983,14 +33002,27 @@
         editSymmetryApplyBtnEl: 'editSymmetryApplyBtn',
         editSymmetryCancelBtnEl: 'editSymmetryCancelBtn',
         editSymmetryAutoBtnEl: 'editSymmetryAutoBtn',
-      }),
+    });
+    window.__vmqaElementCaches = Object.freeze({
+      ids: Object.freeze(Object.fromEntries(Object.entries(inventoryIds)
+        .filter(([name]) => !Object.hasOwn(knownAbsent, name)))),
+      knownAbsent,
       readNodes: () => ({
+        elementColorBtn: elementColorBtn,
+        elementColorOverlay: elementColorOverlay,
+        elementColorClose: elementColorClose,
+        periodicTableViewport: periodicTableViewport,
+        periodicTableCanvas: periodicTableCanvas,
+        elementColorName: elementColorName,
+        elementColorPicker: elementColorPicker,
+        elementColorResetOne: elementColorResetOne,
+        elementColorResetAll: elementColorResetAll,
         canvasAdaptiveMenuEl: canvasAdaptiveMenuEl,
         measurementsPanel: measurementsPanel.panel,
         calculationsPanel: calculationsPanel.panel,
-        editAtomsMenuEl: editAtomsMenuEl,
-        editAtomsMenuBodyEl: editAtomsMenuBodyEl,
-        editAtomsMenuCurrentEl: editAtomsMenuCurrentEl,
+        editAtomsMenuEl: els.editAtomsMenuEl,
+        editAtomsMenuBodyEl: els.editAtomsMenuBodyEl,
+        editAtomsMenuCurrentEl: els.editAtomsMenuCurrentEl,
         editSelectionTranslateCueEl: editSelectionTranslateCueEl,
         editSelectionTranslateCueButtonEl: editSelectionTranslateCueButtonEl,
         editSelectionRotateCueButtonEl: editSelectionRotateCueButtonEl,

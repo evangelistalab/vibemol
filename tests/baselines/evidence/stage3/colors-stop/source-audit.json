@@ -1,0 +1,158 @@
+{
+  "baseCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "group": "Element Colors",
+  "bindingCount": 9,
+  "inventory": [
+    {
+      "name": "elementColorBtn",
+      "id": "elementColorBtn",
+      "queryLine": 6933,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorOverlay",
+      "id": "elementColorOverlay",
+      "queryLine": 6934,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorClose",
+      "id": "elementColorClose",
+      "queryLine": 6935,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "periodicTableViewport",
+      "id": "periodicTableViewport",
+      "queryLine": 6936,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "periodicTableCanvas",
+      "id": "periodicTableCanvas",
+      "queryLine": 6937,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorName",
+      "id": "elementColorName",
+      "queryLine": 6938,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorPicker",
+      "id": "elementColorPicker",
+      "queryLine": 6939,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorResetOne",
+      "id": "elementColorResetOne",
+      "queryLine": 6940,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    },
+    {
+      "name": "elementColorResetAll",
+      "id": "elementColorResetAll",
+      "queryLine": 6941,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "kind": "const DOM input"
+    }
+  ],
+  "identityCountBefore": 43,
+  "identityCountAfter": 52,
+  "dependenciesBefore": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "elementColorBtn",
+    "elementColorOverlay",
+    "elementColorClose",
+    "periodicTableViewport",
+    "periodicTableCanvas",
+    "elementColorName",
+    "elementColorPicker",
+    "elementColorResetOne",
+    "elementColorResetAll"
+  ],
+  "dependenciesAfter": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "els"
+  ],
+  "dependencyCountBefore": 19,
+  "dependencyCountAfter": 11,
+  "appChanges": "Nine const DOM registrations, nine els slots, controller hand-off and matching bridge.ids/readNodes entries only.",
+  "periodicFunctionBodiesExactAfterLexicalSubstitution": true,
+  "periodicFunctionsAudited": 18,
+  "periodicFunctionsAffected": 9,
+  "moduleLexicalReferences": 40,
+  "appMetrics": {
+    "before": {
+      "lines": 33037,
+      "letDeclarations": 291,
+      "functionDeclarations": 1181,
+      "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+    },
+    "after": {
+      "lines": 33056,
+      "letDeclarations": 291,
+      "functionDeclarations": 1181,
+      "sha256": "6b05f5be37483142b7806f85f37ebeeb71dfca3f327780040db3dcf3834ddcfa"
+    }
+  },
+  "periodicMetrics": {
+    "before": {
+      "lines": 421,
+      "letDeclarations": 0,
+      "functionDeclarations": 1,
+      "sha256": "7f33ab422368e1026d8c686beadba902d132271aec6bf1a06d4267def642b374"
+    },
+    "after": {
+      "lines": 413,
+      "letDeclarations": 0,
+      "functionDeclarations": 1,
+      "sha256": "583b9ea9445082d6b35bece9d4c23bdc5f3990bb2e815b821351f02e586ef289"
+    }
+  },
+  "appLineGrowthBreakdown": {
+    "cacheSlots": 9,
+    "bridgeIds": 9,
+    "bridgeReads": 9,
+    "controllerArguments": -8,
+    "net": 19
+  },
+  "letUnchanged": true
+}
