@@ -434,7 +434,8 @@
       "--enable-unsafe-swiftshader"
     ],
     "launchWrapperSha256": "e25aadca19273aa67144aed9ae983c4b99d9ebdfcdf4441964f95a9b751ade01",
-    "launchWrapperChangesApplicationJavaScript": false
+    "launchWrapperChangesApplicationJavaScript": false,
+    "executionLocation": "local"
   },
   "openLooksIntermittent": {
     "selector": "#appearanceMaterialPreset",
@@ -444,5 +445,20 @@
     "scenarioRoutingUnchanged": true,
     "observedThisFullRun": false,
     "passingRunClosesRisk": false
+  },
+  "baselineComparison": "local 35/2/37 (historical), CI 34/3/37",
+  "ci": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+  },
+  "requiredCiGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "environment": "CI",
+    "satisfied": false
   }
 }

@@ -222,7 +222,23 @@
         "failed": 2,
         "total": 37,
         "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-        "supersedesHistoricalCounts": true
+        "supersedesHistoricalCounts": true,
+        "environment": "local",
+        "comparison": "local 35/2/37 (historical), CI 34/3/37",
+        "ci": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "environment": "CI",
+          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+        },
+        "requiredCiGate": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "environment": "CI",
+          "satisfied": false
+        }
       }
     },
     "failedEntryPointCount": 14,
@@ -263,18 +279,37 @@
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
     "plan": "tests/baselines/browser-suite-repair-plan.json",
     "target": {
-      "passed": 35,
-      "failed": 2,
+      "passed": 34,
+      "failed": 3,
       "total": 37
     },
     "separateExtractionPR": true,
     "beforeElementCacheStage": 3,
-    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "gateEnvironment": "CI",
+    "ciGateSatisfied": false,
+    "comparison": "local 35/2/37 (historical), CI 34/3/37"
   },
   "currentBrowserBaseline": {
     "passed": 35,
     "failed": 2,
     "total": 37,
-    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   }
 }

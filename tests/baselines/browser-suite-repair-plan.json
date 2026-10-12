@@ -1,11 +1,20 @@
 {
   "issue": "https://github.com/evangelistalab/vibemol/issues/4",
-  "status": "validated on codex/browser-suite-repair; dedicated PR pending merge before Stage 3 opens",
+  "status": "PR #7 merged with local evidence; issue #4 reopened for CI-only smoke and edit picking failures. Stage 3 is held.",
   "release": "0.10.0 refactor preparation",
   "currentBaseline": {
     "passed": 35,
     "failed": 2,
-    "total": 37
+    "total": 37,
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    }
   },
   "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
   "delivery": "One dedicated PR, separate from every extraction; PR description names the intentional changes tracked by stale assertions",
@@ -16,19 +25,27 @@
       "category": "stale assertions about intentional changes",
       "repairs": [
         {
-          "suites": ["build_panel.py", "looks.py"],
+          "suites": [
+            "build_panel.py",
+            "looks.py"
+          ],
           "trackedChange": "0.9.2 scene-contents-dependent default Edit tool: Build for empty scenes, Transform for loaded structures",
           "repair": "Assert the intended initial tool/panel state; explicitly choose Build before testing Build-only bond-order/H guards",
           "citation": "https://github.com/evangelistalab/vibemol/commit/5f6a3909a8ec5e88e7b60dc0a3412e4a8dcda054"
         },
         {
-          "suites": ["properties_inspector.py", "appearance_controls.py"],
+          "suites": [
+            "properties_inspector.py",
+            "appearance_controls.py"
+          ],
           "trackedChange": "Intentional first-Measure introduction of the Measurements panel",
           "repair": "Keep the exact complete Workbench layout comparison with only Measurements open/activeRight changes, and check Properties Look tab exactly in every mode; Appearance is the same main/assertion alias",
           "citation": "https://github.com/evangelistalab/vibemol/commit/4bdc820838139e2e2bd19f74ae64ea09f4a97478"
         },
         {
-          "suites": ["style_studio.py"],
+          "suites": [
+            "style_studio.py"
+          ],
           "trackedChange": "OrbitControls spherical-conversion float drift of approximately 1.4e-13",
           "repair": "Use a documented numeric tolerance while retaining projection, target/up, topology and Look-isolation checks",
           "citation": "https://github.com/evangelistalab/vibemol/issues/4",
@@ -58,33 +75,55 @@
     {
       "priority": 3,
       "category": "settle races",
-      "suites": ["figure.py", "smoke.py", "edit_picking.py", "measurements.py"],
+      "suites": [
+        "figure.py",
+        "smoke.py",
+        "edit_picking.py",
+        "measurements.py"
+      ],
       "repair": "Replace fixed sleeps with waits on a presented frame and the required UI/persistence state; use a null-safe saved-layout poll for measurements",
-      "evidence": ["tests/baselines/evidence/stage0/semantic-proofs.json", "tests/baselines/evidence/stage0/probes/smoke.json", "tests/baselines/characterize-failures.json"]
+      "evidence": [
+        "tests/baselines/evidence/stage0/semantic-proofs.json",
+        "tests/baselines/evidence/stage0/probes/smoke.json",
+        "tests/baselines/characterize-failures.json"
+      ]
     }
   ],
   "acceptance": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 34,
+    "failed": 3,
     "total": 37,
     "remainingFailures": [
       {
         "suite": "axis_gizmo.py",
-        "defect": "Escape focus handoff; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "defect": "Escape routing; preserve the 0.9.2/0.9.3 capture-phase ladder"
       },
       {
         "suite": "mode_consistency.py",
-        "defect": "Legacy selection-card collision with Coordinates controls"
+        "defect": "Selection card overlays Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "historicalFailureLine": 4525,
+        "currentCallSite": {
+          "suite": "smoke.py",
+          "line": 4531,
+          "function": "main"
+        },
+        "defect": "#11: vibration crop overlay reopens after export",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ],
     "productionBehaviorChanges": false,
     "extractionChanges": false,
     "noWeakenedDefectAssertions": true,
     "attemptEverySuite": "Run and report all 37 make test-e2e browser-suite entry points, including periodic_table.py; fail-fast make output cannot prove downstream results. Characterization remains an additional 102-capture gate.",
-    "evidence": "Committed concise logs/results and ignored raw browser artifacts"
+    "evidence": "Committed concise logs/results and ignored raw browser artifacts",
+    "environment": "CI",
+    "gateSatisfied": false
   },
   "rationale": "Seven of eight cheap stale-assertion/targeting repairs exercise panel, Looks and Properties code. These suites must be green before Stage 3 element-cache consolidation (original Stage 4) rewrites their bindings. The cache stage precedes PubChem and trajectory/symmetry/vibration, remains split by panel and needs the heaviest manual verification.",
-  "executionOrder": "Issue #4 repair → Stage 3 element-cache consolidation → Stage 4 PubChem → Stage 5 trajectory/symmetry/vibration",
+  "executionOrder": "Issue #4 repair \u2192 Stage 3 element-cache consolidation \u2192 Stage 4 PubChem \u2192 Stage 5 trajectory/symmetry/vibration",
   "openIntermittent": "The unresolved looks.py #appearanceMaterialPreset timeout remains open against the cache stage in refactor-stage-risk.json. Passing repair results do not explain or close it; recurrence during cache work requires a regression probe.",
   "hardConstraints": {
     "baseBranch": "codex/app-js-decomposition",
@@ -100,7 +139,10 @@
     {
       "suite": "floating_panels.py",
       "finding": "Exact catalog count 25 predates Subspace/Atomic orbitals and Figure; inventory is 28, all exercised by the unchanged movement checks",
-      "citations": ["727a8d949f1d7b11212443c592083ce7441b1f06", "7df01b40435f6f37c073fd2c1dd74e0d7dc11a8b"]
+      "citations": [
+        "727a8d949f1d7b11212443c592083ce7441b1f06",
+        "7df01b40435f6f37c073fd2c1dd74e0d7dc11a8b"
+      ]
     },
     {
       "suite": "looks.py",
@@ -114,5 +156,18 @@
     "failed": 14,
     "total": 37
   },
-  "validation": "tests/baselines/browser-suite-repair-validation.json"
+  "validation": "tests/baselines/browser-suite-repair-validation.json",
+  "ciBrowserFollowup": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "pr": "https://github.com/evangelistalab/vibemol/pull/10",
+    "evidence": "tests/baselines/evidence/browser-ci-followup/validation.json",
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+    "editPicking": "Full suite passes after unbounded wait for applied/presented viewport; assertions unchanged",
+    "smoke": "Correct unbounded wait rejects terminal new crop selection; stopped at earlier trajectory variant; vibration still requires full CI verification",
+    "videoDefect": "https://github.com/evangelistalab/vibemol/issues/11",
+    "renderer": "Both CI suites use software SwiftShader",
+    "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
+    "gateMet": false,
+    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37"
+  }
 }

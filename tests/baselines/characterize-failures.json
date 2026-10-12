@@ -686,7 +686,23 @@
     "failed": 2,
     "total": 37,
     "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
-    "supersedesHistoricalCounts": true
+    "supersedesHistoricalCounts": true,
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   },
   "scheduledRepair": "browser-suite-repair-plan.json",
   "preRepairBrowserBaseline": {

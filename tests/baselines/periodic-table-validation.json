@@ -124,8 +124,8 @@
     "separatePR": true,
     "deadline": "Land before Stage 3 element-cache consolidation (original Stage 4) opens",
     "target": {
-      "passed": 35,
-      "failed": 2,
+      "passed": 34,
+      "failed": 3,
       "total": 37
     },
     "remainingFailures": [
@@ -134,7 +134,10 @@
     ],
     "blocksStage2": false,
     "beforeElementCacheStage": 3,
-    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "gateEnvironment": "CI",
+    "ciGateSatisfied": false,
+    "comparison": "local 35/2/37 (historical), CI 34/3/37"
   },
   "runtimeVersion": "0.9.5",
   "sessionFormatVersion": 1,
@@ -159,6 +162,22 @@
     "passed": 35,
     "failed": 2,
     "total": 37,
-    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   }
 }

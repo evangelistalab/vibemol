@@ -1,0 +1,68 @@
+[
+  {
+    "prefix": "trajectory",
+    "pointerDown": {
+      "mode": "recording",
+      "hidden": "false",
+      "glyph": "stop_circle"
+    },
+    "finishedWhileHeld": {
+      "mode": "idle",
+      "hidden": "true",
+      "glyph": "videocam"
+    },
+    "afterPointerUp": {
+      "mode": "selecting",
+      "hidden": "false",
+      "glyph": "videocam_off"
+    },
+    "nativeDownloads": 1,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)",
+    "provenance": {
+      "os": "Darwin",
+      "osRelease": "25.6.0",
+      "architecture": "arm64",
+      "browserName": "chromium",
+      "browserVersion": "145.0.7632.6",
+      "rendererClass": "hardware",
+      "nativeMediaRecorder": true,
+      "qaFlag": false,
+      "interceptedSource": false,
+      "recorderCaptureStreamOrDownloadStubs": false,
+      "normalFileInput": true
+    }
+  },
+  {
+    "prefix": "vibration",
+    "pointerDown": {
+      "mode": "recording",
+      "hidden": "false",
+      "glyph": "stop_circle"
+    },
+    "finishedWhileHeld": {
+      "mode": "idle",
+      "hidden": "true",
+      "glyph": "videocam"
+    },
+    "afterPointerUp": {
+      "mode": "selecting",
+      "hidden": "false",
+      "glyph": "videocam_off"
+    },
+    "nativeDownloads": 2,
+    "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)",
+    "provenance": {
+      "os": "Darwin",
+      "osRelease": "25.6.0",
+      "architecture": "arm64",
+      "browserName": "chromium",
+      "browserVersion": "145.0.7632.6",
+      "rendererClass": "hardware",
+      "nativeMediaRecorder": true,
+      "qaFlag": false,
+      "interceptedSource": false,
+      "recorderCaptureStreamOrDownloadStubs": false,
+      "normalFileInput": true
+    }
+  }
+]

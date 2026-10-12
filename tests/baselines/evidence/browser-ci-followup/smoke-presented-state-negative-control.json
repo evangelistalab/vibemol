@@ -1,0 +1,6 @@
+{
+  "oldAsyncPredicateReturnedFalseWithoutWaiting": true,
+  "newFalsePredicateRejected": true,
+  "newTruePredicatePassed": true,
+  "browserVersion": "153.0.8010.12"
+}

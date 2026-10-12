@@ -1,0 +1,13 @@
+{
+  "preStageRun": "https://github.com/evangelistalab/vibemol/actions/runs/38077486777",
+  "originalPr8Run": "https://github.com/evangelistalab/vibemol/actions/runs/38088035783",
+  "preStageCaptureCount": 102,
+  "originalPr8CaptureCount": 102,
+  "structuredCapturesIdentical": true,
+  "firstDifference": null,
+  "captureFileSha256": {
+    "preStage": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+    "originalPr8": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274"
+  },
+  "scope": "Read-only comparison of the CI-uploaded first-run payloads; does not change or waive the tagged goldens, substitute for a second CI run, or supply the 37 browser-suite results."
+}

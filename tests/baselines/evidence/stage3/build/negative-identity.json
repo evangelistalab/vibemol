@@ -1,0 +1,28 @@
+{
+  "liveDomContractUnchanged": true,
+  "identityInvariantRejectedReplacement": true,
+  "failure": "Page.evaluate: Error: Element cache identity failed after DOM replacement: editBuildSearchEl (#editBuildSearch)",
+  "report": {
+    "supported": true,
+    "checks": {
+      "QA initialization": 1,
+      "DOM replacement": 159,
+      "panel transition: editSelectionCoordinationCuePopover": 4,
+      "panel transition: editSelectionMetalBondingCuePopover": 4,
+      "panel transition: editSelectionTranslateCue": 4,
+      "panel transition: displayWindowAdaptiveMenu": 2,
+      "panel transition: editAddAtomOperatorPanel": 2,
+      "panel transition: editAddMoleculeOperatorPanel": 2,
+      "panel transition: bondOrderPopup": 2,
+      "mode switch": 4,
+      "presented checkpoint": 1,
+      "negative control": 1
+    },
+    "failures": [
+      "Element cache identity failed after DOM replacement: editBuildSearchEl (#editBuildSearch)",
+      "Element cache identity failed after negative control: editBuildSearchEl (#editBuildSearch)"
+    ],
+    "nodeCount": 43
+  },
+  "pageErrors": []
+}

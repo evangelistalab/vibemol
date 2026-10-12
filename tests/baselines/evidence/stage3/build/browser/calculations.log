@@ -1,0 +1,5 @@
+[calculations] viewport picking, shell/component states, pi planes, automatic/manual totals, RHF/GHF output, sessions, surface restoration and responsive bar: passed
+[calculations] atom-only selection, same-row group popup, mixed shell states, planes, movement, dismissal, sessions and compact layout: passed
+[calculations] ROHF ms control, spin validation, input preparation, reference switching and session restoration: passed
+[calculations] transition-metal single/group double shells, individual d components, counts and API limits: passed
+[calculations] C/S/Fe expanded menus, next-shell components, matching basis/input, session round-trip and compact metal menu: passed

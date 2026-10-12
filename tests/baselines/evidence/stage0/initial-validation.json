@@ -180,7 +180,23 @@
     "passed": 35,
     "failed": 2,
     "total": 37,
-    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   },
-  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the current 35/2 of 37 browser-repair baseline. Historical outcomes are retained as evidence, not current counts."
+  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the local 35/2/37 browser-repair evidence; CI remains 33/4/37 and the CI 34/3/37 gate is not met. Historical outcomes are retained as evidence, not current counts."
 }

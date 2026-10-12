@@ -1,6 +1,6 @@
 {
   "issue": "https://github.com/evangelistalab/vibemol/issues/4",
-  "status": "validated on the repair branch; dedicated PR must merge before Stage 3 opens",
+  "status": "PRs #7 and #10 merged. Corrected CI gate 34/3/37 explicitly accepts production defect #11 alongside axis-gizmo and mode-consistency. Fresh complete manifest CI confirmation pending; historical local 35/2/37 is not the gate.",
   "branch": "codex/browser-suite-repair",
   "prBaseBranch": "codex/app-js-decomposition",
   "preRepairHead": "da1e5520a89dff94d7778f85c7a0077e233b1ec2",
@@ -124,7 +124,23 @@
         "function": "coordinate_row_actions"
       }
     ],
-    "fullMakeTestE2eGreen": false
+    "fullMakeTestE2eGreen": false,
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
   },
   "characterization": {
     "runs": 2,
@@ -172,5 +188,18 @@
     "pubchem": 4,
     "features": 5
   },
-  "rawArtifacts": "out/test-artifacts/browser-repair (ignored)"
+  "rawArtifacts": "out/test-artifacts/browser-repair (ignored)",
+  "ciBrowserFollowup": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "pr": "https://github.com/evangelistalab/vibemol/pull/10",
+    "evidence": "tests/baselines/evidence/browser-ci-followup/validation.json",
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+    "editPicking": "Full suite passes after unbounded wait for applied/presented viewport; assertions unchanged",
+    "smoke": "Correct unbounded wait rejects terminal new crop selection; stopped at earlier trajectory variant; vibration still requires full CI verification",
+    "videoDefect": "https://github.com/evangelistalab/vibemol/issues/11",
+    "renderer": "Both CI suites use software SwiftShader",
+    "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
+    "gateMet": false,
+    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37"
+  }
 }

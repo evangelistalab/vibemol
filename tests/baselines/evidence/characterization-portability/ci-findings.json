@@ -1,0 +1,82 @@
+{
+  "productionJsChanged": false,
+  "existingBrowserAssertionsChanged": false,
+  "acceptedFailureSetChanged": false,
+  "ciGate": "Corrected gate: CI 34 passing / 3 failing / 37, accepting axis-gizmo Escape routing, mode-consistency selection-card collision, smoke.py:4525 (#11 crop overlay after export). Original raw findings remain historical. PR #10 fixes applied-viewport synchronization; #11 remains production code out of refactor scope. Confirm a fresh complete run before cache groups open.",
+  "videoStop": {
+    "status": "open finding; no repair included",
+    "observations": [
+      {
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959883",
+        "suite": "tests/e2e/smoke.py",
+        "firstFailureLine": 4389,
+        "export": "trajectory",
+        "failureOverlayAttributes": {
+          "id": "trajectoryVideoCropOverlay",
+          "class": "vm-canvas-video-export__overlay",
+          "aria-hidden": "false",
+          "data-state": "selecting"
+        },
+        "observed": "The second download condition succeeded; the subsequent overlay-hidden condition timed out. No page or console errors were captured."
+      },
+      {
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
+        "suite": "tests/e2e/smoke.py",
+        "firstFailureLine": 4525,
+        "export": "vibration",
+        "failureOverlayAttributes": {
+          "id": "vibrationVideoCropOverlay",
+          "class": "vm-canvas-video-export__overlay",
+          "aria-hidden": "false",
+          "data-state": "selecting"
+        },
+        "observed": "The second download condition succeeded; the subsequent overlay-hidden condition timed out. No page or console errors were captured."
+      },
+      {
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+        "suite": "tests/e2e/smoke.py",
+        "firstFailureLine": 4525,
+        "export": "vibration",
+        "failureOverlayAttributes": {
+          "id": "vibrationVideoCropOverlay",
+          "class": "vm-canvas-video-export__overlay",
+          "aria-hidden": "false",
+          "data-state": "selecting"
+        },
+        "observed": "The same vibration Stop failure occurs on PR #8; the pre-Build source also fails here."
+      }
+    ],
+    "source": "tests/e2e/smoke.py:4383-4389 and 4519-4525; assets/app/js/trajectory-video.js:729-753",
+    "inference": "The controller sets selecting only when the save button opens crop selection. A recording that completes before the delayed Stop click returns the controller to idle; that click then opens crop selection. The screenshot state is consistent with this action race. Increasing the overlay-hidden wait cannot close the newly opened crop.",
+    "scope": "Pre-Build-cache source, app SHA256 481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6. The four Build conversions are absent on this source."
+  },
+  "resizePicking": {
+    "status": "open intermittent finding; no repair included",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959883",
+    "result": "Unexpected failure in the cancelled diagnostic run at edit_picking.py:145, called by slab:298 for a viewport resize; edit_picking.py passed in the completed current run 38100061231.",
+    "source": "tests/e2e/edit_picking.py:140-145, 298; assets/app/js/app.js:1248-1300, 23679-23688 (pre-Build cache source)",
+    "observation": "invalidates() invokes set_viewport_size then immediately queries. It does not wait for the asynchronous resize/ResizeObserver handlers or a presented frame. The cached hit equals a freshly computed hit, but the expected uncached-work counter remains zero.",
+    "discriminator": "A separate repair must wait for presented viewport/camera dimensions, keep the original work-count assertion, and stop/report a stale-state defect if that correct wait fails. No sleep, retry, deadline escalation or relaxed assertion.",
+    "currentPr8Result": {
+      "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+      "suite": "tests/e2e/edit_picking.py",
+      "line": 145,
+      "function": "invalidates",
+      "calledFrom": "slab:298, viewport resize",
+      "status": "unexpected failure; remains outside accepted defects"
+    }
+  },
+  "supersededRun": {
+    "status": "cancelled after 28 completed suites, 24 passing / 4 failing; not a complete validation run",
+    "reason": "Superseded by current PR #9 and #8 runs; cancelled to release otherwise inaccessible logs and diagnose the unexpectedly long sweep."
+  },
+  "pr8": {
+    "testedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+    "passed": 33,
+    "failed": 4,
+    "total": 37,
+    "unmerged": true,
+    "BuildProductionSourceUnchangedFromApprovedHead": true,
+    "all37AssertionsUnchanged": true
+  }
+}

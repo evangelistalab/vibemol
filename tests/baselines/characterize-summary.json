@@ -22,12 +22,47 @@
       "functionDeclarations": 1197,
       "letDeclarations": 313,
       "constDeclarations": 595
+    },
+    "captureProvenance": {
+      "os": "Linux",
+      "osRelease": "6.17.0-1022-azure",
+      "architecture": "x86_64",
+      "browserName": "chromium",
+      "browserVersion": "153.0.8010.12",
+      "ci": {
+        "provider": "GitHub Actions",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+        "runAttempt": "1",
+        "runnerImage": "ubuntu24"
+      }
     }
   },
   "captures": 102,
+  "comparison": {
+    "floatLeaves": {
+      "relTol": 1e-09,
+      "absTol": 1e-12
+    },
+    "exact": [
+      "types",
+      "integers",
+      "booleans",
+      "strings",
+      "keys",
+      "lengths",
+      "structure"
+    ],
+    "reason": "The complete CI/local audit found only 32 one- or four-ULP bond-z differences: maximum absolute 4.235164736271502e-22, relative 7.82384323679457e-16. The tolerance accommodates floating-point platform drift while rejecting a 1e-6 change.",
+    "summary": "Goldens are compared with tolerance for float leaves and are expected to hold across machines; all other leaves, types and structure remain exact."
+  },
   "determinism": {
     "runs": 2,
-    "identical": true
+    "identical": true,
+    "exact": true,
+    "captureSha256PerRun": [
+      "5703d85b81458e52b4e9db57e02038a5844442fcb89b3c73095f5435f5742bad",
+      "5703d85b81458e52b4e9db57e02038a5844442fcb89b3c73095f5435f5742bad"
+    ]
   },
   "api": {
     "VibeMolAppearanceEditor": [
@@ -749,7 +784,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "2a636346dd90bede1008de971e537bebe3da6870223f73bb7da92156c4074388",
+  "goldenSha256": "e449765fe429fb799fe665693ef8be711ebbcc0e66f1b11846a666b2be8bb8a5",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []

@@ -1,0 +1,406 @@
+{
+  "appSourceInGateRun": {
+    "commit": "d2fb002188c8324ac9d4dc1524818b4201d5c0bc",
+    "sha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+    "moduleLetCount": 306,
+    "identitySweepPresent": false
+  },
+  "buildIdentityCi": {
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+    "testedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+    "nodeChecksPerSweep": 43,
+    "contextsPerRun": 4,
+    "runs": 2,
+    "minimumCountsPassed": true,
+    "contexts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5334,
+          "session restore": 1,
+          "panel transition": 1127
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5444,
+          "session restore": 1,
+          "panel transition": 1136
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2982,
+          "session restore": 1,
+          "panel transition": 764
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3093,
+          "session restore": 1,
+          "panel transition": 764
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5330,
+          "session restore": 1,
+          "panel transition": 1100
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5446,
+          "session restore": 1,
+          "panel transition": 1124
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2985,
+          "session restore": 1,
+          "panel transition": 749
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 43,
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3091,
+          "session restore": 1,
+          "panel transition": 731
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "observedModeChecks": 6
+      }
+    ]
+  },
+  "workflowGate": {
+    "counts": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "matchesAcceptedBaseline": true,
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
+    "failureWorkflows": [
+      {
+        "suite": "tests/e2e/axis_gizmo.py",
+        "workflow": {
+          "id": "escape-canvas-focus"
+        }
+      },
+      {
+        "suite": "tests/e2e/smoke.py",
+        "workflow": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "trajectory"
+        }
+      },
+      {
+        "suite": "tests/e2e/mode_consistency.py",
+        "workflow": {
+          "id": "coordinates-delete-selection-card"
+        }
+      }
+    ]
+  },
+  "mergeStatus": "#12 is authorized on its own re-evaluated CI run. The separate old Build identity run is historical evidence only, not combined merge proof. Rebase #8 onto merged #12 and obtain both gates in one CI run on that candidate.",
+  "sourceComparison": {
+    "stageBranchAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+    "pr8AppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+    "approvedPr8AppByteIdentical": true,
+    "productionDifference": "Only four approved Build cache conversions and helper, plus the explicitly guarded QA bridge. No other production JS differs except the approved QA observer module.",
+    "existingFunctionDeclarationsExactAfterReferenceSubstitution": true,
+    "existingFunctionDeclarationsChecked": 1190,
+    "affectedFunctions": 11,
+    "letAfterPr12": 306,
+    "letAfterPr8": 302,
+    "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/build-source-audit.json"
+  },
+  "identityChecks": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100155036",
+    "testedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+    "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
+    "contexts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5334,
+          "session restore": 1,
+          "panel transition": 1127
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5444,
+          "session restore": 1,
+          "panel transition": 1136
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2982,
+          "session restore": 1,
+          "panel transition": 764
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3093,
+          "session restore": 1,
+          "panel transition": 764
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5330,
+          "session restore": 1,
+          "panel transition": 1100
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5446,
+          "session restore": 1,
+          "panel transition": 1124
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2985,
+          "session restore": 1,
+          "panel transition": 749
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3091,
+          "session restore": 1,
+          "panel transition": 731
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "allMinimaPassed": true
+      }
+    ],
+    "totalFiringsAcrossEightContexts": {
+      "presented checkpoint": 284,
+      "mode switch": 1668,
+      "DOM replacement": 33705,
+      "session restore": 8,
+      "panel transition": 7495
+    },
+    "allMinimaPassed": true,
+    "nodeIdentitiesPerFiring": 43,
+    "rawEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/build-ci-cache-identity.json"
+  }
+}
