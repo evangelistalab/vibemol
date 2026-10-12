@@ -337,7 +337,13 @@ def require_element_cache_result(result, inject):
 
 def assert_element_cache_exercise(identity, modes, panels):
     """Require actual checkpoint and observer firings in each fresh context."""
-    assert identity['supported'] and identity['nodeCount'] == 43, identity
+    expected = {'live': 47, 'knownAbsent': 5} if len(modes) == 4 else {'live': 48, 'knownAbsent': 4}
+    assert identity['supported'] and identity['composition'] == expected, identity
+    assert identity['nodeCount'] == sum(expected.values()), identity
+    absent = identity['knownAbsent']
+    assert len(absent) == expected['knownAbsent'], identity
+    assert all(type(entry.get('issue')) is int and entry['issue'] > 0
+               for entry in absent.values()), identity
     assert not identity['failures'], identity
     checks = identity['checks']
     counts = {reason: checks.get(reason, 0) for reason in (
@@ -391,7 +397,7 @@ def verify_element_caches(browser, url, inject):
                 for mode in modes:
                     page.locator('#mode' + mode + 'Btn').click()
                     page.evaluate('() => __vmqa.settle()')
-                    assert page.evaluate("() => __vmqa.assertElementCacheIdentity('mode switch').count") == 43
+                    assert page.evaluate("() => __vmqa.assertElementCacheIdentity('mode switch').count") == 52
                 ids = page.evaluate('''() => [...new Set([
                     ...Object.values(VibeMolWorkbenchHost.windows.ids), 'inspector',
                     'measurementsPanel', 'subspacePanel', 'figurePanel', 'buildPanel', 'symmetryPanel'
@@ -405,11 +411,11 @@ def verify_element_caches(browser, url, inject):
                                       {'panel': panel, 'opened': opened})
                         page.evaluate('() => __vmqa.settle()')
                         assert page.evaluate('(reason) => __vmqa.assertElementCacheIdentity(reason).count',
-                                             ('panel open: ' if opened else 'panel close: ') + panel) == 43
+                                             ('panel open: ' if opened else 'panel close: ') + panel) == 52
                 session = page.evaluate('() => VibeMolSession.export()')
                 page.evaluate('doc => VibeMolSession.import(doc)', session)
                 page.evaluate('() => __vmqa.settle()')
-                assert page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore').count") == 43
+                assert page.evaluate("() => __vmqa.assertElementCacheIdentity('session restore').count") == 52
                 identity = page.evaluate('() => __vmqa.elementCacheReport()')
                 exercise = assert_element_cache_exercise(identity, modes, ids)
                 launch, theme = 'legacy' if legacy else 'workbench', 'dark' if dark else 'light'

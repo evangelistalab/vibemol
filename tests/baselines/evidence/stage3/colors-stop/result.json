@@ -1,0 +1,242 @@
+[
+  {
+    "source": "pre-group",
+    "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+    "observationOnly": true,
+    "preGroupPrivateReadExportInjected": true,
+    "pageErrors": [],
+    "qaInitialized": true,
+    "inventorySize": 43,
+    "nodes": [
+      {
+        "name": "elementColorBtn",
+        "same": false,
+        "cachedConnected": false,
+        "liveConnected": null,
+        "cachedTag": "BUTTON",
+        "liveTag": null,
+        "cachedParent": "",
+        "liveParent": null,
+        "cachedHtml": "<button id=\"elementColorBtn\" class=\"vm-btn vm-btn--ghost vm-btn--sm\" type=\"button\" aria-label=\"Customize element colors\" data-tooltip=\"Customize element colors\">Edit\u2026</button>",
+        "liveHtml": null
+      },
+      {
+        "name": "elementColorOverlay",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "DIV",
+        "liveTag": "DIV",
+        "cachedParent": "",
+        "liveParent": "",
+        "cachedHtml": "<div id=\"elementColorOverlay\" aria-hidden=\"true\">\n    <div id=\"elementColorModal\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Element Color Editor\" data-vm-floating-panel=\"Element colors\">\n      <div id=\"elementColorHead\" data-vm-drag-handle=\"\" tabindex=\"0\" aria-label=\"Move Element colors\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\">\n        <div class=\"title\">Element Colors</div>\n        <button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>\n      </div>\n      <div id=\"elementColorPickerRow\">\n        <span id=\"elementColorName\">Select an element</span>\n        <input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">\n        <button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>\n        <button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>\n      <",
+        "liveHtml": "<div id=\"elementColorOverlay\" aria-hidden=\"true\">\n    <div id=\"elementColorModal\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Element Color Editor\" data-vm-floating-panel=\"Element colors\">\n      <div id=\"elementColorHead\" data-vm-drag-handle=\"\" tabindex=\"0\" aria-label=\"Move Element colors\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\">\n        <div class=\"title\">Element Colors</div>\n        <button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>\n      </div>\n      <div id=\"elementColorPickerRow\">\n        <span id=\"elementColorName\">Select an element</span>\n        <input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">\n        <button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>\n        <button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>\n      <"
+      },
+      {
+        "name": "elementColorClose",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorHead",
+        "liveParent": "elementColorHead",
+        "cachedHtml": "<button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>",
+        "liveHtml": "<button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>"
+      },
+      {
+        "name": "periodicTableViewport",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "DIV",
+        "liveTag": "DIV",
+        "cachedParent": "elementColorModal",
+        "liveParent": "elementColorModal",
+        "cachedHtml": "<div id=\"periodicTableViewport\" aria-label=\"Periodic table color editor\">\n        <canvas id=\"periodicTableCanvas\"></canvas>\n      </div>",
+        "liveHtml": "<div id=\"periodicTableViewport\" aria-label=\"Periodic table color editor\">\n        <canvas id=\"periodicTableCanvas\"></canvas>\n      </div>"
+      },
+      {
+        "name": "periodicTableCanvas",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "CANVAS",
+        "liveTag": "CANVAS",
+        "cachedParent": "periodicTableViewport",
+        "liveParent": "periodicTableViewport",
+        "cachedHtml": "<canvas id=\"periodicTableCanvas\"></canvas>",
+        "liveHtml": "<canvas id=\"periodicTableCanvas\"></canvas>"
+      },
+      {
+        "name": "elementColorName",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "SPAN",
+        "liveTag": "SPAN",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<span id=\"elementColorName\">Select an element</span>",
+        "liveHtml": "<span id=\"elementColorName\">Select an element</span>"
+      },
+      {
+        "name": "elementColorPicker",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "INPUT",
+        "liveTag": "INPUT",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">",
+        "liveHtml": "<input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">"
+      },
+      {
+        "name": "elementColorResetOne",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>",
+        "liveHtml": "<button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>"
+      },
+      {
+        "name": "elementColorResetAll",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>",
+        "liveHtml": "<button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>"
+      }
+    ]
+  },
+  {
+    "source": "proposed",
+    "sourceAppSha256": "6b05f5be37483142b7806f85f37ebeeb71dfca3f327780040db3dcf3834ddcfa",
+    "observationOnly": true,
+    "preGroupPrivateReadExportInjected": false,
+    "pageErrors": [
+      "Element cache identity failed after QA initialization: elementColorBtn (#elementColorBtn)"
+    ],
+    "qaInitialized": false,
+    "inventorySize": 52,
+    "nodes": [
+      {
+        "name": "elementColorBtn",
+        "same": false,
+        "cachedConnected": false,
+        "liveConnected": null,
+        "cachedTag": "BUTTON",
+        "liveTag": null,
+        "cachedParent": "",
+        "liveParent": null,
+        "cachedHtml": "<button id=\"elementColorBtn\" class=\"vm-btn vm-btn--ghost vm-btn--sm\" type=\"button\" aria-label=\"Customize element colors\" data-tooltip=\"Customize element colors\">Edit\u2026</button>",
+        "liveHtml": null
+      },
+      {
+        "name": "elementColorOverlay",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "DIV",
+        "liveTag": "DIV",
+        "cachedParent": "",
+        "liveParent": "",
+        "cachedHtml": "<div id=\"elementColorOverlay\" aria-hidden=\"true\">\n    <div id=\"elementColorModal\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Element Color Editor\" data-vm-floating-panel=\"Element colors\">\n      <div id=\"elementColorHead\" data-vm-drag-handle=\"\" tabindex=\"0\" aria-label=\"Move Element colors\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\">\n        <div class=\"title\">Element Colors</div>\n        <button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>\n      </div>\n      <div id=\"elementColorPickerRow\">\n        <span id=\"elementColorName\">Select an element</span>\n        <input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">\n        <button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>\n        <button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>\n      <",
+        "liveHtml": "<div id=\"elementColorOverlay\" aria-hidden=\"true\">\n    <div id=\"elementColorModal\" role=\"dialog\" aria-modal=\"true\" aria-label=\"Element Color Editor\" data-vm-floating-panel=\"Element colors\">\n      <div id=\"elementColorHead\" data-vm-drag-handle=\"\" tabindex=\"0\" aria-label=\"Move Element colors\" data-tooltip=\"Drag to move. Alt + arrow keys move; Alt + Home restores the default position.\">\n        <div class=\"title\">Element Colors</div>\n        <button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>\n      </div>\n      <div id=\"elementColorPickerRow\">\n        <span id=\"elementColorName\">Select an element</span>\n        <input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">\n        <button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>\n        <button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>\n      <"
+      },
+      {
+        "name": "elementColorClose",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorHead",
+        "liveParent": "elementColorHead",
+        "cachedHtml": "<button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>",
+        "liveHtml": "<button id=\"elementColorClose\" class=\"secondary ms-icon-button\" data-tooltip=\"Close\">close</button>"
+      },
+      {
+        "name": "periodicTableViewport",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "DIV",
+        "liveTag": "DIV",
+        "cachedParent": "elementColorModal",
+        "liveParent": "elementColorModal",
+        "cachedHtml": "<div id=\"periodicTableViewport\" aria-label=\"Periodic table color editor\">\n        <canvas id=\"periodicTableCanvas\"></canvas>\n      </div>",
+        "liveHtml": "<div id=\"periodicTableViewport\" aria-label=\"Periodic table color editor\">\n        <canvas id=\"periodicTableCanvas\"></canvas>\n      </div>"
+      },
+      {
+        "name": "periodicTableCanvas",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "CANVAS",
+        "liveTag": "CANVAS",
+        "cachedParent": "periodicTableViewport",
+        "liveParent": "periodicTableViewport",
+        "cachedHtml": "<canvas id=\"periodicTableCanvas\"></canvas>",
+        "liveHtml": "<canvas id=\"periodicTableCanvas\"></canvas>"
+      },
+      {
+        "name": "elementColorName",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "SPAN",
+        "liveTag": "SPAN",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<span id=\"elementColorName\">Select an element</span>",
+        "liveHtml": "<span id=\"elementColorName\">Select an element</span>"
+      },
+      {
+        "name": "elementColorPicker",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "INPUT",
+        "liveTag": "INPUT",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">",
+        "liveHtml": "<input type=\"color\" id=\"elementColorPicker\" value=\"#ffffff\">"
+      },
+      {
+        "name": "elementColorResetOne",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>",
+        "liveHtml": "<button id=\"elementColorResetOne\" class=\"secondary\" data-tooltip=\"Reset selected element color\">Reset Selected</button>"
+      },
+      {
+        "name": "elementColorResetAll",
+        "same": true,
+        "cachedConnected": true,
+        "liveConnected": true,
+        "cachedTag": "BUTTON",
+        "liveTag": "BUTTON",
+        "cachedParent": "elementColorPickerRow",
+        "liveParent": "elementColorPickerRow",
+        "cachedHtml": "<button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>",
+        "liveHtml": "<button id=\"elementColorResetAll\" class=\"secondary\" data-tooltip=\"Reset all element colors to defaults\">Reset\n          All</button>"
+      }
+    ]
+  }
+]

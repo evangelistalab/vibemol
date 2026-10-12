@@ -1,0 +1,53 @@
+{
+  "baseCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "group": "editAtomsMenu*",
+  "inventory": [
+    {
+      "name": "editAtomsMenuEl",
+      "id": "editAtomsMenu",
+      "declarationLine": 1185,
+      "queryLine": 7891,
+      "function": "app IIFE (anonymous, line 1)",
+      "referenceCount": 5,
+      "knownAbsentIssue": 15
+    },
+    {
+      "name": "editAtomsMenuBodyEl",
+      "id": "editAtomsMenuBody",
+      "declarationLine": 1186,
+      "queryLine": 7892,
+      "function": "app IIFE (anonymous, line 1)",
+      "referenceCount": 3,
+      "knownAbsentIssue": 15
+    },
+    {
+      "name": "editAtomsMenuCurrentEl",
+      "id": "editAtomsMenuCurrent",
+      "declarationLine": 1187,
+      "queryLine": 7893,
+      "function": "app IIFE (anonymous, line 1)",
+      "referenceCount": 1,
+      "knownAbsentIssue": 15
+    }
+  ],
+  "cacheBindings": 3,
+  "dependencyCount": 4,
+  "dependencyDefinition": "Three cache inputs plus the existing cacheElement helper; no new controller/module dependencies.",
+  "letBefore": 291,
+  "letAfter": 288,
+  "heldElementColorsProductionChangesImported": false,
+  "identityComposition": {
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 4
+    }
+  },
+  "guardIssues": [
+    14,
+    15
+  ]
+}

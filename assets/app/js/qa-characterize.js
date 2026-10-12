@@ -176,15 +176,33 @@
     // Historical sources can still use this harness through --inject-harness.
     if (!bridge) return null;
     const nodes = bridge.readNodes();
-    const names = Object.keys(bridge.ids);
-    if (names.length !== 43 || Object.keys(nodes).sort().join() !== names.slice().sort().join()) {
-      throw new Error('Element cache inventory must contain exactly 43 node checks.');
+    const liveNames = Object.keys(bridge.ids);
+    const absent = bridge.knownAbsent || {};
+    const absentNames = Object.keys(absent);
+    const expected = global.VibeMolWorkbenchHost?.enabled
+      ? { live: 47, knownAbsent: 5 } : { live: 48, knownAbsent: 4 };
+    const names = [...liveNames, ...absentNames];
+    if (liveNames.length !== expected.live || absentNames.length !== expected.knownAbsent
+      || new Set(names).size !== names.length
+      || Object.keys(nodes).sort().join() !== names.slice().sort().join()
+      || absentNames.some(name => !Number.isInteger(absent[name].issue) || absent[name].issue <= 0
+        || typeof absent[name].id !== 'string' || !['null', 'detached'].includes(absent[name].cached))) {
+      throw new Error('Element cache composition must contain ' + expected.live + ' live and '
+        + expected.knownAbsent + ' issue-backed known-absent nodes.');
     }
     elementCacheChecks[reason] = (elementCacheChecks[reason] || 0) + 1;
-    const stale = names.filter(name => nodes[name] !== global.document.getElementById(bridge.ids[name]));
+    const stale = liveNames.filter(name => {
+      const live = global.document.getElementById(bridge.ids[name]);
+      return !live || !nodes[name]?.isConnected || nodes[name] !== live;
+    }).concat(absentNames.filter(name => {
+      const entry = absent[name], node = nodes[name];
+      if (global.document.getElementById(entry.id) !== null) return true;
+      return entry.cached === 'null' ? node !== null
+        : !node || node.nodeType !== 1 || node.isConnected !== false || node.id !== entry.id;
+    }));
     if (stale.length) {
       const message = 'Element cache identity failed after ' + reason + ': ' + stale
-        .map(name => name + ' (#' + bridge.ids[name] + ')').join(', ');
+        .map(name => name + ' (#' + (bridge.ids[name] || absent[name].id) + ')').join(', ');
       elementCacheFailures.push(message);
     }
     if (elementCacheFailures.length) throw new Error(elementCacheFailures[0]);
@@ -192,8 +210,12 @@
   }
 
   function elementCacheReport() {
+    const bridge = global.__vmqaElementCaches;
+    const composition = bridge ? { live: Object.keys(bridge.ids).length,
+      knownAbsent: Object.keys(bridge.knownAbsent || {}).length } : null;
     return { supported: !!global.__vmqaElementCaches, checks: { ...elementCacheChecks },
-      failures: elementCacheFailures.slice(), nodeCount: global.__vmqaElementCaches ? 43 : 0 };
+      failures: elementCacheFailures.slice(), nodeCount: composition ? composition.live + composition.knownAbsent : 0,
+      composition, knownAbsent: bridge?.knownAbsent || {} };
   }
 
   // Check mutations at the end of the UI operation, once reparenting finishes.
