@@ -1,0 +1,12 @@
+{
+  "light": {
+    "accent": "#087e8b",
+    "panel": "#ffffff",
+    "text": "rgb(255, 255, 255)"
+  },
+  "dark": {
+    "accent": "#63d4df",
+    "panel": "#0f141c",
+    "text": "rgb(15, 20, 28)"
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "status": "pending adaptive CI",
+  "artifactAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+  "actual": null,
+  "suiteCount": 37,
+  "allSuitesExecutedOnce": null,
+  "gate": {
+    "environment": "CI",
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "acceptedFailures": [
+      {
+        "suite": "tests/e2e/axis_gizmo.py",
+        "workflow": "Escape interception prevents canvas focus"
+      },
+      {
+        "suite": "tests/e2e/mode_consistency.py",
+        "workflow": "selection card covers Coordinates Delete"
+      },
+      {
+        "suite": "tests/e2e/smoke.py",
+        "workflow": "#11 wait_for_video_idle after the second trajectory or vibration download"
+      }
+    ],
+    "otherFailurePolicy": "Stop; do not retry, rerun or adjust the gate."
+  },
+  "issue11WorkflowFired": null,
+  "vibrationReachedThisRun": null,
+  "sameArtifactRequirement": "One adaptive CI run must carry all 37 suites, both 102-capture runs, all 43 identities in eight contexts and per-reason minima. Build CI is not adaptive proof.",
+  "precedingMergedBuildCi": {
+    "runId": 38162234951,
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "scope": "Merged parent only, not an adaptive result",
+    "issue11WorkflowFired": "trajectory after second download",
+    "vibrationReachedThisRun": false
+  }
+}
