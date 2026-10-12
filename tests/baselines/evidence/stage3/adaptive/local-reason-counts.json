@@ -171,7 +171,7 @@
       "observedModeChecks": 6
     }
   ],
-  "ciStatus": "pending; these counts are not the adaptive CI gate",
+  "ciStatus": "Own CI 38177282064 completed; these remain local counts, separate from its CI evidence.",
   "aggregateChecksByReason": {
     "presented checkpoint": 284,
     "mode switch": 1668,

@@ -1,8 +1,8 @@
-# Stage 3 adaptive caches — draft evidence
+# Stage 3 adaptive caches — approved stack evidence
 
 Eleven `editAdaptive*` module caches now use the existing lazy memoized `els` helper. Registration and priming remain at the original nine chip and two Build/Symmetry popover wiring points. A missing node can still resolve later; a detached cached node is never silently refreshed. IDs, object keys, null guards, listener installation and keyboard behavior are preserved.
 
-Parent: merged Build PR #8, `4db82178ee662735059717c006e10aff70592044`. The preceding Build CI conjunction is saved separately in [ci-38162234951](../build/ci-38162234951/summary.md); it is evidence for Build only. **The adaptive candidate's complete CI result is pending. This draft is not authorized to merge.**
+Parent: merged Build PR #8, `4db82178ee662735059717c006e10aff70592044`. The preceding Build CI conjunction is saved separately in [ci-38162234951](../build/ci-38162234951/summary.md); it is evidence for Build only. **The approved adaptive stack passed its own CI conjunction and has landed with #8 as an ordered unit on codex/app-js-decomposition.**
 
 ## Inventory and source audit
 
@@ -66,8 +66,10 @@ The additional, initially uncommitted action probe targeted a Workbench-only Tra
 
 ## CI gate and open defects
 
-[browser-results.json](browser-results.json) explicitly records **adaptive CI pending**, with no actual suite total claimed. One CI run on the rebased adaptive candidate must establish **34 passing / 3 failing / 37**, both unchanged 102-capture runs, all 43 identities in eight contexts and all reason minima. Evidence from the merged Build parent cannot establish the adaptive candidate's conjunction.
+[browser-results.json](browser-results.json) records actual **CI 34/3/37**, with all 37 suites executed once on run 38177282064. The complete same-artifact audit and counts are in [ci-38177282064](ci-38177282064/summary.md). The one completed CI run on the rebased adaptive candidate established **34 passing / 3 failing / 37**, both unchanged 102-capture runs, all 43 identities in eight contexts and all reason minima. Evidence from the merged Build parent cannot establish the adaptive candidate's conjunction.
 
 The accepted failures remain identified by suite/workflow: `axis_gizmo.py` Escape interception prevents canvas focus; `mode_consistency.py` selection card covers Coordinates Delete; `smoke.py` #11 after the second download at either the trajectory or vibration `wait_for_video_idle`. Record which #11 site fires on this candidate. Any other failure stops; no rerun or gate adjustment is authorized.
 
-Production #3, axis-gizmo, mode-consistency and #11 remain outside this refactor. The `#appearanceMaterialPreset` intermittent remains open against Stage 3; the `looks.py` material-families path is unchanged and stays reachable in the full suite. If it recurs, probe creation/replacement, cached identity and listener closure references against the parent before classification. Soak once at the complete stage boundary. This continuation ends at the adaptive draft; no other group or draft merge is authorized.
+Production #3, axis-gizmo, mode-consistency and #11 remain outside this refactor. The `#appearanceMaterialPreset` intermittent remains open against Stage 3; the `looks.py` material-families path is unchanged and stays reachable in the full suite. If it recurs, probe creation/replacement, cached identity and listener closure references against the parent before classification. Soak once at the complete stage boundary. The completed adaptive continuation is followed by the user-authorized four-group assignment recorded in AGENTS.md.
+
+Stage metric: #8 has one-time app growth +109 net (+148/−39) plus QA harness +53/−1; #13 is line-neutral +85/−85. Primary metric is lets 306 → 265, not app lines. The material-preset intermittent did not recur in adaptive; looks.py passed in 24.38 minutes and CI completed in 132.93 minutes. The remaining one-assignment order is Element Colors, Atoms menu, Selection, then Symmetry/shared launcher.

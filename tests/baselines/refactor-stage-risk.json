@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
+    "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,7 +23,7 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Build candidate CI run 38162234951, attempt 1, proves CI 34/3/37 and all 43 identities in all eight contexts with every firing minimum on the same tested artifact. Issue #11 fired at trajectory after the second download; vibration was not reached. PR #8 merged as 4db82178ee662735059717c006e10aff70592044. Historical local 35/2/37 is not a CI gate.",
+    "provenance": "Approved #8/#13 stack CI 38177282064 proves 34/3/37, both 102-capture goldens, and all 43 identities in eight contexts with minima. #11 fired at trajectory after the second download; the ordered stack landed on codex/app-js-decomposition with let 291.",
     "gate": {
       "passed": 34,
       "failed": 3,
@@ -70,10 +70,10 @@
     {
       "stage": 3,
       "risk": "highest manual-verification burden",
-      "scope": "DOM element cache consolidation, split by prefix/panel group and ordered by coverage strength",
+      "scope": "DOM element caches, completed Build/adaptive plus Element Colors, Atoms menu, Selection and Symmetry/shared launcher.",
       "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. The CI 34/3/37 gate accepts only Escape preventing canvas focus, selection card covering Coordinates Delete, and issue #11 at trajectory or vibration idle wait after the second download. Completed run 38141289409 matches these workflows without a rerun. Production defects remain outside the refactor. The Appearance material-preset intermittent stays open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
-      "prRule": "Split by prefix/panel group and coverage strength. Each sub-PR records its inventory and full 37-suite result, merges into the stage branch, and receives its own review. Soak once at the stage boundary, not per sub-PR. Preserve original priming, listener and controller creation points.",
+      "prRule": "One PR per remaining group, cut from pushed codex/app-js-decomposition and merged sequentially after its own exact CI conjunction; no intermediate review. Stop immediately on a missed gate, identity failure, material-preset hang, logic change or dependency limit.",
       "panelPrPlan": [
         {
           "order": 1,
@@ -118,16 +118,15 @@
         },
         {
           "order": 4,
-          "group": "remainder: editSymmetry* and canvasAdaptiveMenuEl",
-          "actualCacheBindings": 10,
+          "group": "editAtomsMenu*",
+          "actualCacheBindings": 3,
           "affectedSuites": [
-            "symmetry_panel.py",
-            "workbench_bar.py",
-            "workbench_consistency.py",
+            "build_panel.py",
+            "edit_tool.py",
             "floating_panels.py"
           ],
-          "coverageStrength": "Direct green symmetry and periodic-table interaction gates; shared menu paths need the manual matrix",
-          "manualVerification": "Exercise symmetry tolerance/candidate/preview/apply/cancel/undo, shared menu mode/exclusivity and the canvas-to-display menu alias. Keep null guards and Escape semantics."
+          "coverageStrength": "Thinnest: all three old menu nodes absent; only guarded paths remain",
+          "manualVerification": "Keep null values/guards unchanged on Workbench and legacy launches after mode, Build panel and session changes. Do not create missing DOM as part of a refactor."
         },
         {
           "order": 5,
@@ -147,15 +146,16 @@
         },
         {
           "order": 6,
-          "group": "editAtomsMenu*",
-          "actualCacheBindings": 3,
+          "group": "remainder: editSymmetry* and canvasAdaptiveMenuEl",
+          "actualCacheBindings": 10,
           "affectedSuites": [
-            "build_panel.py",
-            "edit_tool.py",
+            "symmetry_panel.py",
+            "workbench_bar.py",
+            "workbench_consistency.py",
             "floating_panels.py"
           ],
-          "coverageStrength": "Thinnest: all three old menu nodes absent; only guarded paths remain",
-          "manualVerification": "Keep null values/guards unchanged on Workbench and legacy launches after mode, Build panel and session changes. Do not create missing DOM as part of a refactor."
+          "coverageStrength": "Direct green symmetry and periodic-table interaction gates; shared menu paths need the manual matrix",
+          "manualVerification": "Exercise symmetry tolerance/candidate/preview/apply/cancel/undo, shared menu mode/exclusivity and the canvas-to-display menu alias. Keep null guards and Escape semantics."
         },
         {
           "order": null,
@@ -269,6 +269,19 @@
             "riskClosed": false,
             "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38100061231",
             "pr8AlsoPassed": true
+          },
+          "adaptiveCiCheck": {
+            "recurred": false,
+            "looksSeconds": 1463.1,
+            "looksMinutes": 24.38,
+            "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38177282064",
+            "materialFamiliesTouched": false,
+            "materialFamiliesReached": [
+              "Studio",
+              "Properties"
+            ],
+            "scopeClosed": "adaptive group",
+            "riskClosed": false
           }
         }
       ],
@@ -386,8 +399,8 @@
             "diagnosticOnly": true
           }
         ],
-        "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
-        "provenance": "Build candidate CI run 38162234951, attempt 1, proves CI 34/3/37 and all 43 identities in all eight contexts with every firing minimum on the same tested artifact. Issue #11 fired at trajectory after the second download; vibration was not reached. PR #8 merged as 4db82178ee662735059717c006e10aff70592044. Historical local 35/2/37 is not a CI gate.",
+        "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
+        "provenance": "Complete CI 34/3/37 on the approved Build/adaptive stack; next groups require their own artifact and 52 identities.",
         "ciEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
         "ciGateSatisfied": true,
         "latestCiResult": {
@@ -446,7 +459,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "Build PR #8 merged after its own CI 34/3/37 plus 43-node identity conjunction. Adaptive group is prepared as an unmerged draft with its own CI pending; five panel groups remain unmerged. No other group is authorized in this continuation.",
+      "status": "Build and adaptive landed together on codex/app-js-decomposition, let 291; four remaining groups form one authorized assignment.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -528,6 +541,13 @@
           "testedHead": "da3b5e0cafd42837b8554c4c308df3a297cea3a6",
           "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json",
           "issue11Site": "trajectory"
+        },
+        "requiredNodeCountAfterElementColors": 52,
+        "elementColorsExtension": {
+          "newDomNodes": 9,
+          "historicalNodeCount": 43,
+          "resultingNodeCount": 52,
+          "mustMatchBridgeIds": true
         }
       },
       "soakPolicy": {
@@ -562,13 +582,13 @@
           "letAfter": 291,
           "appLines": 33037,
           "functionDeclarations": 1181,
-          "status": "Draft preparation; remains unmerged. Its own candidate CI must supply the full workflow/identity conjunction; Build evidence is not substituted.",
+          "status": "Approved and merged into the ordered integration after same-stack CI conjunction.",
           "baseCommit": "4db82178ee662735059717c006e10aff70592044",
           "evidence": "tests/baselines/evidence/stage3/adaptive/validation.json",
-          "ciStatus": "pending",
+          "ciStatus": "passed",
           "soak": "Once at the whole-stage boundary.",
           "localValidation": {
-            "status": "passed; adaptive CI pending",
+            "status": "passed; own completed CI conjunction also passed",
             "checks": true,
             "javascriptUnitTests": 428,
             "pythonUnitTests": 16,
@@ -579,14 +599,79 @@
             "directUiSuites": "5 unchanged suites once on each source; both-theme legacy action probe",
             "evidence": "tests/baselines/evidence/stage3/adaptive/validation.json"
           },
-          "browserResult": "Pending on the adaptive artifact; parent Build CI 34/3/37 is not this group\u2019s result.",
+          "browserResult": "CI 34/3/37, 43 identities in eight contexts, all minima; #11 trajectory after second download.",
           "periodicTableDependencyCountBeforeAndAfterThisGroup": [
             19,
             19
-          ]
+          ],
+          "pr": "https://github.com/evangelistalab/vibemol/pull/13",
+          "mergeCommit": "4a873ec1dbdda93cfc754bff9e61061a69838879",
+          "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/38177282064",
+          "ciEvidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/candidate-verification.json",
+          "appearanceMaterialPresetIntermittent": {
+            "recurred": false,
+            "looksSeconds": 1463.1,
+            "looksMinutes": 24.38
+          }
         }
       ],
-      "remainingPanelGroupCount": 5
+      "remainingPanelGroupCount": 4,
+      "primaryMetric": {
+        "name": "mutable module-let declaration lines",
+        "before": 306,
+        "current": 291,
+        "target": 265,
+        "appLineGrowthExpected": true,
+        "build": {
+          "appAdded": 148,
+          "appRemoved": 39,
+          "appNetGrowth": 109,
+          "qaAdded": 53,
+          "qaRemoved": 1
+        },
+        "adaptive": {
+          "appAdded": 85,
+          "appRemoved": 85,
+          "appNetGrowth": 0
+        },
+        "appLinesCurrent": 33037,
+        "topLevelFunctionsCurrent": 1181
+      },
+      "orderedIntegration": {
+        "integrationAfterBoth": "64c46bf71c2cd6182fe174450bea2e26ec4e78b8",
+        "integrationBeforeBuild": "e4b5e498fe818171e3205313667614cfd8d2832c",
+        "integrationAfterBuild": "224f32b50415a62dfec60e675cc46233d3dba119",
+        "buildStageMerge": "4db82178ee662735059717c006e10aff70592044",
+        "adaptiveStageMerge": "4a873ec1dbdda93cfc754bff9e61061a69838879",
+        "adaptiveTestedHead": "1750dbf55858db66cd57f6d14b411584b9ef6abb",
+        "treeExactlyIdenticalToApprovedStack": true,
+        "bothBranchesAreAncestors": true,
+        "letAfterBuild": 302,
+        "letAfterBoth": 291,
+        "appSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+      },
+      "remainingAssignment": {
+        "groups": [
+          "Element Colors",
+          "Atoms menu",
+          "Selection",
+          "Symmetry/shared launcher"
+        ],
+        "oneAssignment": true,
+        "intermediateReviews": false,
+        "identityCountFromElementColors": 52,
+        "identityContexts": 8,
+        "periodicControllerDependencyLimit": 11,
+        "maximumGroupDependenciesExclusive": 15,
+        "ciGate": [
+          34,
+          3,
+          37
+        ],
+        "stopOnMaterialPresetRecurrence": true,
+        "stopOnLogicChange": true,
+        "cutFrom": "pushed codex/app-js-decomposition"
+      }
     },
     {
       "stage": 4,
@@ -806,8 +891,8 @@
   },
   "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor.",
   "latestCiGateAttempt": {
-    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38162234951",
-    "headCommit": "da3b5e0cafd42837b8554c4c308df3a297cea3a6",
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38177282064",
+    "headCommit": "1750dbf55858db66cd57f6d14b411584b9ef6abb",
     "actual": {
       "passed": 34,
       "failed": 3,
@@ -820,16 +905,16 @@
     },
     "gateMet": true,
     "unexpectedFailures": [],
-    "reason": "Single rebased Build candidate run proves the full workflow and cache-identity conjunction. Accepted failures are identified by suite and workflow; every other failure stops.",
-    "evidence": "tests/baselines/evidence/stage3/build/ci-38162234951/browser-results.json",
+    "reason": "Complete same-artifact conjunction on the approved Build/adaptive stack, integrated in order; no different-tree evidence combined.",
+    "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
     "characterization": "Two exactly identical 102-capture runs match unchanged goldens using the approved float policy.",
     "renderer": "Linux x86_64 Chromium 153.0.8010.12, software SwiftShader",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
       "site": "trajectory"
     },
-    "identityEvidence": "tests/baselines/evidence/stage3/build/ci-38162234951/characterize-cache-identity.json",
-    "candidateVerification": "tests/baselines/evidence/stage3/build/ci-38162234951/candidate-verification.json"
+    "identityEvidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-cache-identity.json",
+    "candidateVerification": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/candidate-verification.json"
   },
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",
@@ -865,6 +950,6 @@
     "cacheGroups": "Each cache group gets one CI run on its rebased merge candidate, carrying both all 37 suite results and the 43-node identity sweep with per-reason minima.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
-    "adaptive": "Unmerged draft from merged #8; requires its own single candidate CI run carrying all 37 workflows and all 43 identity checks. Never use the preceding Build run as adaptive evidence."
+    "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack."
   }
 }

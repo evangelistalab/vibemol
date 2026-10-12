@@ -1,0 +1,13 @@
+{
+  "integrationAfterBoth": "64c46bf71c2cd6182fe174450bea2e26ec4e78b8",
+  "integrationBeforeBuild": "e4b5e498fe818171e3205313667614cfd8d2832c",
+  "integrationAfterBuild": "224f32b50415a62dfec60e675cc46233d3dba119",
+  "buildStageMerge": "4db82178ee662735059717c006e10aff70592044",
+  "adaptiveStageMerge": "4a873ec1dbdda93cfc754bff9e61061a69838879",
+  "adaptiveTestedHead": "1750dbf55858db66cd57f6d14b411584b9ef6abb",
+  "treeExactlyIdenticalToApprovedStack": true,
+  "bothBranchesAreAncestors": true,
+  "letAfterBuild": 302,
+  "letAfterBoth": 291,
+  "appSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+}

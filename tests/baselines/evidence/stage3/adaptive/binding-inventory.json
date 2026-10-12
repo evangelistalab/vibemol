@@ -1,5 +1,5 @@
 {
-  "status": "Eleven adaptive caches converted as lazy memoized accessors at the unchanged original wiring sites; draft remains unmerged.",
+  "status": "Approved eleven-cache inventory, integrated as part of the ordered Build/adaptive stack.",
   "sourceCommit": "4db82178ee662735059717c006e10aff70592044",
   "sourceAppSha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944",
   "entries": [
@@ -177,7 +177,7 @@
     "measurementsPanel"
   ],
   "excludedFocusState": "helpRestoreFocusEl",
-  "remainingStageGroups": 5,
+  "remainingStageGroups": 4,
   "letBefore": 302,
   "letAfter": 291,
   "currentSourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",

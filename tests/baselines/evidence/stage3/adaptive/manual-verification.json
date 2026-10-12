@@ -142,6 +142,10 @@
     "mode_consistency selection card covers Coordinates Delete",
     "#11 delayed Stop after second trajectory or vibration recording download"
   ],
-  "appearanceMaterialPresetIntermittent": "Open against Stage 3. It did not recur in these focused workflows; its material_families path is unchanged and remains reachable in the unchanged looks.py CI suite.",
-  "full37SuiteCi": "Pending on the adaptive candidate. Merged Build CI is separate prior-artifact evidence."
+  "appearanceMaterialPresetIntermittent": {
+    "recurred": false,
+    "looksSeconds": 1463.1,
+    "looksMinutes": 24.38
+  },
+  "full37SuiteCi": "Completed approved stack CI 38177282064: 34/3/37, all 43 identities in eight contexts and all reason minima."
 }
