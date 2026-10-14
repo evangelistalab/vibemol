@@ -226,10 +226,13 @@
     }
   ],
   "cacheBindings": 13,
-  "dependencyCount": 14,
-  "dependencyDefinition": "13 cache inputs plus the existing cacheElement helper; no new controller/module dependencies.",
   "letBefore": 288,
   "letAfter": 275,
   "conversionNetAppLines": 0,
-  "entireAppExactAfterApprovedConversions": true
+  "entireAppExactAfterApprovedConversions": true,
+  "cacheInventoryPlusHelperCount": 14,
+  "cacheInventoryDefinition": "13 converted cache bindings plus one already-existing cacheElement helper; this is an inventory sum, not call sites, modules or a controller dependency interface.",
+  "newControllers": 0,
+  "extractionDependencyInterface": null,
+  "extractionDependencyLimitApplicable": false
 }

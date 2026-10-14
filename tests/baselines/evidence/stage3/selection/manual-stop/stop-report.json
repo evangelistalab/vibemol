@@ -14,12 +14,20 @@
   "atomsPr16": "merged on verified same-artifact CI38266303089",
   "selectionBranch": "codex/element-cache-selection",
   "selectionLetCount": 275,
-  "selectionDependencyCount": 14,
   "selectionAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
   "selectionLocalChecks": "passed,433JS/16Python",
   "selectionCharacterization": "102unchangedgoldens twice,exactrepeat,52composition/eightcontexts/minima passed",
   "selectionPr": null,
   "selectionCiRun": null,
   "watch": "paused",
-  "evidence": "tests/baselines/evidence/stage3/selection/manual-stop"
+  "evidence": "tests/baselines/evidence/stage3/selection/manual-stop",
+  "resolution": {
+    "issue": 17,
+    "classifiedByUserAs": "pre-existing UX defect, not probe error",
+    "intendedBehavior": "Direct one-click switch from Metal to Coordination",
+    "workaroundAuthorized": true,
+    "resumedStopEvidence": "tests/baselines/evidence/stage3/selection/manual-resumed-stop/stop-report.json"
+  },
+  "selectionCacheInventoryPlusHelperCount": 14,
+  "extractionDependencyCountApplicable": false
 }

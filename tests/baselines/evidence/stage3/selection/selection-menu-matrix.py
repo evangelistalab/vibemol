@@ -25,12 +25,21 @@ with run_http_server(args.source_root) as url,sync_playwright() as pw:
     page.goto(url+'?appearanceStudy=1'+('&workspaceLab=0' if legacy else ''));page.wait_for_function('()=>window.VibeMolTesting')
     if page.locator('#themeToggleInput').is_checked()!=dark:page.locator('#themeToggleShell').click()
     assert p.load(page,[{'name':'iron.xyz','text':'1\nNative metal menu\nFe 0 0 0\n'}])['ok']
-    mode(page,'Edit');page.locator('#editTransformToolBtn').click();select(page)
+    mode(page,'Edit')
+    # Legacy has no Workbench tool strip; loaded Fe enters Transform by the
+    # 0.9.2 scene-dependent default. Workbench exposes the explicit radio.
+    if not legacy:page.locator('#editTransformToolBtn').click()
+    select(page)
     metal=page.locator('#editSelectionMetalBondingCueButton');mp=page.locator('#editSelectionMetalBondingCuePopover');coord=page.locator('#editSelectionCoordinationCueButton');cp=page.locator('#editSelectionCoordinationCuePopover')
     metal.click();presented(page,"() => document.getElementById('editSelectionMetalBondingCuePopover').getAttribute('aria-hidden') === 'false'")
     choices=mp.locator('[data-metal-bonding-choice]').evaluate_all('es=>es.map(e=>e.dataset.metalBondingChoice)')
     assert choices==['auto','force_covalent','force_dative','no_bonds'],choices
-    # Opening the other popover exercises mutual exclusion and its real pointer/click guard.
+    # 0.9.x issue #17: Metal covers Coordination's trigger. Direct switching
+    # should work in one click; this equal-footing base/proposed workaround
+    # explicitly dismisses Metal and does not claim the intended UX is fixed.
+    page.locator('#toolbarVersion').click()
+    presented(page,"() => document.getElementById('editSelectionMetalBondingCuePopover').getAttribute('aria-hidden') === 'true'")
+    assert page.evaluate('() => VibeMolTesting.getEditSelectionCount()')==1
     coord.click();presented(page,"() => document.getElementById('editSelectionCoordinationCuePopover').getAttribute('aria-hidden') === 'false'")
     assert mp.get_attribute('aria-hidden')=='true'
     alternative=cp.locator('[data-coordination-choice]:not(.is-active)').first

@@ -1,0 +1,11 @@
+{
+  "taggedBaseAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "proposedAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+  "allRectsStylesHitsAndPageErrorsExactlyEqual": true,
+  "issue": 17,
+  "positioningPathsDiffer": true,
+  "metalPath": "positionSelectionMetalBondingCuePopover: trigger right/left plus viewport clamp",
+  "cardPath": "renderEditSelectionTranslateCue: projected selection bounds plus viewport/sidebar clamp",
+  "sameDocumentOverlayCategory": true,
+  "productionChanged": false
+}

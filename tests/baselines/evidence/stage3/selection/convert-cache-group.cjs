@@ -22,5 +22,5 @@ assert.equal(source.split('\n').length,result.split('\n').length);parse(result);
 assert.equal((source.match(/^  let /gm)||[]).length,288);assert.equal((result.match(/^  let /gm)||[]).length,275);
 assert.ok(/^  let editSelectionPositionUi = null;/m.test(result));
 fs.writeFileSync('assets/app/js/app.js',result);
-fs.writeFileSync('out/test-artifacts/stage3/selection/binding-inventory.json',JSON.stringify({baseCommit:base,group:'editSelection*',inventory,cacheBindings:13,dependencyCount:14,dependencyDefinition:'13 cache inputs plus the existing cacheElement helper; no new controller/module dependencies.',letBefore:288,letAfter:275,conversionNetAppLines:0,entireAppExactAfterApprovedConversions:true},null,2)+'\n');
+fs.writeFileSync('out/test-artifacts/stage3/selection/binding-inventory.json',JSON.stringify({baseCommit:base,group:'editSelection*',inventory,cacheBindings:13,cacheInventoryPlusHelperCount:14,cacheInventoryDefinition:'13 cache bindings plus the existing helper; not an extraction dependency interface.',newControllers:0,extractionDependencyInterface:null,extractionDependencyLimitApplicable:false,letBefore:288,letAfter:275,conversionNetAppLines:0,entireAppExactAfterApprovedConversions:true},null,2)+'\n');
 console.log(JSON.stringify({base,bindings:13,references:inventory.reduce((s,e)=>s+e.referenceCount,0),letAfter:275,netAppLines:0}));
