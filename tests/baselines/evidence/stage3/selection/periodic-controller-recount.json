@@ -1,0 +1,28 @@
+{
+  "function": "createPeriodicTableController",
+  "line": 10813,
+  "dependencies": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "elementColorBtn",
+    "elementColorOverlay",
+    "elementColorClose",
+    "periodicTableViewport",
+    "periodicTableCanvas",
+    "elementColorName",
+    "elementColorPicker",
+    "elementColorResetOne",
+    "elementColorResetAll"
+  ],
+  "integratedInputCount": 19,
+  "heldProposalInputCount": 11,
+  "heldConversionLanded": false
+}

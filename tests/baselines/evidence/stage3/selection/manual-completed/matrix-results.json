@@ -1,0 +1,44 @@
+[
+  {
+    "source": "tagged-base",
+    "suite": "selection_menus",
+    "exitCode": 2,
+    "seconds": 70.42,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/tagged-base/selection_menus/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "selection_menus",
+    "exitCode": 2,
+    "seconds": 68.54,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/proposed/selection_menus/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "edit_picking",
+    "exitCode": 0,
+    "seconds": 322.54,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/proposed/edit_picking/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "transform_selection",
+    "exitCode": 0,
+    "seconds": 43.05,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/proposed/transform_selection/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "build_orbit",
+    "exitCode": 0,
+    "seconds": 38.12,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/proposed/build_orbit/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "seconds": 34.68,
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/manual-completed-v2/proposed/floating_panels/result.json"
+  }
+]

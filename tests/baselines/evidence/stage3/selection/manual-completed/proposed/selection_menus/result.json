@@ -1,0 +1,166 @@
+{
+  "sourceAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+  "method": "Native Selection menu events in both layouts/themes, on tagged/proposed source.\n\nOnly public fixture loading and public selection setup are used. Listeners,\ncontrols, rendering and layout are not replaced. No sleeps or timeout retries.\n",
+  "cases": [
+    {
+      "context": "workbench/light",
+      "status": "failed assertion recorded",
+      "seconds": 19.67,
+      "metalChoices": [
+        "auto",
+        "force_covalent",
+        "force_dative",
+        "no_bonds"
+      ],
+      "committedModes": [
+        "force_covalent",
+        "force_dative",
+        "no_bonds",
+        "auto"
+      ],
+      "coordinationChoice": "tetrahedral",
+      "modeSuspension": true,
+      "responsivePopoverBounds": {
+        "x": 12,
+        "y": 12,
+        "width": 386,
+        "height": 503.1875
+      },
+      "carriedFinding": {
+        "issue": 17,
+        "assertion": "Metal popover stays inside viewport at 390 x 850",
+        "viewport": {
+          "width": 390,
+          "height": 850
+        },
+        "actualBox": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875
+        }
+      },
+      "pageErrors": []
+    },
+    {
+      "context": "workbench/dark",
+      "status": "failed assertion recorded",
+      "seconds": 15.24,
+      "metalChoices": [
+        "auto",
+        "force_covalent",
+        "force_dative",
+        "no_bonds"
+      ],
+      "committedModes": [
+        "force_covalent",
+        "force_dative",
+        "no_bonds",
+        "auto"
+      ],
+      "coordinationChoice": "tetrahedral",
+      "modeSuspension": true,
+      "responsivePopoverBounds": {
+        "x": 12,
+        "y": 12,
+        "width": 386,
+        "height": 503.1875
+      },
+      "carriedFinding": {
+        "issue": 17,
+        "assertion": "Metal popover stays inside viewport at 390 x 850",
+        "viewport": {
+          "width": 390,
+          "height": 850
+        },
+        "actualBox": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875
+        }
+      },
+      "pageErrors": []
+    },
+    {
+      "context": "legacy/light",
+      "status": "failed assertion recorded",
+      "seconds": 15.98,
+      "metalChoices": [
+        "auto",
+        "force_covalent",
+        "force_dative",
+        "no_bonds"
+      ],
+      "committedModes": [
+        "force_covalent",
+        "force_dative",
+        "no_bonds",
+        "auto"
+      ],
+      "coordinationChoice": "tetrahedral",
+      "modeSuspension": true,
+      "responsivePopoverBounds": {
+        "x": 12,
+        "y": 12,
+        "width": 386,
+        "height": 503.1875
+      },
+      "carriedFinding": {
+        "issue": 17,
+        "assertion": "Metal popover stays inside viewport at 390 x 850",
+        "viewport": {
+          "width": 390,
+          "height": 850
+        },
+        "actualBox": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875
+        }
+      },
+      "pageErrors": []
+    },
+    {
+      "context": "legacy/dark",
+      "status": "failed assertion recorded",
+      "seconds": 16.57,
+      "metalChoices": [
+        "auto",
+        "force_covalent",
+        "force_dative",
+        "no_bonds"
+      ],
+      "committedModes": [
+        "force_covalent",
+        "force_dative",
+        "no_bonds",
+        "auto"
+      ],
+      "coordinationChoice": "tetrahedral",
+      "modeSuspension": true,
+      "responsivePopoverBounds": {
+        "x": 12,
+        "y": 12,
+        "width": 386,
+        "height": 503.1875
+      },
+      "carriedFinding": {
+        "issue": 17,
+        "assertion": "Metal popover stays inside viewport at 390 x 850",
+        "viewport": {
+          "width": 390,
+          "height": 850
+        },
+        "actualBox": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875
+        }
+      },
+      "pageErrors": []
+    }
+  ]
+}

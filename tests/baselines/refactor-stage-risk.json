@@ -79,7 +79,7 @@
       "scope": "DOM element caches, completed Build/adaptive plus Element Colors, Atoms menu, Selection and Symmetry/shared launcher.",
       "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. The CI 34/3/37 gate accepts only Escape preventing canvas focus, selection card covering Coordinates Delete, and issue #11 at trajectory or vibration idle wait after the second download. Completed run 38141289409 matches these workflows without a rerun. Production defects remain outside the refactor. The Appearance material-preset intermittent stays open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
-      "prRule": "One PR per remaining group, cut from pushed codex/app-js-decomposition and merged sequentially after its own exact CI conjunction; no intermediate review. Stop immediately on a missed gate, identity failure, material-preset hang, logic change. A conversion creates no controller dependency interface; extraction dependency limits apply only to extractions.",
+      "prRule": "Selection then Symmetry/shared launcher, each cut from pushed integration, own exact-candidate CI gate and sequential merge without intermediate review. Only the three canonical conversion blockers apply; identical tagged manual failures are findings.",
       "panelPrPlan": [
         {
           "order": 1,
@@ -265,7 +265,7 @@
             "tests/baselines/evidence/stage2/looks-material-stage2.json"
           ],
           "passingReplaysCloseRisk": false,
-          "recurrencePolicy": "If this hang recurs during cache consolidation, treat it as a candidate regression and probe before assuming the known intermittent. Compare pre-change/current control creation and replacement, selector presence and node identity, cached bindings, event-listener and delayed closure references, runtime errors and presented-frame readiness. Preserve the failing trace and document the mechanism and result in that panel PR.",
+          "recurrencePolicy": "Probe the tagged/proposed control creation, replacement, cached identity, listener/closure references and presented-state readiness. A failure unique to proposed source blocks. An identically reproduced tagged manual failure is filed and carried. Any CI count/failing-set/golden/identity gate miss still blocks.",
           "browserRepairCheck": {
             "materialFamiliesTouched": false,
             "mainRoutingTouched": false,
@@ -480,7 +480,7 @@
           "periodic_table.py"
         ]
       },
-      "status": "Build, adaptive and Atoms integrated; Selection stopped at tagged-base responsive Metal popover overflow, issue #17; Element Colors held.",
+      "status": "Build/adaptive/Atoms integrated; Selection resumed under carried-defect rule, Element Colors held.",
       "requestedBindingCount": 43,
       "scopeCorrection": {
         "status": "accepted by user after the pre-code report",
@@ -696,13 +696,17 @@
           "letAfter": 275,
           "appAdded": 178,
           "appRemoved": 178,
-          "status": "Local checks and characterization passed; direct-switch defect #17 classified and authorized workaround applied; stopped on new tagged-base responsive overflow before proposed manual matrix or PR/CI.",
+          "status": "Local verification complete: paired four unchanged suites passed, native menu observations exactly equal; issue17 assertion failures retained/carried. Own candidate CI pending.",
           "baseCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
           "evidence": "tests/baselines/evidence/stage3/selection/validation.json",
           "cacheInventoryPlusHelperCount": 14,
           "cacheInventoryDefinition": "13 cache inputs plus existing cacheElement helper; inventory sum only, not a controller dependency interface.",
           "newControllers": 0,
-          "extractionDependencyLimitApplicable": false
+          "extractionDependencyLimitApplicable": false,
+          "manualEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/",
+          "carriedDefects": [
+            17
+          ]
         }
       ],
       "remainingPanelGroupCount": 4,
@@ -754,10 +758,10 @@
           3,
           37
         ],
-        "stopOnMaterialPresetRecurrence": true,
+        "stopOnMaterialPresetRecurrence": false,
         "stopOnLogicChange": true,
         "cutFrom": "pushed codex/app-js-decomposition",
-        "status": "Stopped on newly reached responsive bounds failure on tagged source, issue #17. No Selection PR or CI.",
+        "status": "Active: finish paired Selection verification, open one candidate PR/CI and merge only on full gate, then Symmetry on newly pushed integration.",
         "stopEvidence": "tests/baselines/evidence/stage3/colors-stop/stop-report.json",
         "heldGroup": "Element Colors",
         "knownAbsentIssueRequired": true,
@@ -778,12 +782,15 @@
         "identityCountForRemainingGroups": 52,
         "remainingActiveGroupCount": 2,
         "conversionLineRule": "Reference substitutions are line-neutral. Separately record the user-requested identity expansion and issue-backed absence infrastructure.",
-        "manualStopEvidence": "tests/baselines/evidence/stage3/selection/manual-resumed-stop/stop-report.json",
+        "manualStopEvidence": "Historical stop only: tests/baselines/evidence/stage3/selection/manual-resumed-stop/stop-report.json",
         "extractionDependencyRule": {
           "exclusiveLimit": 15,
           "scope": "Inputs handed to a newly extracted controller, not cache bindings, helper calls or modules using a conversion group.",
           "appliesToCurrentCacheConversions": false
-        }
+        },
+        "materialRecurrencePolicy": "Compare against tagged source; proposed-only blocks, identical tagged manual failure is carried; any CI gate miss still blocks.",
+        "carriedDefects": "tests/baselines/carried-defects.json",
+        "maximumCacheGroupDependencies": "Not applicable: no new controller interface. Inventory counts are reported separately."
       },
       "domRetirementSweep": {
         "sourceCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
@@ -1036,7 +1043,7 @@
     "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
     "gateEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
   },
-  "defectBatchPolicy": "Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 stay production defects. Schedule after 0.10.0 or in parallel on 0.9.x; do not merge their fixes into this refactor.",
+  "defectBatchPolicy": "Projection #3, video crop #11, axis-gizmo Escape, mode-consistency Coordinates Delete and Metal popover #17 are carried 0.9.x production defects. Schedule after 0.10.0 or in parallel on 0.9.x; never merge fixes into this refactor. Other follow-ups #5/#14/#15 are recorded in the carried inventory.",
   "latestCiGateAttempt": {
     "pr": 16,
     "head": "6bfd947cbe701073289efe3a5b047be52d2d6a8b",
@@ -1088,5 +1095,15 @@
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
     "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack."
+  },
+  "carriedDefectInventory": "tests/baselines/carried-defects.json",
+  "conversionBlockingRule": {
+    "taggedBase": "v0.9.5-pre-refactor",
+    "exactlyThreeBlockers": [
+      "failure on proposed source absent on tagged base",
+      "CI count/failing-workflow identity, golden or identity-sweep gate miss",
+      "non-neutral conversion: non-line-neutral production diff or edits beyond let-to-els and call-site rewrites"
+    ],
+    "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here."
   }
 }
