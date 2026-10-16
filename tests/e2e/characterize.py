@@ -17,10 +17,12 @@ import pathlib
 import platform
 import re
 import subprocess
+import time
 from urllib.parse import urlparse
 
 from playwright.sync_api import sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+from ci_evidence import artifact_identity
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / 'tests/fixtures/characterize'
@@ -475,8 +477,17 @@ def main():
     parser.add_argument('--prepare-fixtures', action='store_true')
     parser.add_argument('--update-baseline', action='store_true')
     parser.add_argument('--runs', type=int, default=2)
+    parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
+                        help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')
     args = parser.parse_args()
     assert args.runs >= 2, 'The determinism gate requires at least two runs.'
+    matrix_run = args.matrix_run_index
+    if matrix_run:
+        assert args.runs == 2 and not (args.inject_harness or args.update_baseline or args.prepare_fixtures)
+        assert args.source_root.resolve() == ROOT, 'Matrix workers must test the current checkout.'
+    identity = artifact_identity() if matrix_run else None
+    started = time.monotonic()
+    run_numbers = [matrix_run] if matrix_run else range(1, args.runs + 1)
     if args.update_baseline:
         assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
     meta = metadata(args.source_root)
@@ -513,7 +524,7 @@ def main():
             pixel_changes = []
             capture_hashes = []
             cache_identity_runs = []
-            for run in range(1, args.runs + 1):
+            for run in run_numbers:
                 cache_identity = verify_element_caches(browser, url, args.inject_harness)
                 require_element_cache_result(cache_identity, args.inject_harness)
                 cache_identity_runs.append({'run': run, 'elementCacheIdentity': cache_identity})
@@ -521,6 +532,7 @@ def main():
                 # scientific golden comparison fails (including on CI).
                 (ARTIFACTS / 'characterize-cache-identity.json').write_text(json.dumps({
                     'sourceAppSha256': meta['appSha256'], 'requestedRuns': args.runs,
+                    **({'artifactIdentity': identity} if matrix_run else {}),
                     'elementCacheIdentityRuns': cache_identity_runs}, indent=2) + '\n')
                 if camera_pin is None:
                     camera_pin = verify_session_camera_pin(browser, url, args.inject_harness)
@@ -551,18 +563,26 @@ def main():
                                         'changedSnapshots': sorted(set(pixel_changes))},
                     'consoleExceptions': {'vendorWarning': VENDOR_WARNING,
                                           'browserReadbackDiagnostic': READBACK_DIAGNOSTIC.pattern}}, indent=2) + '\n')
-            evidence = {'baseline': meta, 'runs': args.runs, 'capturesPerRun': len(baseline),
+            evidence = {'baseline': meta, 'runs': len(run_numbers), 'capturesPerRun': len(baseline),
                         'browserVersion': browser.version,
-                        'comparison': COMPARISON_POLICY, 'exactlyIdentical': True,
+                        'comparison': COMPARISON_POLICY, 'exactlyIdentical': None if matrix_run else True,
                         'captureSha256PerRun': capture_hashes,
-                        'deterministic': True, 'console': console,
+                        'deterministic': None if matrix_run else True, 'console': console,
                         'sessionCameraPin': camera_pin,
                         'elementCacheIdentity': cache_identity,
                         'elementCacheIdentityRuns': cache_identity_runs,
-                        'sameSessionPixelChanges': sorted(set(pixel_changes))}
+                        'sameSessionPixelChanges': sorted(set(pixel_changes)),
+                        'wallTimeSeconds': round(time.monotonic() - started, 2)}
+            if matrix_run:
+                assert artifact_identity() == identity, 'Source changed during characterization'
+                evidence.update(artifactIdentity=identity, matrixRunIndex=matrix_run,
+                                requestedRuns=args.runs, repeatComparisonPending=True)
             (ARTIFACTS / 'characterize-evidence.json').write_text(json.dumps(evidence, indent=2) + '\n')
-            print(f'[characterize] {args.runs} identical runs; {len(baseline)} snapshots each; '
-                  f'{len(set(pixel_changes))} diagnostic pixel differences.', flush=True)
+            if matrix_run:
+                print(f'[characterize] Matrix run {matrix_run}: {len(baseline)} snapshots match goldens; repeat comparison pending join.', flush=True)
+            else:
+                print(f'[characterize] {args.runs} identical runs; {len(baseline)} snapshots each; '
+                      f'{len(set(pixel_changes))} diagnostic pixel differences.', flush=True)
         finally:
             browser.close()
     return 0

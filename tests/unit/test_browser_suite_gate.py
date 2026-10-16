@@ -2,9 +2,11 @@ import importlib.util
 import json
 import pathlib
 import re
+import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'tests/e2e'))
 SPEC = importlib.util.spec_from_file_location('browser_suite', ROOT / 'tests/e2e/browser_suite.py')
 GATE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(GATE)
