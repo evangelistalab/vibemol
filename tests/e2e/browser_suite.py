@@ -106,9 +106,11 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     source_hash = hashlib.sha256((ROOT / 'assets/app/js/app.js').read_bytes()).hexdigest()
     report = {'sourceAppSha256': source_hash, 'expected': manifest['expected'], 'suites': [],
-              'method': 'Every entry point runs once, sequentially, without retries or changed assertions.'}
+              'method': 'Every entry point runs once, sequentially, without retries or changed assertions.',
+              'timingMethod': 'time.monotonic wall time around each suite subprocess; includes browser/server startup'}
     if os.environ.get('GITHUB_ACTIONS') == 'true':
         report['ciRunUrl'] = f"https://github.com/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}"
+    batch_started = time.monotonic()
     for suite in suites:
         folder = out / pathlib.Path(suite).stem
         folder.mkdir(exist_ok=True)
@@ -119,8 +121,9 @@ def main():
                 env={**os.environ, 'VIBEMOL_TEST_ARTIFACT_DIR': str(folder), 'PYTHONUNBUFFERED': '1'},
                 stdout=log_file, stderr=subprocess.STDOUT)
         log = (folder / 'run.log').read_text()
+        elapsed = round(time.monotonic() - started, 2)
         entry = {'test': suite, 'exitCode': result.returncode,
-                 'seconds': round(time.monotonic() - started, 2),
+                 'seconds': elapsed, 'wallTimeSeconds': elapsed,
                  'testSha256': hashlib.sha256((ROOT / suite).read_bytes()).hexdigest(),
                  'rawLog': str((folder / 'run.log').relative_to(ROOT)),
                  **failure_details(log, suite, (ROOT / suite).read_text())}
@@ -138,6 +141,7 @@ def main():
     actual = {key: report[key] for key in ('passed', 'failed', 'total')}
     gate = not unexpected and actual == manifest['expected']
     report.update(unexpectedFailures=unexpected, matchesAcceptedBaseline=gate)
+    report['wallTimeSeconds'] = round(time.monotonic() - batch_started, 2)
     smoke = next(e for e in report['suites'] if e['test'] == 'tests/e2e/smoke.py')
     report['issue11Workflow'] = (smoke['failureWorkflow'] if smoke['knownDefect'] else
                                  {'status': 'passed' if smoke['exitCode'] == 0 else 'unexpected smoke failure'})
