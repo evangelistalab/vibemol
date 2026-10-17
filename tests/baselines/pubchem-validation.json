@@ -1,0 +1,35 @@
+{
+  "stage": 4,
+  "scope": "PubChem controller extraction",
+  "status": "Local verification complete; own first-pass exact-candidate ordinary CI required before merge",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "sourceAppSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+  "sourcePubchemSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+  "trackedLet": [
+    265,
+    262
+  ],
+  "genuineControllerInputs": [
+    "els",
+    "escapeHtml",
+    "setTooltipText",
+    "setHintMessage",
+    "parseXYZ",
+    "handleSceneDropRecords",
+    "setVolumes",
+    "setCurrentIndex",
+    "clearSceneMeshes",
+    "clearEditHistory",
+    "appendParsedVolumeRecord",
+    "finalizeLoadedVolumes",
+    "setNavigationHint"
+  ],
+  "dependencyCount": 13,
+  "exclusiveLimit": 15,
+  "manualCasesPerSource": 72,
+  "capturesPerRun": 102,
+  "runs": 2,
+  "identitySlots": 52,
+  "identityContexts": 8,
+  "validation": "tests/baselines/evidence/stage4/pubchem/local-validation.json"
+}

@@ -1,0 +1,701 @@
+{
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+  "functionCount": 19,
+  "functions": [
+    {
+      "name": "updatePubChemMetadataPanel",
+      "start": 30605,
+      "end": 30629,
+      "external": [
+        "String",
+        "escapeHtml",
+        "pubchemMetaContent",
+        "pubchemMetaWrap"
+      ]
+    },
+    {
+      "name": "setPubChemSuggestions",
+      "start": 30770,
+      "end": 30778,
+      "external": [
+        "document",
+        "pubchemSuggestionsEl"
+      ]
+    },
+    {
+      "name": "normalizePubChemQuery",
+      "start": 30785,
+      "end": 30787,
+      "external": [
+        "String"
+      ]
+    },
+    {
+      "name": "getPubChemCompoundUrl",
+      "start": 30794,
+      "end": 30796,
+      "external": []
+    },
+    {
+      "name": "fetchPubChemJson",
+      "start": 30805,
+      "end": 30811,
+      "external": [
+        "Error",
+        "fetch"
+      ]
+    },
+    {
+      "name": "fetchPubChemText",
+      "start": 30819,
+      "end": 30823,
+      "external": [
+        "Error",
+        "fetch"
+      ]
+    },
+    {
+      "name": "extractPubChemCidList",
+      "start": 30830,
+      "end": 30835,
+      "external": [
+        "Array",
+        "Number"
+      ]
+    },
+    {
+      "name": "buildPubChemMetadataFallback",
+      "start": 30843,
+      "end": 30850,
+      "external": []
+    },
+    {
+      "name": "hasPubChemConformer",
+      "start": 30860,
+      "end": 30866,
+      "external": []
+    },
+    {
+      "name": "fetchPubChemSuggestions",
+      "start": 30874,
+      "end": 30910,
+      "external": [
+        "Array",
+        "Math",
+        "Promise",
+        "Set",
+        "console",
+        "encodeURIComponent"
+      ]
+    },
+    {
+      "name": "hasPubChem3DByName",
+      "start": 30918,
+      "end": 30924,
+      "external": [
+        "encodeURIComponent"
+      ]
+    },
+    {
+      "name": "hasPubChem3DByCid",
+      "start": 30931,
+      "end": 30936,
+      "external": [
+        "Number"
+      ]
+    },
+    {
+      "name": "fetchPubChemCidByName",
+      "start": 30945,
+      "end": 30963,
+      "external": [
+        "Error",
+        "console",
+        "encodeURIComponent"
+      ]
+    },
+    {
+      "name": "fetchPubChemSdfByCid",
+      "start": 30972,
+      "end": 30987,
+      "external": [
+        "Error",
+        "Number",
+        "String"
+      ]
+    },
+    {
+      "name": "fetchPubChemMetadata",
+      "start": 30995,
+      "end": 31022,
+      "external": [
+        "Array",
+        "Error",
+        "Number"
+      ]
+    },
+    {
+      "name": "sdfToXYZText",
+      "start": 31030,
+      "end": 31064,
+      "external": [
+        "Error",
+        "Number",
+        "String",
+        "parseFloat",
+        "parseInt"
+      ]
+    },
+    {
+      "name": "setPubChemBusy",
+      "start": 31070,
+      "end": 31082,
+      "external": [
+        "pubchemLoadBtn",
+        "setTooltipText"
+      ]
+    },
+    {
+      "name": "loadPubChemCompound",
+      "start": 31089,
+      "end": 31143,
+      "external": [
+        "Array",
+        "Error",
+        "String",
+        "alert",
+        "appendParsedVolumeRecord",
+        "clearEditHistory",
+        "clearSceneMeshes",
+        "console",
+        "currentIndex",
+        "finalizeLoadedVolumes",
+        "handleSceneDropRecords",
+        "parseXYZ",
+        "setHintMessage",
+        "setNavigationHint",
+        "volumes"
+      ]
+    },
+    {
+      "name": "schedulePubChemSuggestions",
+      "start": 31148,
+      "end": 31168,
+      "external": [
+        "clearTimeout",
+        "console",
+        "pubchemQueryInput",
+        "setTimeout"
+      ]
+    }
+  ],
+  "ownedBindings": [
+    "PUBCHEM_AUTOCOMPLETE_LIMIT",
+    "PUBCHEM_SEARCH_ICON_SVG",
+    "buildPubChemMetadataFallback",
+    "extractPubChemCidList",
+    "fetchPubChemCidByName",
+    "fetchPubChemJson",
+    "fetchPubChemMetadata",
+    "fetchPubChemSdfByCid",
+    "fetchPubChemSuggestions",
+    "fetchPubChemText",
+    "getPubChemCompoundUrl",
+    "hasPubChem3DByCid",
+    "hasPubChem3DByName",
+    "hasPubChemConformer",
+    "loadPubChemCompound",
+    "normalizePubChemQuery",
+    "pubchemBusy",
+    "pubchemHas3DByCidCache",
+    "pubchemHas3DByNameCache",
+    "pubchemSuggestTimer",
+    "pubchemSuggestToken",
+    "schedulePubChemSuggestions",
+    "sdfToXYZText",
+    "setPubChemBusy",
+    "setPubChemSuggestions",
+    "updatePubChemMetadataPanel"
+  ],
+  "appOwnedExternalBindings": {
+    "pubchemMetaContent": [
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30606
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30610
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30628
+      }
+    ],
+    "pubchemMetaWrap": [
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30609
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30609
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30613
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30613
+      }
+    ],
+    "escapeHtml": [
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30626
+      },
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30626
+      }
+    ],
+    "pubchemSuggestionsEl": [
+      {
+        "function": "setPubChemSuggestions",
+        "line": 30771
+      },
+      {
+        "function": "setPubChemSuggestions",
+        "line": 30772
+      },
+      {
+        "function": "setPubChemSuggestions",
+        "line": 30776
+      }
+    ],
+    "pubchemLoadBtn": [
+      {
+        "function": "setPubChemBusy",
+        "line": 31072
+      },
+      {
+        "function": "setPubChemBusy",
+        "line": 31073
+      },
+      {
+        "function": "setPubChemBusy",
+        "line": 31074
+      },
+      {
+        "function": "setPubChemBusy",
+        "line": 31077
+      },
+      {
+        "function": "setPubChemBusy",
+        "line": 31080
+      },
+      {
+        "function": "setPubChemBusy",
+        "line": 31081
+      }
+    ],
+    "setTooltipText": [
+      {
+        "function": "setPubChemBusy",
+        "line": 31077
+      }
+    ],
+    "setHintMessage": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31094
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31138
+      }
+    ],
+    "parseXYZ": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31104
+      }
+    ],
+    "handleSceneDropRecords": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31110
+      }
+    ],
+    "volumes": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31119,
+        "write": true
+      }
+    ],
+    "currentIndex": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31120,
+        "write": true
+      }
+    ],
+    "clearSceneMeshes": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31121
+      }
+    ],
+    "clearEditHistory": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31122
+      }
+    ],
+    "appendParsedVolumeRecord": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31124
+      }
+    ],
+    "finalizeLoadedVolumes": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31132
+      }
+    ],
+    "setNavigationHint": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31134
+      }
+    ],
+    "pubchemQueryInput": [
+      {
+        "function": "schedulePubChemSuggestions",
+        "line": 31149
+      },
+      {
+        "function": "schedulePubChemSuggestions",
+        "line": 31151
+      }
+    ]
+  },
+  "browserAndEcmaGlobals": {
+    "String": [
+      {
+        "function": "updatePubChemMetadataPanel",
+        "line": 30616
+      },
+      {
+        "function": "normalizePubChemQuery",
+        "line": 30786
+      },
+      {
+        "function": "fetchPubChemSdfByCid",
+        "line": 30981
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31031
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31136
+      }
+    ],
+    "document": [
+      {
+        "function": "setPubChemSuggestions",
+        "line": 30774
+      }
+    ],
+    "fetch": [
+      {
+        "function": "fetchPubChemJson",
+        "line": 30807
+      },
+      {
+        "function": "fetchPubChemText",
+        "line": 30820
+      }
+    ],
+    "Error": [
+      {
+        "function": "fetchPubChemJson",
+        "line": 30809
+      },
+      {
+        "function": "fetchPubChemText",
+        "line": 30821
+      },
+      {
+        "function": "fetchPubChemCidByName",
+        "line": 30948
+      },
+      {
+        "function": "fetchPubChemCidByName",
+        "line": 30952
+      },
+      {
+        "function": "fetchPubChemCidByName",
+        "line": 30962
+      },
+      {
+        "function": "fetchPubChemSdfByCid",
+        "line": 30986
+      },
+      {
+        "function": "fetchPubChemMetadata",
+        "line": 30997
+      },
+      {
+        "function": "fetchPubChemMetadata",
+        "line": 31010
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31032
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31039
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31042
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31058
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31106
+      }
+    ],
+    "Array": [
+      {
+        "function": "extractPubChemCidList",
+        "line": 30831
+      },
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30879
+      },
+      {
+        "function": "fetchPubChemMetadata",
+        "line": 31007
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31105
+      }
+    ],
+    "Number": [
+      {
+        "function": "extractPubChemCidList",
+        "line": 30834
+      },
+      {
+        "function": "extractPubChemCidList",
+        "line": 30834
+      },
+      {
+        "function": "hasPubChem3DByCid",
+        "line": 30932
+      },
+      {
+        "function": "hasPubChem3DByCid",
+        "line": 30933
+      },
+      {
+        "function": "fetchPubChemSdfByCid",
+        "line": 30983
+      },
+      {
+        "function": "fetchPubChemMetadata",
+        "line": 30996
+      },
+      {
+        "function": "fetchPubChemMetadata",
+        "line": 30997
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31035
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31039
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31050
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31050
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31050
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31057
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31057
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31057
+      }
+    ],
+    "encodeURIComponent": [
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30877
+      },
+      {
+        "function": "hasPubChem3DByName",
+        "line": 30922
+      },
+      {
+        "function": "fetchPubChemCidByName",
+        "line": 30949
+      }
+    ],
+    "Math": [
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30877
+      },
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30877
+      }
+    ],
+    "Set": [
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30882
+      }
+    ],
+    "Promise": [
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30894
+      }
+    ],
+    "console": [
+      {
+        "function": "fetchPubChemSuggestions",
+        "line": 30899
+      },
+      {
+        "function": "fetchPubChemCidByName",
+        "line": 30959
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31101
+      },
+      {
+        "function": "loadPubChemCompound",
+        "line": 31137
+      },
+      {
+        "function": "schedulePubChemSuggestions",
+        "line": 31164
+      }
+    ],
+    "parseInt": [
+      {
+        "function": "sdfToXYZText",
+        "line": 31034
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31037
+      }
+    ],
+    "parseFloat": [
+      {
+        "function": "sdfToXYZText",
+        "line": 31046
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31047
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31048
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31052
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31053
+      },
+      {
+        "function": "sdfToXYZText",
+        "line": 31054
+      }
+    ],
+    "alert": [
+      {
+        "function": "loadPubChemCompound",
+        "line": 31139
+      }
+    ],
+    "clearTimeout": [
+      {
+        "function": "schedulePubChemSuggestions",
+        "line": 31150
+      }
+    ],
+    "setTimeout": [
+      {
+        "function": "schedulePubChemSuggestions",
+        "line": 31157
+      }
+    ]
+  },
+  "projectedExplicitDeps": [
+    "els",
+    "escapeHtml",
+    "setTooltipText",
+    "setHintMessage",
+    "parseXYZ",
+    "handleSceneDropRecords",
+    "setVolumes",
+    "setCurrentIndex",
+    "clearSceneMeshes",
+    "clearEditHistory",
+    "appendParsedVolumeRecord",
+    "finalizeLoadedVolumes",
+    "setNavigationHint"
+  ],
+  "projectedCount": 13,
+  "domFieldsGroupedAsExistingEls": [
+    "pubchemMetaWrap",
+    "pubchemMetaContent",
+    "pubchemQueryInput",
+    "pubchemLoadBtn",
+    "pubchemSuggestionsEl"
+  ],
+  "appStateWrites": {
+    "volumes": "setVolumes: value => { volumes = value; }",
+    "currentIndex": "setCurrentIndex: value => { currentIndex = value; }"
+  },
+  "policy": "Genuine 13-field controller interface, including both explicit app-state writers. No app facade or hidden input. Browser/ECMAScript globals remain ambient as in existing classic-script modules. No production code written during this audit."
+}

@@ -43,6 +43,41 @@
       "suite": "tests/e2e/mode_consistency.py"
     },
     {
+      "id": "edit-tool-320-overflow",
+      "issue": 21,
+      "url": "https://github.com/evangelistalab/vibemol/issues/21",
+      "status": "open",
+      "suite": "tests/e2e/edit_tool.py",
+      "workflow": "Intermittent Edit toolbar layout collapse at 320px: clientWidth12 versus scrollWidth442, hidden trigger and empty hidden overflow menu",
+      "acceptedCiFailure": false,
+      "classification": "Measured on both integration control and frozen Symmetry; direct-human layout-collapse classification. Exact cause and tagged-CI reproduction are not diagnosed.",
+      "originalAssertionPreserved": true,
+      "observations": {
+        "integration": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 244.2
+        },
+        "symmetry": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 230.8
+        }
+      },
+      "diagnosticOnly": true,
+      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
+      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set.",
+      "impact": "Edit toolbar unusable in the measured collapsed state, beyond narrow-viewport overflow",
+      "priorityRelativeTo": {
+        "aheadOfIssue": 17,
+        "batch": "0.9.x",
+        "authority": "direct human instruction 2026-10-17"
+      },
+      "productionFixAllowedInPubChemRefactor": false
+    },
+    {
       "id": "selection-metal-popover",
       "issue": 17,
       "url": "https://github.com/evangelistalab/vibemol/issues/17",
@@ -76,34 +111,6 @@
       ],
       "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
       "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
-    },
-    {
-      "id": "edit-tool-320-overflow",
-      "issue": 21,
-      "url": "https://github.com/evangelistalab/vibemol/issues/21",
-      "status": "open",
-      "suite": "tests/e2e/edit_tool.py",
-      "workflow": "Workbench 320px tools overflow after Transform focus / ArrowRight selects Build",
-      "acceptedCiFailure": false,
-      "classification": "Present on integration control and frozen Symmetry in human-authorized instrumented CI; carry under direct human both-overflow branch. Tagged-CI reproduction not claimed.",
-      "originalAssertionPreserved": true,
-      "observations": {
-        "integration": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 244.2
-        },
-        "symmetry": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 230.8
-        }
-      },
-      "diagnosticOnly": true,
-      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
-      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
-      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
-      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set."
     }
   ],
   "otherCarriedFollowups": [
@@ -128,5 +135,13 @@
     "failed": 3,
     "total": 37
   },
-  "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json"
+  "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
+  "relativeBatchPriority": {
+    "orderedIssues": [
+      21,
+      17
+    ],
+    "scope": "Explicit relative order only; does not rank these against the other carried defects.",
+    "reason": "The measured320px toolbar layout collapse makes Edit controls unusable."
+  }
 }
