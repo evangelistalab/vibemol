@@ -1,0 +1,120 @@
+{
+  "reports": [
+    {
+      "label": "control",
+      "identity": {
+        "commit": "2ab03eb1b2802b0ac5e5d6d682aca0c6b4c472c6",
+        "tree": "6ceaa9597ba745d93b1e0632f7e6a3c7b32f0712",
+        "appSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+        "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+        "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+        "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+        "ciRunAttempt": "1"
+      },
+      "suite": {
+        "test": "tests/e2e/edit_tool.py",
+        "exitCode": 0,
+        "seconds": 82.1,
+        "wallTimeSeconds": 82.1,
+        "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+        "rawLog": "out/test-artifacts/browser-suite/edit_tool/run.log",
+        "firstFailure": null,
+        "failureCallSite": null,
+        "exceptionType": null,
+        "failureWorkflow": null,
+        "knownDefect": false
+      },
+      "environmentRendererSource": "Smoke worker metadata from the same CI run; not a numeric edit_tool layout readback.",
+      "renderer": {
+        "suite": "smoke",
+        "os": "Linux",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "rendererClass": "software",
+        "vendor": "WebKit",
+        "renderer": "WebKit WebGL",
+        "unmaskedVendor": "Google Inc. (Google)",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040"
+      },
+      "rawLogSha256": "9fce861627c11a8ffca677bc27557ebfdc34ebba442885084e5d504cee2c24ad",
+      "width320NumericReadbackAvailable": false,
+      "width320OverflowMenuStateAvailable": false
+    },
+    {
+      "label": "proposed",
+      "identity": {
+        "commit": "307d59a03744db9ba803937f1ad7bc1b2544337d",
+        "tree": "65706809c7c337ee42a11a531e34eb2bb09c2000",
+        "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+        "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+        "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+        "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+        "ciRunAttempt": "1"
+      },
+      "suite": {
+        "test": "tests/e2e/edit_tool.py",
+        "exitCode": 1,
+        "seconds": 17.0,
+        "wallTimeSeconds": 17.0,
+        "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+        "rawLog": "out/test-artifacts/browser-suite/edit_tool/run.log",
+        "firstFailure": {
+          "suite": "edit_tool.py",
+          "line": 131,
+          "function": "run"
+        },
+        "failureCallSite": {
+          "suite": "edit_tool.py",
+          "line": 177,
+          "function": "main"
+        },
+        "exceptionType": "AssertionError",
+        "failureWorkflow": null,
+        "knownDefect": false
+      },
+      "environmentRendererSource": "Smoke worker metadata from the same CI run; not a numeric edit_tool layout readback.",
+      "renderer": {
+        "suite": "smoke",
+        "os": "Linux",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "rendererClass": "software",
+        "vendor": "WebKit",
+        "renderer": "WebKit WebGL",
+        "unmaskedVendor": "Google Inc. (Google)",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382"
+      },
+      "rawLogSha256": "e811804ff4bc56731a51dacd72d59d00ac422eaa75f63e6bb9c0ba1dfd4e87f7",
+      "width320NumericReadbackAvailable": false,
+      "width320OverflowMenuStateAvailable": false
+    }
+  ],
+  "sameNominalCiEnvironment": true,
+  "identicalSourceFiles": {
+    ".github/workflows/ci.yml": "11abe0edcb1269bfa11fc34554821223bea5302cb90a3f308752fcbdd6453a9c",
+    "tests/e2e/edit_tool.py": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+    "tests/baselines/browser-shards.json": "2a4ff210d359a5d85726a6ec16d2f242f744a6a7d8ad839f5bd8cd6d251d98c9",
+    "api/requirements.txt": "e062756e078c1fa38bdb2796046b669990ab5b5d5e4b5196779b917127b846f3",
+    "assets/app/js/workbench.js": "2c2f076d1942ae9508debd82130e5424e61b52ece30ba10f072d106ab58d88b5",
+    "assets/app/css/workbench.css": "925ad1d5052a19a8ca115864c5058af46bfae9afc9acc86e0d443140ef46047c",
+    "index.html": "c6139495a200d90ae601af73647a26e4d7425b205a452607994c2a90bcac4d09"
+  },
+  "controlTreeEqualsIntegrationTree": true,
+  "controlCommitCaveat": "38989104040 tested Selection head518762f and checkout2ab03eb; its tree equals merged integration e35da9c. The CI job did not execute commit e35da9c itself.",
+  "sameSourceRepeatedInCi": false,
+  "determinismEstablished": false,
+  "causalSourceAttributionEstablished": false,
+  "interpretation": "Observed CI pass on the integration-equivalent tree and failure on proposed, with matching test/pipeline/browser/OS. This is correlation across two trees, not a deterministic or causal diagnosis.",
+  "controlWidth320Evidence": "The full suite exit0 and widths-passed marker imply the original boolean assertion passed at320. No numeric scrollWidth/clientWidth, menu state, timestamp or per-width trace was logged. No quantitative readback can be supplied from this artifact.",
+  "proposedWidth320Evidence": "Original overflow assertion fails with AssertionError320; the raw traceback likewise has no numeric width readback.",
+  "diagnosticCiRerunsPerformed": 0,
+  "gateStillFailed": true
+}

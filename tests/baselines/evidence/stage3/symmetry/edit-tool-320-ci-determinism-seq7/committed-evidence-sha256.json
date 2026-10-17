@@ -1,0 +1,13 @@
+{
+  "README.md": "b3dd0741aa5ca2ea48230bb11b146d743f7382f5f3604fc95e4566b0cd374f2e",
+  "audit-scope.json": "dc4927c6e5c45211cdf236b5740787076661c5bd46fdf39dc779e6761a0a124e",
+  "control-edit_tool.log": "9fce861627c11a8ffca677bc27557ebfdc34ebba442885084e5d504cee2c24ad",
+  "control-vs-proposed.json": "3985e8f1c5dc6790ae28fa81e006a34a7be9d17dc376117fb07c1772fa141075",
+  "immutable-evidence.sha256": "a4b837a6ac0ce5dcafa808d43ffd7a4abfda12bb9f0e5d5cc3265d25d00ba87e",
+  "mechanism-audit.json": "b02805f3cffef0c9c5ac314eee2ae54b77b26b07ddbf4cf57014fd262ac76f79",
+  "proposed-edit_tool.log": "e811804ff4bc56731a51dacd72d59d00ac422eaa75f63e6bb9c0ba1dfd4e87f7",
+  "raw-evidence-sha256.json": "257399949a631ff7f8733537b643fcb894f570700c7f8824131484414591c44f",
+  "raw-log.diff": "c88e7b29e71fc348b0b684e3ac918f61eee5a0cf115e25a3dbfe89da56f87985",
+  "source/app-excerpts.txt": "4053af849f3e63fe20dd355a2f5cf829aa58bf5c1e5ce21ec96c0ee0714b8f33",
+  "source/workbench.js": "2c2f076d1942ae9508debd82130e5424e61b52ece30ba10f072d106ab58d88b5"
+}

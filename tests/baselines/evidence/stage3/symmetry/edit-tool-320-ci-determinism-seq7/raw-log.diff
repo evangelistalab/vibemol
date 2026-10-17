@@ -1,0 +1,16 @@
+--- 38989104040/edit_tool/run.log
++++ 38994402382/edit_tool/run.log
+@@ -1,2 +1,11 @@
+-[edit tool] arming, selection, atom/fragment/molecule Escape, ARIA, keyboard, modes and widths: passed
+-[edit tool] both themes × five orbital schemes rendered (QA-only surface visibility): passed
++Traceback (most recent call last):
++  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_tool.py", line 183, in <module>
++    if __name__=='__main__':main()
++                            ^^^^^^
++  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_tool.py", line 177, in main
++    run(page,url);visual_schemes(browser,url);assert not errors,errors
++    ^^^^^^^^^^^^^
++  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_tool.py", line 131, in run
++    assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width
++           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
++AssertionError: 320

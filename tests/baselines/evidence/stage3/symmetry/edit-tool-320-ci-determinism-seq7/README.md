@@ -1,0 +1,13 @@
+# Existing CI control and Symmetry cache mechanism audit
+
+No new CI/browser run was launched. Existing artifacts confirm edit_tool exit0/82.10s on run38989104040's tree (equal to integration e35da9c) and exit1/17.00s on proposed run38994402382. Both have the exact test hash and nominal Linux x86_64 / Chromium156.0.8078.4 environment. Workflow, shard plan, requirements, Workbench JS/CSS and HTML are byte-identical across those two source trees. This is a source/outcome correlation across two runs, not proof of deterministic behavior or causal attribution. The first failed gate is unchanged.
+
+The passing log contains two end-of-routine pass markers. It implies the 320px boolean assertion passed, but logs no numeric scrollWidth/clientWidth, menu state or per-width trace. The failing log records AssertionError320, likewise without numeric widths. `raw-log.diff` contains the complete available comparison; no missing control readback was invented.
+
+The alias `canvasAdaptiveMenuEl` shares the plain, eagerly assigned `els.displayWindowAdaptiveMenuEl` field at app.js:6952. It has no getter. An indirect layout path exists: updateEditAdaptiveMenuUi:21090 → updateCanvasAdaptiveMenuUi:11431 writes data-mode → Workbench modeObserver:567 → schedule:232 queues sync → fitTools:361 reads widths at106. Original const-source and alias reads now resolve to one field, at the same query point.
+
+The nine Symmetry fields register at app.js:8229–8237. cacheElement:1189 defines a memoized getter and immediately returns els[name]:1195, synchronously priming its query. Every corresponding static ID appears before the app script. Present nodes therefore do not first resolve later simply because an accessor was introduced. Only an initially null lookup can retry later. The nine fields are panel content/control caches, not `.wb-tools` or fitTools inputs. Their full per-binding use sites and indirect relationships are in mechanism-audit.json; no new async boundary or delayed lookup has been demonstrated. This does not prove there is no timing effect from getter reads; runtime causation is unresolved.
+
+Local comparisons previously passed nine times under macOS arm64 / Playwright1.60 / Chromium145. CI is Playwright1.64 / Chromium156 / Linux x86_64. Those local passes do not clear the original 33/4/37 CI gate. No rerun, third run, gate change, assertion relaxation, source fix, merge, Colors change or soak occurred during this audit. A reviewer-file permission to rerun conflicts with the prior direct human no-rerun constraint and has been routed for a human decision.
+
+Evidence only, on a separate local documentation branch. The candidate stays frozen at537e95f and integration at e35da9c / let275.
