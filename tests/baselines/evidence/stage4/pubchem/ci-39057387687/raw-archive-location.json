@@ -1,0 +1,5 @@
+{
+  "path": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/ci-39057387687/immutable-failed-evidence.tar.gz",
+  "sha256": "9910f60fb05e579bd6a226385af008d346922c328d4bae36fa2abec604b62cf5",
+  "scope": "All original artifact ZIPs, generated captures, logs and reconstructed joins remain unchanged in ignored raw output; no acceptance gate is supplied by this failed-run archive."
+}

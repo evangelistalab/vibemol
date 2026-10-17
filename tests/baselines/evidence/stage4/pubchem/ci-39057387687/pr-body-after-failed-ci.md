@@ -1,0 +1,35 @@
+**Blocked on the unchanged CI gate; unmerged and frozen.**
+
+PubChem search/import/metadata lived in app.js alongside scene orchestration. Move its 19 implementations into `pubchem.js`, with one controller and **13 genuine explicit dependencies**, all used. The app retains its scene/record mutation callbacks and the original DOM query, constructor and listener timing. Tracked app lets **265 → 262**; app **32,666 lines /1,163 direct function declarations**; module **480 lines /21 declarations**.
+
+The controller owns busy/debounce/token state and the existing availability caches. Its inputs are `els`, `escapeHtml`, `setTooltipText`, `setHintMessage`, `parseXYZ`, `handleSceneDropRecords`, `setVolumes`, `setCurrentIndex`, `clearSceneMeshes`, `clearEditHistory`, `appendParsedVolumeRecord`, `finalizeLoadedVolumes`, and `setNavigationHint`. Browser/ECMAScript globals retain their existing role. The five DOM fields use the established shared table. Registration adds one versioned script, one syntax-check entry and the exact planned `VibeMolPubChem.createPubChemController` API contract through the existing additive manifest.
+
+## Manual verification
+
+- Immutable tagged `v0.9.5-pre-refactor` and proposed source each passed **72 native cases**: 18 scenarios across Workbench/legacy and light/dark. PubChem geometry/metadata, dialogs, request paths/counts, busy handling and prior-scene preservation matched exactly. Coverage includes click/Enter import, empty/3D-less results, HTTP/transport failure, malformed JSON/schema/SDF, metadata fallback, CID/SDF/autocomplete request aborts, debounce/cache filtering, busy reentry and stale-suggestion suppression. Abort evidence contains actual PubChem `ERR_ABORTED` failures. Raw network/collector diagnostics are retained separately.
+- Independent source audit: **1,227 checks passed**. All **1,190 original declarations** accounted for: **19** moved implementations exact after inverse lexical substitutions; **1,171** other declarations byte-identical. Complete app/module reconstructions match. Both app-owned assignments retain their order through explicit callbacks.
+- `make check`, **433 JS/29 Python** unit tests passed. Local characterization passed **102 unchanged goldens twice**, exact serialized repeat, **52 slots in eight contexts**, fixed **47+5 Workbench /48+4 legacy** composition and every observer/checkpoint minimum. Local duration **1018.67s**, Chromium **145.0.7632.6**. Golden payloads, shipped suites/assertions/waits, fixtures, QA and workflows are unchanged; the planned API addition is exact.
+
+## CI — blocked
+
+[Automatic run 39057387687, attempt 1](https://github.com/evangelistalab/vibemol/actions/runs/39057387687) completed **32 passing / 5 failing / 37 once**. The aggregate gate failed. The accepted failure set remains exactly the original three workflows; no merge or retry is authorized by this result. The candidate stays frozen at `25fd30a6e273fa289f17ec999b8528e82c061631`; integration stays at `6c58355` / **265** tracked lets.
+
+The two additional suite failures are `look_references.py` and its invocation inside `looks.py`, both at `reference_migration`, line 182:
+
+```python
+assert ids(other)==[style,colors] and flags(other)==[False,False]
+```
+
+This is fresh-browser legacy last-appearance reference migration. The failing ids/flag values were not logged, so the result does not establish which half failed or whether the cause is pre-existing, nondeterministic or proposed-only. No tagged/control diagnostic, new test run, production fix, assertion change or gate exception followed.
+
+Both independently reconstructed shipped joins match CI. The browser join rejects **32/5/37**; the characterization join passes **102 unchanged goldens twice / exact serialized repeat / zero diagnostic pixel changes**, with all **52 slots × eight contexts**, fixed **47+5 Workbench / 48+4 legacy** composition, and every firing minimum. Checks **433 JS / 29 Python** and WebKit passed. All 11 raw checkout logs and the artifact checkout tree/parents match the frozen head/base. All nine original artifact ZIP digests match GitHub.
+
+The three accepted failures still match their raw workflows. #11 fired at **trajectory after the second download**; vibration export was not reached. **No `#appearanceMaterialPreset` timeout was observed**, but Looks stopped before either Studio/Properties `material_families` path, so that required coverage is incomplete and the intermittent remains open. Looks ran **393.73 s / 6.56 min** before the migration assertion. Renderer: Chromium **156.0.8078.4**, Linux SwiftShader; Playwright **1.64.0**.
+
+Whole sharded CI: **1,917 s / 31.95 min**, **75.96% less / 4.161×** against 132.93 min, eight cold-cache misses. This is a failed run's measured duration, not acceptance evidence. Raw and independently validated failure evidence is preserved under `out/test-artifacts/stage4/pubchem/ci-39057387687/` and a reviewable copy under `tests/baselines/evidence/stage4/pubchem/ci-39057387687/`; the latter is not committed into the frozen candidate or accepted integration.
+
+## Carried findings
+
+Reclassify **#21** as an intermittent **Edit toolbar layout collapse** at 320px: clientWidth **12** vs scrollWidth **442**, hidden trigger and empty hidden menu. Rank it above #17 in the 0.9.x batch. This changes its recorded impact/order; the accepted CI failing set stays the original three workflows. Other carried defects and the material-preset intermittent remain open. Stage 5 is a separate design-only audit; this PR contains no Stage 5 implementation or defect fix.
+
+Evidence: `tests/baselines/evidence/stage4/pubchem/` and `tests/baselines/pubchem-validation.json`.

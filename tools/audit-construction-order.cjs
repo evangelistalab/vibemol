@@ -21,7 +21,7 @@ function mainScope(ast) {
     if (p.parentPath.isCallExpression() && p.parentPath.parentPath.isExpressionStatement()
         && p.parentPath.parentPath.parentPath.isProgram()) { found = p; count++; }
   }});
-  assert(found && count===1, 'Expected exactly the app/module IIFE');
+  assert.equal(count,1,'Expected exactly one app/module IIFE');
   return found;
 }
 
@@ -177,9 +177,25 @@ for (const stage of config.stages) {
     }});
     const index=stage.worktree?fs.readFileSync(path.join(stage.worktree,'index.html'),'utf8'):git('show',stage.after+':index.html');
     const scripts=[...index.matchAll(/<script[^>]+src=["'](?:\.\/)?([^"'?]+)(?:\?[^"']*)?["']/g)].map(x=>x[1]);
+    const scriptTags=index.match(/<script\b[^>]*\bsrc=[^>]*>/gi)||[];
+    for(const dependency of [file,app]) {
+      const tag=scriptTags.find(t=>t.includes(dependency+'?')||t.includes(dependency+'"')||t.includes(dependency+"'"));
+      const comparands={dependency,actualTag:tag||null,expectedTagPresent:true,expectedAsyncOrDefer:false,
+        actualAsyncOrDefer:tag?/\s(?:async|defer)(?:\s|=|>)/i.test(tag):null};
+      console.log(JSON.stringify({check:'ordered synchronous script',...comparands}));
+      assert.equal(!!tag,true,JSON.stringify(comparands));
+      assert.equal(comparands.actualAsyncOrDefer,false,JSON.stringify(comparands));
+    }
     const modulePos=scripts.indexOf(file);
-    for(const consumer of stage.consumers||[])assert(modulePos<scripts.indexOf(consumer),file+' must precede '+consumer);
-    assert(modulePos>=0 && modulePos<scripts.indexOf(app),file+' must load before app.js');
+    const orderComparands={module:file,actualModuleIndex:modulePos,actualAppIndex:scripts.indexOf(app),
+      expectedModulePresent:true,expectedAppPresent:true,expectedModuleBeforeApp:true,
+      consumers:(stage.consumers||[]).map(file=>({file,actualIndex:scripts.indexOf(file),expectedAfterModule:true}))};
+    console.log(JSON.stringify({check:'script positions',...orderComparands}));
+    const message=JSON.stringify(orderComparands);
+    assert.equal(modulePos>=0,true,message);
+    assert.equal(scripts.indexOf(app)>=0,true,message);
+    assert.equal(modulePos<scripts.indexOf(app),true,message);
+    for(const consumer of orderComparands.consumers)assert.equal(modulePos<consumer.actualIndex,true,message);
     report.modules.push({file,sha256:hash(s),loadedBeforeApp:true,bindings,
       status:bindings.every(b=>b.status==='passed')?'passed':'review-required'});
   }

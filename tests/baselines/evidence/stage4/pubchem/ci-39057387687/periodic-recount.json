@@ -1,0 +1,20 @@
+{
+  "factoryInputs": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "els"
+  ],
+  "count": 11,
+  "nonDomInputs": 10,
+  "domObjectInputs": 1,
+  "sourceSha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a",
+  "baseBytesIdentical": true
+}

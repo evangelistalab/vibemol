@@ -1,0 +1,13 @@
+An exception during ordinary startup appearance restoration leaves applied rendering settings paired with incorrect Look reference bookkeeping. The failure is caught as a console warning; there is no user-facing error, rollback, pageerror, or unhandled rejection. This is independently reproducible on tagged v0.9.5-pre-refactor; PubChem ordering exposed it rather than introducing this failure policy.
+
+Controlled diagnostic (Chromium 145.0.7632.6 / macOS SwiftShader): the identical legacy Opal-style / Classic-colors autosave restored to IDs [opal, classic], flags [false, false] on the untouched tagged control. Injecting one Error at the entry to updatePubChemMetadataPanel during afterApplySettings yielded IDs [basic, basic], flags [true, true], while every resolved rendering setting remained exactly equal to the control. No source file was changed: the harness replaced only that served response, recording both source/served SHA256 and the injected marker. No retry or assertion relaxation.
+
+The original PubChem candidate 25fd30a produced the same partial state without injection and captured ReferenceError: Cannot access 'pubchemController' before initialization.
+
+Exception route: preset.js applyPresetSettings applies setters, then afterApplySettings calls updateSidePanel. If that throws, importEnvelope never reaches afterImportSettings, so pending legacy migration is never recorded. restoreAppearancePresetAutosave catches it, console.warn('VibeMol: autosave restore failed', err), and returns false; the startup caller ignores the result. Autosave suppression depth is unwound in finally, but no settings/bookkeeping rollback occurs.
+
+The repaired look_references harness listens only to pageerror and error-level console on its primary page; this restoration happens on another page and emits warning-level console. Characterization uses appearanceStudy=1, which intentionally skips autosave restore. Thus clean generic captures do not cover this path.
+
+Evidence to be committed with the authorized PubChem ordering correction: tests/baselines/evidence/stage4/pubchem/restore-fault/ (probe.py, input-preset.json, result.json, full warning stacks, screenshots and hash manifest). Raw local evidence: out/test-artifacts/stage4/pubchem-fixed/restore-fault/.
+
+Treat as a separate 0.9.x restoration reliability defect. Proposed follow-up: make restoration transactional or explicitly reconcile/rollback both settings and reference metadata on callback failure, and surface the failed restore to the user. Preserve the original exception. This issue does not authorize changing the current refactor gate or adding an accepted CI failure.

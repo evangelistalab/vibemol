@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "command": [
+    "python3",
+    "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/manual-network-matrix.py",
+    "--source-root",
+    "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/source-worktree",
+    "--label",
+    "fixed",
+    "--out",
+    "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem-fixed/manual"
+  ],
+  "seconds": 211.58525276184082,
+  "exitCode": 0
+}

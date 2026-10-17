@@ -1,0 +1,11 @@
+{
+  "refs": {
+    "refs/heads/codex/app-js-decomposition": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+    "refs/heads/codex/pubchem-controller": "25fd30a6e273fa289f17ec999b8528e82c061631"
+  },
+  "prStillOpenAndFrozen": true,
+  "bodyReadbackExact": true,
+  "merged": false,
+  "productionFix": false,
+  "userGitignorePreserved": true
+}

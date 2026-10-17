@@ -22,7 +22,14 @@
       "workflow": "Delayed Stop after second trajectory OR vibration download reopens crop selection",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/smoke.py",
-      "recordSitePerRun": true
+      "recordSitePerRun": true,
+      "refutedHypothesis": {
+        "claim": "Duplicated playing/lastStepMs mirrors cause both exporters to believe they are idle",
+        "status": "refuted",
+        "reason": "Vibration pair are authoritative; trajectory export reads record/master; shared exporter owns state.mode and never calls getPlaybackState",
+        "evidence": "docs/stage5-seam-design.md",
+        "productDefectStillOpen": true
+      }
     },
     {
       "id": "axis-gizmo-escape",
@@ -111,6 +118,17 @@
       ],
       "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
       "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
+    },
+    {
+      "id": "appearance-restore-partial-failure",
+      "issue": 25,
+      "url": "https://github.com/evangelistalab/vibemol/issues/25",
+      "status": "open",
+      "workflow": "Startup autosave restoration applies settings then skips reference migration on callback failure; warning only, no rollback/user error",
+      "acceptedCiFailure": false,
+      "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
+      "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
+      "productionFixIncluded": false
     }
   ],
   "otherCarriedFollowups": [

@@ -1498,21 +1498,48 @@
       "scope": "PubChem search/import/metadata",
       "verification": "Exercise recorded network success, empty results, failed requests, cancellation, import and metadata interactions; audit closure dependencies.",
       "originalStage": 3,
-      "status": "Local verification complete; own first-pass exact-candidate ordinary CI pending",
-      "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
-      "projectedDependencies": 13,
-      "dependencyObjectExclusiveLimit": 15,
-      "manualMatrix": "Paired tagged/proposed native Workbench/legacy and both themes: success, autocomplete, fetch/HTTP failure, malformed JSON/shape/SDF, browser request abort, metadata fallback and busy reentry.",
-      "gate": {
-        "passed": 34,
-        "failed": 3,
-        "total": 37,
-        "goldens": 102,
-        "runs": 2,
-        "identitySlots": 52,
-        "identityContexts": 8,
-        "allReasonMinimaRequired": true
+      "status": "Corrected PubChem source locally verified; own first automatic ordinary CI pending",
+      "pr": "https://github.com/evangelistalab/vibemol/pull/24",
+      "actualDependencies": 13,
+      "trackedLetCandidate": 262,
+      "trackedLetAcceptedIntegration": 265,
+      "materialPresetCoverage": {
+        "status": "pending fixed-candidate CI; not assessed yet",
+        "bothMaterialFamiliesPathsReached": false,
+        "originalFailedRun39057387687": "not covered this run"
       },
+      "originalFailedCandidate": {
+        "stage": 4,
+        "risk": "moderate",
+        "scope": "PubChem search/import/metadata",
+        "verification": "Exercise recorded network success, empty results, failed requests, cancellation, import and metadata interactions; audit closure dependencies.",
+        "originalStage": 3,
+        "status": "Held: candidate-only regression confirmed by instrumented three-source CI; no fix or merge",
+        "pr": "https://github.com/evangelistalab/vibemol/pull/24",
+        "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+        "actualDependencies": 13,
+        "trackedLetCandidate": 262,
+        "trackedLetAcceptedIntegration": 265,
+        "ordinaryCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
+        "ordinaryCiCounts": [
+          32,
+          5,
+          37
+        ],
+        "diagnosticRun": "https://github.com/evangelistalab/vibemol/actions/runs/39062919011",
+        "materialPresetCoverage": {
+          "status": "not covered this run",
+          "recurrenceAssessment": "not assessed",
+          "bothMaterialFamiliesPathsReached": false,
+          "reason": "Looks failed in legacy reference migration before either required material-family path"
+        },
+        "diagnosticClassification": "candidate-only regression",
+        "diagnosticEvidence": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/independent-verification.json",
+        "startupFailure": "Autosave restore reaches hoisted metadata wrapper before new controller const initialization, preventing legacy reference-migration bookkeeping",
+        "registrationOrder": "Appearance API publication remains after autosave/Looks initialization; new metadata-controller dependency is unavailable to an earlier caller"
+      },
+      "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "dependencyObjectExclusiveLimit": 15,
       "controllerInputs": [
         "els",
         "escapeHtml",
@@ -1528,33 +1555,284 @@
         "finalizeLoadedVolumes",
         "setNavigationHint"
       ],
-      "actualDependencies": 13,
       "newControllers": 1,
-      "trackedLetBefore": 265,
-      "trackedLetAfter": 262,
-      "appLines": 32666,
+      "gate": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37,
+        "goldens": 102,
+        "runs": 2,
+        "identitySlots": 52,
+        "identityContexts": 8,
+        "allReasonMinimaRequired": true
+      },
+      "manualMatrix": "Paired tagged/proposed native Workbench/legacy and both themes: success, autocomplete, fetch/HTTP failure, malformed JSON/shape/SDF, browser request abort, metadata fallback and busy reentry.",
+      "appLines": 32669,
       "appDirectFunctionDeclarations": 1163,
       "moduleLines": 480,
       "movedOriginalFunctions": 19,
-      "localNativeCasesPerSource": 72,
-      "localSourceAuditChecks": 1227,
+      "trackedLetBefore": 265,
+      "trackedLetAfter": 262,
+      "constructionOrder": "Inert constructor immediately after els, before callback exposure; all eager dependencies ready",
+      "inverseAudit": "Stages1\u20133 and corrected4 pass; original4 rejected",
+      "restoreFailureFinding": "Separate carried issue25; warning-only partial restoration reproduced on tagged base, not fixed here",
+      "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+      "productionFixCommit": "35fd791",
+      "localEvidence": "tests/baselines/evidence/stage4/pubchem/ordering-correction/local-validation.json",
       "localCharacterization": {
-        "captures": 102,
         "runs": 2,
+        "captures": 102,
         "exactRepeat": true,
+        "allGoldensMatched": true,
         "identitySlots": 52,
         "identityContexts": 8,
         "allMinimaMet": true,
-        "seconds": 1018.67,
-        "diagnosticPixelChanges": 0
-      },
-      "localEvidence": "tests/baselines/evidence/stage4/pubchem/local-validation.json"
+        "counts": [
+          {
+            "run": 1,
+            "launch": "workbench",
+            "theme": "light",
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5323,
+              "session restore": 1,
+              "panel transition": 1061
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          },
+          {
+            "run": 1,
+            "launch": "workbench",
+            "theme": "dark",
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5433,
+              "session restore": 1,
+              "panel transition": 1064
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          },
+          {
+            "run": 1,
+            "launch": "legacy",
+            "theme": "light",
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 2970,
+              "session restore": 1,
+              "panel transition": 672
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          },
+          {
+            "run": 1,
+            "launch": "legacy",
+            "theme": "dark",
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 3082,
+              "session restore": 1,
+              "panel transition": 681
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          },
+          {
+            "run": 2,
+            "launch": "workbench",
+            "theme": "light",
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5326,
+              "session restore": 1,
+              "panel transition": 1058
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          },
+          {
+            "run": 2,
+            "launch": "workbench",
+            "theme": "dark",
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5433,
+              "session restore": 1,
+              "panel transition": 1052
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          },
+          {
+            "run": 2,
+            "launch": "legacy",
+            "theme": "light",
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 2970,
+              "session restore": 1,
+              "panel transition": 669
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          },
+          {
+            "run": 2,
+            "launch": "legacy",
+            "theme": "dark",
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 3083,
+              "session restore": 1,
+              "panel transition": 678
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          }
+        ],
+        "wallTimeSeconds": 1077.39,
+        "browserVersion": "145.0.7632.6",
+        "pixelChanges": 0
+      }
     },
     {
       "stage": 5,
       "risk": "high feature coupling, second to Stage 3 element-cache consolidation for manual verification",
       "scope": "Trajectory, symmetry and vibration state/wiring, one feature per PR",
-      "verification": "Audit dependency seams, exercise all moved controls and cancellation paths, playback/video/session preservation, and use the affected panel manual matrix. Preserve per-feature beta soak."
+      "verification": "Audit dependency seams, exercise all moved controls and cancellation paths, playback/video/session preservation, and use the affected panel manual matrix. Preserve per-feature beta soak.",
+      "status": "Design accepted; no implementation released",
+      "design": "docs/stage5-seam-design.md",
+      "moduleLets": 17,
+      "trueTrajectoryMirrors": 2,
+      "vibrationPair": "authoritative",
+      "broadInputs": {
+        "trajectory": 22,
+        "vibration": 22,
+        "symmetry": 22
+      },
+      "narrowInputs": {
+        "trajectoryCore": 8,
+        "vibrationRuntimePanel": 13,
+        "symmetryPanel": 11,
+        "optionalVibrationFormat": 6
+      },
+      "acceptedOrder": [
+        "5a remove trajectory shadows preserving cleanup",
+        "5b vibration",
+        "5c symmetry"
+      ],
+      "issue11MirrorHypothesis": {
+        "status": "refuted",
+        "productDefectRemainsOpen": true,
+        "reason": "Vibration has no mirror; trajectory export reads authoritative state; exporter owns idle mode and never calls getPlaybackState"
+      }
     }
   ],
   "knownDefectConstraints": {
@@ -1562,8 +1840,7 @@
     "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception.",
     "modeConsistency": "Selection card overlays Coordinates Delete in legacy mode; preserve the failing assertion. Separate 0.9.x defect batch.",
     "videoCrop": "#11 https://github.com/evangelistalab/vibemol/issues/11: click-time Save/Stop branch reopens crop selection after trajectory/vibration completion. Do not fix in the refactor; schedule after 0.10.0 or in parallel on 0.9.x. Figure path gets one probe only.",
-    "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor.",
-    "editToolbarCollapse": "Issue #21: at320px .wb-tools clientWidth12 vs scrollWidth442 on both measured trees, with hidden trigger and empty hidden menu; Edit toolbar unusable. Prioritize above#17 in the0.9.x batch; preserve failing evidence and unchanged CI accepted set. No fix authorized in this PubChem extraction."
+    "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor."
   },
   "stage1BlockedByTheseFollowups": false,
   "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate. Baseline comparison: local 35/2/37 (historical), CI 34/3/37. The gate is the CI number.",
@@ -1763,114 +2040,30 @@
   },
   "defectBatchPolicy": "Projection #3, video crop #11, axis-gizmo Escape, mode-consistency Coordinates Delete and Metal popover #17 are carried 0.9.x production defects. Schedule after 0.10.0 or in parallel on 0.9.x; never merge fixes into this refactor. Other follow-ups #5/#14/#15 are recorded in the carried inventory.",
   "latestCiGateAttempt": {
-    "pr": 23,
-    "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
-    "base": "04e01adb68e100282d4a1d211197001a5a461f84",
-    "run": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+    "pr": 24,
+    "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+    "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
     "attempt": 1,
-    "integrationCommit": "5da81acdeee31e70142fc0b9c9f7d36a7840d9a1",
-    "status": "Own full first-pass conjunction independently passed; merged, tested-tree-identical integration ff-only verified and pushed. One whole-stage boundary soak subsequently passed.",
+    "status": "failed ordinary gate; subsequently confirmed candidate-only regression; unmerged",
     "counts": [
+      32,
+      5,
+      37
+    ],
+    "requiredCounts": [
       34,
       3,
       37
     ],
-    "issue11Workflow": {
-      "id": "issue-11-stop-after-second-download",
-      "site": "trajectory"
-    },
-    "vibrationReached": false,
-    "evidence": "tests/baselines/evidence/stage3/colors/ci-39039061120/candidate-verification.json",
-    "wallTimeVs13293": {
-      "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
-      "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
-      "attempt": 1,
-      "conclusion": "success",
-      "createdAt": "2026-10-17T14:02:32Z",
-      "lastJobCompletedAt": "2026-10-17T14:36:10Z",
-      "workflowSeconds": 2018.0,
-      "workflowMinutes": 33.63333333333333,
-      "baselineMinutes": 132.93,
-      "savedMinutes": 99.29666666666667,
-      "reductionPercent": 74.69846285012162,
-      "speedup": 3.952329038652131,
-      "jobSeconds": {
-        "Characterization (1)": 993.0,
-        "Browser suites (balanced-2)": 1087.0,
-        "Characterization (2)": 987.0,
-        "WebKit Properties interactions": 96.0,
-        "Browser suites (balanced-3)": 1476.0,
-        "checks-and-unit": 20.0,
-        "Browser suites (balanced-1)": 1313.0,
-        "Browser suites (smoke)": 772.0,
-        "Browser suites (looks)": 1989.0,
-        "Exact characterization repeat and goldens": 18.0,
-        "Aggregate browser gate (34/3/37)": 23.0
-      },
-      "shards": [
-        {
-          "shard": "balanced-1",
-          "suites": 11,
-          "subprocessSeconds": 1271.76,
-          "batchSeconds": 1271.77,
-          "jobSeconds": 1313.0
-        },
-        {
-          "shard": "balanced-2",
-          "suites": 12,
-          "subprocessSeconds": 1048.12,
-          "batchSeconds": 1048.12,
-          "jobSeconds": 1087.0
-        },
-        {
-          "shard": "balanced-3",
-          "suites": 12,
-          "subprocessSeconds": 1432.19,
-          "batchSeconds": 1432.21,
-          "jobSeconds": 1476.0
-        },
-        {
-          "shard": "looks",
-          "suites": 1,
-          "subprocessSeconds": 1951.74,
-          "batchSeconds": 1951.74,
-          "jobSeconds": 1989.0
-        },
-        {
-          "shard": "smoke",
-          "suites": 1,
-          "subprocessSeconds": 735.89,
-          "batchSeconds": 735.94,
-          "jobSeconds": 772.0
-        }
-      ],
-      "lastWorker": "Browser suites (looks)",
-      "lastJob": "Aggregate browser gate (34/3/37)",
-      "characterizationWorkerSeconds": {
-        "1": 943.77,
-        "2": 946.76
-      },
-      "characterizationJoinSeconds": 18.0,
-      "browserJoinSeconds": 23.0,
-      "cache": {
-        "restoreHits": 0,
-        "restoreMisses": 8,
-        "hitJobs": [],
-        "missJobs": [
-          "Browser suites (balanced-1)",
-          "Browser suites (balanced-2)",
-          "Browser suites (balanced-3)",
-          "Browser suites (looks)",
-          "Browser suites (smoke)",
-          "Characterization (1)",
-          "Characterization (2)",
-          "WebKit Properties interactions"
-        ],
-        "playwrightVersions": [
-          "1.64.0"
-        ]
-      },
-      "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+    "conjunctionSatisfied": false,
+    "diagnosticRun": "https://github.com/evangelistalab/vibemol/actions/runs/39062919011",
+    "diagnosticEvidence": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/independent-verification.json",
+    "materialPresetCoverage": {
+      "status": "not covered this run",
+      "recurrenceAssessment": "not assessed",
+      "bothMaterialFamiliesPathsReached": false,
+      "reason": "Looks failed in legacy reference migration before either required material-family path"
     }
   },
   "gateAcceptancePolicy": {
@@ -2134,6 +2327,117 @@
         },
         "characterizationJoinSeconds": 17.0,
         "browserJoinSeconds": 9.0,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        },
+        "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+      }
+    },
+    {
+      "pr": 23,
+      "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
+      "base": "04e01adb68e100282d4a1d211197001a5a461f84",
+      "run": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+      "attempt": 1,
+      "integrationCommit": "5da81acdeee31e70142fc0b9c9f7d36a7840d9a1",
+      "status": "Own full first-pass conjunction independently passed; merged, tested-tree-identical integration ff-only verified and pushed. One whole-stage boundary soak subsequently passed.",
+      "counts": [
+        34,
+        3,
+        37
+      ],
+      "issue11Workflow": {
+        "id": "issue-11-stop-after-second-download",
+        "site": "trajectory"
+      },
+      "vibrationReached": false,
+      "evidence": "tests/baselines/evidence/stage3/colors/ci-39039061120/candidate-verification.json",
+      "wallTimeVs13293": {
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+        "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
+        "attempt": 1,
+        "conclusion": "success",
+        "createdAt": "2026-10-17T14:02:32Z",
+        "lastJobCompletedAt": "2026-10-17T14:36:10Z",
+        "workflowSeconds": 2018.0,
+        "workflowMinutes": 33.63333333333333,
+        "baselineMinutes": 132.93,
+        "savedMinutes": 99.29666666666667,
+        "reductionPercent": 74.69846285012162,
+        "speedup": 3.952329038652131,
+        "jobSeconds": {
+          "Characterization (1)": 993.0,
+          "Browser suites (balanced-2)": 1087.0,
+          "Characterization (2)": 987.0,
+          "WebKit Properties interactions": 96.0,
+          "Browser suites (balanced-3)": 1476.0,
+          "checks-and-unit": 20.0,
+          "Browser suites (balanced-1)": 1313.0,
+          "Browser suites (smoke)": 772.0,
+          "Browser suites (looks)": 1989.0,
+          "Exact characterization repeat and goldens": 18.0,
+          "Aggregate browser gate (34/3/37)": 23.0
+        },
+        "shards": [
+          {
+            "shard": "balanced-1",
+            "suites": 11,
+            "subprocessSeconds": 1271.76,
+            "batchSeconds": 1271.77,
+            "jobSeconds": 1313.0
+          },
+          {
+            "shard": "balanced-2",
+            "suites": 12,
+            "subprocessSeconds": 1048.12,
+            "batchSeconds": 1048.12,
+            "jobSeconds": 1087.0
+          },
+          {
+            "shard": "balanced-3",
+            "suites": 12,
+            "subprocessSeconds": 1432.19,
+            "batchSeconds": 1432.21,
+            "jobSeconds": 1476.0
+          },
+          {
+            "shard": "looks",
+            "suites": 1,
+            "subprocessSeconds": 1951.74,
+            "batchSeconds": 1951.74,
+            "jobSeconds": 1989.0
+          },
+          {
+            "shard": "smoke",
+            "suites": 1,
+            "subprocessSeconds": 735.89,
+            "batchSeconds": 735.94,
+            "jobSeconds": 772.0
+          }
+        ],
+        "lastWorker": "Browser suites (looks)",
+        "lastJob": "Aggregate browser gate (34/3/37)",
+        "characterizationWorkerSeconds": {
+          "1": 943.77,
+          "2": 946.76
+        },
+        "characterizationJoinSeconds": 18.0,
+        "browserJoinSeconds": 23.0,
         "cache": {
           "restoreHits": 0,
           "restoreMisses": 8,

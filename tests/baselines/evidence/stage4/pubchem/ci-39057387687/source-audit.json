@@ -1,0 +1,153 @@
+{
+  "status": "passed",
+  "findings": [],
+  "scope": "Independent read-only source audit; no browsers, network, production edits, shipped test edits, git changes or issue edits.",
+  "baseline": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "sha256": {
+    "baselineAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+    "proposedAppSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+    "proposedModuleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+    "auditScriptSha256": "0dea1893af296b54540540322aa2811cd9f3b5c9731afef7ffdf52aeb6030cc7"
+  },
+  "conclusions": {
+    "allBaselineDeclarationsAccounted": 1190,
+    "movedOriginalDeclarationsExactAfterInverseLexicalChanges": 19,
+    "unchangedOtherAppDeclarationsByteExact": 1171,
+    "metadataDelegator": "Only existing app declaration with a changed body; exact wrapper checked. Its original implementation is preserved in pubchem.js.",
+    "wholeAppExactAfterIndependentAllowedEdits": true,
+    "wholeModuleExactFromOriginalFragments": true,
+    "completeAuditCheckCount": 1227,
+    "newFunctionDeclarations": [
+      "createPubChemController",
+      "bindControls",
+      "metadata app delegator coexists with moved original name"
+    ],
+    "originalOutsideAppInputs": 17,
+    "actualDeps": 13,
+    "depsUnder15": true,
+    "allDepsUsed": true,
+    "noHiddenAppFreeBindings": true,
+    "domQueryTiming": "Five existing const query initializers become plain canonical els fields in the same statement positions; no accessor, re-query or refresh.",
+    "factoryTiming": "Constructed once at original six-state declaration block; no eager dependency calls, listeners or networking in constructor.",
+    "listenerTiming": "bindControls is called once at original two listener guards; exact original guards/callbacks checked after DOM lexical substitution.",
+    "appOwnedWrites": "Two original expression-statement assignments become explicit setVolumes([])/setCurrentIndex(-1) calls to exact app assignment callbacks, in original order.",
+    "startupHoisting": "The sole named pre-constructor metadata path is setMode(MODES.DISPLAY); unchanged initial MODES.DISPLAY guard returns before rebuild/metadata. This source check does not replace runtime startup validation.",
+    "untouched": "Shared escapeHtml/hints/file-loader code, other runtime modules, shipped tests/assertions/waits, workflows and goldens are unchanged.",
+    "integration": "One versioned script before periodic-table/app, exact Makefile syntax-check addition, exact additive API manifest entry."
+  },
+  "dependencies": [
+    {
+      "name": "els",
+      "actualReferences": 26
+    },
+    {
+      "name": "escapeHtml",
+      "actualReferences": 2
+    },
+    {
+      "name": "setTooltipText",
+      "actualReferences": 1
+    },
+    {
+      "name": "setHintMessage",
+      "actualReferences": 2
+    },
+    {
+      "name": "parseXYZ",
+      "actualReferences": 1
+    },
+    {
+      "name": "handleSceneDropRecords",
+      "actualReferences": 1
+    },
+    {
+      "name": "setVolumes",
+      "actualReferences": 1
+    },
+    {
+      "name": "setCurrentIndex",
+      "actualReferences": 1
+    },
+    {
+      "name": "clearSceneMeshes",
+      "actualReferences": 1
+    },
+    {
+      "name": "clearEditHistory",
+      "actualReferences": 1
+    },
+    {
+      "name": "appendParsedVolumeRecord",
+      "actualReferences": 1
+    },
+    {
+      "name": "finalizeLoadedVolumes",
+      "actualReferences": 1
+    },
+    {
+      "name": "setNavigationHint",
+      "actualReferences": 1
+    }
+  ],
+  "metrics": {
+    "baselineApp": {
+      "lines": 33070,
+      "allFunctionDeclarations": 1190,
+      "directIifeFunctionDeclarations": 1181,
+      "trackedTwoSpaceLetDeclarationLines": 265,
+      "directIifeLetDeclarationNodes": 267,
+      "directIifeLetDeclarators": 276
+    },
+    "proposedApp": {
+      "lines": 32666,
+      "allFunctionDeclarations": 1172,
+      "directIifeFunctionDeclarations": 1163,
+      "trackedTwoSpaceLetDeclarationLines": 262,
+      "directIifeLetDeclarationNodes": 264,
+      "directIifeLetDeclarators": 273
+    },
+    "proposedModule": {
+      "lines": 480,
+      "allFunctionDeclarations": 21,
+      "directIifeFunctionDeclarations": 1,
+      "trackedTwoSpaceLetDeclarationLines": 0,
+      "directIifeLetDeclarationNodes": 0,
+      "directIifeLetDeclarators": 0
+    },
+    "existingMovedFunctions": 19,
+    "originalFunctionsAccounted": 1190,
+    "unchangedAppFunctions": 1171,
+    "genuineFactoryInputs": 13
+  },
+  "artifacts": [
+    "audit-pubchem.cjs",
+    "source-audit.json",
+    "function-proof.json",
+    "audit-readback.json"
+  ],
+  "limitations": [
+    "This establishes neutral source movement, bindings and ordering. It does not supply manual network/error/abort results or the CI gate.",
+    "Direct IIFE let declarators are reported separately from the historical tracked /^  let / declaration-line metric; 265\u2192262 is the latter."
+  ],
+  "createdUtc": "2026-10-17T17:48:40.814154+00:00",
+  "formattingReaudit": {
+    "onlyProductionDifference": "Six module blank lines trimmed from two spaces to empty; every nonblank byte and app hash unchanged.",
+    "lines": [
+      186,
+      198,
+      248,
+      334,
+      337,
+      356
+    ],
+    "beforeModuleSha256": "c593f113120edb20cab6ac5a9182c5e22c566cff84e709c6020b36826f86848d",
+    "afterModuleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+    "oldModuleReconstructedByRestoringOnlyThose12SpacesMatchesArchivedSha": true,
+    "bodyComparisons": "All19 inverse declaration texts match baseline exactly after the original two-column nonblank indentation reversal; no nonblank-source normalization was added.",
+    "completeModuleComparison": "Expected module moves baseline fragments exactly and indents only nonempty lines.",
+    "harnessCorrection": "The now-staged new module is included in the two-file protected-path allowlist alongside app.js; exact full-file reconstruction and all other path protections remain. The prior filter failure is preserved in harness-development/.",
+    "auditChecks": 1227,
+    "passed": 1227
+  },
+  "updatedUtc": "2026-10-17T17:53:13.727837+00:00"
+}

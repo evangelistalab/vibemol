@@ -1,0 +1,100 @@
+{
+  "issue": 25,
+  "diagnosticOnly": true,
+  "usableAsMergeGate": false,
+  "browserVersion": "145.0.7632.6",
+  "rows": [
+    {
+      "source": "tagged-control",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ],
+      "settingsEqualToControl": true,
+      "restoreWarnings": 0,
+      "restoreException": null,
+      "pageerrors": 0,
+      "windowErrors": [],
+      "dialogs": [],
+      "visibleAlerts": [],
+      "sourceSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "sourceStillUnchanged": true
+    },
+    {
+      "source": "tagged-induced-failure",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "basic",
+        "basic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        true,
+        true
+      ],
+      "settingsEqualToControl": true,
+      "restoreWarnings": 1,
+      "restoreException": {
+        "name": "Error",
+        "message": "RESTORE_FAULT_PROBE_tagged_metadata_after_settings",
+        "stack": "Error: RESTORE_FAULT_PROBE_tagged_metadata_after_settings\n    at updatePubChemMetadataPanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:30918:83)\n    at updateSidePanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:29541:5)\n    at Object.afterApplySettings (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27129:7)\n    at applyPresetSettings (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27603:38)\n    at http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27694:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27675:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27693:12)"
+      },
+      "pageerrors": 0,
+      "windowErrors": [],
+      "dialogs": [],
+      "visibleAlerts": [],
+      "sourceSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "sourceStillUnchanged": true
+    },
+    {
+      "source": "candidate-original",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "basic",
+        "basic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        true,
+        true
+      ],
+      "settingsEqualToControl": true,
+      "restoreWarnings": 1,
+      "restoreException": {
+        "name": "ReferenceError",
+        "message": "Cannot access 'pubchemController' before initialization",
+        "stack": "ReferenceError: Cannot access 'pubchemController' before initialization\n    at updatePubChemMetadataPanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:30609:5)\n    at updateSidePanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:29232:5)\n    at Object.afterApplySettings (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:26823:7)\n    at applyPresetSettings (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27294:38)\n    at http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27385:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27366:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27384:12)"
+      },
+      "pageerrors": 0,
+      "windowErrors": [],
+      "dialogs": [],
+      "visibleAlerts": [],
+      "sourceSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "sourceStillUnchanged": true
+    }
+  ]
+}

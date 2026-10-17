@@ -1,0 +1,5 @@
+{
+  "makeCheckInitial": "Failed before Python compilation because PYTHONPYCACHEPREFIX was omitted; original check.log retained. Re-executed only make check with the standing output prefix; check-configured.log passed. JS/Python unit tests were not repeated.",
+  "uiSerial": true,
+  "diagnosticsUsableAsMergeGate": false
+}

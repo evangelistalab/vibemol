@@ -1,0 +1,11 @@
+{
+  "status": "passed",
+  "sourceAuditChecks": 1229,
+  "manualCases": 72,
+  "goldens": 102,
+  "runs": 2,
+  "identityContexts": 8,
+  "appLet": 262,
+  "deps": 13,
+  "characterizeSeconds": 1077.39
+}

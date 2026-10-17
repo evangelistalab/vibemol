@@ -1,0 +1,40 @@
+{
+  "decidedAt": "2026-10-17T18:51:47.254556+00:00",
+  "decision": "STOP \u2014 failed ordinary gate; report directly to the human",
+  "pr": 24,
+  "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "run": 39057387687,
+  "attempt": 1,
+  "actual": [
+    32,
+    5,
+    37
+  ],
+  "required": [
+    34,
+    3,
+    37
+  ],
+  "unexpectedFailures": [
+    "tests/e2e/look_references.py",
+    "tests/e2e/looks.py"
+  ],
+  "sharedAssertion": "reference_migration line182: ids(other)==[style,colors] and flags(other)==[False,False]",
+  "valuesNotLogged": true,
+  "regressionOrFlakeNotDiagnosed": true,
+  "candidateConjunctionVerified": false,
+  "mergeAllowed": false,
+  "mergePerformed": false,
+  "ciRetryStarted": false,
+  "replacementCiStarted": false,
+  "productionFixAttempted": false,
+  "candidateEditedAfterFreeze": false,
+  "integrationLet": 265,
+  "candidateLet": 262,
+  "controllerDeps": 13,
+  "periodicFactoryInputs": 11,
+  "stage5": "Design audit complete, no implementation",
+  "mailbox": "retired and untouched",
+  "monitor": "remains paused"
+}

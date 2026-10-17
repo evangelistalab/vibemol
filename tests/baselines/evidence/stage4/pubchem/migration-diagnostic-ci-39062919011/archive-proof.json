@@ -1,0 +1,9 @@
+{
+  "sha256": "38927d9c47341d6822a0043b4b9566168f1edadfc8127dc5ca2144ba738c52b1",
+  "bytes": 4834003,
+  "entries": 54,
+  "allReadbackExact": true,
+  "classification": "candidate-only regression",
+  "usableAsMergeGate": false,
+  "productionChanged": false
+}
