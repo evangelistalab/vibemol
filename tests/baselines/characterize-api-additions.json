@@ -24,6 +24,14 @@
       "keys": [
         "createPeriodicTableController"
       ]
+    },
+    {
+      "stage": 4,
+      "script": "assets/app/js/pubchem.js",
+      "global": "VibeMolPubChem",
+      "keys": [
+        "createPubChemController"
+      ]
     }
   ]
 }
