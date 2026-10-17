@@ -1,0 +1,452 @@
+[
+  {
+    "source": "tagged-base",
+    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "run": 1,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 21.39,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/1/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/1.log"
+  },
+  {
+    "source": "tagged-base",
+    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "run": 2,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 20.16,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/2/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/2.log"
+  },
+  {
+    "source": "tagged-base",
+    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "run": 3,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 20.89,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/3/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/tagged-base/3.log"
+  },
+  {
+    "source": "integration",
+    "commit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+    "run": 1,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.48,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/1/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/1.log"
+  },
+  {
+    "source": "integration",
+    "commit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+    "run": 2,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.87,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/2/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/2.log"
+  },
+  {
+    "source": "integration",
+    "commit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+    "run": 3,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.94,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/3/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/integration/3.log"
+  },
+  {
+    "source": "proposed",
+    "commit": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+    "run": 1,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.31,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/1/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/1.log"
+  },
+  {
+    "source": "proposed",
+    "commit": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+    "run": 2,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.41,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/2/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/2.log"
+  },
+  {
+    "source": "proposed",
+    "commit": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+    "run": 3,
+    "status": "target-passed",
+    "exitCode": 0,
+    "wallTimeSeconds": 19.69,
+    "overflow": {
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "launch": "Workbench",
+      "theme": "light",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "toolsRect": {
+        "x": 8,
+        "y": 61.5,
+        "width": 304,
+        "height": 40
+      },
+      "overflowButtonPresent": true,
+      "overflowButtonVisible": true,
+      "overflowButtonHidden": false,
+      "overflowExpanded": "false",
+      "overflowMenuPresent": true,
+      "overflowMenuVisible": false,
+      "overflowMenuHidden": true,
+      "overflowMenuRows": 5,
+      "barClasses": "wb-bar wb-icon-tools",
+      "overflowedGroups": [
+        {
+          "id": "",
+          "classes": "wb-context-tools wb-overflowed"
+        },
+        {
+          "id": "workbenchQuickActions",
+          "classes": "wb-context-tools wb-overflowed"
+        }
+      ],
+      "focusedId": "editAdaptiveAddAtomBtn",
+      "buildChecked": "true",
+      "transformChecked": "false",
+      "originalOverflowAssertionValue": true,
+      "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+    },
+    "result": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/3/result.json",
+    "log": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/runs/proposed/3.log"
+  }
+]

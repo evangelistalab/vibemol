@@ -1,0 +1,804 @@
+{
+  "head": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+  "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "bindings": [
+    {
+      "originalBinding": "canvasAdaptiveMenuEl",
+      "canonicalField": "displayWindowAdaptiveMenuEl",
+      "id": "displayWindowAdaptiveMenu",
+      "originalQueryLine": 6952,
+      "registrationLine": 6952,
+      "queryTiming": "Plain field: one original synchronous getElementById; no getter.",
+      "references": [
+        {
+          "line": 6952,
+          "functionChain": [
+            "<callback@1>"
+          ],
+          "statement": "els.displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');"
+        },
+        {
+          "line": 11215,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "if (!els.displayWindowAdaptiveMenuEl) return;"
+        },
+        {
+          "line": 11230,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));"
+        },
+        {
+          "line": 11230,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));"
+        },
+        {
+          "line": 11232,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "els.displayWindowAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;"
+        },
+        {
+          "line": 11233,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "els.displayWindowAdaptiveMenuEl.style.top = `${top}px`;"
+        },
+        {
+          "line": 11234,
+          "functionChain": [
+            "positionCanvasAdaptiveMenu",
+            "<callback@1>"
+          ],
+          "statement": "els.displayWindowAdaptiveMenuEl.style.right = 'auto';"
+        },
+        {
+          "line": 11420,
+          "functionChain": [
+            "updateCanvasAdaptiveMenuUi",
+            "<callback@1>"
+          ],
+          "statement": "if (!els.displayWindowAdaptiveMenuEl) return;"
+        },
+        {
+          "line": 11431,
+          "functionChain": [
+            "updateCanvasAdaptiveMenuUi",
+            "<callback@1>"
+          ],
+          "statement": "els.displayWindowAdaptiveMenuEl.dataset.mode = menuModel.mode;"
+        },
+        {
+          "line": 11433,
+          "functionChain": [
+            "updateCanvasAdaptiveMenuUi",
+            "<callback@1>"
+          ],
+          "statement": "updateAdaptiveMenuUiHelper({"
+        },
+        {
+          "line": 11445,
+          "functionChain": [
+            "updateCanvasAdaptiveMenuUi",
+            "<callback@1>"
+          ],
+          "statement": "displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && els.displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');"
+        },
+        {
+          "line": 11906,
+          "functionChain": [
+            "<callback@1>"
+          ],
+          "statement": "displayAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({"
+        },
+        {
+          "line": 33020,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryTargetSummaryEl",
+      "canonicalField": "editSymmetryTargetSummaryEl",
+      "id": "editSymmetryTargetSummary",
+      "originalQueryLine": 8229,
+      "registrationLine": 8229,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 18934,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';"
+        },
+        {
+          "line": 18934,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';"
+        },
+        {
+          "line": 18954,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = target.scopeLabel;"
+        },
+        {
+          "line": 18954,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = target.scopeLabel;"
+        },
+        {
+          "line": 33054,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryExactResultCardEl",
+      "canonicalField": "editSymmetryExactResultCardEl",
+      "id": "editSymmetryExactResultCard",
+      "originalQueryLine": 8230,
+      "registrationLine": 8230,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 18656,
+          "functionChain": [
+            "clearSymmetryCurrentGroupHighlight",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryExactResultCardEl) {"
+        },
+        {
+          "line": 18657,
+          "functionChain": [
+            "clearSymmetryCurrentGroupHighlight",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryExactResultCardEl.classList.remove('is-updated');"
+        },
+        {
+          "line": 18670,
+          "functionChain": [
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "if (!els.editSymmetryExactResultCardEl) return;"
+        },
+        {
+          "line": 18673,
+          "functionChain": [
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryExactResultCardEl.classList.add('is-updated');"
+        },
+        {
+          "line": 18676,
+          "functionChain": [
+            "<callback@18674>",
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryExactResultCardEl) {"
+        },
+        {
+          "line": 18677,
+          "functionChain": [
+            "<callback@18674>",
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryExactResultCardEl.classList.remove('is-updated');"
+        },
+        {
+          "line": 33055,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryExactResultEl",
+      "canonicalField": "editSymmetryExactResultEl",
+      "id": "editSymmetryExactResult",
+      "originalQueryLine": 8231,
+      "registrationLine": 8231,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 18665,
+          "functionChain": [
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryExactResultEl) {"
+        },
+        {
+          "line": 18666,
+          "functionChain": [
+            "updateSymmetryCurrentGroupUi",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryExactResultEl.textContent = `Current point group: ${label}`;"
+        },
+        {
+          "line": 33056,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryToleranceSelectEl",
+      "canonicalField": "editSymmetryToleranceSelectEl",
+      "id": "editSymmetryToleranceSelect",
+      "originalQueryLine": 8232,
+      "registrationLine": 8232,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17410,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryToleranceSelectEl) {"
+        },
+        {
+          "line": 17411,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(els.editSymmetryToleranceSelectEl.value));"
+        },
+        {
+          "line": 17411,
+          "functionChain": [
+            "<callback@17411>",
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(els.editSymmetryToleranceSelectEl.value));"
+        },
+        {
+          "line": 18605,
+          "functionChain": [
+            "syncSymmetryToleranceUi",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryToleranceSelectEl && document.activeElement !== els.editSymmetryToleranceSelectEl) {"
+        },
+        {
+          "line": 18605,
+          "functionChain": [
+            "syncSymmetryToleranceUi",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryToleranceSelectEl && document.activeElement !== els.editSymmetryToleranceSelectEl) {"
+        },
+        {
+          "line": 18606,
+          "functionChain": [
+            "syncSymmetryToleranceUi",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryToleranceSelectEl.value = value.toFixed(3);"
+        },
+        {
+          "line": 33057,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryElementSelectEl",
+      "canonicalField": "editSymmetryElementSelectEl",
+      "id": "editSymmetryElementSelect",
+      "originalQueryLine": 8233,
+      "registrationLine": 8233,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17413,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryElementSelectEl) {"
+        },
+        {
+          "line": 17414,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.addEventListener('change', () => {"
+        },
+        {
+          "line": 17415,
+          "functionChain": [
+            "<callback@17414>",
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "symmetryPopoverSelectedElementId = String(els.editSymmetryElementSelectEl.value || '');"
+        },
+        {
+          "line": 18718,
+          "functionChain": [
+            "renderSymmetryElementOptions",
+            "<callback@1>"
+          ],
+          "statement": "if (!els.editSymmetryElementSelectEl) return [];"
+        },
+        {
+          "line": 18727,
+          "functionChain": [
+            "renderSymmetryElementOptions",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.innerHTML = ["
+        },
+        {
+          "line": 18736,
+          "functionChain": [
+            "renderSymmetryElementOptions",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.disabled = elements.length === 0;"
+        },
+        {
+          "line": 18737,
+          "functionChain": [
+            "renderSymmetryElementOptions",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.value = symmetryPopoverSelectedElementId;"
+        },
+        {
+          "line": 18936,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryElementSelectEl) {"
+        },
+        {
+          "line": 18937,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.innerHTML = '<option value=\"\">None</option>';"
+        },
+        {
+          "line": 18938,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryElementSelectEl.disabled = true;"
+        },
+        {
+          "line": 33058,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryCandidatesEl",
+      "canonicalField": "editSymmetryCandidatesEl",
+      "id": "editSymmetryCandidates",
+      "originalQueryLine": 8234,
+      "registrationLine": 8234,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17419,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl) {"
+        },
+        {
+          "line": 17420,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryCandidatesEl.addEventListener('click', (e) => {"
+        },
+        {
+          "line": 18509,
+          "functionChain": [
+            "invalidateSymmetryPopoverAnalysisCache",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl && els.editSymmetryCandidatesEl.dataset) {"
+        },
+        {
+          "line": 18509,
+          "functionChain": [
+            "invalidateSymmetryPopoverAnalysisCache",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl && els.editSymmetryCandidatesEl.dataset) {"
+        },
+        {
+          "line": 18510,
+          "functionChain": [
+            "invalidateSymmetryPopoverAnalysisCache",
+            "<callback@1>"
+          ],
+          "statement": "delete els.editSymmetryCandidatesEl.dataset.renderKey;"
+        },
+        {
+          "line": 18887,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "if (!els.editSymmetryCandidatesEl) return;"
+        },
+        {
+          "line": 18893,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {"
+        },
+        {
+          "line": 18894,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryCandidatesEl.innerHTML = '<div class=\"editSymmetryEmptyState\">No approximate point groups within the current tolerance.</div>';"
+        },
+        {
+          "line": 18895,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryCandidatesEl.dataset.renderKey = emptyKey;"
+        },
+        {
+          "line": 18907,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;"
+        },
+        {
+          "line": 18908,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {"
+        },
+        {
+          "line": 18925,
+          "functionChain": [
+            "renderSymmetryCandidates",
+            "<callback@1>"
+          ],
+          "statement": "els.editSymmetryCandidatesEl.dataset.renderKey = renderKey;"
+        },
+        {
+          "line": 18942,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl) els.editSymmetryCandidatesEl.innerHTML = '<div class=\"editSymmetryEmptyState\">No editable atoms available.</div>';"
+        },
+        {
+          "line": 18942,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCandidatesEl) els.editSymmetryCandidatesEl.innerHTML = '<div class=\"editSymmetryEmptyState\">No editable atoms available.</div>';"
+        },
+        {
+          "line": 33059,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryApplyBtnEl",
+      "canonicalField": "editSymmetryApplyBtnEl",
+      "id": "editSymmetryApplyBtn",
+      "originalQueryLine": 8235,
+      "registrationLine": 8235,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17427,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };"
+        },
+        {
+          "line": 17427,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };"
+        },
+        {
+          "line": 18943,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = true;"
+        },
+        {
+          "line": 18943,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = true;"
+        },
+        {
+          "line": 18960,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = !selectedCandidate;"
+        },
+        {
+          "line": 18960,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = !selectedCandidate;"
+        },
+        {
+          "line": 33060,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryCancelBtnEl",
+      "canonicalField": "editSymmetryCancelBtnEl",
+      "id": "editSymmetryCancelBtn",
+      "originalQueryLine": 8236,
+      "registrationLine": 8236,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17428,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };"
+        },
+        {
+          "line": 17428,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };"
+        },
+        {
+          "line": 18944,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();"
+        },
+        {
+          "line": 18944,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();"
+        },
+        {
+          "line": 18961,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();"
+        },
+        {
+          "line": 18961,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();"
+        },
+        {
+          "line": 33061,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    },
+    {
+      "originalBinding": "editSymmetryAutoBtnEl",
+      "canonicalField": "editSymmetryAutoBtnEl",
+      "id": "editSymmetryAutoBtn",
+      "originalQueryLine": 8237,
+      "registrationLine": 8237,
+      "queryTiming": "cacheElement returns els[name] synchronously, priming the getter at the original query line. A later query is possible only if the initial query returned null.",
+      "references": [
+        {
+          "line": 17429,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };"
+        },
+        {
+          "line": 17429,
+          "functionChain": [
+            "buildEditAddControls",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };"
+        },
+        {
+          "line": 18945,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = true;"
+        },
+        {
+          "line": 18945,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = true;"
+        },
+        {
+          "line": 18962,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = !(autoCandidate && autoCandidate.groupId && autoCandidate.groupId !== 'C1');"
+        },
+        {
+          "line": 18962,
+          "functionChain": [
+            "renderSymmetryPopover",
+            "<callback@1>"
+          ],
+          "statement": "if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = !(autoCandidate && autoCandidate.groupId && autoCandidate.groupId !== 'C1');"
+        },
+        {
+          "line": 33062,
+          "functionChain": [
+            "<callback@33010>",
+            "<callback@1>"
+          ],
+          "statement": "window.__vmqaElementCaches = Object.freeze({"
+        }
+      ]
+    }
+  ],
+  "helper": {
+    "line": 1189,
+    "synchronousPrimeLine": 1195,
+    "lateResolution": "Only initial null is retried on later getter access; present nodes are synchronously memoized and never automatically refreshed."
+  },
+  "directWbToolsCacheBindings": [],
+  "indirectAliasPath": [
+    {
+      "file": "assets/app/js/app.js",
+      "line": 21090,
+      "operation": "updateEditAdaptiveMenuUi calls updateCanvasAdaptiveMenuUi"
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "line": 11431,
+      "operation": "canonical menu.dataset.mode assignment"
+    },
+    {
+      "file": "assets/app/js/workbench.js",
+      "line": 567,
+      "operation": "modeObserver watches that exact menu data-mode; calls schedule"
+    },
+    {
+      "file": "assets/app/js/workbench.js",
+      "line": 232,
+      "operation": "schedule queues sync as microtask"
+    },
+    {
+      "file": "assets/app/js/workbench.js",
+      "line": 361,
+      "operation": "sync calls fitTools"
+    },
+    {
+      "file": "assets/app/js/workbench.js",
+      "line": 106,
+      "operation": "fitTools reads .wb-tools scrollWidth/clientWidth"
+    }
+  ],
+  "establishedTimingChange": false,
+  "staticConclusion": "An indirect launcher-to-layout observer path exists, but its node lookup is a plain eager field, not a lazy accessor. All nine actual accessors are primed synchronously at original wiring lines. No changed asynchronous boundary or demonstrated delayed lookup is established by the source audit. This is not a runtime causal diagnosis."
+}

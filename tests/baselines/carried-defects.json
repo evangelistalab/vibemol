@@ -76,6 +76,34 @@
       ],
       "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
       "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
+    },
+    {
+      "id": "edit-tool-320-overflow",
+      "issue": 21,
+      "url": "https://github.com/evangelistalab/vibemol/issues/21",
+      "status": "open",
+      "suite": "tests/e2e/edit_tool.py",
+      "workflow": "Workbench 320px tools overflow after Transform focus / ArrowRight selects Build",
+      "acceptedCiFailure": false,
+      "classification": "Present on integration control and frozen Symmetry in human-authorized instrumented CI; carry under direct human both-overflow branch. Tagged-CI reproduction not claimed.",
+      "originalAssertionPreserved": true,
+      "observations": {
+        "integration": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 244.2
+        },
+        "symmetry": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 230.8
+        }
+      },
+      "diagnosticOnly": true,
+      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
+      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set."
     }
   ],
   "otherCarriedFollowups": [

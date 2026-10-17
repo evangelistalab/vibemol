@@ -1,0 +1,55 @@
+{
+  "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "proposedAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "taggedCollectorExitCode": 2,
+  "proposedCollectorExitCode": 2,
+  "caseObservationsExactlyEqual": false,
+  "assertionsRelaxed": false,
+  "retries": 0,
+  "cases": [
+    {
+      "launch": "workbench",
+      "theme": "light",
+      "events": [],
+      "status": "failed",
+      "exception": "Error",
+      "error": "Page.wait_for_function: Error: No active structure is loaded.\n    at exportActiveStructureEnvelope (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:26:41)\n    at Object.exportActive (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:105:29)\n    at eval (eval at predicate (eval at evaluate (:302:30)), <anonymous>:1:24)\n    at predicate (eval at evaluate (:302:30), <anonymous>:13:29)\n    at next (eval at evaluate (:302:30), <anonymous>:29:33)\n    at eval (eval at evaluate (:302:30), <anonymous>:42:13)\n    at UtilityScript.evaluate (<anonymous>:304:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+      "pageErrors": [
+        "No active structure is loaded."
+      ]
+    },
+    {
+      "launch": "workbench",
+      "theme": "dark",
+      "events": [],
+      "status": "failed",
+      "exception": "Error",
+      "error": "Page.wait_for_function: Error: No active structure is loaded.\n    at exportActiveStructureEnvelope (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:26:41)\n    at Object.exportActive (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:105:29)\n    at eval (eval at predicate (eval at evaluate (:302:30)), <anonymous>:1:24)\n    at predicate (eval at evaluate (:302:30), <anonymous>:13:29)\n    at next (eval at evaluate (:302:30), <anonymous>:29:33)\n    at eval (eval at evaluate (:302:30), <anonymous>:42:13)\n    at UtilityScript.evaluate (<anonymous>:304:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+      "pageErrors": [
+        "No active structure is loaded."
+      ]
+    },
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "events": [],
+      "status": "failed",
+      "exception": "Error",
+      "error": "Page.wait_for_function: Error: No active structure is loaded.\n    at exportActiveStructureEnvelope (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:26:41)\n    at Object.exportActive (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:105:29)\n    at eval (eval at predicate (eval at evaluate (:302:30)), <anonymous>:1:24)\n    at predicate (eval at evaluate (:302:30), <anonymous>:13:29)\n    at next (eval at evaluate (:302:30), <anonymous>:29:33)\n    at eval (eval at evaluate (:302:30), <anonymous>:42:13)\n    at UtilityScript.evaluate (<anonymous>:304:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+      "pageErrors": [
+        "No active structure is loaded."
+      ]
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "events": [],
+      "status": "failed",
+      "exception": "Error",
+      "error": "Page.wait_for_function: Error: No active structure is loaded.\n    at exportActiveStructureEnvelope (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:26:41)\n    at Object.exportActive (http://127.0.0.1:63159/assets/app/js/structure-transport.js?v=0.9.5:105:29)\n    at eval (eval at predicate (eval at evaluate (:302:30)), <anonymous>:1:24)\n    at predicate (eval at evaluate (:302:30), <anonymous>:13:29)\n    at next (eval at evaluate (:302:30), <anonymous>:29:33)\n    at eval (eval at evaluate (:302:30), <anonymous>:42:13)\n    at UtilityScript.evaluate (<anonymous>:304:16)\n    at UtilityScript.<anonymous> (<anonymous>:1:44)",
+      "pageErrors": [
+        "No active structure is loaded."
+      ]
+    }
+  ]
+}

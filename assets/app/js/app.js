@@ -1144,6 +1144,16 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    displayWindowAdaptiveMenuEl: null,
+    editSymmetryTargetSummaryEl: null,
+    editSymmetryExactResultCardEl: null,
+    editSymmetryExactResultEl: null,
+    editSymmetryToleranceSelectEl: null,
+    editSymmetryElementSelectEl: null,
+    editSymmetryCandidatesEl: null,
+    editSymmetryApplyBtnEl: null,
+    editSymmetryCancelBtnEl: null,
+    editSymmetryAutoBtnEl: null,
     editSelectionTranslateCueEl: null,
     editSelectionTranslateCueButtonEl: null,
     editSelectionRotateCueButtonEl: null,
@@ -1184,7 +1194,6 @@
     });
     return els[name];
   };
-  let canvasAdaptiveMenuEl = null;
   let displayWindowsController = null;
   const measurements = window.VibeMolMeasurements;
   let measurementsPanel = null;
@@ -1207,15 +1216,6 @@
   let editHaloController = null;
   let editToolUi = null;
   let lastHintMessage = '';
-  let editSymmetryTargetSummaryEl = null;
-  let editSymmetryExactResultCardEl = null;
-  let editSymmetryExactResultEl = null;
-  let editSymmetryToleranceSelectEl = null;
-  let editSymmetryElementSelectEl = null;
-  let editSymmetryCandidatesEl = null;
-  let editSymmetryApplyBtnEl = null;
-  let editSymmetryCancelBtnEl = null;
-  let editSymmetryAutoBtnEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
@@ -6949,8 +6949,8 @@
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
-  const displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
-  canvasAdaptiveMenuEl = displayWindowAdaptiveMenuEl;
+  els.displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
+  // canvasAdaptiveMenuEl shares the canonical displayWindowAdaptiveMenuEl cache.
   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
   const viewInspector = document.getElementById('viewInspector');
   const spinorInfoBtn = document.getElementById('spinorInfoBtn');
@@ -8226,15 +8226,15 @@
   cacheElement('editBuildAtomsHostEl', 'editBuildAtomsHost');
   cacheElement('editBuildFragmentsHostEl', 'editBuildFragmentsHost');
   cacheElement('editBuildMoleculesHostEl', 'editBuildMoleculesHost');
-  editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
-  editSymmetryExactResultCardEl = document.getElementById('editSymmetryExactResultCard');
-  editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
-  editSymmetryToleranceSelectEl = document.getElementById('editSymmetryToleranceSelect');
-  editSymmetryElementSelectEl = document.getElementById('editSymmetryElementSelect');
-  editSymmetryCandidatesEl = document.getElementById('editSymmetryCandidates');
-  editSymmetryApplyBtnEl = document.getElementById('editSymmetryApplyBtn');
-  editSymmetryCancelBtnEl = document.getElementById('editSymmetryCancelBtn');
-  editSymmetryAutoBtnEl = document.getElementById('editSymmetryAutoBtn');
+  cacheElement('editSymmetryTargetSummaryEl', 'editSymmetryTargetSummary');
+  cacheElement('editSymmetryExactResultCardEl', 'editSymmetryExactResultCard');
+  cacheElement('editSymmetryExactResultEl', 'editSymmetryExactResult');
+  cacheElement('editSymmetryToleranceSelectEl', 'editSymmetryToleranceSelect');
+  cacheElement('editSymmetryElementSelectEl', 'editSymmetryElementSelect');
+  cacheElement('editSymmetryCandidatesEl', 'editSymmetryCandidates');
+  cacheElement('editSymmetryApplyBtnEl', 'editSymmetryApplyBtn');
+  cacheElement('editSymmetryCancelBtnEl', 'editSymmetryCancelBtn');
+  cacheElement('editSymmetryAutoBtnEl', 'editSymmetryAutoBtn');
   const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
@@ -11212,7 +11212,7 @@
    * Position the shared canvas adaptive menu against the sidebar edge.
    */
   function positionCanvasAdaptiveMenu() {
-    if (!canvasAdaptiveMenuEl) return;
+    if (!els.displayWindowAdaptiveMenuEl) return;
     const gap = 12;
     const inset = getCanvasAdaptiveMenuTopInset();
     let left = gap;
@@ -11227,11 +11227,11 @@
       }
     }
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const menuWidth = Math.max(0, Math.round(canvasAdaptiveMenuEl.getBoundingClientRect().width || canvasAdaptiveMenuEl.offsetWidth || 0));
+    const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));
     const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    canvasAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
-    canvasAdaptiveMenuEl.style.top = `${top}px`;
-    canvasAdaptiveMenuEl.style.right = 'auto';
+    els.displayWindowAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    els.displayWindowAdaptiveMenuEl.style.top = `${top}px`;
+    els.displayWindowAdaptiveMenuEl.style.right = 'auto';
   }
 
   let helpRestoreFocusEl = null;
@@ -11417,7 +11417,7 @@
   }
 
   function updateCanvasAdaptiveMenuUi() {
-    if (!canvasAdaptiveMenuEl) return;
+    if (!els.displayWindowAdaptiveMenuEl) return;
     if (currentMode === MODES.EDIT && !workspaceEnabled) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
@@ -11428,9 +11428,9 @@
         visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
         activeItems: [...menuModel.activeItems, ...shared.activeItems] };
     }
-    canvasAdaptiveMenuEl.dataset.mode = menuModel.mode;
+    els.displayWindowAdaptiveMenuEl.dataset.mode = menuModel.mode;
     updateAdaptiveMenuUiHelper({
-      menuEl: canvasAdaptiveMenuEl,
+      menuEl: els.displayWindowAdaptiveMenuEl,
       isVisible: !!menuModel.isVisible,
       positionMenu: positionCanvasAdaptiveMenu,
       onHideAllPopovers: menuModel.onHideAllPopovers,
@@ -11442,7 +11442,7 @@
       displayWindowsController.positionOpenButtonAnchoredPopovers();
     }
     if (displayAdaptiveMenuAutoHideController) {
-      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && els.displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
     syncTwoComponentOverlayLabelOffsets();
   }
@@ -11903,7 +11903,7 @@
     },
   });
   displayAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
-    menuEl: canvasAdaptiveMenuEl,
+    menuEl: els.displayWindowAdaptiveMenuEl,
     delayMs: 5000,
     revealEdgeWidth: 64,
     revealSlack: 20,
@@ -17407,26 +17407,26 @@
         hideSymmetryPopover({ restore: true });
       });
     }
-    if (editSymmetryToleranceSelectEl) {
-      editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceSelectEl.value));
+    if (els.editSymmetryToleranceSelectEl) {
+      els.editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(els.editSymmetryToleranceSelectEl.value));
     }
-    if (editSymmetryElementSelectEl) {
-      editSymmetryElementSelectEl.addEventListener('change', () => {
-        symmetryPopoverSelectedElementId = String(editSymmetryElementSelectEl.value || '');
+    if (els.editSymmetryElementSelectEl) {
+      els.editSymmetryElementSelectEl.addEventListener('change', () => {
+        symmetryPopoverSelectedElementId = String(els.editSymmetryElementSelectEl.value || '');
         renderSymmetryElementGuide();
       });
     }
-    if (editSymmetryCandidatesEl) {
-      editSymmetryCandidatesEl.addEventListener('click', (e) => {
+    if (els.editSymmetryCandidatesEl) {
+      els.editSymmetryCandidatesEl.addEventListener('click', (e) => {
         const buttonEl = e && e.target ? e.target.closest('[data-symmetry-group-id]') : null;
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         previewSymmetryCandidate(String(buttonEl.getAttribute('data-symmetry-group-id') || ''));
       });
     }
-    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
-    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
-    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
+    if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
+    if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
+    if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
     if (els.editAdaptiveCleanStructureBtn) {
       els.editAdaptiveCleanStructureBtn.onclick = () => {
         if (isBuildPopoverOpen() && !workspaceEnabled) {
@@ -18506,8 +18506,8 @@
 
   function invalidateSymmetryPopoverAnalysisCache() {
     symmetryPopoverAnalysisCache = null;
-    if (editSymmetryCandidatesEl && editSymmetryCandidatesEl.dataset) {
-      delete editSymmetryCandidatesEl.dataset.renderKey;
+    if (els.editSymmetryCandidatesEl && els.editSymmetryCandidatesEl.dataset) {
+      delete els.editSymmetryCandidatesEl.dataset.renderKey;
     }
     symmetryPopoverElementsRenderKey = '';
   }
@@ -18602,8 +18602,8 @@
 
   function syncSymmetryToleranceUi() {
     const value = snapSymmetryTolerance(symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG);
-    if (editSymmetryToleranceSelectEl && document.activeElement !== editSymmetryToleranceSelectEl) {
-      editSymmetryToleranceSelectEl.value = value.toFixed(3);
+    if (els.editSymmetryToleranceSelectEl && document.activeElement !== els.editSymmetryToleranceSelectEl) {
+      els.editSymmetryToleranceSelectEl.value = value.toFixed(3);
     }
   }
 
@@ -18653,8 +18653,8 @@
       clearTimeout(symmetryPopoverResultHighlightTimer);
       symmetryPopoverResultHighlightTimer = 0;
     }
-    if (editSymmetryExactResultCardEl) {
-      editSymmetryExactResultCardEl.classList.remove('is-updated');
+    if (els.editSymmetryExactResultCardEl) {
+      els.editSymmetryExactResultCardEl.classList.remove('is-updated');
     }
   }
 
@@ -18662,19 +18662,19 @@
     const label = String(groupLabel || 'C1').trim() || 'C1';
     const allowHighlight = options.highlightChange !== false;
     const previousLabel = String(symmetryPopoverCurrentGroupLabel || '').trim();
-    if (editSymmetryExactResultEl) {
-      editSymmetryExactResultEl.textContent = `Current point group: ${label}`;
+    if (els.editSymmetryExactResultEl) {
+      els.editSymmetryExactResultEl.textContent = `Current point group: ${label}`;
     }
     const shouldHighlight = !!(allowHighlight && previousLabel && previousLabel !== label);
     symmetryPopoverCurrentGroupLabel = label;
-    if (!editSymmetryExactResultCardEl) return;
+    if (!els.editSymmetryExactResultCardEl) return;
     clearSymmetryCurrentGroupHighlight();
     if (!shouldHighlight) return;
-    editSymmetryExactResultCardEl.classList.add('is-updated');
+    els.editSymmetryExactResultCardEl.classList.add('is-updated');
     symmetryPopoverResultHighlightTimer = window.setTimeout(() => {
       symmetryPopoverResultHighlightTimer = 0;
-      if (editSymmetryExactResultCardEl) {
-        editSymmetryExactResultCardEl.classList.remove('is-updated');
+      if (els.editSymmetryExactResultCardEl) {
+        els.editSymmetryExactResultCardEl.classList.remove('is-updated');
       }
     }, 1400);
   }
@@ -18715,7 +18715,7 @@
   }
 
   function renderSymmetryElementOptions(analysis) {
-    if (!editSymmetryElementSelectEl) return [];
+    if (!els.editSymmetryElementSelectEl) return [];
     const displayAnalysis = getSymmetryElementDisplayAnalysis(analysis);
     const elements = describeSymmetryElements(displayAnalysis) || [];
     const renderKey = elements.map((element) => [
@@ -18724,7 +18724,7 @@
       String(element.type || ''),
     ].join('|')).join(';');
     if (symmetryPopoverElementsRenderKey !== renderKey) {
-      editSymmetryElementSelectEl.innerHTML = [
+      els.editSymmetryElementSelectEl.innerHTML = [
         '<option value="">None</option>',
         ...elements.map(buildSymmetryElementOptionHtml),
       ].join('');
@@ -18733,8 +18733,8 @@
     if (!elements.some((element) => String(element.id || '') === symmetryPopoverSelectedElementId)) {
       symmetryPopoverSelectedElementId = '';
     }
-    editSymmetryElementSelectEl.disabled = elements.length === 0;
-    editSymmetryElementSelectEl.value = symmetryPopoverSelectedElementId;
+    els.editSymmetryElementSelectEl.disabled = elements.length === 0;
+    els.editSymmetryElementSelectEl.value = symmetryPopoverSelectedElementId;
     return elements;
   }
 
@@ -18884,15 +18884,15 @@
   }
 
   function renderSymmetryCandidates(analysis) {
-    if (!editSymmetryCandidatesEl) return;
+    if (!els.editSymmetryCandidatesEl) return;
     const selectedGroupId = getSymmetryPopoverSelectedGroupId();
     const currentGroupId = analysis ? String(analysis.exactGroupId || '') : '';
     const candidates = getSymmetryPopoverCandidateList(analysis);
     if (!candidates.length) {
       const emptyKey = `empty:${selectedGroupId}`;
-      if (editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {
-        editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No approximate point groups within the current tolerance.</div>';
-        editSymmetryCandidatesEl.dataset.renderKey = emptyKey;
+      if (els.editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {
+        els.editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No approximate point groups within the current tolerance.</div>';
+        els.editSymmetryCandidatesEl.dataset.renderKey = emptyKey;
       }
       return;
     }
@@ -18904,8 +18904,8 @@
         Number(candidate.rmsDisplacementAng || 0).toFixed(6),
       ].join('|')),
     ].join(';');
-    if (editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;
-    editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {
+    if (els.editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;
+    els.editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {
       const groupId = String(candidate.groupId || '');
       const classNames = ['editSymmetryCandidateBtn'];
       if (groupId === currentGroupId) classNames.push('is-current');
@@ -18922,7 +18922,7 @@
         '</button>',
       ].join('');
     }).join('');
-    editSymmetryCandidatesEl.dataset.renderKey = renderKey;
+    els.editSymmetryCandidatesEl.dataset.renderKey = renderKey;
   }
 
   function renderSymmetryPopover() {
@@ -18931,18 +18931,18 @@
     const target = resolveEditSymmetryTarget();
     syncSymmetryToleranceUi();
     if (!target) {
-      if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
+      if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
       updateSymmetryCurrentGroupUi('C1', { highlightChange: false });
-      if (editSymmetryElementSelectEl) {
-        editSymmetryElementSelectEl.innerHTML = '<option value="">None</option>';
-        editSymmetryElementSelectEl.disabled = true;
+      if (els.editSymmetryElementSelectEl) {
+        els.editSymmetryElementSelectEl.innerHTML = '<option value="">None</option>';
+        els.editSymmetryElementSelectEl.disabled = true;
       }
       symmetryPreviewState = null;
       symmetryPopoverSelectedElementId = '';
-      if (editSymmetryCandidatesEl) editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No editable atoms available.</div>';
-      if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = true;
-      if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
-      if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = true;
+      if (els.editSymmetryCandidatesEl) els.editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No editable atoms available.</div>';
+      if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = true;
+      if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
+      if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = true;
       clearSymmetryElementGuide();
       positionSymmetryPopover();
       return;
@@ -18951,15 +18951,15 @@
     if (symmetryPreviewState && !getSymmetryPopoverSelectedCandidate(analysis)) {
       symmetryPreviewState = null;
     }
-    if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = target.scopeLabel;
+    if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = target.scopeLabel;
     updateSymmetryCurrentGroupUi(analysis.exactGroupLabel);
     renderSymmetryElementOptions(analysis);
     renderSymmetryCandidates(analysis);
     const selectedCandidate = getSymmetryPopoverSelectedCandidate(analysis);
     const autoCandidate = getSymmetryPopoverCandidateList(analysis)[0] || null;
-    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = !selectedCandidate;
-    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
-    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = !(autoCandidate && autoCandidate.groupId && autoCandidate.groupId !== 'C1');
+    if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.disabled = !selectedCandidate;
+    if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
+    if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.disabled = !(autoCandidate && autoCandidate.groupId && autoCandidate.groupId !== 'C1');
     renderSymmetryElementGuide(analysis, target);
     positionSymmetryPopover();
   }
@@ -33017,7 +33017,7 @@
         elementColorPicker: elementColorPicker,
         elementColorResetOne: elementColorResetOne,
         elementColorResetAll: elementColorResetAll,
-        canvasAdaptiveMenuEl: canvasAdaptiveMenuEl,
+        canvasAdaptiveMenuEl: els.displayWindowAdaptiveMenuEl,
         measurementsPanel: measurementsPanel.panel,
         calculationsPanel: calculationsPanel.panel,
         editAtomsMenuEl: els.editAtomsMenuEl,
@@ -33051,15 +33051,15 @@
         editBuildAtomsHostEl: els.editBuildAtomsHostEl,
         editBuildFragmentsHostEl: els.editBuildFragmentsHostEl,
         editBuildMoleculesHostEl: els.editBuildMoleculesHostEl,
-        editSymmetryTargetSummaryEl: editSymmetryTargetSummaryEl,
-        editSymmetryExactResultCardEl: editSymmetryExactResultCardEl,
-        editSymmetryExactResultEl: editSymmetryExactResultEl,
-        editSymmetryToleranceSelectEl: editSymmetryToleranceSelectEl,
-        editSymmetryElementSelectEl: editSymmetryElementSelectEl,
-        editSymmetryCandidatesEl: editSymmetryCandidatesEl,
-        editSymmetryApplyBtnEl: editSymmetryApplyBtnEl,
-        editSymmetryCancelBtnEl: editSymmetryCancelBtnEl,
-        editSymmetryAutoBtnEl: editSymmetryAutoBtnEl,
+        editSymmetryTargetSummaryEl: els.editSymmetryTargetSummaryEl,
+        editSymmetryExactResultCardEl: els.editSymmetryExactResultCardEl,
+        editSymmetryExactResultEl: els.editSymmetryExactResultEl,
+        editSymmetryToleranceSelectEl: els.editSymmetryToleranceSelectEl,
+        editSymmetryElementSelectEl: els.editSymmetryElementSelectEl,
+        editSymmetryCandidatesEl: els.editSymmetryCandidatesEl,
+        editSymmetryApplyBtnEl: els.editSymmetryApplyBtnEl,
+        editSymmetryCancelBtnEl: els.editSymmetryCancelBtnEl,
+        editSymmetryAutoBtnEl: els.editSymmetryAutoBtnEl,
       }),
     });
   }

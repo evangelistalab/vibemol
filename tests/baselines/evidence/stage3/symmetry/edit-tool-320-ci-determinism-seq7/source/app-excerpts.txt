@@ -1,0 +1,113 @@
+1189:   const cacheElement = (name, id) => {
+1190:     const cache = { node: null };
+1191:     Object.defineProperty(els, name, {
+1192:       enumerable: true,
+1193:       get: () => cache.node || (cache.node = document.getElementById(id)),
+1194:     });
+1195:     return els[name];
+1196:   };
+
+6948:   const surfBtn = document.getElementById('surfBtn');
+6949:   const clearBtn = document.getElementById('clearBtn');
+6950:   const helpBtn = document.getElementById('helpBtn');
+6951:   // Side panel controls
+6952:   els.displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
+6953:   // canvasAdaptiveMenuEl shares the canonical displayWindowAdaptiveMenuEl cache.
+6954:   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
+6955:   const viewInspector = document.getElementById('viewInspector');
+
+8229:   cacheElement('editSymmetryTargetSummaryEl', 'editSymmetryTargetSummary');
+8230:   cacheElement('editSymmetryExactResultCardEl', 'editSymmetryExactResultCard');
+8231:   cacheElement('editSymmetryExactResultEl', 'editSymmetryExactResult');
+8232:   cacheElement('editSymmetryToleranceSelectEl', 'editSymmetryToleranceSelect');
+8233:   cacheElement('editSymmetryElementSelectEl', 'editSymmetryElementSelect');
+8234:   cacheElement('editSymmetryCandidatesEl', 'editSymmetryCandidates');
+8235:   cacheElement('editSymmetryApplyBtnEl', 'editSymmetryApplyBtn');
+8236:   cacheElement('editSymmetryCancelBtnEl', 'editSymmetryCancelBtn');
+8237:   cacheElement('editSymmetryAutoBtnEl', 'editSymmetryAutoBtn');
+
+11214:   function positionCanvasAdaptiveMenu() {
+11215:     if (!els.displayWindowAdaptiveMenuEl) return;
+11216:     const gap = 12;
+11217:     const inset = getCanvasAdaptiveMenuTopInset();
+11218:     let left = gap;
+11219:     let top = inset;
+11220:     if (!isSidebarCollapsedUi() && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
+11221:       const toolbarRect = toolbarEl.getBoundingClientRect();
+11222:       if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
+11223:         left = Math.round(toolbarRect.right + gap);
+11224:       }
+11225:       if (toolbarRect && Number.isFinite(toolbarRect.top)) {
+11226:         top = Math.max(inset, Math.round(toolbarRect.top + inset));
+11227:       }
+11228:     }
+11229:     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
+11230:     const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));
+11231:     const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
+11232:     els.displayWindowAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+11233:     els.displayWindowAdaptiveMenuEl.style.top = `${top}px`;
+11234:     els.displayWindowAdaptiveMenuEl.style.right = 'auto';
+11235:   }
+
+11419:   function updateCanvasAdaptiveMenuUi() {
+11420:     if (!els.displayWindowAdaptiveMenuEl) return;
+11421:     if (currentMode === MODES.EDIT && !workspaceEnabled) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
+11422:     let menuModel = currentMode === MODES.EDIT
+11423:       ? buildEditAdaptiveMenuModel()
+11424:       : buildDisplayAdaptiveMenuModel();
+11425:     if (workspaceEnabled && currentMode === MODES.EDIT) {
+11426:       const shared = buildDisplayAdaptiveMenuModel();
+11427:       menuModel = { ...menuModel,
+11428:         visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
+11429:         activeItems: [...menuModel.activeItems, ...shared.activeItems] };
+11430:     }
+11431:     els.displayWindowAdaptiveMenuEl.dataset.mode = menuModel.mode;
+11432:     updateAdaptiveMenuUiHelper({
+11433:       menuEl: els.displayWindowAdaptiveMenuEl,
+11434:       isVisible: !!menuModel.isVisible,
+11435:       positionMenu: positionCanvasAdaptiveMenu,
+11436:       onHideAllPopovers: menuModel.onHideAllPopovers,
+11437:       visibleItems: menuModel.visibleItems,
+11438:       activeItems: menuModel.activeItems,
+11439:       metaItems: menuModel.metaItems,
+11440:     });
+11441:     if (displayWindowsController && currentMode !== MODES.EDIT) {
+11442:       displayWindowsController.positionOpenButtonAnchoredPopovers();
+11443:     }
+11444:     if (displayAdaptiveMenuAutoHideController) {
+11445:       displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && els.displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+11446:     }
+11447:     syncTwoComponentOverlayLabelOffsets();
+11448:   }
+
+17409:     }
+17410:     if (els.editSymmetryToleranceSelectEl) {
+17411:       els.editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(els.editSymmetryToleranceSelectEl.value));
+17412:     }
+17413:     if (els.editSymmetryElementSelectEl) {
+17414:       els.editSymmetryElementSelectEl.addEventListener('change', () => {
+17415:         symmetryPopoverSelectedElementId = String(els.editSymmetryElementSelectEl.value || '');
+17416:         renderSymmetryElementGuide();
+17417:       });
+17418:     }
+17419:     if (els.editSymmetryCandidatesEl) {
+17420:       els.editSymmetryCandidatesEl.addEventListener('click', (e) => {
+17421:         const buttonEl = e && e.target ? e.target.closest('[data-symmetry-group-id]') : null;
+17422:         if (!buttonEl) return;
+17423:         if (typeof e.preventDefault === 'function') e.preventDefault();
+17424:         previewSymmetryCandidate(String(buttonEl.getAttribute('data-symmetry-group-id') || ''));
+17425:       });
+17426:     }
+17427:     if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
+17428:     if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
+17429:     if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
+17430:     if (els.editAdaptiveCleanStructureBtn) {
+17431:       els.editAdaptiveCleanStructureBtn.onclick = () => {
+
+21087:   function updateEditAdaptiveMenuUi() {
+21088:     if (currentMode !== MODES.EDIT) hideEditSelectionTranslateCue();
+21089:     updateEditAtomsMenuUi();
+21090:     updateCanvasAdaptiveMenuUi();
+21091:     if (isSymmetryPopoverOpen()) renderSymmetryPopover();
+21092:   }
+

@@ -1,0 +1,12 @@
+{
+  "reviewerSeq": 7,
+  "created": "2026-10-17T04:06:46.521399+00:00",
+  "status": "Read-only mechanism and log audit complete. CI determinism not measured; direct no-rerun constraint requires human resolution.",
+  "diagnosticCiRerunsPerformed": 0,
+  "newBrowserRuns": 0,
+  "candidateHead": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+  "integrationHead": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "firstGateUnchanged": "33/4/37; unexpected edit_tool overflow320",
+  "candidateMutated": false,
+  "scope": "Existing two CI artifacts are compared as source controls, never combined as a gate artifact."
+}

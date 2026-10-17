@@ -1,0 +1,98 @@
+{
+  "syntheticOnly": true,
+  "noAppSuiteRun": true,
+  "chromium": "145.0.7632.6",
+  "observations": [
+    {
+      "originalAssertionValue": true,
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "observedAtMs": 72.69999998807907,
+      "lastFitToolsEntryMs": 33.30000001192093,
+      "millisecondsSinceLastFitToolsCall": 39.39999997615814,
+      "fitToolsCalls": 1,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false,
+        "computedDisplay": "none"
+      },
+      "barClasses": null,
+      "focusedId": "",
+      "buildChecked": null,
+      "transformChecked": null,
+      "theme": null,
+      "readbackTiming": "Original assertion expression first; numeric readback in the same JavaScript task; no added wait."
+    },
+    {
+      "originalAssertionValue": false,
+      "scrollWidth": 400,
+      "clientWidth": 304,
+      "viewport": {
+        "width": 320,
+        "height": 1000
+      },
+      "observedAtMs": 90.19999998807907,
+      "lastFitToolsEntryMs": 33.30000001192093,
+      "millisecondsSinceLastFitToolsCall": 56.89999997615814,
+      "fitToolsCalls": 1,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false,
+        "computedDisplay": "none"
+      },
+      "barClasses": null,
+      "focusedId": "",
+      "buildChecked": null,
+      "transformChecked": null,
+      "theme": null,
+      "readbackTiming": "Original assertion expression first; numeric readback in the same JavaScript task; no added wait."
+    }
+  ],
+  "probe": {
+    "entryLineOneBased": 108,
+    "condition": "(globalThis.__vibemol320Diagnostic ? (\n  globalThis.__vibemol320Diagnostic.lastFitToolsEntryMs = performance.now(),\n  globalThis.__vibemol320Diagnostic.fitToolsCalls++, false) : false)",
+    "resolved": [
+      {
+        "breakpointId": "2:107:0:/workbench\\.js(?:\\?|$)",
+        "location": {
+          "scriptId": "5",
+          "lineNumber": 107,
+          "columnNumber": 19
+        }
+      }
+    ],
+    "unexpectedPauses": [],
+    "scriptIds": [
+      {
+        "scriptId": "5",
+        "url": "https://diagnostic.invalid/workbench.js"
+      }
+    ],
+    "breakpoint": {
+      "breakpointId": "2:107:0:/workbench\\.js(?:\\?|$)",
+      "locations": []
+    }
+  }
+}

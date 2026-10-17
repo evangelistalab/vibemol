@@ -201,5 +201,41 @@
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": false,
     "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37"
+  },
+  "latestCacheCandidate": {
+    "pr": 18,
+    "testedHead": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+    "mergeCommit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+    "counts": [
+      34,
+      3,
+      37
+    ],
+    "allExecutedOnce": true,
+    "acceptedFailingWorkflowsUnchanged": true,
+    "issue11Site": "vibration",
+    "vibrationReached": true,
+    "goldens": "102 twice, unchanged, exact repeat",
+    "identitySlots": 52,
+    "identityContexts": 8,
+    "allMinimaMet": true,
+    "composition": {
+      "workbench": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "legacy": {
+        "live": 48,
+        "knownAbsent": 4
+      }
+    },
+    "looksMinutes": 17.03,
+    "intermittentRecurred": false,
+    "shardedCiMinutes": 31.966666666666665,
+    "comparisonBaselineMinutes": 132.93,
+    "coldCacheMisses": 8,
+    "evidence": "tests/baselines/evidence/stage3/selection/ci-38989104040/",
+    "priorHintIncomplete": "flake under explicit user34/3 decision; no assertion or baseline adjustment"
   }
 }

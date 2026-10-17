@@ -1,0 +1,13 @@
+{
+  "suite": "symmetry_panel.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol",
+  "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "testSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 22.7
+}
