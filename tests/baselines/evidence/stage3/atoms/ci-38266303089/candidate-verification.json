@@ -1,0 +1,432 @@
+{
+  "pr": 16,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
+  "attempt": 1,
+  "head": "6bfd947cbe701073289efe3a5b047be52d2d6a8b",
+  "base": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "sourceAppSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "candidateConjunctionVerified": true,
+  "checksAndUnit": "passed",
+  "webKitProperties": "passed",
+  "browser": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "allExecutedOnce": true,
+    "acceptedFailures": [
+      {
+        "test": "tests/e2e/axis_gizmo.py",
+        "exitCode": 1,
+        "seconds": 44.07,
+        "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+        "rawLog": "out/test-artifacts/browser-suite/axis_gizmo/run.log",
+        "firstFailure": {
+          "suite": "axis_gizmo.py",
+          "line": 130,
+          "function": "run"
+        },
+        "failureCallSite": {
+          "suite": "axis_gizmo.py",
+          "line": 170,
+          "function": "main"
+        },
+        "exceptionType": "AssertionError",
+        "failureWorkflow": {
+          "id": "escape-canvas-focus"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/smoke.py",
+        "exitCode": 1,
+        "seconds": 725.86,
+        "testSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+        "rawLog": "out/test-artifacts/browser-suite/smoke/run.log",
+        "firstFailure": {
+          "suite": "ci_gate_diagnostics.py",
+          "line": 88,
+          "function": "wait_for_video_idle"
+        },
+        "failureCallSite": {
+          "suite": "smoke.py",
+          "line": 4394,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "trajectory"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/mode_consistency.py",
+        "exitCode": 1,
+        "seconds": 63.8,
+        "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
+        "rawLog": "out/test-artifacts/browser-suite/mode_consistency/run.log",
+        "firstFailure": {
+          "suite": "mode_consistency.py",
+          "line": 80,
+          "function": "coordinate_row_actions"
+        },
+        "failureCallSite": {
+          "suite": "mode_consistency.py",
+          "line": 162,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "coordinates-delete-selection-card"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      }
+    ],
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationReachedThisRun": false
+  },
+  "renderer": {
+    "suite": "smoke",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "browserName": "chromium",
+    "browserVersion": "153.0.8010.12",
+    "rendererClass": "software",
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "unmaskedVendor": "Google Inc. (Google)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089"
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "unchangedGoldensMatched": true,
+    "exactRepeat": true,
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5358,
+          "session restore": 1,
+          "panel transition": 1166
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5463,
+          "session restore": 1,
+          "panel transition": 1103
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3288,
+          "session restore": 1,
+          "panel transition": 857
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3103,
+          "session restore": 1,
+          "panel transition": 775
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 412,
+          "DOM replacement": 5647,
+          "session restore": 1,
+          "panel transition": 1134
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 408
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5466,
+          "session restore": 1,
+          "panel transition": 1109
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3286,
+          "session restore": 1,
+          "panel transition": 830
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3396,
+          "session restore": 1,
+          "panel transition": 837
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ]
+  },
+  "appearanceMaterialPresetIntermittent": {
+    "recurred": false,
+    "bothMaterialFamiliesPathsReached": true,
+    "looksSeconds": 1924.7,
+    "looksMinutes": 32.08,
+    "wholeCiMinutes": 170.48
+  },
+  "sourceAudit": {
+    "group": "editAtomsMenu*",
+    "baseCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+    "inventory": [
+      {
+        "name": "editAtomsMenuEl",
+        "declarationLine": 1185,
+        "assignmentLine": 7891,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editAtomsMenu*",
+        "kind": "DOM cache",
+        "id": "editAtomsMenu",
+        "queryLine": 7891,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": false,
+        "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+        "preStageAuditQueryLine": 7879,
+        "registrationLine": 7891,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editAtomsMenuBodyEl",
+        "declarationLine": 1186,
+        "assignmentLine": 7892,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editAtomsMenu*",
+        "kind": "DOM cache",
+        "id": "editAtomsMenuBody",
+        "queryLine": 7892,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": false,
+        "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+        "preStageAuditQueryLine": 7880,
+        "registrationLine": 7892,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editAtomsMenuCurrentEl",
+        "declarationLine": 1187,
+        "assignmentLine": 7893,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editAtomsMenu*",
+        "kind": "DOM cache",
+        "id": "editAtomsMenuCurrent",
+        "queryLine": 7893,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": false,
+        "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+        "preStageAuditQueryLine": 7881,
+        "registrationLine": 7893,
+        "registeredAtOriginalQueryPoint": true
+      }
+    ],
+    "functionsWhoseBodiesReferenceTheConvertedCache": [
+      {
+        "name": "positionEditAtomsMenu",
+        "beforeLine": 18004,
+        "afterLine": 18004
+      },
+      {
+        "name": "updateEditAtomsMenuUi",
+        "beforeLine": 18008,
+        "afterLine": 18008
+      }
+    ],
+    "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+    "lexicalReferenceSubstitutions": 9,
+    "auditedFunctionDeclarations": 1190,
+    "shadowedElsReferences": [],
+    "metrics": {
+      "before": {
+        "lines": 33037,
+        "functionDeclarations": 1181,
+        "letDeclarations": 291,
+        "constDeclarations": 590,
+        "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+      },
+      "after": {
+        "lines": 33069,
+        "functionDeclarations": 1181,
+        "letDeclarations": 288,
+        "constDeclarations": 590,
+        "sha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a"
+      }
+    },
+    "controllerLetsRetained": true,
+    "focusStateLetRetained": true,
+    "queryRegistrationAtOriginalWiringSites": true
+  },
+  "periodicControllerIntegratedDependencyCount": 19,
+  "groupDependencyCount": 4,
+  "conversionNetAppLines": 0,
+  "requestedQaInfrastructureNetAppLines": 32
+}

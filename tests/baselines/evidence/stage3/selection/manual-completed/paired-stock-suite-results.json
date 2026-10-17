@@ -1,0 +1,42 @@
+[
+  {
+    "suite": "edit_picking",
+    "tagged": "passed",
+    "proposed": "passed",
+    "taggedSeconds": 376.04,
+    "proposedSeconds": 322.4,
+    "testSha256": "9dbda25245e2f406e02c44f5a2858ec92a105779066456a020fb1123ad578867",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "suite": "transform_selection",
+    "tagged": "passed",
+    "proposed": "passed",
+    "taggedSeconds": 41.96,
+    "proposedSeconds": 42.92,
+    "testSha256": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "suite": "build_orbit",
+    "tagged": "passed",
+    "proposed": "passed",
+    "taggedSeconds": 36.6,
+    "proposedSeconds": 37.98,
+    "testSha256": "86cfc611919540431e4fca2131553a0de3ffe473cad68f41f21a905dd542c6b7",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "suite": "floating_panels",
+    "tagged": "passed",
+    "proposed": "passed",
+    "taggedSeconds": 34.82,
+    "proposedSeconds": 34.56,
+    "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  }
+]

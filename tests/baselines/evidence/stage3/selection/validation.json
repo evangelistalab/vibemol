@@ -1,0 +1,119 @@
+{
+  "group": "editSelection*",
+  "baseCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+  "proposedAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "cacheBindings": 13,
+  "alreadyExistingHelperCount": 1,
+  "cacheInventoryPlusHelperCount": 14,
+  "newControllers": 0,
+  "extractionDependencyInterface": null,
+  "extractionDependencyLimitApplicable": false,
+  "letBefore": 288,
+  "letAfter": 275,
+  "appAdded": 178,
+  "appRemoved": 178,
+  "appLines": 33069,
+  "topLevelFunctionDeclarations": 1181,
+  "existingFunctionsAudited": 1190,
+  "lexicalReferenceSubstitutions": 174,
+  "localChecks": {
+    "checkPassed": true,
+    "javascriptUnitTests": 433,
+    "pythonUnitTests": 16
+  },
+  "localCharacterization": {
+    "unchangedGoldens": true,
+    "capturesPerRun": 102,
+    "runs": 2,
+    "repeatExactlyIdentical": true,
+    "identityContexts": 8,
+    "inventorySlots": 52,
+    "allReasonMinimaMet": true,
+    "composition": {
+      "workbench": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "legacy": {
+        "live": 48,
+        "knownAbsent": 4
+      }
+    },
+    "evidence": "characterize-evidence.json"
+  },
+  "manualStatus": "Completed paired observations: all four unchanged stock suites pass on tagged and proposed; issue17 bounds assertion fails identically in all four launch/theme contexts and remains carried.",
+  "taggedUnchangedSuitesPassed": [
+    "edit_picking",
+    "transform_selection",
+    "build_orbit",
+    "floating_panels"
+  ],
+  "desktopOverlayMeasurementsExactlyEqual": true,
+  "overlayIssue": 17,
+  "boundsFailurePreserved": true,
+  "manualStopEvidence": "manual-resumed-stop/stop-report.json",
+  "ciStatus": "pending; candidate not yet published",
+  "pr": null,
+  "ciRun": null,
+  "appearanceMaterialPresetIntermittent": {
+    "evaluatedByOwnCi": false,
+    "status": "open; Selection CI/Looks not run"
+  },
+  "periodicTableDependencyCount": {
+    "integrated": 19,
+    "heldProposal": 11
+  },
+  "proposedUnchangedSuitesPassed": [
+    "edit_picking",
+    "transform_selection",
+    "build_orbit",
+    "floating_panels"
+  ],
+  "pairedStockSuites": [
+    {
+      "suite": "edit_picking",
+      "tagged": "passed",
+      "proposed": "passed",
+      "taggedSeconds": 376.04,
+      "proposedSeconds": 322.4,
+      "testSha256": "9dbda25245e2f406e02c44f5a2858ec92a105779066456a020fb1123ad578867",
+      "assertionsChanged": false,
+      "waitsChanged": false
+    },
+    {
+      "suite": "transform_selection",
+      "tagged": "passed",
+      "proposed": "passed",
+      "taggedSeconds": 41.96,
+      "proposedSeconds": 42.92,
+      "testSha256": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601",
+      "assertionsChanged": false,
+      "waitsChanged": false
+    },
+    {
+      "suite": "build_orbit",
+      "tagged": "passed",
+      "proposed": "passed",
+      "taggedSeconds": 36.6,
+      "proposedSeconds": 37.98,
+      "testSha256": "86cfc611919540431e4fca2131553a0de3ffe473cad68f41f21a905dd542c6b7",
+      "assertionsChanged": false,
+      "waitsChanged": false
+    },
+    {
+      "suite": "floating_panels",
+      "tagged": "passed",
+      "proposed": "passed",
+      "taggedSeconds": 34.82,
+      "proposedSeconds": 34.56,
+      "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+      "assertionsChanged": false,
+      "waitsChanged": false
+    }
+  ],
+  "nativeMenuLaunchThemeCasesPerSource": 4,
+  "nativeMenuComparison": "all observations exactly equal; four failed bounds assertions per source, collector exit2 retained",
+  "manualEvidence": "manual-completed/",
+  "carriedDefectInventory": "tests/baselines/carried-defects.json"
+}

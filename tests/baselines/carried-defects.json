@@ -1,0 +1,100 @@
+{
+  "releaseLine": "0.9.x",
+  "productionFixesAllowedInRefactor": false,
+  "rule": "Identical tagged-base manual failures are findings, not blockers. Preserve failed assertions and paired evidence. CI accepted workflows are unchanged.",
+  "taggedBase": "v0.9.5-pre-refactor",
+  "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "carriedDefects": [
+    {
+      "id": "projection",
+      "issue": 3,
+      "url": "https://github.com/evangelistalab/vibemol/issues/3",
+      "status": "open",
+      "workflow": "Orthographic frustum stale after preset camera/target changes",
+      "acceptedCiFailure": false,
+      "evidence": "tests/baselines/evidence/stage0/pixel-projection-proof.json"
+    },
+    {
+      "id": "video-crop-after-export",
+      "issue": 11,
+      "url": "https://github.com/evangelistalab/vibemol/issues/11",
+      "status": "open",
+      "workflow": "Delayed Stop after second trajectory OR vibration download reopens crop selection",
+      "acceptedCiFailure": true,
+      "suite": "tests/e2e/smoke.py",
+      "recordSitePerRun": true
+    },
+    {
+      "id": "axis-gizmo-escape",
+      "trackingIssue": 4,
+      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "status": "open",
+      "workflow": "Escape interception prevents canvas focus",
+      "acceptedCiFailure": true,
+      "suite": "tests/e2e/axis_gizmo.py"
+    },
+    {
+      "id": "coordinates-delete-selection-card",
+      "trackingIssue": 4,
+      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "status": "open",
+      "workflow": "Selection card covers Coordinates Delete",
+      "acceptedCiFailure": true,
+      "suite": "tests/e2e/mode_consistency.py"
+    },
+    {
+      "id": "selection-metal-popover",
+      "issue": 17,
+      "url": "https://github.com/evangelistalab/vibemol/issues/17",
+      "status": "open",
+      "workflows": [
+        "Metal popover covers Coordination and Translate sibling triggers, blocking intended one-click switch",
+        "Metal bounds overflow by 8 CSS pixels at supported width390"
+      ],
+      "acceptedCiFailure": false,
+      "manualAssertionRemainsFailing": true,
+      "supportedWidthEvidence": [
+        {
+          "suite": "tests/e2e/axis_gizmo.py",
+          "diagnosticLines": [
+            147,
+            171
+          ],
+          "viewport": {
+            "width": 390,
+            "height": 844
+          }
+        },
+        {
+          "suite": "tests/e2e/build_panel.py",
+          "diagnosticLine": 107,
+          "viewport": {
+            "width": 390,
+            "height": 740
+          }
+        }
+      ],
+      "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
+      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
+    }
+  ],
+  "otherCarriedFollowups": [
+    {
+      "issue": 5,
+      "scope": "Element identity/clamp divergences outside behavior-preserving extraction"
+    },
+    {
+      "issue": 14,
+      "scope": "Retired Workbench elementColorBtn; preserve legacy route; Element Colors remains held"
+    },
+    {
+      "issue": 15,
+      "scope": "Four obsolete null edit slots retained and issue-backed in identity guard"
+    }
+  ],
+  "acceptedCiGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  }
+}
