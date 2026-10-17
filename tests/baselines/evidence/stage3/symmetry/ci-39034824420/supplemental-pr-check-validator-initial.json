@@ -1,0 +1,7 @@
+{
+  "assertion": "len(statusCheckRollup) == 11 and every rollup conclusion SUCCESS",
+  "result": "failed because PR rollup also contains three expected normally-skipped baseline-recording jobs; actual 11 ordinary CI jobs all SUCCESS",
+  "rawMetadata": "pre-merge-pr.json",
+  "noGateChange": true,
+  "correctValidation": "Exact eleven ordinary CI names SUCCESS and only request/record/compare SKIPPED on the original automatic baseline run."
+}

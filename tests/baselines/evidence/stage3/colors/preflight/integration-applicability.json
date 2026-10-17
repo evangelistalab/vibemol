@@ -1,0 +1,8 @@
+{
+  "actualPushedIntegration": "04e01adb68e100282d4a1d211197001a5a461f84",
+  "tree": "f7e99c3fb3740d93aa5d9d8e1cb6658764f760de",
+  "sourceCandidate": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "entireTreeExactlyMatches": true,
+  "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "nativeAndOverlayPrerequisitesApplicableWithoutReplay": true
+}

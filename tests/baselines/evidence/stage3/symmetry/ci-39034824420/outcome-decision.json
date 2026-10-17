@@ -1,0 +1,15 @@
+{
+  "decision": "Complete own first-pass ordinary conjunction passed; eligible for exact-head merge after final remote recheck.",
+  "head": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "base": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "run": 39034824420,
+  "attempt": 1,
+  "originalFailedRun": 38994402382,
+  "diagnosticRun": 39034319620,
+  "diagnosticMergeEvidence": false,
+  "humanBranch": "Both integration and original Symmetry overflow identically; file and carry. Merge only on own unchanged complete gate.",
+  "issue21AcceptedCiFailure": false,
+  "allNineOriginalZipsDigestVerified": true,
+  "allRawFailingWorkflowsManuallyRead": true,
+  "bothLooksMaterialPathsManuallyRead": true
+}

@@ -1,0 +1,3889 @@
+[
+  {
+    "position": "top",
+    "result": {
+      "engine": {
+        "name": "axe-core",
+        "version": "4.11.0"
+      },
+      "environment": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/156.0.8078.4 Safari/537.36",
+        "windowWidth": 1512,
+        "windowHeight": 950,
+        "orientationAngle": 0,
+        "orientationType": "landscape-primary"
+      },
+      "violations": [],
+      "incomplete": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                      "target": [
+                        "#toolbarModeRow"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<button id=\"modeDisplayBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"View mode\" data-tooltip=\"Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">View</button>",
+              "target": [
+                "#modeDisplayBtn"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                      "target": [
+                        "#toolbarModeRow"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<button id=\"modeMeasureBtn\" class=\"secondary tb-modeBtn active\" type=\"button\" aria-label=\"Measurement mode\" data-tooltip=\"Measurement mode: select atoms and measure distances/angles. Shortcut: M\" role=\"radio\" aria-checked=\"true\" tabindex=\"0\">Measure</button>",
+              "target": [
+                "#modeMeasureBtn"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                      "target": [
+                        "#toolbarModeRow"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<button id=\"modeEditBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Edit mode\" data-tooltip=\"Edit mode: move/add/delete atoms. Shortcut: E\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Edit</button>",
+              "target": [
+                "#modeEditBtn"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": "pseudoContent",
+                    "expectedContrastRatio": "4.5:1"
+                  },
+                  "relatedNodes": [
+                    {
+                      "html": "<div id=\"toolbarModeRow\" role=\"radiogroup\" aria-label=\"Interaction mode\" style=\"--wb-mode-index: 1;\">",
+                      "target": [
+                        "#toolbarModeRow"
+                      ]
+                    }
+                  ],
+                  "impact": "serious",
+                  "message": "Element's background color could not be determined due to a pseudo element"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": "serious",
+              "html": "<button id=\"modeCalculationsBtn\" class=\"secondary tb-modeBtn\" type=\"button\" aria-label=\"Calculations mode\" data-tooltip=\"Choose atomic functions and prepare a forte2 AVAS input\" role=\"radio\" aria-checked=\"false\" tabindex=\"-1\">Calculations</button>",
+              "target": [
+                "#modeCalculationsBtn"
+              ],
+              "failureSummary": "Fix any of the following:\n  Element's background color could not be determined due to a pseudo element"
+            }
+          ]
+        }
+      ],
+      "passes": [
+        {
+          "id": "color-contrast",
+          "impact": "serious",
+          "tags": [
+            "cat.color",
+            "wcag2aa",
+            "wcag143",
+            "TTv5",
+            "TT13.c",
+            "EN-301-549",
+            "EN-9.1.4.3",
+            "ACT",
+            "RGAAv4",
+            "RGAA-3.2.1"
+          ],
+          "description": "Ensure the contrast between foreground and background colors meets WCAG 2 AA minimum contrast ratio thresholds",
+          "help": "Elements must meet minimum color contrast ratio thresholds",
+          "helpUrl": "https://dequeuniversity.com/rules/axe/4.11/color-contrast?application=axeAPI",
+          "nodes": [
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"file\" id=\"fileInput\" accept=\".cube,.cub,.xyz,.molden,.2ccube,.vib.json,.vmodes.json,.modes.json,.hess,.dat,.out,.output,.json,.vibemol-session,application/json,text/plain\" multiple=\"\">",
+              "target": [
+                "#fileInput"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"file\" id=\"sessionFileInput\" accept=\".vibemol-session,.json,application/json\" hidden=\"\">",
+              "target": [
+                "#sessionFileInput"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span id=\"toolbarVersion\" class=\"tb-versionBadge vm-versionBadge\" aria-label=\"VibeMol version\">v0.9.5</span>",
+              "target": [
+                "#toolbarVersion"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 15.75,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 15.75"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button id=\"saveSessionBtn\" class=\"secondary\" type=\"button\" data-tooltip=\"Download the complete workspace, including source data and layers\">Save session</button>",
+              "target": [
+                "#saveSessionBtn"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 15.75,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 15.75"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button id=\"openSessionBtn\" class=\"secondary\" type=\"button\" data-tooltip=\"Replace the workspace with a saved session\">Open session</button>",
+              "target": [
+                "#openSessionBtn"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#606b7c",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 4.76,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 4.76"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<div id=\"sessionStatus\" class=\"vm-status-text\" role=\"status\" aria-live=\"polite\">Appearance study</div>",
+              "target": [
+                "#sessionStatus"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 6.64,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.64"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<h2 class=\"vm-outliner__title\">Scenes</h2>",
+              "target": [
+                ".vm-outliner__title"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 15.75,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 15.75"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__label\">sample.cube</span>",
+              "target": [
+                "div[data-id=\"scene-1\"] > .vm-outliner-row__label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 6.64,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.64"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__meta\">11 atoms</span>",
+              "target": [
+                "div[data-id=\"scene-1\"] > .vm-outliner-row__meta"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 5.8,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 5.8"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__label\">Molecule</span>",
+              "target": [
+                "div[data-id=\"molecule-1\"] > .vm-outliner-row__label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 6.64,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.64"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__meta\">11 atoms</span>",
+              "target": [
+                "div[data-id=\"molecule-1\"] > .vm-outliner-row__meta"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 15.75,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 15.75"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__label\">Orbitals</span>",
+              "target": [
+                "div[data-id=\"orbitals-1\"] > .vm-outliner-row__label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 6.64,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.64"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__meta\">1 layer</span>",
+              "target": [
+                "div[data-id=\"orbitals-1\"] > .vm-outliner-row__meta"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#c5cfde",
+                    "contrastRatio": 11.35,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 11.35"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__label\"><span class=\"vm-outliner-row__prefix\">L0</span> sample.cube</span>",
+              "target": [
+                ".is-selected > .vm-outliner-row__label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#c5cfde",
+                    "contrastRatio": 4.78,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 4.78"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__prefix\">L0</span>",
+              "target": [
+                ".vm-outliner-row__prefix"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#c5cfde",
+                    "contrastRatio": 4.78,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 4.78"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"vm-outliner-row__meta\">iso 0.02</span>",
+              "target": [
+                ".is-selected > .vm-outliner-row__meta"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#4a5568",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 6.64,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.64"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<div class=\"vm-sidebar-section-label\">PubChem</div>",
+              "target": [
+                ".vm-sidebar-section-label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"text\" id=\"pubchemQuery\" class=\"pubchem-query vm-search-field__input\" placeholder=\"Search (e.g. ben)\" aria-label=\"PubChem search\" data-tooltip=\"Type a compound name. Suggestions are filtered to PubChem entries with 3D structures.\" list=\"pubchemSuggestions\" autocomplete=\"off\">",
+              "target": [
+                "#pubchemQuery"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 5.8,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 5.8"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span>Clear files</span>",
+              "target": [
+                "#clearBtn > span"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 5.8,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 5.8"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span>Help</span>",
+              "target": [
+                "#helpBtn > span"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"moldenEnergyFilter\" class=\"vm-list-popover__filter-input\" type=\"text\" inputmode=\"decimal\" placeholder=\"\u2026\" aria-label=\"Filter orbitals by absolute energy threshold\" data-tooltip=\"Hide orbitals whose absolute energy is below this Hartree threshold\">",
+              "target": [
+                "#moldenEnergyFilter"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"moldenGridStep\" min=\"0.12\" max=\"1.20\" step=\"0.01\" value=\"0.35\" data-tooltip=\"Grid spacing in angstrom\">",
+              "target": [
+                "#moldenGridStep"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"moldenGridPadding\" min=\"0.5\" max=\"8\" step=\"0.1\" value=\"3.0\" data-tooltip=\"Padding added around the molecule in angstrom\">",
+              "target": [
+                "#moldenGridPadding"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#e9f1ff",
+                    "bgColor": "#1a2230",
+                    "contrastRatio": 14.05,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 14.05"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<div id=\"hint\" class=\"is-visible\" aria-hidden=\"false\">Click two atoms for distance, three for angle, four for dihedral \u2022 Esc starts a new selection \u2022 saved values remain in Measurements</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editBuildSearch\" type=\"text\" autocomplete=\"off\" placeholder=\"Type to filter...\">",
+              "target": [
+                "#editBuildSearch"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"editSymmetryToleranceSelect\" class=\"editPopupSelect vm-select\">",
+              "target": [
+                "#editSymmetryToleranceSelect"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"editSymmetryElementSelect\" class=\"editPopupSelect vm-select\">\n          <option value=\"\">None</option>\n        </select>",
+              "target": [
+                "#editSymmetryElementSelect"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input class=\"editAddAtomOperatorCoord\" data-selection-axis=\"x\" aria-label=\"X position (\u00c5)\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\" spellcheck=\"false\">",
+              "target": [
+                "input[data-selection-axis=\"x\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input class=\"editAddAtomOperatorCoord\" data-selection-axis=\"y\" aria-label=\"Y position (\u00c5)\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\" spellcheck=\"false\">",
+              "target": [
+                "input[data-selection-axis=\"y\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input class=\"editAddAtomOperatorCoord\" data-selection-axis=\"z\" aria-label=\"Z position (\u00c5)\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\" spellcheck=\"false\">",
+              "target": [
+                "input[data-selection-axis=\"z\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddAtomOperatorX\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddAtomOperatorX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddAtomOperatorY\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddAtomOperatorY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddAtomOperatorZ\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddAtomOperatorZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorX\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorY\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorZ\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorRotX\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorRotX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorRotY\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorRotY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddMoleculeOperatorRotZ\" class=\"editAddAtomOperatorCoord\" type=\"text\" inputmode=\"decimal\" autocomplete=\"off\">",
+              "target": [
+                "#editAddMoleculeOperatorRotZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editAddSearch\" type=\"text\" list=\"editAddSuggestions\" autocomplete=\"off\" placeholder=\"e.g. C, Carbon, 6\">",
+              "target": [
+                "#editAddSearch"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"editAddCoordination\" class=\"editPopupSelect vm-select\" data-choices-signature=\"linear:Linear (2)|trigonalPlanar:Trigonal planar (3)|tetrahedral:Tetrahedral (4)\">",
+              "target": [
+                "#editAddCoordination"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editFragmentSearch\" type=\"text\" list=\"editFragmentSuggestions\" autocomplete=\"off\" placeholder=\"e.g. phenyl, hydroxyl, C6H5\">",
+              "target": [
+                "#editFragmentSearch"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"editFragmentAttachPolicy\" class=\"editPopupSelect vm-select\" data-tooltip=\"Valence handling for atom-click fragment attaches. Smart replaces H when appropriate; bond clicks fuse automatically when the fragment supports it.\">",
+              "target": [
+                "#editFragmentAttachPolicy"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"editMoleculeSearch\" type=\"text\" list=\"editMoleculeSuggestions\" autocomplete=\"off\" placeholder=\"e.g. benzene, pyridine, C6H6\">",
+              "target": [
+                "#editMoleculeSearch"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"shiftX\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Shift the molecule in the X-direction\" tabindex=\"-1\">",
+              "target": [
+                "#shiftX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"shiftY\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Shift the molecule in the Y-direction\" tabindex=\"-1\">",
+              "target": [
+                "#shiftY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"shiftZ\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Shift the molecule in the Z-direction\" tabindex=\"-1\">",
+              "target": [
+                "#shiftZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"camX\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Camera position in the X-direction\" tabindex=\"-1\">",
+              "target": [
+                "#camX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"camY\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Camera position in the Y-direction\" tabindex=\"-1\">",
+              "target": [
+                "#camY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"camZ\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Camera position in the Z-direction\" tabindex=\"-1\">",
+              "target": [
+                "#camZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"tgtX\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Target position in the X-direction\" tabindex=\"-1\">",
+              "target": [
+                "#tgtX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"tgtY\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Target position in the Y-direction\" tabindex=\"-1\">",
+              "target": [
+                "#tgtY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"tgtZ\" class=\"vm-num__input\" step=\"0.1\" data-tooltip=\"Target position in the Z-direction\" tabindex=\"-1\">",
+              "target": [
+                "#tgtZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"text\" id=\"rotSpeed\" class=\"vm-slider__value vm-mono\" inputmode=\"decimal\" value=\"1.00\" data-tooltip=\"Speed at which the view rotates\">",
+              "target": [
+                "#rotSpeed"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"text\" id=\"damp\" class=\"vm-slider__value vm-mono\" inputmode=\"decimal\" value=\"0.05\" data-tooltip=\"Damping factor for the view rotation\">",
+              "target": [
+                "#damp"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"trajectoryFps\" min=\"1\" max=\"120\" step=\"1\" value=\"12\" data-tooltip=\"Trajectory playback speed (frames per second)\">",
+              "target": [
+                "#trajectoryFps"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"vibrationAmplitude\" min=\"0\" max=\"8\" step=\"0.05\" value=\"0.50\" data-tooltip=\"Mode displacement scale factor\">",
+              "target": [
+                "#vibrationAmplitude"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input type=\"number\" id=\"vibrationSpeed\" min=\"0.1\" max=\"30\" step=\"0.05\" value=\"0.75\" data-tooltip=\"Oscillation speed in cycles per second\">",
+              "target": [
+                "#vibrationSpeed"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.8pt (13px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button type=\"button\" class=\"vm-btn vm-btn--ghost\" data-action=\"close\" aria-label=\"Close Measurements\">\u00d7</button>",
+              "target": [
+                "button[data-action=\"close\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<div class=\"vm-list-popover__subheader\" data-active=\"\">Active: sample.cube \u00b7 0 measurements</div>",
+              "target": [
+                ".vm-list-popover__subheader[data-active=\"\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.8pt (13px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button type=\"button\" class=\"vm-btn vm-btn--ghost\" data-action=\"units\" aria-label=\"Measurements in angstroms; switch to bohr\">\u00c5</button>",
+              "target": [
+                "button[data-action=\"units\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<label>Decimals <select aria-label=\"Measurement decimals\"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></label>",
+              "target": [
+                ".vm-list-popover__controls:nth-child(2) > label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select aria-label=\"Measurement decimals\"><option>0</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select>",
+              "target": [
+                "select[aria-label=\"Measurement decimals\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.8pt (13px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button type=\"button\" class=\"vm-btn vm-btn--ghost\" data-action=\"new\">New selection</button>",
+              "target": [
+                "button[data-action=\"new\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.8pt (13px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<button type=\"button\" class=\"vm-btn vm-btn--ghost\" data-action=\"frame\">Frame atoms</button>",
+              "target": [
+                "button[data-action=\"frame\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<label><input type=\"checkbox\" data-surfaces=\"\"> Show surfaces</label>",
+              "target": [
+                "div[data-measure-controls=\"\"] > label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<th>Type / atoms</th>",
+              "target": [
+                ".vm-measurements-table > thead > tr > th:nth-child(1)"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<th>Value</th>",
+              "target": [
+                ".vm-measurements-table > thead > tr > th:nth-child(2)"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<p class=\"vm-helper-text\" data-empty=\"\">Enter Measure and click two, three, or four atoms.</p>",
+              "target": [
+                ".vm-helper-text[data-empty=\"\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<p class=\"vm-helper-text\" data-status=\"\">Esc starts a new selection. Saved measurements remain. Decimals control display, not accuracy.</p>",
+              "target": [
+                ".vm-helper-text[data-status=\"\"]"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"avas-reference\" class=\"vm-select\"><option value=\"RHF\">RHF</option><option value=\"ROHF\">ROHF</option><option value=\"GHF\">GHF / two-component</option></select>",
+              "target": [
+                "#avas-reference"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-charge\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"-200\">",
+              "target": [
+                "#avas-charge"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-ms\" class=\"vm-slider__value\" type=\"number\" step=\"0.5\" aria-describedby=\"avas-reference-note\">",
+              "target": [
+                "#avas-ms"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"avas-method\" class=\"vm-select\"><option value=\"cumulative\">Cumulative</option><option value=\"cutoff\">Cutoff</option><option value=\"separate\">Separate occupied / virtual</option><option value=\"total\">Total</option></select>",
+              "target": [
+                "#avas-method"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-sigma\" class=\"vm-slider__value\" type=\"number\" step=\"0.01\" min=\"0\">",
+              "target": [
+                "#avas-sigma"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-cutoff\" class=\"vm-slider__value\" type=\"number\" step=\"0.01\" min=\"0\">",
+              "target": [
+                "#avas-cutoff"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-docc\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"0\">",
+              "target": [
+                "#avas-docc"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-uocc\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"0\">",
+              "target": [
+                "#avas-uocc"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-total\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"0\" aria-describedby=\"avas-total-note\">",
+              "target": [
+                "#avas-total"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-basis\" class=\"vm-slider__value\" type=\"text\">",
+              "target": [
+                "#avas-basis"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-auxiliary\" class=\"vm-slider__value\" type=\"text\">",
+              "target": [
+                "#avas-auxiliary"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"avas-minao\" class=\"vm-slider__value\" type=\"text\">",
+              "target": [
+                "#avas-minao"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<textarea class=\"vm-mono\" readonly=\"\" aria-label=\"Generated forte2 input\" spellcheck=\"false\"></textarea>",
+              "target": [
+                "textarea"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"figure-cols\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"1\">",
+              "target": [
+                "#figure-cols"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"figure-gutter\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"0\">",
+              "target": [
+                "#figure-gutter"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"figure-labelPosition\" class=\"vm-select\"><option value=\"below\">Below</option><option value=\"overlay\">Overlay top-left</option></select>",
+              "target": [
+                "#figure-labelPosition"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"figure-fontPt\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"1\">",
+              "target": [
+                "#figure-fontPt"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"figure-widthIn\" class=\"vm-slider__value\" type=\"number\" step=\".1\" min=\"1\">",
+              "target": [
+                "#figure-widthIn"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"figure-dpi\" class=\"vm-slider__value\" type=\"number\" step=\"1\" min=\"1\">",
+              "target": [
+                "#figure-dpi"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"figure-background\" class=\"vm-select\"><option value=\"look\">Look background</option><option value=\"white\">White</option><option value=\"transparent\">Transparent</option></select>",
+              "target": [
+                "#figure-background"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"figure-format\" class=\"vm-select\"><option value=\"png\">PNG</option><option value=\"svg\">SVG (editable labels)</option></select>",
+              "target": [
+                "#figure-format"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"schemeSelect\" class=\"vm-select\" data-tooltip=\"Choose default +/- surface colors\">",
+              "target": [
+                "#schemeSelect"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"iso\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" value=\"0.0200\" aria-label=\"Iso value\" data-tooltip=\"Iso value\">",
+              "target": [
+                "#iso"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"opacity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" value=\"1.00\" aria-label=\"Surface opacity value\" data-tooltip=\"Surface opacity\">",
+              "target": [
+                "#opacity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"twoComponentModeSelect\" class=\"vm-select\" data-tooltip=\"Select 2C cube component or phase surface\">",
+              "target": [
+                "#twoComponentModeSelect"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"renderMode\" class=\"vm-select\" hidden=\"\">\n            <option value=\"surface\" selected=\"\">Surfaces</option>\n            <option value=\"cloud\">Cloud</option>\n          </select>",
+              "target": [
+                "#renderMode"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"cloudType\" class=\"vm-select\" hidden=\"\">\n            <option value=\"cubes\" selected=\"\">Cubes</option>\n            <option value=\"points\">Points</option>\n          </select>",
+              "target": [
+                "#cloudType"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"lookPreset\" class=\"vm-select\" data-tooltip=\"Apply geometry, material, lighting and contours; keep the current color scheme.\">",
+              "target": [
+                "#lookPreset"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"lookColorPreset\" class=\"vm-select\" data-tooltip=\"Apply atom, bond, orbital and background colors; keep the current style.\">",
+              "target": [
+                "#lookColorPreset"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"lookSaved\" class=\"vm-select\"><option value=\"\">Choose saved look</option></select>",
+              "target": [
+                "#lookSaved"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"lookNameInput\" type=\"text\" maxlength=\"60\" autocomplete=\"off\">",
+              "target": [
+                "#lookNameInput"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"lookFileInput\" type=\"file\" accept=\".json,application/json\" hidden=\"\">",
+              "target": [
+                "#lookFileInput"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceConnector\" class=\"vm-select\" aria-label=\"Bond shape\"><option value=\"cylinder\">Cylinders</option><option value=\"kit\">Kit connectors</option></select>",
+              "target": [
+                "#appearanceConnector"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceAtomSize\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Atom scale value\" value=\"0.1\">",
+              "target": [
+                "#appearanceAtomSize"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMetalSize\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Metal scale value\" value=\"0.1\">",
+              "target": [
+                "#appearanceMetalSize"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceBondRadius\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Bond radius value\" value=\"0.01\" aria-describedby=\"bondRadiusStatus\">",
+              "target": [
+                "#appearanceBondRadius"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceCollarRadius\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Joint radius value\" value=\"0.01\">",
+              "target": [
+                "#appearanceCollarRadius"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceRadiusElement\" class=\"vm-select\" aria-label=\"Element\">",
+              "target": [
+                "#appearanceRadiusElement"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceElementRadius\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Radius (\u00c5) value\" value=\"0.05\">",
+              "target": [
+                "#appearanceElementRadius"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceSphereSegments\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Sphere segments value\" value=\"3\">",
+              "target": [
+                "#appearanceSphereSegments"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceSphereRings\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Sphere rings value\" value=\"2\">",
+              "target": [
+                "#appearanceSphereRings"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceBondSegments\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Bond segments value\" value=\"3\">",
+              "target": [
+                "#appearanceBondSegments"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceBondRings\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Bond rings value\" value=\"1\">",
+              "target": [
+                "#appearanceBondRings"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"moleculeAtomRadiusScale\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" value=\"1.00\" data-tooltip=\"Scale rendered atom radii across all molecule styles\">",
+              "target": [
+                "#moleculeAtomRadiusScale"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"moleculeBondRadiusScale\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" value=\"1.00\" data-tooltip=\"Scale rendered bond radii across all molecule styles\">",
+              "target": [
+                "#moleculeBondRadiusScale"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"studioPalette\" class=\"vm-select\" aria-label=\"Palette\"><option value=\"basic\">Standard</option><option value=\"toon\">Luminous</option><option value=\"kit\">Kit</option></select>",
+              "target": [
+                "#studioPalette"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"studioBondColorMode\" class=\"vm-select\" aria-label=\"Bond colors\"><option value=\"element\">By element</option><option value=\"uniform\">Uniform</option></select>",
+              "target": [
+                "#studioBondColorMode"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"studioSurfaceScheme\" class=\"vm-select\" aria-label=\"Default palette\">",
+              "target": [
+                "#studioSurfaceScheme"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceMaterialFamily\" class=\"vm-select\" aria-label=\"Family\" data-tooltip=\"Start a family with Basic, Classic, or Toon. Appearance Undo restores the previous material.\">",
+              "target": [
+                "#appearanceMaterialFamily"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceMaterialPreset\" class=\"vm-select\" aria-label=\"Recipe\">",
+              "target": [
+                "#appearanceMaterialPreset"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialRoughness\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Roughness value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialRoughness"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialShininess\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Shininess value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialShininess"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialMetalness\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Metalness value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialMetalness"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialClearcoat\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Clearcoat value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialClearcoat"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialEnvironment\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Reflections value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialEnvironment"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialIridescence\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Pearlescence value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialIridescence"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonBands\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Bands value\" value=\"2\">",
+              "target": [
+                "#appearanceToonBands"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone0\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 1 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone0"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone1\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 2 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone1"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone2\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 3 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone2"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone3\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 4 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone3"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone4\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 5 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone4"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone5\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 6 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone5"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone6\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 7 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone6"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceToonTone7\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Band 8 value\" value=\"0\">",
+              "target": [
+                "#appearanceToonTone7"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialEmission\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Color fill value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialEmission"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialHighlight\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Highlight value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialHighlight"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialCoatRoughness\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Coat roughness value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialCoatRoughness"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialReflectivity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Reflectivity value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialReflectivity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialEmissionScale\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Fill scale value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialEmissionScale"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceMaterialEmissionMix\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Fill blend value\" value=\"0\">",
+              "target": [
+                "#appearanceMaterialEmissionMix"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearancePearlThickness0\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Pearl minimum value\" value=\"0\">",
+              "target": [
+                "#appearancePearlThickness0"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearancePearlThickness1\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Pearl maximum value\" value=\"0\">",
+              "target": [
+                "#appearancePearlThickness1"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"materialName\" type=\"text\" maxlength=\"60\" aria-label=\"Material name\">",
+              "target": [
+                "#materialName"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"materialFile\" type=\"file\" accept=\".json,application/json\" hidden=\"\">",
+              "target": [
+                "#materialFile"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"studioFogDepth\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Fog depth value\" value=\"6\">",
+              "target": [
+                "#studioFogDepth"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightdirIntensity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key light value\" value=\"0\">",
+              "target": [
+                "#appearanceLightdirIntensity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLighthemiIntensity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Fill light value\" value=\"0\">",
+              "target": [
+                "#appearanceLighthemiIntensity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightrimIntensity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim light value\" value=\"0\">",
+              "target": [
+                "#appearanceLightrimIntensity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightambIntensity\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Ambient value\" value=\"0\">",
+              "target": [
+                "#appearanceLightambIntensity"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightexposure\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Exposure value\" value=\"0.4\">",
+              "target": [
+                "#appearanceLightexposure"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceToneMapping\" class=\"vm-select\" aria-label=\"Tone mapping\"><option value=\"linear\">Linear</option><option value=\"aces\">Studio (ACES)</option><option value=\"none\">None</option></select>",
+              "target": [
+                "#appearanceToneMapping"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightAzimuth\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key angle value\" value=\"-180\">",
+              "target": [
+                "#appearanceLightAzimuth"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightElevation\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key height value\" value=\"-90\">",
+              "target": [
+                "#appearanceLightElevation"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceRimAzimuth\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim angle value\" value=\"-180\">",
+              "target": [
+                "#appearanceRimAzimuth"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceRimElevation\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim height value\" value=\"-90\">",
+              "target": [
+                "#appearanceRimElevation"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<select id=\"appearanceContourMode\" class=\"vm-select\" aria-label=\"Contour sizing\"><option value=\"absolute\">Fixed width</option><option value=\"relative\">Relative</option></select>",
+              "target": [
+                "#appearanceContourMode"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceContours\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Width (\u00c5) value\" value=\"0\">",
+              "target": [
+                "#appearanceContours"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceAtomContours\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Atom contours value\" value=\"0\">",
+              "target": [
+                "#appearanceAtomContours"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceBondContours\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Bond contours value\" value=\"0\">",
+              "target": [
+                "#appearanceBondContours"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightPositionX\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key X value\" value=\"-10\">",
+              "target": [
+                "#appearanceLightPositionX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightPositionY\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key Y value\" value=\"-10\">",
+              "target": [
+                "#appearanceLightPositionY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceLightPositionZ\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Key Z value\" value=\"-10\">",
+              "target": [
+                "#appearanceLightPositionZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceRimPositionX\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim X value\" value=\"-10\">",
+              "target": [
+                "#appearanceRimPositionX"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceRimPositionY\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim Y value\" value=\"-10\">",
+              "target": [
+                "#appearanceRimPositionY"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "messageKey": "hidden"
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element is hidden"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<input id=\"appearanceRimPositionZ\" class=\"vm-slider__value vm-mono\" type=\"text\" inputmode=\"decimal\" aria-label=\"Rim Z value\" value=\"-10\">",
+              "target": [
+                "#appearanceRimPositionZ"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"wb-tool-label\">Clear measurements</span>",
+              "target": [
+                ".wb-tool-label"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"\">Panels</span>",
+              "target": [
+                "#workbenchPanelsBtn > span:nth-child(2)"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#eef1f5",
+                    "contrastRatio": 5.8,
+                    "fontSize": "8.3pt (11px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 5.8"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"wb-panel-count\" id=\"workbenchPanelsCount\" aria-label=\"1 panel open\">1</span>",
+              "target": [
+                "#workbenchPanelsCount"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"\">Layout</span>",
+              "target": [
+                "#workbenchArrange > span:nth-child(2)"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#525e70",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 6.57,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 6.57"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"\">Focus</span>",
+              "target": [
+                "#workbenchFocus > span:nth-child(2)"
+              ]
+            },
+            {
+              "any": [
+                {
+                  "id": "color-contrast",
+                  "data": {
+                    "fgColor": "#0f172a",
+                    "bgColor": "#ffffff",
+                    "contrastRatio": 17.85,
+                    "fontSize": "9.0pt (12px)",
+                    "fontWeight": "normal",
+                    "messageKey": null,
+                    "expectedContrastRatio": "4.5:1",
+                    "shadowColor": null
+                  },
+                  "relatedNodes": [],
+                  "impact": "serious",
+                  "message": "Element has sufficient color contrast of 17.85"
+                }
+              ],
+              "all": [],
+              "none": [],
+              "impact": null,
+              "html": "<span class=\"\">Measurements</span>",
+              "target": [
+                "#wb-tab-measurementsPanel > span:nth-child(2)"
+              ]
+            }
+          ]
+        }
+      ],
+      "inapplicable": []
+    }
+  }
+]

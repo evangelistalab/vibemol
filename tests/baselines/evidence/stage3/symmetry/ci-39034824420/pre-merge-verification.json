@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "head": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "base": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "allElevenOrdinaryChecksSuccess": true,
+  "onlyThreeBaselineJobsNormallySkipped": true,
+  "candidateWorktreeClean": true,
+  "independentConjunction": true
+}

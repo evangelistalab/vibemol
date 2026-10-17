@@ -1,0 +1,309 @@
+{
+  "group": "Element Colors const-DOM hand-off",
+  "baseCommit": "04e01adb68e100282d4a1d211197001a5a461f84",
+  "sourceCommitBeforeEvidence": "ebcd299e8f41374a49325670ddca9d2587ec82c3",
+  "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+  "periodicSha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a",
+  "sourceAudit": {
+    "all1190AppFunctionsByteExact": true,
+    "all19PeriodicFunctionDeclarationsRetained": true,
+    "wholeSourcesExactlyReversedByIndependentAudit": true,
+    "eightOriginalConstQuerySnapshotsPreserved": true,
+    "lateLegacyButtonListenerOrderPreserved": true
+  },
+  "trackedLetBefore": 265,
+  "trackedLetAfter": 265,
+  "mutableCacheConversionsPreviouslyIntegrated": 41,
+  "additionalConstFieldsGrouped": 8,
+  "retainedLegacyButton": true,
+  "periodicFactoryCounts": {
+    "before": 19,
+    "excludingLauncherInput": 18,
+    "afterGrouping": 11,
+    "allTenNonDomInputsUsed": true,
+    "countCorrection": "Ten genuine non-DOM dependencies plus els equals11, not10."
+  },
+  "newControllers": 0,
+  "newControllerInterfaceCount": "N/A",
+  "existingPeriodicFactoryInterfaceCount": 11,
+  "appLines": 33070,
+  "appTopLevelFunctionDeclarations": 1181,
+  "appNetLines": 1,
+  "periodicModuleNetLines": -9,
+  "localChecks": {
+    "makeCheck": "passed (exec session 56848 exit 0) with documented PYTHONPYCACHEPREFIX under ignored output",
+    "javaScriptTests": 433,
+    "pythonTests": 29,
+    "unitExit": 0,
+    "unitExecSession": 21723,
+    "firstMakeCheck": "stopped at Python bytecode cache permission outside sandbox; no source/test edit; original make-check.log retained",
+    "supplementalLogReadbackCorrection": "First reader assumed CI TAP # prefixes; local Node uses spec reporter \u2139. Counts independently read as tests433/pass433/fail0; make check uses silent JS loop. No test rerun or test/gate change.",
+    "completedCheckLog": "make-check-pycache.log",
+    "unitLog": "unit.log"
+  },
+  "nativeEditorCases": [
+    {
+      "launch": "workbench",
+      "theme": "light",
+      "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+      "handler": "()=>deps.openElementColors()",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "workbench",
+      "theme": "dark",
+      "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+      "handler": "()=>deps.openElementColors()",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+      "handler": "() => periodicTableController.setOpen(true)",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+      "handler": "() => periodicTableController.setOpen(true)",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    }
+  ],
+  "periodicTaggedAndProposedCapturesPerSource": 36,
+  "periodicObservationsExactlyEqual": true,
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "unchangedGoldensMatched": true,
+    "exactSerializedRepeat": true,
+    "sameSessionPixelChanges": [],
+    "wallTimeSeconds": 1033.61,
+    "captureProvenance": {
+      "os": "Darwin",
+      "osRelease": "25.6.0",
+      "architecture": "arm64",
+      "browserName": "chromium",
+      "browserVersion": "145.0.7632.6"
+    },
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5319,
+          "session restore": 1,
+          "panel transition": 1064
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5430,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2970,
+          "session restore": 1,
+          "panel transition": 669
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3080,
+          "session restore": 1,
+          "panel transition": 681
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5318,
+          "session restore": 1,
+          "panel transition": 1055
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5430,
+          "session restore": 1,
+          "panel transition": 1064
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2967,
+          "session restore": 1,
+          "panel transition": 669
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3078,
+          "session restore": 1,
+          "panel transition": 681
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ]
+  },
+  "ciStatus": "Not started; no merge until own first-pass complete34/3/37 conjunction. Local evidence is not CI acceptance.",
+  "carriedDefects": "tests/baselines/carried-defects.json",
+  "materialPresetIntermittent": "Open; local captures are not the two Looks material-family paths."
+}
