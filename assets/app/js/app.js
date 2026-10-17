@@ -1198,6 +1198,23 @@
     editBuildFragmentsHostEl: null,
     editBuildMoleculesHostEl: null,
   };
+  // Construction has no DOM/network effects; metadata rendering is used during
+  // startup preset restoration, before the late control-listener wiring.
+  const pubchemController = createPubChemController({
+    els,
+    escapeHtml,
+    setTooltipText,
+    setHintMessage,
+    parseXYZ,
+    handleSceneDropRecords,
+    setVolumes: value => { volumes = value; },
+    setCurrentIndex: value => { currentIndex = value; },
+    clearSceneMeshes,
+    clearEditHistory,
+    appendParsedVolumeRecord,
+    finalizeLoadedVolumes,
+    setNavigationHint,
+  });
   const cacheElement = (name, id) => {
     const cache = { node: null };
     Object.defineProperty(els, name, {
@@ -30627,21 +30644,7 @@
     return fileLoaderController.handleFiles(fileList);
   }
 
-  const pubchemController = createPubChemController({
-    els,
-    escapeHtml,
-    setTooltipText,
-    setHintMessage,
-    parseXYZ,
-    handleSceneDropRecords,
-    setVolumes: value => { volumes = value; },
-    setCurrentIndex: value => { currentIndex = value; },
-    clearSceneMeshes,
-    clearEditHistory,
-    appendParsedVolumeRecord,
-    finalizeLoadedVolumes,
-    setNavigationHint,
-  });
+
 
   function clearHintVisibilityTimer() {
     if (!hintVisibilityTimer) return;
