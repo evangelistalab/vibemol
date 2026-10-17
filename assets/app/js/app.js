@@ -1144,6 +1144,14 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    elementColorOverlay: null,
+    elementColorClose: null,
+    periodicTableViewport: null,
+    periodicTableCanvas: null,
+    elementColorName: null,
+    elementColorPicker: null,
+    elementColorResetOne: null,
+    elementColorResetAll: null,
     displayWindowAdaptiveMenuEl: null,
     editSymmetryTargetSummaryEl: null,
     editSymmetryExactResultCardEl: null,
@@ -6931,14 +6939,14 @@
   const elementColors = document.getElementById('elementColors');
   const visibilityElementColorsToggleEl = document.getElementById('visibilityElementColorsToggle');
   const elementColorBtn = document.getElementById('elementColorBtn');
-  const elementColorOverlay = document.getElementById('elementColorOverlay');
-  const elementColorClose = document.getElementById('elementColorClose');
-  const periodicTableViewport = document.getElementById('periodicTableViewport');
-  const periodicTableCanvas = document.getElementById('periodicTableCanvas');
-  const elementColorName = document.getElementById('elementColorName');
-  const elementColorPicker = document.getElementById('elementColorPicker');
-  const elementColorResetOne = document.getElementById('elementColorResetOne');
-  const elementColorResetAll = document.getElementById('elementColorResetAll');
+  els.elementColorOverlay = document.getElementById('elementColorOverlay');
+  els.elementColorClose = document.getElementById('elementColorClose');
+  els.periodicTableViewport = document.getElementById('periodicTableViewport');
+  els.periodicTableCanvas = document.getElementById('periodicTableCanvas');
+  els.elementColorName = document.getElementById('elementColorName');
+  els.elementColorPicker = document.getElementById('elementColorPicker');
+  els.elementColorResetOne = document.getElementById('elementColorResetOne');
+  els.elementColorResetAll = document.getElementById('elementColorResetAll');
   const toggleBox = document.getElementById('showBox');
   let showSimulationBoxes = !!toggleBox.checked;
   const toggleAxes = document.getElementById('showAxes');
@@ -10821,15 +10829,7 @@
     editAppearanceSettings,
     exportElementColorOverrides,
     normalizeHexColor,
-    elementColorBtn,
-    elementColorOverlay,
-    elementColorClose,
-    periodicTableViewport,
-    periodicTableCanvas,
-    elementColorName,
-    elementColorPicker,
-    elementColorResetOne,
-    elementColorResetAll,
+    els,
   });
 
   /**
@@ -31414,6 +31414,7 @@
   if (visibilityElementColorsToggleEl) {
     visibilityElementColorsToggleEl.onchange = () => editAppearanceSettings({ 'global.elementColors': visibilityElementColorsToggleEl.checked });
   }
+  if (elementColorBtn) elementColorBtn.onclick = () => periodicTableController.setOpen(true);
   periodicTableController.bindControls();
   toggleBox.onchange = () => {
     if (workspaceEnabled) {
@@ -33009,14 +33010,14 @@
       knownAbsent,
       readNodes: () => ({
         elementColorBtn: elementColorBtn,
-        elementColorOverlay: elementColorOverlay,
-        elementColorClose: elementColorClose,
-        periodicTableViewport: periodicTableViewport,
-        periodicTableCanvas: periodicTableCanvas,
-        elementColorName: elementColorName,
-        elementColorPicker: elementColorPicker,
-        elementColorResetOne: elementColorResetOne,
-        elementColorResetAll: elementColorResetAll,
+        elementColorOverlay: els.elementColorOverlay,
+        elementColorClose: els.elementColorClose,
+        periodicTableViewport: els.periodicTableViewport,
+        periodicTableCanvas: els.periodicTableCanvas,
+        elementColorName: els.elementColorName,
+        elementColorPicker: els.elementColorPicker,
+        elementColorResetOne: els.elementColorResetOne,
+        elementColorResetAll: els.elementColorResetAll,
         canvasAdaptiveMenuEl: els.displayWindowAdaptiveMenuEl,
         measurementsPanel: measurementsPanel.panel,
         calculationsPanel: calculationsPanel.panel,

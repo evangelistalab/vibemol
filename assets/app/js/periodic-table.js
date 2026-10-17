@@ -13,15 +13,7 @@
       editAppearanceSettings,
       exportElementColorOverrides,
       normalizeHexColor,
-      elementColorBtn,
-      elementColorOverlay,
-      elementColorClose,
-      periodicTableViewport,
-      periodicTableCanvas,
-      elementColorName,
-      elementColorPicker,
-      elementColorResetOne,
-      elementColorResetAll,
+      els,
     } = deps;
 
     const PERIODIC_TABLE_LAYOUT = [
@@ -134,9 +126,9 @@
      * Resize the periodic-table renderer and camera to viewport size.
      */
     function resizePeriodicTableScene() {
-      if (!periodicTableRenderer || !periodicTableCamera || !periodicTableViewport) return;
-      const w = Math.max(10, periodicTableViewport.clientWidth | 0);
-      const h = Math.max(10, periodicTableViewport.clientHeight | 0);
+      if (!periodicTableRenderer || !periodicTableCamera || !els.periodicTableViewport) return;
+      const w = Math.max(10, els.periodicTableViewport.clientWidth | 0);
+      const h = Math.max(10, els.periodicTableViewport.clientHeight | 0);
       periodicTableRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
       periodicTableRenderer.setSize(w, h, false);
       const aspect = w / h;
@@ -167,7 +159,7 @@
      * Periodic-table animation loop while popup is open.
      */
     function periodicTableLoop() {
-      if (!elementColorOverlay || elementColorOverlay.style.display !== 'flex') {
+      if (!els.elementColorOverlay || els.elementColorOverlay.style.display !== 'flex') {
         periodicTableRaf = 0;
         return;
       }
@@ -196,10 +188,10 @@
      * Ensure periodic-table scene resources are created.
      */
     function ensurePeriodicTableScene() {
-      if (periodicTableScene || !periodicTableCanvas) return;
+      if (periodicTableScene || !els.periodicTableCanvas) return;
 
       periodicTableRenderer = new THREE.WebGLRenderer({
-        canvas: periodicTableCanvas,
+        canvas: els.periodicTableCanvas,
         antialias: true,
         alpha: true,
       });
@@ -271,9 +263,9 @@
       // Static preview: disable pan/zoom interactions in this panel.
       periodicTableControls = null;
 
-      periodicTableCanvas.addEventListener('pointerdown', (e) => {
+      els.periodicTableCanvas.addEventListener('pointerdown', (e) => {
         if (!periodicTableCamera || !periodicPickTargets.length) return;
-        const rect = periodicTableCanvas.getBoundingClientRect();
+        const rect = els.periodicTableCanvas.getBoundingClientRect();
         if (!rect.width || !rect.height) return;
         periodicPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
         periodicPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -321,13 +313,13 @@
       const next = z | 0;
       if (next < 0) return;
       selectedElementForEditor = next;
-      if (elementColorPicker) {
-        elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+      if (els.elementColorPicker) {
+        els.elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
       }
-      if (elementColorName) {
+      if (els.elementColorName) {
         const symbol = getElementSymbol(selectedElementForEditor);
         const name = getElementName(selectedElementForEditor);
-        elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;
+        els.elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;
       }
       refreshPeriodicCells();
     }
@@ -348,10 +340,10 @@
      * @param {boolean} open
      */
     function setElementColorOverlayOpen(open) {
-      if (!elementColorOverlay) return;
+      if (!els.elementColorOverlay) return;
       const isOpen = !!open;
-      elementColorOverlay.style.display = isOpen ? 'flex' : 'none';
-      elementColorOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
+      els.elementColorOverlay.style.display = isOpen ? 'flex' : 'none';
+      els.elementColorOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
       if (isOpen) {
         buildPeriodicTableEditor();
         refreshPeriodicCells();
@@ -364,52 +356,51 @@
 
     // Registration stays at the original late UI-wiring point in app.js.
     function bindControls() {
-      if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);
-      if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);
-      if (elementColorOverlay) {
-        elementColorOverlay.addEventListener('click', (e) => {
-          if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);
+      if (els.elementColorClose) els.elementColorClose.onclick = () => setElementColorOverlayOpen(false);
+      if (els.elementColorOverlay) {
+        els.elementColorOverlay.addEventListener('click', (e) => {
+          if (e.target === els.elementColorOverlay) setElementColorOverlayOpen(false);
         });
       }
       /**
        * Apply the current picker value as an override for the selected element.
        */
       function applyElementColorPickerValue(event) {
-        if (!elementColorPicker) return;
+        if (!els.elementColorPicker) return;
         editAppearanceSettings({ 'global.elementColorOverrides': {
-          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),
+          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(els.elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),
         } }, event?.type);
       }
-      if (elementColorPicker) {
+      if (els.elementColorPicker) {
         // Some browsers commit `<input type="color">` on `change` only.
-        elementColorPicker.oninput = applyElementColorPickerValue;
-        elementColorPicker.onchange = applyElementColorPickerValue;
+        els.elementColorPicker.oninput = applyElementColorPickerValue;
+        els.elementColorPicker.onchange = applyElementColorPickerValue;
       }
-      if (elementColorResetOne) {
-        elementColorResetOne.onclick = () => {
+      if (els.elementColorResetOne) {
+        els.elementColorResetOne.onclick = () => {
           const colors = exportElementColorOverrides();
           delete colors[selectedElementForEditor];
           editAppearanceSettings({ 'global.elementColorOverrides': colors });
         };
       }
-      if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
+      if (els.elementColorResetAll) els.elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
     }
 
     function getPendingColor() {
-      if (!elementColorPicker) return null;
+      if (!els.elementColorPicker) return null;
       const active = getActiveElementHexColor(selectedElementForEditor);
-      const pending = normalizeHexColor(elementColorPicker.value, active);
+      const pending = normalizeHexColor(els.elementColorPicker.value, active);
       return { z: selectedElementForEditor, active, pending };
     }
 
     function syncColorPicker() {
-      if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+      if (els.elementColorPicker) els.elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
     }
 
     return Object.freeze({
       setOpen: setElementColorOverlayOpen,
-      isOpen: () => !!(elementColorOverlay && elementColorOverlay.getAttribute('aria-hidden') === 'false'),
-      isVisible: () => !!(elementColorOverlay && elementColorOverlay.style.display === 'flex'),
+      isOpen: () => !!(els.elementColorOverlay && els.elementColorOverlay.getAttribute('aria-hidden') === 'false'),
+      isVisible: () => !!(els.elementColorOverlay && els.elementColorOverlay.style.display === 'flex'),
       refreshCells: refreshPeriodicCells,
       syncColorPicker,
       getPendingColor,
