@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "sourceHashes": {
+    "baselineAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+    "proposedAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+    "proposedModuleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+    "auditScriptSha256": "9cc579b4d066884b776edfb10dd5d4dd6d61c39d42e11f93f12d0fa57a728372"
+  },
+  "metrics": {
+    "baselineApp": {
+      "lines": 33070,
+      "allFunctionDeclarations": 1190,
+      "directIifeFunctionDeclarations": 1181,
+      "trackedTwoSpaceLetDeclarationLines": 265,
+      "directIifeLetDeclarationNodes": 267,
+      "directIifeLetDeclarators": 276
+    },
+    "proposedApp": {
+      "lines": 32669,
+      "allFunctionDeclarations": 1172,
+      "directIifeFunctionDeclarations": 1163,
+      "trackedTwoSpaceLetDeclarationLines": 262,
+      "directIifeLetDeclarationNodes": 264,
+      "directIifeLetDeclarators": 273
+    },
+    "proposedModule": {
+      "lines": 480,
+      "allFunctionDeclarations": 21,
+      "directIifeFunctionDeclarations": 1,
+      "trackedTwoSpaceLetDeclarationLines": 0,
+      "directIifeLetDeclarationNodes": 0,
+      "directIifeLetDeclarators": 0
+    },
+    "existingMovedFunctions": 19,
+    "originalFunctionsAccounted": 1190,
+    "unchangedAppFunctions": 1171,
+    "genuineFactoryInputs": 13
+  },
+  "passedChecks": 1229,
+  "totalChecks": 1229,
+  "failed": []
+}

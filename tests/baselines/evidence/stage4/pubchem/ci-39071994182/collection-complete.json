@@ -1,0 +1,72 @@
+{
+  "runId": 39071994182,
+  "attempt": 1,
+  "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "conclusion": "success",
+  "checkoutMergeCommit": "4e79f5125a1483eae52b905274bd0d6afec1c796",
+  "artifacts": [
+    {
+      "name": "browser-suite-balanced-3",
+      "id": 12116765563,
+      "zipSha256": "2b50de78698e39b76aa13f4d9e201a17f3555ac82ffbb041fc5708f432f0541f",
+      "zipBytes": 5124379,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-balanced-1",
+      "id": 12116362099,
+      "zipSha256": "9100848fb1c8c1bc9cf191cf2cff5502ebf9e2512c714661529689242bfef9d5",
+      "zipBytes": 7158216,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterize-1",
+      "id": 12116300802,
+      "zipSha256": "ca18915be96fb18cff1cd0207b82fd8a3259fb348ee05fc6232853cada3009e7",
+      "zipBytes": 1523691,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-looks",
+      "id": 12116207911,
+      "zipSha256": "967afd41717645c363246343eb69078e7b8650a27e3c7acd44556925a4a1d545",
+      "zipBytes": 1473360,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-smoke",
+      "id": 12116110540,
+      "zipSha256": "b16f72a8eeee0a41ce825bef5306026fcef0a287892cd6e917613309b7a60e3f",
+      "zipBytes": 143384,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-results",
+      "id": 12116092230,
+      "zipSha256": "e5ab6a9d3c431662ebbe860cf501b97d3cbc81cc95b8f41d02940b6076800808",
+      "zipBytes": 21711,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-balanced-2",
+      "id": 12116082029,
+      "zipSha256": "2b76ede8de8e082291b2fa3e38183e01078f5f9b7156b5dccc3ab4a888b93748",
+      "zipBytes": 10309838,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterize-2",
+      "id": 12115776552,
+      "zipSha256": "1bfb3c0ea52a9231a57ecb2025cb652a6aa51162b799a382998d0a2c22ca0605",
+      "zipBytes": 1523691,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterization-results",
+      "id": 12115278723,
+      "zipSha256": "fa6d97ff00ca3ff66cf8c3522e9b61993e287f3d9ebfce5cff842d7908b14fa5",
+      "zipBytes": 3041683,
+      "digestMatchedGitHub": true
+    }
+  ]
+}

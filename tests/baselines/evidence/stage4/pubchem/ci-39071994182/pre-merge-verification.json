@@ -1,0 +1,16 @@
+{
+  "verifiedAt": "2026-10-17T22:16:32.797739+00:00",
+  "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "tree": "f9ae773665a4f359d5c53387b30e664b25e11204",
+  "runId": 39071994182,
+  "attempt": 1,
+  "frozenCandidateClean": true,
+  "sourceHashesExact": true,
+  "trackedLet": 262,
+  "controllerDependencies": 13,
+  "fullConjunctionIndependentlyVerified": true,
+  "allElevenOrdinaryChecksPassed": true,
+  "baselineThreeJobsNormallySkipped": true,
+  "remoteBaseUnchanged": true
+}

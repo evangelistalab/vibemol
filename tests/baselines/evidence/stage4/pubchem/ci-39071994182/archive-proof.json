@@ -1,0 +1,15 @@
+{
+  "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "tree": "f9ae773665a4f359d5c53387b30e664b25e11204",
+  "runId": 39071994182,
+  "attempt": 1,
+  "createdAt": "2026-10-17T22:17:34.284834+00:00",
+  "path": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem-fixed/ci-39071994182/immutable-evidence.tar.gz",
+  "sha256": "ae67c6f29051c1a609027e978d5af0d2e48800ae674f3fda5f9096d3f47ac054",
+  "bytes": 63606683,
+  "entries": 366,
+  "allArchiveEntriesReadbackExact": true,
+  "preMerge": true,
+  "lateMergeAndIntegrationProofStoredSeparately": true
+}

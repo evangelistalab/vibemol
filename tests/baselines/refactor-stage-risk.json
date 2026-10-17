@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage3/colors/ci-39039061120/artifacts/browser-results/browser-results.json",
+    "evidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/artifacts/browser-results/browser-results.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,7 +23,7 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Colors PR23 exact-candidate first-pass ordinary conjunction independently recomputed; merged/pushed. Original failed Symmetry and paired diagnostics remain separate historical records.",
+    "provenance": "Corrected PubChem PR24 own first ordinary run independently verified and merged. Original failed run39057387687 and diagnostics remain separate, rejected as merge evidence.",
     "gate": {
       "passed": 34,
       "failed": 3,
@@ -53,8 +53,8 @@
         "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
-    "sourceAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+    "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
       "site": "trajectory"
@@ -1498,15 +1498,16 @@
       "scope": "PubChem search/import/metadata",
       "verification": "Exercise recorded network success, empty results, failed requests, cancellation, import and metadata interactions; audit closure dependencies.",
       "originalStage": 3,
-      "status": "Corrected PubChem source locally verified; own first automatic ordinary CI pending",
+      "status": "Complete: corrected PubChem candidate passed its own first ordinary full gate, merged and pushed.",
       "pr": "https://github.com/evangelistalab/vibemol/pull/24",
       "actualDependencies": 13,
       "trackedLetCandidate": 262,
-      "trackedLetAcceptedIntegration": 265,
+      "trackedLetAcceptedIntegration": 262,
       "materialPresetCoverage": {
-        "status": "pending fixed-candidate CI; not assessed yet",
-        "bothMaterialFamiliesPathsReached": false,
-        "originalFailedRun39057387687": "not covered this run"
+        "status": "both required paths completed on the fixed candidate",
+        "bothMaterialFamiliesPathsReached": true,
+        "recurrenceAssessment": "did not recur in this completed run; remains open intermittent",
+        "priorFailedRun39057387687": "not covered this run"
       },
       "originalFailedCandidate": {
         "stage": 4,
@@ -1800,6 +1801,119 @@
         "wallTimeSeconds": 1077.39,
         "browserVersion": "145.0.7632.6",
         "pixelChanges": 0
+      },
+      "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+      "mergeCommit": "a418a284070603b258a8e64f74cfe9746cdbc0a0",
+      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+      "ordinaryCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+      "ordinaryCiCounts": [
+        34,
+        3,
+        37
+      ],
+      "ciEvidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/candidate-verification.json",
+      "wallTimeVs13293": {
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+        "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+        "attempt": 1,
+        "conclusion": "success",
+        "createdAt": "2026-10-17T21:41:17Z",
+        "lastJobCompletedAt": "2026-10-17T22:13:33Z",
+        "workflowSeconds": 1936.0,
+        "workflowMinutes": 32.266666666666666,
+        "baselineMinutes": 132.93,
+        "savedMinutes": 100.66333333333334,
+        "reductionPercent": 75.72657288297098,
+        "speedup": 4.119731404958678,
+        "jobSeconds": {
+          "WebKit Properties interactions": 84.0,
+          "Characterization (1)": 990.0,
+          "Browser suites (balanced-2)": 1882.0,
+          "Browser suites (balanced-1)": 1872.0,
+          "checks-and-unit": 25.0,
+          "Characterization (2)": 992.0,
+          "Browser suites (smoke)": 756.0,
+          "Browser suites (looks)": 1918.0,
+          "Browser suites (balanced-3)": 1875.0,
+          "Exact characterization repeat and goldens": 15.0,
+          "Aggregate browser gate (34/3/37)": 12.0
+        },
+        "shards": [
+          {
+            "shard": "balanced-1",
+            "suites": 11,
+            "subprocessSeconds": 1846.71,
+            "batchSeconds": 1846.72,
+            "jobSeconds": 1872.0
+          },
+          {
+            "shard": "balanced-2",
+            "suites": 12,
+            "subprocessSeconds": 1857.05,
+            "batchSeconds": 1857.05,
+            "jobSeconds": 1882.0
+          },
+          {
+            "shard": "balanced-3",
+            "suites": 12,
+            "subprocessSeconds": 1846.2,
+            "batchSeconds": 1846.23,
+            "jobSeconds": 1875.0
+          },
+          {
+            "shard": "looks",
+            "suites": 1,
+            "subprocessSeconds": 1892.07,
+            "batchSeconds": 1892.07,
+            "jobSeconds": 1918.0
+          },
+          {
+            "shard": "smoke",
+            "suites": 1,
+            "subprocessSeconds": 728.88,
+            "batchSeconds": 728.94,
+            "jobSeconds": 756.0
+          }
+        ],
+        "lastWorker": "Browser suites (looks)",
+        "lastJob": "Aggregate browser gate (34/3/37)",
+        "characterizationWorkerSeconds": {
+          "1": 961.96,
+          "2": 964.81
+        },
+        "characterizationJoinSeconds": 15.0,
+        "browserJoinSeconds": 12.0,
+        "cache": {
+          "restoreHits": 8,
+          "restoreMisses": 0,
+          "hitJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "missJobs": [],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        },
+        "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+      },
+      "issue11Workflow": {
+        "id": "issue-11-stop-after-second-download",
+        "site": "trajectory"
+      },
+      "vibrationReached": false,
+      "appearanceMaterialPresetIntermittent": {
+        "recurred": false,
+        "bothMaterialFamiliesPathsReached": true,
+        "looksSeconds": 1892.07,
+        "looksMinutes": 31.53,
+        "wholeCiMinutes": 32.27
       }
     },
     {
@@ -2041,29 +2155,113 @@
   "defectBatchPolicy": "Projection #3, video crop #11, axis-gizmo Escape, mode-consistency Coordinates Delete and Metal popover #17 are carried 0.9.x production defects. Schedule after 0.10.0 or in parallel on 0.9.x; never merge fixes into this refactor. Other follow-ups #5/#14/#15 are recorded in the carried inventory.",
   "latestCiGateAttempt": {
     "pr": 24,
-    "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+    "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
     "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
-    "run": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
     "attempt": 1,
-    "status": "failed ordinary gate; subsequently confirmed candidate-only regression; unmerged",
+    "integrationCommit": "a418a284070603b258a8e64f74cfe9746cdbc0a0",
+    "status": "Corrected PubChem candidate: own first automatic ordinary conjunction passed, exact-head merged and tested-tree-identical integration verified/pushed. Original failed candidate remains rejected.",
     "counts": [
-      32,
-      5,
-      37
-    ],
-    "requiredCounts": [
       34,
       3,
       37
     ],
-    "conjunctionSatisfied": false,
-    "diagnosticRun": "https://github.com/evangelistalab/vibemol/actions/runs/39062919011",
-    "diagnosticEvidence": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/independent-verification.json",
-    "materialPresetCoverage": {
-      "status": "not covered this run",
-      "recurrenceAssessment": "not assessed",
-      "bothMaterialFamiliesPathsReached": false,
-      "reason": "Looks failed in legacy reference migration before either required material-family path"
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationReached": false,
+    "evidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/candidate-verification.json",
+    "wallTimeVs13293": {
+      "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+      "head": "d2f1958302632666d66d91a6ea3e23440fc49501",
+      "attempt": 1,
+      "conclusion": "success",
+      "createdAt": "2026-10-17T21:41:17Z",
+      "lastJobCompletedAt": "2026-10-17T22:13:33Z",
+      "workflowSeconds": 1936.0,
+      "workflowMinutes": 32.266666666666666,
+      "baselineMinutes": 132.93,
+      "savedMinutes": 100.66333333333334,
+      "reductionPercent": 75.72657288297098,
+      "speedup": 4.119731404958678,
+      "jobSeconds": {
+        "WebKit Properties interactions": 84.0,
+        "Characterization (1)": 990.0,
+        "Browser suites (balanced-2)": 1882.0,
+        "Browser suites (balanced-1)": 1872.0,
+        "checks-and-unit": 25.0,
+        "Characterization (2)": 992.0,
+        "Browser suites (smoke)": 756.0,
+        "Browser suites (looks)": 1918.0,
+        "Browser suites (balanced-3)": 1875.0,
+        "Exact characterization repeat and goldens": 15.0,
+        "Aggregate browser gate (34/3/37)": 12.0
+      },
+      "shards": [
+        {
+          "shard": "balanced-1",
+          "suites": 11,
+          "subprocessSeconds": 1846.71,
+          "batchSeconds": 1846.72,
+          "jobSeconds": 1872.0
+        },
+        {
+          "shard": "balanced-2",
+          "suites": 12,
+          "subprocessSeconds": 1857.05,
+          "batchSeconds": 1857.05,
+          "jobSeconds": 1882.0
+        },
+        {
+          "shard": "balanced-3",
+          "suites": 12,
+          "subprocessSeconds": 1846.2,
+          "batchSeconds": 1846.23,
+          "jobSeconds": 1875.0
+        },
+        {
+          "shard": "looks",
+          "suites": 1,
+          "subprocessSeconds": 1892.07,
+          "batchSeconds": 1892.07,
+          "jobSeconds": 1918.0
+        },
+        {
+          "shard": "smoke",
+          "suites": 1,
+          "subprocessSeconds": 728.88,
+          "batchSeconds": 728.94,
+          "jobSeconds": 756.0
+        }
+      ],
+      "lastWorker": "Browser suites (looks)",
+      "lastJob": "Aggregate browser gate (34/3/37)",
+      "characterizationWorkerSeconds": {
+        "1": 961.96,
+        "2": 964.81
+      },
+      "characterizationJoinSeconds": 15.0,
+      "browserJoinSeconds": 12.0,
+      "cache": {
+        "restoreHits": 8,
+        "restoreMisses": 0,
+        "hitJobs": [
+          "Browser suites (balanced-1)",
+          "Browser suites (balanced-2)",
+          "Browser suites (balanced-3)",
+          "Browser suites (looks)",
+          "Browser suites (smoke)",
+          "Characterization (1)",
+          "Characterization (2)",
+          "WebKit Properties interactions"
+        ],
+        "missJobs": [],
+        "playwrightVersions": [
+          "1.64.0"
+        ]
+      },
+      "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
     }
   },
   "gateAcceptancePolicy": {
@@ -2457,6 +2655,35 @@
           ]
         },
         "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+      }
+    }
+  ],
+  "historicalRejectedCiGateAttempts": [
+    {
+      "pr": 24,
+      "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+      "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "run": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
+      "attempt": 1,
+      "status": "failed ordinary gate; subsequently confirmed candidate-only regression; unmerged",
+      "counts": [
+        32,
+        5,
+        37
+      ],
+      "requiredCounts": [
+        34,
+        3,
+        37
+      ],
+      "conjunctionSatisfied": false,
+      "diagnosticRun": "https://github.com/evangelistalab/vibemol/actions/runs/39062919011",
+      "diagnosticEvidence": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/independent-verification.json",
+      "materialPresetCoverage": {
+        "status": "not covered this run",
+        "recurrenceAssessment": "not assessed",
+        "bothMaterialFamiliesPathsReached": false,
+        "reason": "Looks failed in legacy reference migration before either required material-family path"
       }
     }
   ]

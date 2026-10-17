@@ -1,0 +1,262 @@
+{
+  "periodic-table": {
+    "factory": "createPeriodicTableController",
+    "inputCount": 11,
+    "inputs": [
+      {
+        "name": "THREE",
+        "references": [
+          38,
+          39,
+          67,
+          68,
+          69,
+          71,
+          72,
+          91,
+          193,
+          198,
+          199,
+          204,
+          206,
+          210,
+          214,
+          219,
+          231,
+          232,
+          235,
+          238,
+          243,
+          245,
+          249
+        ]
+      },
+      {
+        "name": "ATOM_Z_TO_DATA",
+        "references": [
+          108,
+          108,
+          228,
+          228
+        ]
+      },
+      {
+        "name": "ATOM_SYMBOL_TO_Z",
+        "references": [
+          107,
+          107,
+          227,
+          227
+        ]
+      },
+      {
+        "name": "UI_PALETTE",
+        "references": [
+          62,
+          63
+        ]
+      },
+      {
+        "name": "getActiveElementHexColor",
+        "references": [
+          230,
+          292,
+          317,
+          371,
+          391,
+          397
+        ]
+      },
+      {
+        "name": "getElementSymbol",
+        "references": [
+          320
+        ]
+      },
+      {
+        "name": "getElementName",
+        "references": [
+          321
+        ]
+      },
+      {
+        "name": "editAppearanceSettings",
+        "references": [
+          370,
+          383,
+          386
+        ]
+      },
+      {
+        "name": "exportElementColorOverrides",
+        "references": [
+          371,
+          381
+        ]
+      },
+      {
+        "name": "normalizeHexColor",
+        "references": [
+          371,
+          392
+        ]
+      },
+      {
+        "name": "els",
+        "references": [
+          129,
+          130,
+          131,
+          162,
+          162,
+          191,
+          194,
+          266,
+          268,
+          316,
+          317,
+          319,
+          322,
+          343,
+          345,
+          346,
+          359,
+          359,
+          360,
+          361,
+          362,
+          369,
+          371,
+          374,
+          376,
+          377,
+          379,
+          380,
+          386,
+          386,
+          390,
+          392,
+          397,
+          397,
+          402,
+          402,
+          403,
+          403
+        ]
+      }
+    ],
+    "moduleSha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a"
+  },
+  "pubchem": {
+    "factory": "createPubChemController",
+    "inputCount": 13,
+    "inputs": [
+      {
+        "name": "els",
+        "references": [
+          35,
+          38,
+          38,
+          39,
+          42,
+          42,
+          57,
+          65,
+          66,
+          70,
+          366,
+          367,
+          368,
+          371,
+          374,
+          375,
+          443,
+          445,
+          465,
+          466,
+          467,
+          470,
+          473,
+          473,
+          473,
+          473
+        ]
+      },
+      {
+        "name": "escapeHtml",
+        "references": [
+          55,
+          55
+        ]
+      },
+      {
+        "name": "setTooltipText",
+        "references": [
+          371
+        ]
+      },
+      {
+        "name": "setHintMessage",
+        "references": [
+          388,
+          432
+        ]
+      },
+      {
+        "name": "parseXYZ",
+        "references": [
+          398
+        ]
+      },
+      {
+        "name": "handleSceneDropRecords",
+        "references": [
+          404
+        ]
+      },
+      {
+        "name": "setVolumes",
+        "references": [
+          413
+        ]
+      },
+      {
+        "name": "setCurrentIndex",
+        "references": [
+          414
+        ]
+      },
+      {
+        "name": "clearSceneMeshes",
+        "references": [
+          415
+        ]
+      },
+      {
+        "name": "clearEditHistory",
+        "references": [
+          416
+        ]
+      },
+      {
+        "name": "appendParsedVolumeRecord",
+        "references": [
+          418
+        ]
+      },
+      {
+        "name": "finalizeLoadedVolumes",
+        "references": [
+          426
+        ]
+      },
+      {
+        "name": "setNavigationHint",
+        "references": [
+          428
+        ]
+      }
+    ],
+    "moduleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5"
+  }
+}
