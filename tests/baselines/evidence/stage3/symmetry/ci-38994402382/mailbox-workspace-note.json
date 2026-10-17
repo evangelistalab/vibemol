@@ -1,0 +1,10 @@
+{
+  "frozenHeadUnchanged": true,
+  "frozenAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "workingTreeChangeOnly": ".gitignore",
+  "change": "User mailbox setup ignores ops/review/; not part of frozen PR20.",
+  "preserveUserEdit": true,
+  "verificationPlan": "Use an isolated clean checkout of the exact frozen head for the unchanged strict verifier; do not weaken its clean-HEAD check or edit/amend the tested candidate.",
+  "sameCandidateNoCiRetry": true,
+  "ciStillMustPassWholeConjunction": true
+}

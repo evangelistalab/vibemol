@@ -1,0 +1,256 @@
+{
+  "group": "symmetry/shared launcher",
+  "baseCommit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "inventory": [
+    {
+      "name": "canvasAdaptiveMenuEl",
+      "declarationLine": 1187,
+      "assignmentLine": 6953,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache alias",
+      "id": "displayWindowAdaptiveMenu",
+      "queryLine": 6952,
+      "queriedThrough": "displayWindowAdaptiveMenuEl",
+      "directGetElementByIdCount": 0,
+      "wiringSite": "Side-panel control wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "singleCanonicalDataField": true
+    },
+    {
+      "name": "editSymmetryTargetSummaryEl",
+      "declarationLine": 1210,
+      "assignmentLine": 8229,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryTargetSummary",
+      "queryLine": 8229,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8229,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryExactResultCardEl",
+      "declarationLine": 1211,
+      "assignmentLine": 8230,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryExactResultCard",
+      "queryLine": 8230,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8230,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryExactResultEl",
+      "declarationLine": 1212,
+      "assignmentLine": 8231,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryExactResult",
+      "queryLine": 8231,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8231,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryToleranceSelectEl",
+      "declarationLine": 1213,
+      "assignmentLine": 8232,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryToleranceSelect",
+      "queryLine": 8232,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8232,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryElementSelectEl",
+      "declarationLine": 1214,
+      "assignmentLine": 8233,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryElementSelect",
+      "queryLine": 8233,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8233,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryCandidatesEl",
+      "declarationLine": 1215,
+      "assignmentLine": 8234,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryCandidates",
+      "queryLine": 8234,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8234,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryApplyBtnEl",
+      "declarationLine": 1216,
+      "assignmentLine": 8235,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryApplyBtn",
+      "queryLine": 8235,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8235,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryCancelBtnEl",
+      "declarationLine": 1217,
+      "assignmentLine": 8236,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryCancelBtn",
+      "queryLine": 8236,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8236,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSymmetryAutoBtnEl",
+      "declarationLine": 1218,
+      "assignmentLine": 8237,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "remainder",
+      "kind": "DOM cache",
+      "id": "editSymmetryAutoBtn",
+      "queryLine": 8237,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "registrationLine": 8237,
+      "registeredAtOriginalQueryPoint": true
+    }
+  ],
+  "functionsWhoseBodiesReferenceTheConvertedCache": [
+    {
+      "name": "positionCanvasAdaptiveMenu",
+      "beforeLine": 11214,
+      "afterLine": 11214
+    },
+    {
+      "name": "updateCanvasAdaptiveMenuUi",
+      "beforeLine": 11419,
+      "afterLine": 11419
+    },
+    {
+      "name": "buildEditAddControls",
+      "beforeLine": 17174,
+      "afterLine": 17174
+    },
+    {
+      "name": "invalidateSymmetryPopoverAnalysisCache",
+      "beforeLine": 18507,
+      "afterLine": 18507
+    },
+    {
+      "name": "syncSymmetryToleranceUi",
+      "beforeLine": 18603,
+      "afterLine": 18603
+    },
+    {
+      "name": "clearSymmetryCurrentGroupHighlight",
+      "beforeLine": 18651,
+      "afterLine": 18651
+    },
+    {
+      "name": "updateSymmetryCurrentGroupUi",
+      "beforeLine": 18661,
+      "afterLine": 18661
+    },
+    {
+      "name": "renderSymmetryElementOptions",
+      "beforeLine": 18717,
+      "afterLine": 18717
+    },
+    {
+      "name": "renderSymmetryCandidates",
+      "beforeLine": 18886,
+      "afterLine": 18886
+    },
+    {
+      "name": "renderSymmetryPopover",
+      "beforeLine": 18928,
+      "afterLine": 18928
+    }
+  ],
+  "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+  "entireAppExactAfterApprovedConversions": true,
+  "lexicalReferenceSubstitutions": 81,
+  "auditedFunctionDeclarations": 1190,
+  "shadowedElsReferences": [],
+  "metrics": {
+    "before": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 275,
+      "constDeclarations": 590,
+      "sha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45"
+    },
+    "after": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 265,
+      "constDeclarations": 589,
+      "sha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c"
+    }
+  },
+  "controllerLetsRetained": true,
+  "focusStateLetRetained": true,
+  "queryRegistrationAtOriginalWiringSites": true,
+  "singleCanonicalAliasQuery": true,
+  "canonicalPlainDataFieldPreservesSnapshot": true,
+  "independentAliasGetterCount": 0,
+  "conversionNetAppLines": 0
+}
