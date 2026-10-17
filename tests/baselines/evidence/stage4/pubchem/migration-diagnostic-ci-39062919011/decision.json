@@ -1,0 +1,50 @@
+{
+  "classification": "candidate-only regression",
+  "measuredCase": {
+    "expectedIds": [
+      "opal",
+      "classic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "tagged": {
+      "ids": [
+        "opal",
+        "classic"
+      ],
+      "flags": [
+        false,
+        false
+      ]
+    },
+    "integration": {
+      "ids": [
+        "opal",
+        "classic"
+      ],
+      "flags": [
+        false,
+        false
+      ]
+    },
+    "pubchem": {
+      "ids": [
+        "basic",
+        "basic"
+      ],
+      "flags": [
+        true,
+        true
+      ]
+    }
+  },
+  "predecidedBranchApplied": "Fails only on candidate -> regression, stop and report",
+  "productionFixWritten": false,
+  "mergePerformed": false,
+  "furtherSuiteOrCiRunStarted": false,
+  "hypothesis11": "mirror mechanism refuted; product defect remains open",
+  "materialPresetCoverageForOrdinaryRun": "not covered this run",
+  "nextCutProposedOnly": "Make PubChem construction available before the earliest startup metadata call while retaining original lookup and late binding points; audit all constructor input availability before any implementation."
+}

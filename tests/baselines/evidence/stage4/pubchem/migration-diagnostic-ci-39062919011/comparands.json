@@ -1,0 +1,127 @@
+[
+  {
+    "source": "tagged",
+    "expectedIds": [
+      "opal",
+      "classic"
+    ],
+    "actualIds": [
+      "opal",
+      "classic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "actualFlags": [
+      false,
+      false
+    ],
+    "resolvedAppearanceLookPresent": false,
+    "resolvedAppearanceLook": null,
+    "storedLegacyLookId": "opal",
+    "label": "Opal style \u00b7 Classic colors",
+    "idsMatch": true,
+    "flagsMatch": true
+  },
+  {
+    "source": "tagged",
+    "expectedIds": [
+      "classic",
+      "classic"
+    ],
+    "actualIds": [
+      "classic",
+      "classic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "actualFlags": [
+      false,
+      false
+    ],
+    "resolvedAppearanceLookPresent": false,
+    "resolvedAppearanceLook": null,
+    "storedLegacyLookId": "classic",
+    "label": "Classic",
+    "idsMatch": true,
+    "flagsMatch": true
+  },
+  {
+    "source": "integration",
+    "expectedIds": [
+      "opal",
+      "classic"
+    ],
+    "actualIds": [
+      "opal",
+      "classic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "actualFlags": [
+      false,
+      false
+    ],
+    "resolvedAppearanceLookPresent": false,
+    "resolvedAppearanceLook": null,
+    "storedLegacyLookId": "opal",
+    "label": "Opal style \u00b7 Classic colors",
+    "idsMatch": true,
+    "flagsMatch": true
+  },
+  {
+    "source": "integration",
+    "expectedIds": [
+      "classic",
+      "classic"
+    ],
+    "actualIds": [
+      "classic",
+      "classic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "actualFlags": [
+      false,
+      false
+    ],
+    "resolvedAppearanceLookPresent": false,
+    "resolvedAppearanceLook": null,
+    "storedLegacyLookId": "classic",
+    "label": "Classic",
+    "idsMatch": true,
+    "flagsMatch": true
+  },
+  {
+    "source": "pubchem",
+    "expectedIds": [
+      "opal",
+      "classic"
+    ],
+    "actualIds": [
+      "basic",
+      "basic"
+    ],
+    "expectedFlags": [
+      false,
+      false
+    ],
+    "actualFlags": [
+      true,
+      true
+    ],
+    "resolvedAppearanceLookPresent": false,
+    "resolvedAppearanceLook": null,
+    "storedLegacyLookId": "opal",
+    "label": "Basic",
+    "idsMatch": false,
+    "flagsMatch": false
+  }
+]

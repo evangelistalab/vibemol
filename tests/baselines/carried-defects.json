@@ -22,7 +22,14 @@
       "workflow": "Delayed Stop after second trajectory OR vibration download reopens crop selection",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/smoke.py",
-      "recordSitePerRun": true
+      "recordSitePerRun": true,
+      "refutedHypothesis": {
+        "claim": "Duplicated playing/lastStepMs mirrors cause both exporters to believe they are idle",
+        "status": "refuted",
+        "reason": "Vibration pair are authoritative; trajectory export reads record/master; shared exporter owns state.mode and never calls getPlaybackState",
+        "evidence": "docs/stage5-seam-design.md",
+        "productDefectStillOpen": true
+      }
     },
     {
       "id": "axis-gizmo-escape",
@@ -41,6 +48,41 @@
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/mode_consistency.py"
+    },
+    {
+      "id": "edit-tool-320-overflow",
+      "issue": 21,
+      "url": "https://github.com/evangelistalab/vibemol/issues/21",
+      "status": "open",
+      "suite": "tests/e2e/edit_tool.py",
+      "workflow": "Intermittent Edit toolbar layout collapse at 320px: clientWidth12 versus scrollWidth442, hidden trigger and empty hidden overflow menu",
+      "acceptedCiFailure": false,
+      "classification": "Measured on both integration control and frozen Symmetry; direct-human layout-collapse classification. Exact cause and tagged-CI reproduction are not diagnosed.",
+      "originalAssertionPreserved": true,
+      "observations": {
+        "integration": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 244.2
+        },
+        "symmetry": {
+          "scrollWidth": 442,
+          "clientWidth": 12,
+          "millisecondsSinceLastFitToolsCall": 230.8
+        }
+      },
+      "diagnosticOnly": true,
+      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
+      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set.",
+      "impact": "Edit toolbar unusable in the measured collapsed state, beyond narrow-viewport overflow",
+      "priorityRelativeTo": {
+        "aheadOfIssue": 17,
+        "batch": "0.9.x",
+        "authority": "direct human instruction 2026-10-17"
+      },
+      "productionFixAllowedInPubChemRefactor": false
     },
     {
       "id": "selection-metal-popover",
@@ -78,32 +120,15 @@
       "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
     },
     {
-      "id": "edit-tool-320-overflow",
-      "issue": 21,
-      "url": "https://github.com/evangelistalab/vibemol/issues/21",
+      "id": "appearance-restore-partial-failure",
+      "issue": 25,
+      "url": "https://github.com/evangelistalab/vibemol/issues/25",
       "status": "open",
-      "suite": "tests/e2e/edit_tool.py",
-      "workflow": "Workbench 320px tools overflow after Transform focus / ArrowRight selects Build",
+      "workflow": "Startup autosave restoration applies settings then skips reference migration on callback failure; warning only, no rollback/user error",
       "acceptedCiFailure": false,
-      "classification": "Present on integration control and frozen Symmetry in human-authorized instrumented CI; carry under direct human both-overflow branch. Tagged-CI reproduction not claimed.",
-      "originalAssertionPreserved": true,
-      "observations": {
-        "integration": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 244.2
-        },
-        "symmetry": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 230.8
-        }
-      },
-      "diagnosticOnly": true,
-      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
-      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
-      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
-      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set."
+      "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
+      "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
+      "productionFixIncluded": false
     }
   ],
   "otherCarriedFollowups": [
@@ -128,5 +153,13 @@
     "failed": 3,
     "total": 37
   },
-  "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json"
+  "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
+  "relativeBatchPriority": {
+    "orderedIssues": [
+      21,
+      17
+    ],
+    "scope": "Explicit relative order only; does not rank these against the other carried defects.",
+    "reason": "The measured320px toolbar layout collapse makes Edit controls unusable."
+  }
 }

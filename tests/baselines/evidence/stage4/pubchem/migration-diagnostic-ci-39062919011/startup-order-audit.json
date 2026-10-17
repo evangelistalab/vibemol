@@ -1,0 +1,169 @@
+{
+  "records": {
+    "tagged": {
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "functions": {
+        "importAppearancePresetEnvelope": {
+          "line": 27690,
+          "endLine": 27696,
+          "source": "function importAppearancePresetEnvelope(presetLike) {\n    const presetApi = window.VibeMolPreset;\n    if (!presetApi || typeof presetApi.import !== 'function') return null;\n    return runWithAppearancePresetAutosaveSuppressed(() => (\n      presetApi.import(buildAppearanceAutosaveImportEnvelope(presetLike), { mode: PRESET_MODE.RELAXED })\n    ));\n  }",
+          "sha256": "1c3a6ca8ec56574b99b6ad7ecebe633748f2c3db55b7ab60e467d340fa17ad80"
+        },
+        "restoreAppearancePresetAutosave": {
+          "line": 27725,
+          "endLine": 27739,
+          "source": "function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+          "sha256": "dcce6de956a6a9575b03cbe2df00d29458713e280c5700c6c72465961a43449b"
+        },
+        "updateSidePanel": {
+          "line": 29530,
+          "endLine": 29547,
+          "source": "function updateSidePanel() {\n    syncEditSceneTool();\n    measurementsPanel?.sync();\n    syncCalculations();\n    const record = currentIndex >= 0 ? volumes[currentIndex] : null;\n    ensureListPopovers();\n    if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });\n    coordsInlineEditState = null;\n    setCoordsHoveredAtomIndex(-1);\n    syncCoordsUnitsUi();\n    renderCoordsPanelIfOpen();\n    updatePubChemMetadataPanel(record);\n    syncMoldenOrbitalsPanel(record);\n    syncTrajectoryControls();\n    syncVibrationControls();\n    updateAutoIsoButtonState();\n    updateEditAdaptiveMenuUi();\n  }",
+          "sha256": "92df0b80a6539176a7f478b5fac72e284e0ec2e8aadba7a91766df0d44705481"
+        },
+        "updatePubChemMetadataPanel": {
+          "line": 30917,
+          "endLine": 30941,
+          "source": "function updatePubChemMetadataPanel(record) {\n    if (!pubchemMetaContent) return;\n    const meta = record && record.pubchemMeta;\n    if (!meta) {\n      if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'none';\n      pubchemMetaContent.innerHTML = '';\n      return;\n    }\n    if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'block';\n    const rows = [\n      ['Name', meta.title || '—'],\n      ['CID', meta.cid != null ? String(meta.cid) : '—'],\n      ['Formula', meta.molecularFormula || '—'],\n      ['Molar mass', meta.molecularWeight ? `${meta.molecularWeight} g/mol` : '—'],\n      ['IUPAC', meta.iupacName || '—'],\n      ['SMILES', meta.connectivitySmiles || '—'],\n      ['Source', meta.source || 'PubChem']\n    ];\n    if (meta.query) rows.splice(1, 0, ['Query', meta.query]);\n    if (meta.url) rows.push(['URL', meta.url]);\n    const body = rows.map(([k, v]) => {\n      return `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`;\n    }).join('');\n    pubchemMetaContent.innerHTML = `<table class=\"meta-table pubchem-metadata\"><tbody>${body}</tbody></table>`;\n  }",
+          "sha256": "4627b28719ac00d710cfce5596e46933154db97bb1c887583fa177725450e147"
+        }
+      },
+      "events": {
+        "registerAppearanceLook": 27594,
+        "restoreAutosave": 28054,
+        "originalPubChemStateDeclaration": 30962,
+        "createLooksUi": 33166,
+        "publishAppearanceLooks": 33227
+      },
+      "presetCallbacks": {
+        "afterImportSettings": {
+          "line": 27110,
+          "source": "afterImportSettings: ({ settings }) => {\n      if ('appearance.references' in settings) {\n        pendingAppearanceMigration = null;\n        if (looksUi) lookReferences.reconcile();\n      } else if (looksUi) lookReferences.migrate(captureLookSettings(), settings['appearance.look']);\n      else pendingAppearanceMigration = { recordedLook: settings['appearance.look'] };\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "f4315a05c7471197226396ebf61c8670b43294589fae70e31280da433cec5de1"
+        },
+        "afterApplySettings": {
+          "line": 27118,
+          "source": "afterApplySettings: ({ settings }) => {\n      controls.update();\n      refreshViewUI();\n      applyMoleculeStyleUiState();\n      updateRenderModeUI();\n      updateSurfBtn();\n      applySurfaceControlsToActiveCubeLayerFromUi({ materialChanged: 'appearance.rendering' in settings });\n      if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {\n        applyInheritedSurfaceSettings(getAllLookLayers());\n      }\n      rebuildScene({ preserveView: true });\n      updateSidePanel();\n      updateOpacityAndColors();\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "de1ff9487c7389504c92925952580de80ea5f26daede13a9cb5b21474e6184d5"
+        }
+      }
+    },
+    "integration": {
+      "commit": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+      "functions": {
+        "importAppearancePresetEnvelope": {
+          "line": 27378,
+          "endLine": 27384,
+          "source": "function importAppearancePresetEnvelope(presetLike) {\n    const presetApi = window.VibeMolPreset;\n    if (!presetApi || typeof presetApi.import !== 'function') return null;\n    return runWithAppearancePresetAutosaveSuppressed(() => (\n      presetApi.import(buildAppearanceAutosaveImportEnvelope(presetLike), { mode: PRESET_MODE.RELAXED })\n    ));\n  }",
+          "sha256": "1c3a6ca8ec56574b99b6ad7ecebe633748f2c3db55b7ab60e467d340fa17ad80"
+        },
+        "restoreAppearancePresetAutosave": {
+          "line": 27413,
+          "endLine": 27427,
+          "source": "function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+          "sha256": "dcce6de956a6a9575b03cbe2df00d29458713e280c5700c6c72465961a43449b"
+        },
+        "updateSidePanel": {
+          "line": 29218,
+          "endLine": 29235,
+          "source": "function updateSidePanel() {\n    syncEditSceneTool();\n    measurementsPanel?.sync();\n    syncCalculations();\n    const record = currentIndex >= 0 ? volumes[currentIndex] : null;\n    ensureListPopovers();\n    if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });\n    coordsInlineEditState = null;\n    setCoordsHoveredAtomIndex(-1);\n    syncCoordsUnitsUi();\n    renderCoordsPanelIfOpen();\n    updatePubChemMetadataPanel(record);\n    syncMoldenOrbitalsPanel(record);\n    syncTrajectoryControls();\n    syncVibrationControls();\n    updateAutoIsoButtonState();\n    updateEditAdaptiveMenuUi();\n  }",
+          "sha256": "92df0b80a6539176a7f478b5fac72e284e0ec2e8aadba7a91766df0d44705481"
+        },
+        "updatePubChemMetadataPanel": {
+          "line": 30605,
+          "endLine": 30629,
+          "source": "function updatePubChemMetadataPanel(record) {\n    if (!pubchemMetaContent) return;\n    const meta = record && record.pubchemMeta;\n    if (!meta) {\n      if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'none';\n      pubchemMetaContent.innerHTML = '';\n      return;\n    }\n    if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'block';\n    const rows = [\n      ['Name', meta.title || '—'],\n      ['CID', meta.cid != null ? String(meta.cid) : '—'],\n      ['Formula', meta.molecularFormula || '—'],\n      ['Molar mass', meta.molecularWeight ? `${meta.molecularWeight} g/mol` : '—'],\n      ['IUPAC', meta.iupacName || '—'],\n      ['SMILES', meta.connectivitySmiles || '—'],\n      ['Source', meta.source || 'PubChem']\n    ];\n    if (meta.query) rows.splice(1, 0, ['Query', meta.query]);\n    if (meta.url) rows.push(['URL', meta.url]);\n    const body = rows.map(([k, v]) => {\n      return `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`;\n    }).join('');\n    pubchemMetaContent.innerHTML = `<table class=\"meta-table pubchem-metadata\"><tbody>${body}</tbody></table>`;\n  }",
+          "sha256": "4627b28719ac00d710cfce5596e46933154db97bb1c887583fa177725450e147"
+        }
+      },
+      "events": {
+        "registerAppearanceLook": 27282,
+        "restoreAutosave": 27742,
+        "originalPubChemStateDeclaration": 30650,
+        "createLooksUi": 32827,
+        "publishAppearanceLooks": 32888
+      },
+      "presetCallbacks": {
+        "afterImportSettings": {
+          "line": 26801,
+          "source": "afterImportSettings: ({ settings }) => {\n      if ('appearance.references' in settings) {\n        pendingAppearanceMigration = null;\n        if (looksUi) lookReferences.reconcile();\n      } else if (looksUi) lookReferences.migrate(captureLookSettings(), settings['appearance.look']);\n      else pendingAppearanceMigration = { recordedLook: settings['appearance.look'] };\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "f4315a05c7471197226396ebf61c8670b43294589fae70e31280da433cec5de1"
+        },
+        "afterApplySettings": {
+          "line": 26809,
+          "source": "afterApplySettings: ({ settings }) => {\n      controls.update();\n      refreshViewUI();\n      applyMoleculeStyleUiState();\n      updateRenderModeUI();\n      updateSurfBtn();\n      applySurfaceControlsToActiveCubeLayerFromUi({ materialChanged: 'appearance.rendering' in settings });\n      if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {\n        applyInheritedSurfaceSettings(getAllLookLayers());\n      }\n      rebuildScene({ preserveView: true });\n      updateSidePanel();\n      updateOpacityAndColors();\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "de1ff9487c7389504c92925952580de80ea5f26daede13a9cb5b21474e6184d5"
+        }
+      }
+    },
+    "pubchem": {
+      "commit": "25fd30a6e273fa289f17ec999b8528e82c061631",
+      "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "functions": {
+        "importAppearancePresetEnvelope": {
+          "line": 27381,
+          "endLine": 27387,
+          "source": "function importAppearancePresetEnvelope(presetLike) {\n    const presetApi = window.VibeMolPreset;\n    if (!presetApi || typeof presetApi.import !== 'function') return null;\n    return runWithAppearancePresetAutosaveSuppressed(() => (\n      presetApi.import(buildAppearanceAutosaveImportEnvelope(presetLike), { mode: PRESET_MODE.RELAXED })\n    ));\n  }",
+          "sha256": "1c3a6ca8ec56574b99b6ad7ecebe633748f2c3db55b7ab60e467d340fa17ad80"
+        },
+        "restoreAppearancePresetAutosave": {
+          "line": 27416,
+          "endLine": 27430,
+          "source": "function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+          "sha256": "dcce6de956a6a9575b03cbe2df00d29458713e280c5700c6c72465961a43449b"
+        },
+        "updateSidePanel": {
+          "line": 29221,
+          "endLine": 29238,
+          "source": "function updateSidePanel() {\n    syncEditSceneTool();\n    measurementsPanel?.sync();\n    syncCalculations();\n    const record = currentIndex >= 0 ? volumes[currentIndex] : null;\n    ensureListPopovers();\n    if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });\n    coordsInlineEditState = null;\n    setCoordsHoveredAtomIndex(-1);\n    syncCoordsUnitsUi();\n    renderCoordsPanelIfOpen();\n    updatePubChemMetadataPanel(record);\n    syncMoldenOrbitalsPanel(record);\n    syncTrajectoryControls();\n    syncVibrationControls();\n    updateAutoIsoButtonState();\n    updateEditAdaptiveMenuUi();\n  }",
+          "sha256": "92df0b80a6539176a7f478b5fac72e284e0ec2e8aadba7a91766df0d44705481"
+        },
+        "updatePubChemMetadataPanel": {
+          "line": 30608,
+          "endLine": 30610,
+          "source": "function updatePubChemMetadataPanel(record) {\n    return pubchemController.updatePubChemMetadataPanel(record);\n  }",
+          "sha256": "128efa4a6b2a648f7e18b49206360fb1bf45ff4fed6cdea666f66feb03f5f76a"
+        }
+      },
+      "events": {
+        "registerAppearanceLook": 27285,
+        "restoreAutosave": 27745,
+        "createPubChemController": 30630,
+        "createLooksUi": 32423,
+        "publishAppearanceLooks": 32484
+      },
+      "presetCallbacks": {
+        "afterImportSettings": {
+          "line": 26804,
+          "source": "afterImportSettings: ({ settings }) => {\n      if ('appearance.references' in settings) {\n        pendingAppearanceMigration = null;\n        if (looksUi) lookReferences.reconcile();\n      } else if (looksUi) lookReferences.migrate(captureLookSettings(), settings['appearance.look']);\n      else pendingAppearanceMigration = { recordedLook: settings['appearance.look'] };\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "f4315a05c7471197226396ebf61c8670b43294589fae70e31280da433cec5de1"
+        },
+        "afterApplySettings": {
+          "line": 26812,
+          "source": "afterApplySettings: ({ settings }) => {\n      controls.update();\n      refreshViewUI();\n      applyMoleculeStyleUiState();\n      updateRenderModeUI();\n      updateSurfBtn();\n      applySurfaceControlsToActiveCubeLayerFromUi({ materialChanged: 'appearance.rendering' in settings });\n      if (Object.values(lookModule.surfaceGroups).some(keys => keys.some(key => key in settings))) {\n        applyInheritedSurfaceSettings(getAllLookLayers());\n      }\n      rebuildScene({ preserveView: true });\n      updateSidePanel();\n      updateOpacityAndColors();\n      syncAppearancePersistenceUi();\n    }",
+          "sha256": "de1ff9487c7389504c92925952580de80ea5f26daede13a9cb5b21474e6184d5"
+        }
+      }
+    }
+  },
+  "sourceOnlyAudit": true,
+  "productionEdits": false,
+  "findings": {
+    "appearanceRegistrationStillAfterAutosaveAndLooksConstruction": true,
+    "originalEarlyMetadataFunctionWasHoistedAndIndependentOfPubChemState": true,
+    "newEarlyMetadataWrapperReadsPubChemControllerConstBeforeInitialization": true,
+    "unchangedSynchronousPath": [
+      "restoreAppearancePresetAutosave",
+      "importAppearancePresetEnvelope",
+      "preset importEnvelope/applyPresetSettings",
+      "afterApplySettings",
+      "updateSidePanel",
+      "updatePubChemMetadataPanel"
+    ],
+    "candidateNewRead": "return pubchemController.updatePubChemMetadataPanel(record);",
+    "javascriptConsequence": "If the startup import reaches this unchanged path, the controller const is still in its temporal dead zone. The restore function catches the exception; preset afterImportSettings/migration bookkeeping is skipped.",
+    "classificationBoundary": "Read-only static mechanism. Report measured three-source comparands separately; no browser exception trace was added and no production fix is authorized."
+  }
+}

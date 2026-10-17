@@ -1,0 +1,1324 @@
+{
+  "diagnosticOnly": true,
+  "usableAsMergeGate": false,
+  "marker": "RESTORE_FAULT_PROBE_tagged_metadata_after_settings",
+  "cases": [
+    {
+      "label": "tagged-control",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/tagged-source",
+      "sourceSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "servedSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "injected": false,
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+          "args": [
+            "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63014/assets/vendor/js/three.min.js?v=0.9.5",
+            "line": 0,
+            "column": 8,
+            "lineNumber": 0,
+            "columnNumber": 8
+          }
+        },
+        {
+          "type": "warning",
+          "text": "[.WebGL-0x134001a9e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "args": [],
+          "location": {
+            "url": "http://127.0.0.1:63014/",
+            "line": 3937,
+            "column": 0,
+            "lineNumber": 3937,
+            "columnNumber": 0
+          }
+        },
+        {
+          "type": "warning",
+          "text": "[.WebGL-0x134001a9e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "args": [],
+          "location": {
+            "url": "http://127.0.0.1:63014/",
+            "line": 3937,
+            "column": 0,
+            "lineNumber": 3937,
+            "columnNumber": 0
+          }
+        },
+        {
+          "type": "warning",
+          "text": "[.WebGL-0x134001a9e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels",
+          "args": [],
+          "location": {
+            "url": "http://127.0.0.1:63014/",
+            "line": 3937,
+            "column": 0,
+            "lineNumber": 3937,
+            "columnNumber": 0
+          }
+        },
+        {
+          "type": "warning",
+          "text": "[.WebGL-0x134001a9e00]GL Driver Message (OpenGL, Performance, GL_CLOSE_PATH_NV, High): GPU stall due to ReadPixels (this message will no longer repeat)",
+          "args": [],
+          "location": {
+            "url": "http://127.0.0.1:63014/",
+            "line": 3937,
+            "column": 0,
+            "lineNumber": 3937,
+            "columnNumber": 0
+          }
+        },
+        {
+          "type": "info",
+          "text": "VibeMol: restored autosaved appearance preset",
+          "args": [
+            "VibeMol: restored autosaved appearance preset"
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63014/assets/app/js/app.js?v=0.9.5",
+            "line": 27732,
+            "column": 14,
+            "lineNumber": 27732,
+            "columnNumber": 14
+          }
+        },
+        {
+          "type": "info",
+          "text": "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63014/assets/fragments/library.json?v=0.9.5.",
+          "args": [
+            "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63014/assets/fragments/library.json?v=0.9.5."
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63014/assets/app/js/app.js?v=0.9.5",
+            "line": 17472,
+            "column": 16,
+            "lineNumber": 17472,
+            "columnNumber": 16
+          }
+        }
+      ],
+      "pageerrors": [],
+      "dialogs": [],
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actual": {
+        "ids": [
+          "opal",
+          "classic"
+        ],
+        "flags": [
+          false,
+          false
+        ],
+        "settings": {
+          "molecule.style": "basic",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {
+            "1": "#f4f4f4",
+            "6": "#626262",
+            "7": "#446ac4",
+            "8": "#c65449"
+          },
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "national",
+          "surface.posColor": "#e60000",
+          "surface.negColor": "#0033a0",
+          "appearance.rendering": {
+            "coloring": {
+              "bondColor": "#9b9b9b",
+              "elementBonds": false,
+              "palette": "basic"
+            },
+            "effects": {
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false,
+              "outlineWidth": 0
+            },
+            "geometry": {
+              "atomRadii": {
+                "1": 0.28,
+                "6": 0.43,
+                "7": 0.42,
+                "8": 0.4
+              },
+              "atomScaleMain": 0.9,
+              "atomScaleTransitionMetal": 0.9,
+              "bondHeightSegments": 1,
+              "bondRadialSegments": 36,
+              "bondRadius": 0.085,
+              "connector": "cylinder",
+              "curvedMultipleBonds": false,
+              "kitCollarRadius": 0.114,
+              "sphereHeightSegments": 40,
+              "sphereWidthSegments": 64
+            },
+            "lighting": {
+              "ambColor": "#999999",
+              "ambIntensity": 0,
+              "dirColor": "#ffffff",
+              "dirIntensity": 3.6,
+              "dirPos": [
+                -3.5,
+                5,
+                7
+              ],
+              "exposure": 1,
+              "followTheme": false,
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#383e47",
+              "hemiIntensity": 0.4,
+              "rimColor": "#ffffff",
+              "rimIntensity": 3,
+              "rimPos": [
+                3.5,
+                2,
+                -5
+              ],
+              "toneMapping": "aces"
+            },
+            "material": {
+              "model": "physical",
+              "roughness": 0.17200000000000004,
+              "metalness": 0.12,
+              "clearcoat": 0.8,
+              "clearcoatRoughness": 0.22,
+              "reflectivity": 0.5,
+              "specularIntensity": 1,
+              "shininess": 32.8,
+              "specularColor": "#ffffff",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 1,
+              "iridescence": 0.7,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null,
+            "version": 3
+          }
+        },
+        "label": "Opal style \u00b7 Classic colors",
+        "stored": {
+          "kind": "vibemol.preset",
+          "presetVersion": 1,
+          "appVersion": "0.9.5",
+          "settings": {
+            "appearance.rendering": {
+              "coloring": {
+                "bondColor": "#9b9b9b",
+                "elementBonds": false,
+                "palette": "basic"
+              },
+              "effects": {
+                "atomOutlineFraction": 0,
+                "bondOutlineFraction": 0,
+                "highlights": false,
+                "outlineWidth": 0
+              },
+              "geometry": {
+                "atomRadii": {
+                  "1": 0.28,
+                  "6": 0.43,
+                  "7": 0.42,
+                  "8": 0.4
+                },
+                "atomScaleMain": 0.9,
+                "atomScaleTransitionMetal": 0.9,
+                "bondHeightSegments": 1,
+                "bondRadialSegments": 36,
+                "bondRadius": 0.085,
+                "connector": "cylinder",
+                "curvedMultipleBonds": false,
+                "kitCollarRadius": 0.114,
+                "sphereHeightSegments": 40,
+                "sphereWidthSegments": 64
+              },
+              "lighting": {
+                "ambColor": "#999999",
+                "ambIntensity": 0,
+                "dirColor": "#ffffff",
+                "dirIntensity": 3.6,
+                "dirPos": [
+                  -3.5,
+                  5,
+                  7
+                ],
+                "exposure": 1,
+                "followTheme": false,
+                "hemiColor": "#ffffff",
+                "hemiGroundColor": "#383e47",
+                "hemiIntensity": 0.4,
+                "rimColor": "#ffffff",
+                "rimIntensity": 3,
+                "rimPos": [
+                  3.5,
+                  2,
+                  -5
+                ],
+                "toneMapping": "aces"
+              },
+              "material": {
+                "byElement": {},
+                "clearcoat": 0.8,
+                "clearcoatRoughness": 0.22,
+                "emissiveColor": "#ffffff",
+                "emissiveIntensity": 0,
+                "emissiveMix": 0,
+                "emissiveScale": 1,
+                "emissiveUsesColor": true,
+                "envMapIntensity": 1,
+                "iridescence": 0.7,
+                "iridescenceThicknessRange": [
+                  130,
+                  380
+                ],
+                "metalness": 0.12,
+                "model": "physical",
+                "reflectivity": 0.5,
+                "roughness": 0.17200000000000004,
+                "shininess": 32.8,
+                "specularColor": "#ffffff",
+                "specularIntensity": 1,
+                "tint": "#ffffff",
+                "toonSteps": [
+                  70,
+                  150,
+                  210,
+                  255
+                ],
+                "vertexEmissiveColor": null,
+                "vertexEmissiveIntensity": null
+              },
+              "surfaceMaterial": null,
+              "version": 3
+            },
+            "global.backgroundColor": "#ffffff",
+            "global.elementColorOverrides": {
+              "1": "#f4f4f4",
+              "6": "#626262",
+              "7": "#446ac4",
+              "8": "#c65449"
+            },
+            "global.elementColors": true,
+            "molecule.atomRadiusScale": 1,
+            "molecule.bondRadiusScale": 1,
+            "molecule.feature.fog": false,
+            "molecule.feature.fog.depth": 14,
+            "molecule.feature.shadows": true,
+            "molecule.style": "basic",
+            "surface.colorScheme": "national",
+            "surface.materialPreset": "emissive",
+            "surface.negColor": "#0033a0",
+            "surface.opacity": 1,
+            "surface.posColor": "#e60000",
+            "appearance.look": {
+              "id": "opal",
+              "name": "Opal",
+              "revision": 4,
+              "settings": {
+                "appearance.rendering": {
+                  "coloring": {
+                    "bondColor": "#9b9b9b",
+                    "elementBonds": false,
+                    "palette": "basic"
+                  },
+                  "effects": {
+                    "atomOutlineFraction": 0,
+                    "bondOutlineFraction": 0,
+                    "highlights": false,
+                    "outlineWidth": 0
+                  },
+                  "geometry": {
+                    "atomRadii": {
+                      "1": 0.28,
+                      "6": 0.43,
+                      "7": 0.42,
+                      "8": 0.4
+                    },
+                    "atomScaleMain": 0.9,
+                    "atomScaleTransitionMetal": 0.9,
+                    "bondHeightSegments": 1,
+                    "bondRadialSegments": 36,
+                    "bondRadius": 0.085,
+                    "connector": "cylinder",
+                    "curvedMultipleBonds": false,
+                    "kitCollarRadius": 0.114,
+                    "sphereHeightSegments": 40,
+                    "sphereWidthSegments": 64
+                  },
+                  "lighting": {
+                    "ambColor": "#999999",
+                    "ambIntensity": 0,
+                    "dirColor": "#ffffff",
+                    "dirIntensity": 3.6,
+                    "dirPos": [
+                      -3.5,
+                      5,
+                      7
+                    ],
+                    "exposure": 1,
+                    "followTheme": false,
+                    "hemiColor": "#ffffff",
+                    "hemiGroundColor": "#383e47",
+                    "hemiIntensity": 0.4,
+                    "rimColor": "#ffffff",
+                    "rimIntensity": 3,
+                    "rimPos": [
+                      3.5,
+                      2,
+                      -5
+                    ],
+                    "toneMapping": "aces"
+                  },
+                  "material": {
+                    "byElement": {},
+                    "clearcoat": 0.8,
+                    "clearcoatRoughness": 0.22,
+                    "emissiveColor": "#ffffff",
+                    "emissiveIntensity": 0,
+                    "emissiveMix": 0,
+                    "emissiveScale": 1,
+                    "emissiveUsesColor": true,
+                    "envMapIntensity": 1,
+                    "iridescence": 0.7,
+                    "iridescenceThicknessRange": [
+                      130,
+                      380
+                    ],
+                    "metalness": 0.12,
+                    "model": "physical",
+                    "reflectivity": 0.5,
+                    "roughness": 0.17200000000000004,
+                    "shininess": 32.8,
+                    "specularColor": "#ffffff",
+                    "specularIntensity": 1,
+                    "tint": "#ffffff",
+                    "toonSteps": [
+                      70,
+                      150,
+                      210,
+                      255
+                    ],
+                    "vertexEmissiveColor": null,
+                    "vertexEmissiveIntensity": null
+                  },
+                  "surfaceMaterial": null,
+                  "version": 3
+                },
+                "global.backgroundColor": "#ffffff",
+                "global.elementColorOverrides": {
+                  "1": "#f4f4f4",
+                  "6": "#626262",
+                  "7": "#446ac4",
+                  "8": "#c65449"
+                },
+                "global.elementColors": true,
+                "molecule.atomRadiusScale": 1,
+                "molecule.bondRadiusScale": 1,
+                "molecule.feature.fog": false,
+                "molecule.feature.fog.depth": 14,
+                "molecule.feature.shadows": true,
+                "molecule.style": "basic",
+                "surface.colorScheme": "national",
+                "surface.materialPreset": "emissive",
+                "surface.negColor": "#0033a0",
+                "surface.opacity": 1,
+                "surface.posColor": "#e60000"
+              }
+            }
+          }
+        },
+        "errors": [],
+        "hint": "Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+        "alerts": [],
+        "readyState": "complete",
+        "atMs": 4148.399999976158
+      },
+      "faultFired": false,
+      "sourceStillUnchanged": true
+    },
+    {
+      "label": "tagged-induced-failure",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/tagged-source",
+      "sourceSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "servedSha256": "8d21e56f98f3137dbcb81dc9cc68685c0223ba0f5ed337042917051d7156d8ef",
+      "injected": true,
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+          "args": [
+            "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63182/assets/vendor/js/three.min.js?v=0.9.5",
+            "line": 0,
+            "column": 8,
+            "lineNumber": 0,
+            "columnNumber": 8
+          }
+        },
+        {
+          "type": "warning",
+          "text": "VibeMol: autosave restore failed Error: RESTORE_FAULT_PROBE_tagged_metadata_after_settings\n    at updatePubChemMetadataPanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:30918:83)\n    at updateSidePanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:29541:5)\n    at Object.afterApplySettings (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27129:7)\n    at applyPresetSettings (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27603:38)\n    at http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27694:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27675:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27693:12)",
+          "args": [
+            "VibeMol: autosave restore failed",
+            {
+              "name": "Error",
+              "message": "RESTORE_FAULT_PROBE_tagged_metadata_after_settings",
+              "stack": "Error: RESTORE_FAULT_PROBE_tagged_metadata_after_settings\n    at updatePubChemMetadataPanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:30918:83)\n    at updateSidePanel (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:29541:5)\n    at Object.afterApplySettings (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27129:7)\n    at applyPresetSettings (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27603:38)\n    at http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27694:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27675:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5:27693:12)"
+            }
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5",
+            "line": 27735,
+            "column": 14,
+            "lineNumber": 27735,
+            "columnNumber": 14
+          }
+        },
+        {
+          "type": "info",
+          "text": "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63182/assets/fragments/library.json?v=0.9.5.",
+          "args": [
+            "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63182/assets/fragments/library.json?v=0.9.5."
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63182/assets/app/js/app.js?v=0.9.5",
+            "line": 17472,
+            "column": 16,
+            "lineNumber": 17472,
+            "columnNumber": 16
+          }
+        }
+      ],
+      "pageerrors": [],
+      "dialogs": [],
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actual": {
+        "ids": [
+          "basic",
+          "basic"
+        ],
+        "flags": [
+          true,
+          true
+        ],
+        "settings": {
+          "molecule.style": "basic",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {
+            "1": "#f4f4f4",
+            "6": "#626262",
+            "7": "#446ac4",
+            "8": "#c65449"
+          },
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "national",
+          "surface.posColor": "#e60000",
+          "surface.negColor": "#0033a0",
+          "appearance.rendering": {
+            "coloring": {
+              "bondColor": "#9b9b9b",
+              "elementBonds": false,
+              "palette": "basic"
+            },
+            "effects": {
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false,
+              "outlineWidth": 0
+            },
+            "geometry": {
+              "atomRadii": {
+                "1": 0.28,
+                "6": 0.43,
+                "7": 0.42,
+                "8": 0.4
+              },
+              "atomScaleMain": 0.9,
+              "atomScaleTransitionMetal": 0.9,
+              "bondHeightSegments": 1,
+              "bondRadialSegments": 36,
+              "bondRadius": 0.085,
+              "connector": "cylinder",
+              "curvedMultipleBonds": false,
+              "kitCollarRadius": 0.114,
+              "sphereHeightSegments": 40,
+              "sphereWidthSegments": 64
+            },
+            "lighting": {
+              "ambColor": "#999999",
+              "ambIntensity": 0,
+              "dirColor": "#ffffff",
+              "dirIntensity": 3.6,
+              "dirPos": [
+                -3.5,
+                5,
+                7
+              ],
+              "exposure": 1,
+              "followTheme": false,
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#383e47",
+              "hemiIntensity": 0.4,
+              "rimColor": "#ffffff",
+              "rimIntensity": 3,
+              "rimPos": [
+                3.5,
+                2,
+                -5
+              ],
+              "toneMapping": "aces"
+            },
+            "material": {
+              "model": "physical",
+              "roughness": 0.17200000000000004,
+              "metalness": 0.12,
+              "clearcoat": 0.8,
+              "clearcoatRoughness": 0.22,
+              "reflectivity": 0.5,
+              "specularIntensity": 1,
+              "shininess": 32.8,
+              "specularColor": "#ffffff",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 1,
+              "iridescence": 0.7,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null,
+            "version": 3
+          }
+        },
+        "label": "Basic",
+        "stored": {
+          "kind": "vibemol.preset",
+          "presetVersion": 1,
+          "appVersion": "0.9.5",
+          "settings": {
+            "appearance.rendering": {
+              "coloring": {
+                "bondColor": "#9b9b9b",
+                "elementBonds": false,
+                "palette": "basic"
+              },
+              "effects": {
+                "atomOutlineFraction": 0,
+                "bondOutlineFraction": 0,
+                "highlights": false,
+                "outlineWidth": 0
+              },
+              "geometry": {
+                "atomRadii": {
+                  "1": 0.28,
+                  "6": 0.43,
+                  "7": 0.42,
+                  "8": 0.4
+                },
+                "atomScaleMain": 0.9,
+                "atomScaleTransitionMetal": 0.9,
+                "bondHeightSegments": 1,
+                "bondRadialSegments": 36,
+                "bondRadius": 0.085,
+                "connector": "cylinder",
+                "curvedMultipleBonds": false,
+                "kitCollarRadius": 0.114,
+                "sphereHeightSegments": 40,
+                "sphereWidthSegments": 64
+              },
+              "lighting": {
+                "ambColor": "#999999",
+                "ambIntensity": 0,
+                "dirColor": "#ffffff",
+                "dirIntensity": 3.6,
+                "dirPos": [
+                  -3.5,
+                  5,
+                  7
+                ],
+                "exposure": 1,
+                "followTheme": false,
+                "hemiColor": "#ffffff",
+                "hemiGroundColor": "#383e47",
+                "hemiIntensity": 0.4,
+                "rimColor": "#ffffff",
+                "rimIntensity": 3,
+                "rimPos": [
+                  3.5,
+                  2,
+                  -5
+                ],
+                "toneMapping": "aces"
+              },
+              "material": {
+                "byElement": {},
+                "clearcoat": 0.8,
+                "clearcoatRoughness": 0.22,
+                "emissiveColor": "#ffffff",
+                "emissiveIntensity": 0,
+                "emissiveMix": 0,
+                "emissiveScale": 1,
+                "emissiveUsesColor": true,
+                "envMapIntensity": 1,
+                "iridescence": 0.7,
+                "iridescenceThicknessRange": [
+                  130,
+                  380
+                ],
+                "metalness": 0.12,
+                "model": "physical",
+                "reflectivity": 0.5,
+                "roughness": 0.17200000000000004,
+                "shininess": 32.8,
+                "specularColor": "#ffffff",
+                "specularIntensity": 1,
+                "tint": "#ffffff",
+                "toonSteps": [
+                  70,
+                  150,
+                  210,
+                  255
+                ],
+                "vertexEmissiveColor": null,
+                "vertexEmissiveIntensity": null
+              },
+              "surfaceMaterial": null,
+              "version": 3
+            },
+            "global.backgroundColor": "#ffffff",
+            "global.elementColorOverrides": {
+              "1": "#f4f4f4",
+              "6": "#626262",
+              "7": "#446ac4",
+              "8": "#c65449"
+            },
+            "global.elementColors": true,
+            "molecule.atomRadiusScale": 1,
+            "molecule.bondRadiusScale": 1,
+            "molecule.feature.fog": false,
+            "molecule.feature.fog.depth": 14,
+            "molecule.feature.shadows": true,
+            "molecule.style": "basic",
+            "surface.colorScheme": "national",
+            "surface.materialPreset": "emissive",
+            "surface.negColor": "#0033a0",
+            "surface.opacity": 1,
+            "surface.posColor": "#e60000",
+            "appearance.look": {
+              "id": "opal",
+              "name": "Opal",
+              "revision": 4,
+              "settings": {
+                "appearance.rendering": {
+                  "coloring": {
+                    "bondColor": "#9b9b9b",
+                    "elementBonds": false,
+                    "palette": "basic"
+                  },
+                  "effects": {
+                    "atomOutlineFraction": 0,
+                    "bondOutlineFraction": 0,
+                    "highlights": false,
+                    "outlineWidth": 0
+                  },
+                  "geometry": {
+                    "atomRadii": {
+                      "1": 0.28,
+                      "6": 0.43,
+                      "7": 0.42,
+                      "8": 0.4
+                    },
+                    "atomScaleMain": 0.9,
+                    "atomScaleTransitionMetal": 0.9,
+                    "bondHeightSegments": 1,
+                    "bondRadialSegments": 36,
+                    "bondRadius": 0.085,
+                    "connector": "cylinder",
+                    "curvedMultipleBonds": false,
+                    "kitCollarRadius": 0.114,
+                    "sphereHeightSegments": 40,
+                    "sphereWidthSegments": 64
+                  },
+                  "lighting": {
+                    "ambColor": "#999999",
+                    "ambIntensity": 0,
+                    "dirColor": "#ffffff",
+                    "dirIntensity": 3.6,
+                    "dirPos": [
+                      -3.5,
+                      5,
+                      7
+                    ],
+                    "exposure": 1,
+                    "followTheme": false,
+                    "hemiColor": "#ffffff",
+                    "hemiGroundColor": "#383e47",
+                    "hemiIntensity": 0.4,
+                    "rimColor": "#ffffff",
+                    "rimIntensity": 3,
+                    "rimPos": [
+                      3.5,
+                      2,
+                      -5
+                    ],
+                    "toneMapping": "aces"
+                  },
+                  "material": {
+                    "byElement": {},
+                    "clearcoat": 0.8,
+                    "clearcoatRoughness": 0.22,
+                    "emissiveColor": "#ffffff",
+                    "emissiveIntensity": 0,
+                    "emissiveMix": 0,
+                    "emissiveScale": 1,
+                    "emissiveUsesColor": true,
+                    "envMapIntensity": 1,
+                    "iridescence": 0.7,
+                    "iridescenceThicknessRange": [
+                      130,
+                      380
+                    ],
+                    "metalness": 0.12,
+                    "model": "physical",
+                    "reflectivity": 0.5,
+                    "roughness": 0.17200000000000004,
+                    "shininess": 32.8,
+                    "specularColor": "#ffffff",
+                    "specularIntensity": 1,
+                    "tint": "#ffffff",
+                    "toonSteps": [
+                      70,
+                      150,
+                      210,
+                      255
+                    ],
+                    "vertexEmissiveColor": null,
+                    "vertexEmissiveIntensity": null
+                  },
+                  "surfaceMaterial": null,
+                  "version": 3
+                },
+                "global.backgroundColor": "#ffffff",
+                "global.elementColorOverrides": {
+                  "1": "#f4f4f4",
+                  "6": "#626262",
+                  "7": "#446ac4",
+                  "8": "#c65449"
+                },
+                "global.elementColors": true,
+                "molecule.atomRadiusScale": 1,
+                "molecule.bondRadiusScale": 1,
+                "molecule.feature.fog": false,
+                "molecule.feature.fog.depth": 14,
+                "molecule.feature.shadows": true,
+                "molecule.style": "basic",
+                "surface.colorScheme": "national",
+                "surface.materialPreset": "emissive",
+                "surface.negColor": "#0033a0",
+                "surface.opacity": 1,
+                "surface.posColor": "#e60000"
+              }
+            }
+          }
+        },
+        "errors": [],
+        "hint": "Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+        "alerts": [],
+        "readyState": "complete",
+        "atMs": 1083.6000000238419
+      },
+      "faultFired": true,
+      "sourceStillUnchanged": true
+    },
+    {
+      "label": "candidate-original",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/source-worktree",
+      "sourceSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "servedSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "injected": false,
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+          "args": [
+            "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63349/assets/vendor/js/three.min.js?v=0.9.5",
+            "line": 0,
+            "column": 8,
+            "lineNumber": 0,
+            "columnNumber": 8
+          }
+        },
+        {
+          "type": "warning",
+          "text": "VibeMol: autosave restore failed ReferenceError: Cannot access 'pubchemController' before initialization\n    at updatePubChemMetadataPanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:30609:5)\n    at updateSidePanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:29232:5)\n    at Object.afterApplySettings (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:26823:7)\n    at applyPresetSettings (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27294:38)\n    at http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27385:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27366:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27384:12)",
+          "args": [
+            "VibeMol: autosave restore failed",
+            {
+              "name": "ReferenceError",
+              "message": "Cannot access 'pubchemController' before initialization",
+              "stack": "ReferenceError: Cannot access 'pubchemController' before initialization\n    at updatePubChemMetadataPanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:30609:5)\n    at updateSidePanel (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:29232:5)\n    at Object.afterApplySettings (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:26823:7)\n    at applyPresetSettings (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:355:95)\n    at importEnvelope (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:400:27)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/preset.js?v=0.9.5:442:43)\n    at Object.import (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27294:38)\n    at http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27385:23\n    at runWithAppearancePresetAutosaveSuppressed (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27366:41)\n    at importAppearancePresetEnvelope (http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5:27384:12)"
+            }
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5",
+            "line": 27426,
+            "column": 14,
+            "lineNumber": 27426,
+            "columnNumber": 14
+          }
+        },
+        {
+          "type": "info",
+          "text": "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63349/assets/fragments/library.json?v=0.9.5.",
+          "args": [
+            "[Fragments] Loaded 49 catalog entries from http://127.0.0.1:63349/assets/fragments/library.json?v=0.9.5."
+          ],
+          "location": {
+            "url": "http://127.0.0.1:63349/assets/app/js/app.js?v=0.9.5",
+            "line": 17166,
+            "column": 16,
+            "lineNumber": 17166,
+            "columnNumber": 16
+          }
+        }
+      ],
+      "pageerrors": [],
+      "dialogs": [],
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actual": {
+        "ids": [
+          "basic",
+          "basic"
+        ],
+        "flags": [
+          true,
+          true
+        ],
+        "settings": {
+          "molecule.style": "basic",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {
+            "1": "#f4f4f4",
+            "6": "#626262",
+            "7": "#446ac4",
+            "8": "#c65449"
+          },
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "national",
+          "surface.posColor": "#e60000",
+          "surface.negColor": "#0033a0",
+          "appearance.rendering": {
+            "coloring": {
+              "bondColor": "#9b9b9b",
+              "elementBonds": false,
+              "palette": "basic"
+            },
+            "effects": {
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false,
+              "outlineWidth": 0
+            },
+            "geometry": {
+              "atomRadii": {
+                "1": 0.28,
+                "6": 0.43,
+                "7": 0.42,
+                "8": 0.4
+              },
+              "atomScaleMain": 0.9,
+              "atomScaleTransitionMetal": 0.9,
+              "bondHeightSegments": 1,
+              "bondRadialSegments": 36,
+              "bondRadius": 0.085,
+              "connector": "cylinder",
+              "curvedMultipleBonds": false,
+              "kitCollarRadius": 0.114,
+              "sphereHeightSegments": 40,
+              "sphereWidthSegments": 64
+            },
+            "lighting": {
+              "ambColor": "#999999",
+              "ambIntensity": 0,
+              "dirColor": "#ffffff",
+              "dirIntensity": 3.6,
+              "dirPos": [
+                -3.5,
+                5,
+                7
+              ],
+              "exposure": 1,
+              "followTheme": false,
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#383e47",
+              "hemiIntensity": 0.4,
+              "rimColor": "#ffffff",
+              "rimIntensity": 3,
+              "rimPos": [
+                3.5,
+                2,
+                -5
+              ],
+              "toneMapping": "aces"
+            },
+            "material": {
+              "model": "physical",
+              "roughness": 0.17200000000000004,
+              "metalness": 0.12,
+              "clearcoat": 0.8,
+              "clearcoatRoughness": 0.22,
+              "reflectivity": 0.5,
+              "specularIntensity": 1,
+              "shininess": 32.8,
+              "specularColor": "#ffffff",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 1,
+              "iridescence": 0.7,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null,
+            "version": 3
+          }
+        },
+        "label": "Basic",
+        "stored": {
+          "kind": "vibemol.preset",
+          "presetVersion": 1,
+          "appVersion": "0.9.5",
+          "settings": {
+            "appearance.rendering": {
+              "coloring": {
+                "bondColor": "#9b9b9b",
+                "elementBonds": false,
+                "palette": "basic"
+              },
+              "effects": {
+                "atomOutlineFraction": 0,
+                "bondOutlineFraction": 0,
+                "highlights": false,
+                "outlineWidth": 0
+              },
+              "geometry": {
+                "atomRadii": {
+                  "1": 0.28,
+                  "6": 0.43,
+                  "7": 0.42,
+                  "8": 0.4
+                },
+                "atomScaleMain": 0.9,
+                "atomScaleTransitionMetal": 0.9,
+                "bondHeightSegments": 1,
+                "bondRadialSegments": 36,
+                "bondRadius": 0.085,
+                "connector": "cylinder",
+                "curvedMultipleBonds": false,
+                "kitCollarRadius": 0.114,
+                "sphereHeightSegments": 40,
+                "sphereWidthSegments": 64
+              },
+              "lighting": {
+                "ambColor": "#999999",
+                "ambIntensity": 0,
+                "dirColor": "#ffffff",
+                "dirIntensity": 3.6,
+                "dirPos": [
+                  -3.5,
+                  5,
+                  7
+                ],
+                "exposure": 1,
+                "followTheme": false,
+                "hemiColor": "#ffffff",
+                "hemiGroundColor": "#383e47",
+                "hemiIntensity": 0.4,
+                "rimColor": "#ffffff",
+                "rimIntensity": 3,
+                "rimPos": [
+                  3.5,
+                  2,
+                  -5
+                ],
+                "toneMapping": "aces"
+              },
+              "material": {
+                "byElement": {},
+                "clearcoat": 0.8,
+                "clearcoatRoughness": 0.22,
+                "emissiveColor": "#ffffff",
+                "emissiveIntensity": 0,
+                "emissiveMix": 0,
+                "emissiveScale": 1,
+                "emissiveUsesColor": true,
+                "envMapIntensity": 1,
+                "iridescence": 0.7,
+                "iridescenceThicknessRange": [
+                  130,
+                  380
+                ],
+                "metalness": 0.12,
+                "model": "physical",
+                "reflectivity": 0.5,
+                "roughness": 0.17200000000000004,
+                "shininess": 32.8,
+                "specularColor": "#ffffff",
+                "specularIntensity": 1,
+                "tint": "#ffffff",
+                "toonSteps": [
+                  70,
+                  150,
+                  210,
+                  255
+                ],
+                "vertexEmissiveColor": null,
+                "vertexEmissiveIntensity": null
+              },
+              "surfaceMaterial": null,
+              "version": 3
+            },
+            "global.backgroundColor": "#ffffff",
+            "global.elementColorOverrides": {
+              "1": "#f4f4f4",
+              "6": "#626262",
+              "7": "#446ac4",
+              "8": "#c65449"
+            },
+            "global.elementColors": true,
+            "molecule.atomRadiusScale": 1,
+            "molecule.bondRadiusScale": 1,
+            "molecule.feature.fog": false,
+            "molecule.feature.fog.depth": 14,
+            "molecule.feature.shadows": true,
+            "molecule.style": "basic",
+            "surface.colorScheme": "national",
+            "surface.materialPreset": "emissive",
+            "surface.negColor": "#0033a0",
+            "surface.opacity": 1,
+            "surface.posColor": "#e60000",
+            "appearance.look": {
+              "id": "opal",
+              "name": "Opal",
+              "revision": 4,
+              "settings": {
+                "appearance.rendering": {
+                  "coloring": {
+                    "bondColor": "#9b9b9b",
+                    "elementBonds": false,
+                    "palette": "basic"
+                  },
+                  "effects": {
+                    "atomOutlineFraction": 0,
+                    "bondOutlineFraction": 0,
+                    "highlights": false,
+                    "outlineWidth": 0
+                  },
+                  "geometry": {
+                    "atomRadii": {
+                      "1": 0.28,
+                      "6": 0.43,
+                      "7": 0.42,
+                      "8": 0.4
+                    },
+                    "atomScaleMain": 0.9,
+                    "atomScaleTransitionMetal": 0.9,
+                    "bondHeightSegments": 1,
+                    "bondRadialSegments": 36,
+                    "bondRadius": 0.085,
+                    "connector": "cylinder",
+                    "curvedMultipleBonds": false,
+                    "kitCollarRadius": 0.114,
+                    "sphereHeightSegments": 40,
+                    "sphereWidthSegments": 64
+                  },
+                  "lighting": {
+                    "ambColor": "#999999",
+                    "ambIntensity": 0,
+                    "dirColor": "#ffffff",
+                    "dirIntensity": 3.6,
+                    "dirPos": [
+                      -3.5,
+                      5,
+                      7
+                    ],
+                    "exposure": 1,
+                    "followTheme": false,
+                    "hemiColor": "#ffffff",
+                    "hemiGroundColor": "#383e47",
+                    "hemiIntensity": 0.4,
+                    "rimColor": "#ffffff",
+                    "rimIntensity": 3,
+                    "rimPos": [
+                      3.5,
+                      2,
+                      -5
+                    ],
+                    "toneMapping": "aces"
+                  },
+                  "material": {
+                    "byElement": {},
+                    "clearcoat": 0.8,
+                    "clearcoatRoughness": 0.22,
+                    "emissiveColor": "#ffffff",
+                    "emissiveIntensity": 0,
+                    "emissiveMix": 0,
+                    "emissiveScale": 1,
+                    "emissiveUsesColor": true,
+                    "envMapIntensity": 1,
+                    "iridescence": 0.7,
+                    "iridescenceThicknessRange": [
+                      130,
+                      380
+                    ],
+                    "metalness": 0.12,
+                    "model": "physical",
+                    "reflectivity": 0.5,
+                    "roughness": 0.17200000000000004,
+                    "shininess": 32.8,
+                    "specularColor": "#ffffff",
+                    "specularIntensity": 1,
+                    "tint": "#ffffff",
+                    "toonSteps": [
+                      70,
+                      150,
+                      210,
+                      255
+                    ],
+                    "vertexEmissiveColor": null,
+                    "vertexEmissiveIntensity": null
+                  },
+                  "surfaceMaterial": null,
+                  "version": 3
+                },
+                "global.backgroundColor": "#ffffff",
+                "global.elementColorOverrides": {
+                  "1": "#f4f4f4",
+                  "6": "#626262",
+                  "7": "#446ac4",
+                  "8": "#c65449"
+                },
+                "global.elementColors": true,
+                "molecule.atomRadiusScale": 1,
+                "molecule.bondRadiusScale": 1,
+                "molecule.feature.fog": false,
+                "molecule.feature.fog.depth": 14,
+                "molecule.feature.shadows": true,
+                "molecule.style": "basic",
+                "surface.colorScheme": "national",
+                "surface.materialPreset": "emissive",
+                "surface.negColor": "#0033a0",
+                "surface.opacity": 1,
+                "surface.posColor": "#e60000"
+              }
+            }
+          }
+        },
+        "errors": [],
+        "hint": "Orbit: mouse drag \u2022 Zoom: wheel \u2022 Pan: right-drag",
+        "alerts": [],
+        "readyState": "complete",
+        "atMs": 1009.4000000357628
+      },
+      "faultFired": false,
+      "sourceStillUnchanged": true
+    }
+  ],
+  "harnessSha256": "eead1002b0c35322cf45fa0ac5b0d5f3cffb757cc982d225aad1c5a127c5b0de",
+  "browserVersion": "145.0.7632.6"
+}

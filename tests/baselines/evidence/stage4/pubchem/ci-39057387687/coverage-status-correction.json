@@ -1,0 +1,9 @@
+{
+  "run": 39057387687,
+  "coverageStatus": "not covered this run",
+  "recurrenceAssessment": "not assessed",
+  "bothMaterialFamiliesPathsReached": false,
+  "reason": "Looks failed before both material-family paths; no observation supports a did-not-recur classification",
+  "supersedesWording": "no appearanceMaterialPreset timeout observed",
+  "rawEvidenceAndFailedGateUnchanged": true
+}

@@ -1,0 +1,417 @@
+{
+  "label": "pubchem",
+  "source": {
+    "commit": "25fd30a6e273fa289f17ec999b8528e82c061631",
+    "tree": "74d76ee4e986a592ba2fbf0c137e3a91c86cfb05",
+    "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4"
+  },
+  "harnessCommit": "323fbf9332a49477f99cb3a447bb4037335ed104",
+  "harnessSha256": "a3cc71f5052f7b6ce470ce64bd47522118405d0302b37726e2a7a7b77d21ee7e",
+  "testSha256": "2a1c894c25894779414bb7ca439d5b93fb6feab3a9436760fb76c1a2b340ec87",
+  "helpersSha256": "9f886bdcce286e605af3eeae7a25a08307c2e3bb5317a33cfbf4ea6808ae9b8b",
+  "driverBase": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "diagnosticOnly": true,
+  "usableAsMergeGate": false,
+  "productionSourceChanged": false,
+  "suite": "look_references.py",
+  "scenarios": [
+    "reference_ui",
+    "reference_persistence",
+    "reference_migration"
+  ],
+  "originalReadinessAndWaitsPreserved": true,
+  "originalExpectedComparandsPreserved": true,
+  "observation": "Both ids/flags sampled in one synchronous snapshot before either assertion; public exported appearance.look presence/value, stored legacy input, resolved settings and timestamp logged. No extra polling, retry or production instrumentation.",
+  "os": "Linux",
+  "architecture": "x86_64",
+  "python": "3.12.15",
+  "playwrightVersion": "1.64.0",
+  "ciRun": "39062919011",
+  "ciAttempt": "1",
+  "suiteStatus": "failed",
+  "exception": "AssertionError",
+  "message": "{'expectedIds': ['opal', 'classic'], 'expectedFlags': [False, False], 'actual': {'ids': ['basic', 'basic'], 'flags': [True, True], 'appearanceLookPresent': False, 'appearanceLook': None, 'appearanceReferences': {'styleRef': {'kind': 'builtin', 'id': 'basic'}, 'colorsRef': {'kind': 'builtin', 'id': 'basic'}}, 'storedAppearanceLook': {'id': 'opal', 'name': 'Opal', 'revision': 4, 'settings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}}, 'resolvedAppearanceSettings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}, 'label': 'Basic', 'observedAtMs': 13863.800000000047, 'readyState': 'complete'}, 'inputAppearanceLook': {'id': 'opal', 'name': 'Opal', 'revision': 4, 'settings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}}, 'browserVersion': '156.0.8078.4'}",
+  "traceback": "Traceback (most recent call last):\n  File \"/home/runner/work/vibemol/vibemol/tools/diagnostics/look_migration.py\", line 46, in <module>\n    run_appearance_scenarios(root, out, [suite.reference_ui,suite.reference_persistence,suite.reference_migration])\n  File \"/home/runner/work/vibemol/vibemol/tests/e2e/helpers.py\", line 126, in run_appearance_scenarios\n    scenario(page, context, url)\n  File \"/home/runner/work/vibemol/vibemol/tests/e2e/look_references.py\", line 205, in reference_migration\n    assert observed['ids'] == [style, colors], comparands\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'expectedIds': ['opal', 'classic'], 'expectedFlags': [False, False], 'actual': {'ids': ['basic', 'basic'], 'flags': [True, True], 'appearanceLookPresent': False, 'appearanceLook': None, 'appearanceReferences': {'styleRef': {'kind': 'builtin', 'id': 'basic'}, 'colorsRef': {'kind': 'builtin', 'id': 'basic'}}, 'storedAppearanceLook': {'id': 'opal', 'name': 'Opal', 'revision': 4, 'settings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}}, 'resolvedAppearanceSettings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}, 'label': 'Basic', 'observedAtMs': 13863.800000000047, 'readyState': 'complete'}, 'inputAppearanceLook': {'id': 'opal', 'name': 'Opal', 'revision': 4, 'settings': {'molecule.style': 'basic', 'molecule.atomRadiusScale': 1, 'molecule.bondRadiusScale': 1, 'molecule.feature.shadows': True, 'molecule.feature.fog': False, 'molecule.feature.fog.depth': 14, 'global.backgroundColor': '#ffffff', 'global.elementColors': True, 'global.elementColorOverrides': {'1': '#f4f4f4', '6': '#626262', '7': '#446ac4', '8': '#c65449'}, 'surface.materialPreset': 'emissive', 'surface.opacity': 1, 'surface.colorScheme': 'national', 'surface.posColor': '#e60000', 'surface.negColor': '#0033a0', 'appearance.rendering': {'version': 3, 'geometry': {'connector': 'cylinder', 'atomScaleMain': 0.9, 'atomScaleTransitionMetal': 0.9, 'sphereWidthSegments': 64, 'sphereHeightSegments': 40, 'bondRadius': 0.085, 'bondRadialSegments': 36, 'bondHeightSegments': 1, 'kitCollarRadius': 0.114, 'curvedMultipleBonds': False, 'atomRadii': {'1': 0.28, '6': 0.43, '7': 0.42, '8': 0.4}}, 'lighting': {'hemiColor': '#ffffff', 'hemiGroundColor': '#383e47', 'hemiIntensity': 0.4, 'dirColor': '#ffffff', 'dirIntensity': 3.6, 'dirPos': [-3.5, 5, 7], 'ambColor': '#999999', 'ambIntensity': 0, 'rimColor': '#ffffff', 'rimIntensity': 3, 'rimPos': [3.5, 2, -5], 'exposure': 1, 'toneMapping': 'aces', 'followTheme': False}, 'coloring': {'palette': 'basic', 'elementBonds': False, 'bondColor': '#9b9b9b'}, 'effects': {'outlineWidth': 0, 'atomOutlineFraction': 0, 'bondOutlineFraction': 0, 'highlights': False}, 'material': {'model': 'physical', 'roughness': 0.17200000000000004, 'metalness': 0.12, 'clearcoat': 0.8, 'clearcoatRoughness': 0.22, 'reflectivity': 0.5, 'specularIntensity': 1, 'shininess': 32.8, 'specularColor': '#ffffff', 'tint': '#ffffff', 'emissiveColor': '#ffffff', 'emissiveUsesColor': True, 'emissiveIntensity': 0, 'emissiveScale': 1, 'emissiveMix': 0, 'envMapIntensity': 1, 'iridescence': 0.7, 'vertexEmissiveColor': None, 'vertexEmissiveIntensity': None, 'toonSteps': [70, 150, 210, 255], 'iridescenceThicknessRange': [130, 380], 'byElement': {}}, 'surfaceMaterial': None}}}, 'browserVersion': '156.0.8078.4'}\n",
+  "observations": [
+    {
+      "actual": {
+        "appearanceLook": null,
+        "appearanceLookPresent": false,
+        "appearanceReferences": {
+          "colorsRef": {
+            "id": "basic",
+            "kind": "builtin"
+          },
+          "styleRef": {
+            "id": "basic",
+            "kind": "builtin"
+          }
+        },
+        "flags": [
+          true,
+          true
+        ],
+        "ids": [
+          "basic",
+          "basic"
+        ],
+        "label": "Basic",
+        "observedAtMs": 13863.800000000047,
+        "readyState": "complete",
+        "resolvedAppearanceSettings": {
+          "appearance.rendering": {
+            "coloring": {
+              "bondColor": "#9b9b9b",
+              "elementBonds": false,
+              "palette": "basic"
+            },
+            "effects": {
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false,
+              "outlineWidth": 0
+            },
+            "geometry": {
+              "atomRadii": {
+                "1": 0.28,
+                "6": 0.43,
+                "7": 0.42,
+                "8": 0.4
+              },
+              "atomScaleMain": 0.9,
+              "atomScaleTransitionMetal": 0.9,
+              "bondHeightSegments": 1,
+              "bondRadialSegments": 36,
+              "bondRadius": 0.085,
+              "connector": "cylinder",
+              "curvedMultipleBonds": false,
+              "kitCollarRadius": 0.114,
+              "sphereHeightSegments": 40,
+              "sphereWidthSegments": 64
+            },
+            "lighting": {
+              "ambColor": "#999999",
+              "ambIntensity": 0,
+              "dirColor": "#ffffff",
+              "dirIntensity": 3.6,
+              "dirPos": [
+                -3.5,
+                5,
+                7
+              ],
+              "exposure": 1,
+              "followTheme": false,
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#383e47",
+              "hemiIntensity": 0.4,
+              "rimColor": "#ffffff",
+              "rimIntensity": 3,
+              "rimPos": [
+                3.5,
+                2,
+                -5
+              ],
+              "toneMapping": "aces"
+            },
+            "material": {
+              "byElement": {},
+              "clearcoat": 0.8,
+              "clearcoatRoughness": 0.22,
+              "emissiveColor": "#ffffff",
+              "emissiveIntensity": 0,
+              "emissiveMix": 0,
+              "emissiveScale": 1,
+              "emissiveUsesColor": true,
+              "envMapIntensity": 1,
+              "iridescence": 0.7,
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "metalness": 0.12,
+              "model": "physical",
+              "reflectivity": 0.5,
+              "roughness": 0.17200000000000004,
+              "shininess": 32.8,
+              "specularColor": "#ffffff",
+              "specularIntensity": 1,
+              "tint": "#ffffff",
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null
+            },
+            "surfaceMaterial": null,
+            "version": 3
+          },
+          "global.backgroundColor": "#ffffff",
+          "global.elementColorOverrides": {
+            "1": "#f4f4f4",
+            "6": "#626262",
+            "7": "#446ac4",
+            "8": "#c65449"
+          },
+          "global.elementColors": true,
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "molecule.feature.shadows": true,
+          "molecule.style": "basic",
+          "surface.colorScheme": "national",
+          "surface.materialPreset": "emissive",
+          "surface.negColor": "#0033a0",
+          "surface.opacity": 1,
+          "surface.posColor": "#e60000"
+        },
+        "storedAppearanceLook": {
+          "id": "opal",
+          "name": "Opal",
+          "revision": 4,
+          "settings": {
+            "appearance.rendering": {
+              "coloring": {
+                "bondColor": "#9b9b9b",
+                "elementBonds": false,
+                "palette": "basic"
+              },
+              "effects": {
+                "atomOutlineFraction": 0,
+                "bondOutlineFraction": 0,
+                "highlights": false,
+                "outlineWidth": 0
+              },
+              "geometry": {
+                "atomRadii": {
+                  "1": 0.28,
+                  "6": 0.43,
+                  "7": 0.42,
+                  "8": 0.4
+                },
+                "atomScaleMain": 0.9,
+                "atomScaleTransitionMetal": 0.9,
+                "bondHeightSegments": 1,
+                "bondRadialSegments": 36,
+                "bondRadius": 0.085,
+                "connector": "cylinder",
+                "curvedMultipleBonds": false,
+                "kitCollarRadius": 0.114,
+                "sphereHeightSegments": 40,
+                "sphereWidthSegments": 64
+              },
+              "lighting": {
+                "ambColor": "#999999",
+                "ambIntensity": 0,
+                "dirColor": "#ffffff",
+                "dirIntensity": 3.6,
+                "dirPos": [
+                  -3.5,
+                  5,
+                  7
+                ],
+                "exposure": 1,
+                "followTheme": false,
+                "hemiColor": "#ffffff",
+                "hemiGroundColor": "#383e47",
+                "hemiIntensity": 0.4,
+                "rimColor": "#ffffff",
+                "rimIntensity": 3,
+                "rimPos": [
+                  3.5,
+                  2,
+                  -5
+                ],
+                "toneMapping": "aces"
+              },
+              "material": {
+                "byElement": {},
+                "clearcoat": 0.8,
+                "clearcoatRoughness": 0.22,
+                "emissiveColor": "#ffffff",
+                "emissiveIntensity": 0,
+                "emissiveMix": 0,
+                "emissiveScale": 1,
+                "emissiveUsesColor": true,
+                "envMapIntensity": 1,
+                "iridescence": 0.7,
+                "iridescenceThicknessRange": [
+                  130,
+                  380
+                ],
+                "metalness": 0.12,
+                "model": "physical",
+                "reflectivity": 0.5,
+                "roughness": 0.17200000000000004,
+                "shininess": 32.8,
+                "specularColor": "#ffffff",
+                "specularIntensity": 1,
+                "tint": "#ffffff",
+                "toonSteps": [
+                  70,
+                  150,
+                  210,
+                  255
+                ],
+                "vertexEmissiveColor": null,
+                "vertexEmissiveIntensity": null
+              },
+              "surfaceMaterial": null,
+              "version": 3
+            },
+            "global.backgroundColor": "#ffffff",
+            "global.elementColorOverrides": {
+              "1": "#f4f4f4",
+              "6": "#626262",
+              "7": "#446ac4",
+              "8": "#c65449"
+            },
+            "global.elementColors": true,
+            "molecule.atomRadiusScale": 1,
+            "molecule.bondRadiusScale": 1,
+            "molecule.feature.fog": false,
+            "molecule.feature.fog.depth": 14,
+            "molecule.feature.shadows": true,
+            "molecule.style": "basic",
+            "surface.colorScheme": "national",
+            "surface.materialPreset": "emissive",
+            "surface.negColor": "#0033a0",
+            "surface.opacity": 1,
+            "surface.posColor": "#e60000"
+          }
+        }
+      },
+      "browserVersion": "156.0.8078.4",
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "inputAppearanceLook": {
+        "id": "opal",
+        "name": "Opal",
+        "revision": 4,
+        "settings": {
+          "appearance.rendering": {
+            "coloring": {
+              "bondColor": "#9b9b9b",
+              "elementBonds": false,
+              "palette": "basic"
+            },
+            "effects": {
+              "atomOutlineFraction": 0,
+              "bondOutlineFraction": 0,
+              "highlights": false,
+              "outlineWidth": 0
+            },
+            "geometry": {
+              "atomRadii": {
+                "1": 0.28,
+                "6": 0.43,
+                "7": 0.42,
+                "8": 0.4
+              },
+              "atomScaleMain": 0.9,
+              "atomScaleTransitionMetal": 0.9,
+              "bondHeightSegments": 1,
+              "bondRadialSegments": 36,
+              "bondRadius": 0.085,
+              "connector": "cylinder",
+              "curvedMultipleBonds": false,
+              "kitCollarRadius": 0.114,
+              "sphereHeightSegments": 40,
+              "sphereWidthSegments": 64
+            },
+            "lighting": {
+              "ambColor": "#999999",
+              "ambIntensity": 0,
+              "dirColor": "#ffffff",
+              "dirIntensity": 3.6,
+              "dirPos": [
+                -3.5,
+                5,
+                7
+              ],
+              "exposure": 1,
+              "followTheme": false,
+              "hemiColor": "#ffffff",
+              "hemiGroundColor": "#383e47",
+              "hemiIntensity": 0.4,
+              "rimColor": "#ffffff",
+              "rimIntensity": 3,
+              "rimPos": [
+                3.5,
+                2,
+                -5
+              ],
+              "toneMapping": "aces"
+            },
+            "material": {
+              "byElement": {},
+              "clearcoat": 0.8,
+              "clearcoatRoughness": 0.22,
+              "emissiveColor": "#ffffff",
+              "emissiveIntensity": 0,
+              "emissiveMix": 0,
+              "emissiveScale": 1,
+              "emissiveUsesColor": true,
+              "envMapIntensity": 1,
+              "iridescence": 0.7,
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "metalness": 0.12,
+              "model": "physical",
+              "reflectivity": 0.5,
+              "roughness": 0.17200000000000004,
+              "shininess": 32.8,
+              "specularColor": "#ffffff",
+              "specularIntensity": 1,
+              "tint": "#ffffff",
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null
+            },
+            "surfaceMaterial": null,
+            "version": 3
+          },
+          "global.backgroundColor": "#ffffff",
+          "global.elementColorOverrides": {
+            "1": "#f4f4f4",
+            "6": "#626262",
+            "7": "#446ac4",
+            "8": "#c65449"
+          },
+          "global.elementColors": true,
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "molecule.feature.shadows": true,
+          "molecule.style": "basic",
+          "surface.colorScheme": "national",
+          "surface.materialPreset": "emissive",
+          "surface.negColor": "#0033a0",
+          "surface.opacity": 1,
+          "surface.posColor": "#e60000"
+        }
+      }
+    }
+  ],
+  "targetReached": true,
+  "seconds": 455.165,
+  "sourceStillUnchanged": true,
+  "exitCode": 1
+}

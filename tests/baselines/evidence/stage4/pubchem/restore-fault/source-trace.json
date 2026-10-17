@@ -1,0 +1,39 @@
+{
+  "sources": {
+    "tagged": {
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "restoreFunction": "  function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+      "restoreCallLines": [
+        28054
+      ],
+      "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "presetModuleSha256": "02e2868291da52f71887b54a968181d29bc4d175f09c9bf0f8eb25d0e71d9908"
+    },
+    "integration": {
+      "commit": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "restoreFunction": "  function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+      "restoreCallLines": [
+        27742
+      ],
+      "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+      "presetModuleSha256": "02e2868291da52f71887b54a968181d29bc4d175f09c9bf0f8eb25d0e71d9908"
+    },
+    "candidate": {
+      "commit": "25fd30a6e273fa289f17ec999b8528e82c061631",
+      "restoreFunction": "  function restoreAppearancePresetAutosave() {\n    if (appearanceStudy) return false;\n    try {\n      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);\n      if (!raw) return false;\n      const parsed = JSON.parse(raw);\n      importAppearancePresetEnvelope(parsed);\n      syncAppearancePersistenceUi();\n      console.info('VibeMol: restored autosaved appearance preset');\n      return true;\n    } catch (err) {\n      console.warn('VibeMol: autosave restore failed', err);\n      return false;\n    }\n  }",
+      "restoreCallLines": [
+        27745
+      ],
+      "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "presetModuleSha256": "02e2868291da52f71887b54a968181d29bc4d175f09c9bf0f8eb25d0e71d9908"
+    }
+  },
+  "identicalCatchPolicy": true,
+  "loggedAs": "console.warn",
+  "startupFalseReturnIgnored": true,
+  "rollback": false,
+  "taggedInducedFailure": "result.json",
+  "characterizationUses": "appearanceStudy=1 skips restoration",
+  "suiteCoverageGap": "Fresh other page has no original error/warning handlers; shared harness captures primary page pageerror/error-level console only.",
+  "identicalPresetModule": true
+}

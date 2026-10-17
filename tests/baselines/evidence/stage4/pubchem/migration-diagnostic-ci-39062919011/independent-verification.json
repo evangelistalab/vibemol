@@ -1,0 +1,163 @@
+{
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39062919011",
+  "attempt": 1,
+  "harnessHead": "323fbf9332a49477f99cb3a447bb4037335ed104",
+  "allThreeImmutableSourcesVerified": true,
+  "allThreeOriginalZipDigestsVerified": true,
+  "allRawCheckoutIdentitiesVerified": true,
+  "sameInstrumentedRepairedSuiteAndHelpers": true,
+  "rawLogAndJsonlComparandsMatchReports": true,
+  "classification": "candidate-only regression",
+  "decision": "STOP and report: no production fix, merge, carry classification or further run",
+  "usableAsMergeGate": false,
+  "rows": [
+    {
+      "source": "tagged",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ],
+      "resolvedAppearanceLookPresent": false,
+      "resolvedAppearanceLook": null,
+      "storedLegacyLookId": "opal",
+      "label": "Opal style \u00b7 Classic colors",
+      "idsMatch": true,
+      "flagsMatch": true
+    },
+    {
+      "source": "tagged",
+      "expectedIds": [
+        "classic",
+        "classic"
+      ],
+      "actualIds": [
+        "classic",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ],
+      "resolvedAppearanceLookPresent": false,
+      "resolvedAppearanceLook": null,
+      "storedLegacyLookId": "classic",
+      "label": "Classic",
+      "idsMatch": true,
+      "flagsMatch": true
+    },
+    {
+      "source": "integration",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "opal",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ],
+      "resolvedAppearanceLookPresent": false,
+      "resolvedAppearanceLook": null,
+      "storedLegacyLookId": "opal",
+      "label": "Opal style \u00b7 Classic colors",
+      "idsMatch": true,
+      "flagsMatch": true
+    },
+    {
+      "source": "integration",
+      "expectedIds": [
+        "classic",
+        "classic"
+      ],
+      "actualIds": [
+        "classic",
+        "classic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ],
+      "resolvedAppearanceLookPresent": false,
+      "resolvedAppearanceLook": null,
+      "storedLegacyLookId": "classic",
+      "label": "Classic",
+      "idsMatch": true,
+      "flagsMatch": true
+    },
+    {
+      "source": "pubchem",
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "basic",
+        "basic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        true,
+        true
+      ],
+      "resolvedAppearanceLookPresent": false,
+      "resolvedAppearanceLook": null,
+      "storedLegacyLookId": "opal",
+      "label": "Basic",
+      "idsMatch": false,
+      "flagsMatch": false
+    }
+  ],
+  "resolvedRenderingSettingsExactlyEqualAcrossSources": true,
+  "resolvedAppearanceLook": "Absent in public export in all three (import-only setting); the stored legacy Opal/Classic record and complete resolved state are preserved in every observation.",
+  "startupOrder": {
+    "appearanceRegistrationStillAfterAutosaveAndLooksConstruction": true,
+    "originalEarlyMetadataFunctionWasHoistedAndIndependentOfPubChemState": true,
+    "newEarlyMetadataWrapperReadsPubChemControllerConstBeforeInitialization": true,
+    "unchangedSynchronousPath": [
+      "restoreAppearancePresetAutosave",
+      "importAppearancePresetEnvelope",
+      "preset importEnvelope/applyPresetSettings",
+      "afterApplySettings",
+      "updateSidePanel",
+      "updatePubChemMetadataPanel"
+    ],
+    "candidateNewRead": "return pubchemController.updatePubChemMetadataPanel(record);",
+    "javascriptConsequence": "If the startup import reaches this unchanged path, the controller const is still in its temporal dead zone. The restore function catches the exception; preset afterImportSettings/migration bookkeeping is skipped.",
+    "classificationBoundary": "Read-only static mechanism. Report measured three-source comparands separately; no browser exception trace was added and no production fix is authorized."
+  },
+  "materialPresetCoverageForOrdinaryRun": "not covered this run",
+  "stage5MirrorHypothesis": "refuted; #11 product defect remains open",
+  "integrationLet": 265,
+  "candidateLet": 262,
+  "pubchemDependencies": 13
+}

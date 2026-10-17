@@ -1,0 +1,1407 @@
+{
+  "baseline": {
+    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "tag": "v0.9.5-pre-refactor",
+    "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+    "viewport": {
+      "width": 1512,
+      "height": 1000
+    },
+    "captureTimestampFields": [
+      "savedAt",
+      "preset.meta.createdAt",
+      "preset.meta.updatedAt"
+    ],
+    "pinnedCamera": [
+      30,
+      0,
+      0
+    ],
+    "metrics": {
+      "lines": 32666,
+      "functionDeclarations": 1163,
+      "letDeclarations": 262,
+      "constDeclarations": 574
+    },
+    "captureProvenance": {
+      "os": "Linux",
+      "osRelease": "6.17.0-1022-azure",
+      "architecture": "x86_64",
+      "browserName": "chromium",
+      "browserVersion": "156.0.8078.4",
+      "ci": {
+        "provider": "GitHub Actions",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
+        "runAttempt": "1",
+        "runnerImage": "ubuntu24"
+      }
+    }
+  },
+  "runs": 1,
+  "capturesPerRun": 102,
+  "browserVersion": "156.0.8078.4",
+  "comparison": {
+    "floatLeaves": {
+      "relTol": 1e-09,
+      "absTol": 1e-12
+    },
+    "exact": [
+      "types",
+      "integers",
+      "booleans",
+      "strings",
+      "keys",
+      "lengths",
+      "structure"
+    ],
+    "reason": "The complete CI/local audit found only 32 one- or four-ULP bond-z differences: maximum absolute 4.235164736271502e-22, relative 7.82384323679457e-16. The tolerance accommodates floating-point platform drift while rejecting a 1e-6 change.",
+    "summary": "Goldens are compared with tolerance for float leaves and are expected to hold across machines; all other leaves, types and structure remain exact."
+  },
+  "exactlyIdentical": null,
+  "captureSha256PerRun": [
+    "31bff9fbe193856248e39035e6ce705ab1dc73bd04555f878ed049fe5a5abf46"
+  ],
+  "deterministic": null,
+  "console": {
+    "sample/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "sample/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "methane/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "methane/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "two-component/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "two-component/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "pubchem/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "pubchem/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "session/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "session/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "look/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "look/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "trajectory/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "trajectory/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "vibration/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "vibration/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    }
+  },
+  "sessionCameraPin": [
+    {
+      "resizeBeforePin": true,
+      "render": {
+        "projection": {
+          "far": 33.41,
+          "matrix": [
+            0.048071799206768996,
+            0,
+            0,
+            0,
+            0,
+            0.08047378541243651,
+            0,
+            0,
+            0,
+            0,
+            -0.2656042496679948,
+            0,
+            -0.0,
+            -0.0,
+            -7.873837981407704,
+            1
+          ],
+          "near": 25.88,
+          "type": "OrthographicCamera",
+          "zoom": 1
+        },
+        "viewport": {
+          "bufferHeight": 724,
+          "bufferWidth": 1212,
+          "cssHeight": 724,
+          "cssWidth": 1212
+        }
+      },
+      "structuredIdentical": true,
+      "pixelsIdentical": true
+    },
+    {
+      "resizeBeforePin": false,
+      "render": {
+        "projection": {
+          "far": 33.41,
+          "matrix": [
+            0.048071799206768996,
+            0,
+            0,
+            0,
+            0,
+            0.08047378541243651,
+            0,
+            0,
+            0,
+            0,
+            -0.2656042496679948,
+            0,
+            -0.0,
+            -0.0,
+            -7.873837981407704,
+            1
+          ],
+          "near": 25.88,
+          "type": "OrthographicCamera",
+          "zoom": 1
+        },
+        "viewport": {
+          "bufferHeight": 724,
+          "bufferWidth": 1212,
+          "cssHeight": 724,
+          "cssWidth": 1212
+        }
+      },
+      "structuredIdentical": true,
+      "pixelsIdentical": true
+    }
+  ],
+  "elementCacheIdentity": [
+    {
+      "launch": "workbench",
+      "theme": "light",
+      "modes": [
+        "Display",
+        "Measure",
+        "Edit",
+        "Calculations"
+      ],
+      "panelOpenClosePairs": [
+        "styleStudio",
+        "displayInspector",
+        "moldenInspector",
+        "spinorInfo",
+        "viewInspector",
+        "viewPanel",
+        "coordsPanel",
+        "trajectoryPanel",
+        "vibrationPanel",
+        "helpOverlay",
+        "elementColorOverlay",
+        "inspector",
+        "measurementsPanel",
+        "subspacePanel",
+        "figurePanel",
+        "buildPanel",
+        "symmetryPanel"
+      ],
+      "identity": {
+        "supported": true,
+        "checks": {
+          "QA initialization": 1,
+          "panel transition: editSelectionCoordinationCuePopover": 228,
+          "panel transition: editSelectionMetalBondingCuePopover": 227,
+          "panel transition: editSelectionTranslateCue": 224,
+          "DOM replacement": 5353,
+          "panel transition: displayWindowAdaptiveMenu": 158,
+          "panel transition: editAddAtomOperatorPanel": 44,
+          "panel transition: editAddMoleculeOperatorPanel": 54,
+          "panel transition: bondOrderPopup": 47,
+          "panel transition: moldenInspector": 10,
+          "panel transition: trajectoryPanel": 11,
+          "panel transition: vibrationPanel": 12,
+          "mode switch": 408,
+          "presented checkpoint": 39,
+          "panel transition: workbenchMenu": 16,
+          "panel transition: measurementsPanel": 9,
+          "panel transition: subspacePanel": 9,
+          "panel transition: inspector": 16,
+          "panel open: styleStudio": 1,
+          "panel close: styleStudio": 1,
+          "panel open: displayInspector": 1,
+          "panel close: displayInspector": 1,
+          "panel open: moldenInspector": 1,
+          "panel close: moldenInspector": 1,
+          "panel transition: spinorInfoPanel": 5,
+          "panel open: spinorInfo": 1,
+          "panel close: spinorInfo": 1,
+          "panel open: viewInspector": 1,
+          "panel close: viewInspector": 1,
+          "panel transition: sidePanel": 8,
+          "panel open: viewPanel": 1,
+          "panel close: viewPanel": 1,
+          "panel transition: coordsPanel": 8,
+          "panel open: coordsPanel": 1,
+          "panel close: coordsPanel": 1,
+          "panel open: trajectoryPanel": 1,
+          "panel close: trajectoryPanel": 1,
+          "panel open: vibrationPanel": 1,
+          "panel close: vibrationPanel": 1,
+          "panel open: helpOverlay": 1,
+          "panel close: helpOverlay": 1,
+          "panel open: elementColorOverlay": 1,
+          "panel close: elementColorOverlay": 1,
+          "panel open: inspector": 1,
+          "panel close: inspector": 1,
+          "panel open: measurementsPanel": 1,
+          "panel close: measurementsPanel": 1,
+          "panel open: subspacePanel": 1,
+          "panel close: subspacePanel": 1,
+          "panel transition: figurePanel": 8,
+          "panel open: figurePanel": 1,
+          "panel close: figurePanel": 1,
+          "panel transition: editAdaptiveAddAtomPopover": 6,
+          "panel open: buildPanel": 1,
+          "panel close: buildPanel": 1,
+          "panel transition: editAdaptiveSymmetryPopover": 6,
+          "panel open: symmetryPanel": 1,
+          "panel close: symmetryPanel": 1,
+          "session restore": 1
+        },
+        "failures": [],
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "knownAbsent": {
+          "editAtomsMenuEl": {
+            "id": "editAtomsMenu",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuBodyEl": {
+            "id": "editAtomsMenuBody",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuCurrentEl": {
+            "id": "editAtomsMenuCurrent",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editSelectionFragmentCuePopoverEl": {
+            "id": "editSelectionFragmentCuePopover",
+            "issue": 15,
+            "cached": "null"
+          },
+          "elementColorBtn": {
+            "id": "elementColorBtn",
+            "issue": 14,
+            "cached": "detached"
+          }
+        }
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1106
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "launch": "workbench",
+      "theme": "dark",
+      "modes": [
+        "Display",
+        "Measure",
+        "Edit",
+        "Calculations"
+      ],
+      "panelOpenClosePairs": [
+        "styleStudio",
+        "displayInspector",
+        "moldenInspector",
+        "spinorInfo",
+        "viewInspector",
+        "viewPanel",
+        "coordsPanel",
+        "trajectoryPanel",
+        "vibrationPanel",
+        "helpOverlay",
+        "elementColorOverlay",
+        "inspector",
+        "measurementsPanel",
+        "subspacePanel",
+        "figurePanel",
+        "buildPanel",
+        "symmetryPanel"
+      ],
+      "identity": {
+        "supported": true,
+        "checks": {
+          "QA initialization": 1,
+          "panel transition: editSelectionCoordinationCuePopover": 227,
+          "panel transition: editSelectionMetalBondingCuePopover": 226,
+          "panel transition: editSelectionTranslateCue": 223,
+          "DOM replacement": 5463,
+          "panel transition: displayWindowAdaptiveMenu": 158,
+          "panel transition: editAddAtomOperatorPanel": 44,
+          "panel transition: editAddMoleculeOperatorPanel": 54,
+          "panel transition: bondOrderPopup": 47,
+          "mode switch": 408,
+          "panel transition: moldenInspector": 10,
+          "panel transition: trajectoryPanel": 11,
+          "panel transition: vibrationPanel": 12,
+          "presented checkpoint": 39,
+          "panel transition: workbenchMenu": 16,
+          "panel transition: measurementsPanel": 9,
+          "panel transition: subspacePanel": 9,
+          "panel transition: inspector": 16,
+          "panel open: styleStudio": 1,
+          "panel close: styleStudio": 1,
+          "panel open: displayInspector": 1,
+          "panel close: displayInspector": 1,
+          "panel open: moldenInspector": 1,
+          "panel close: moldenInspector": 1,
+          "panel transition: spinorInfoPanel": 5,
+          "panel open: spinorInfo": 1,
+          "panel close: spinorInfo": 1,
+          "panel open: viewInspector": 1,
+          "panel close: viewInspector": 1,
+          "panel transition: sidePanel": 8,
+          "panel open: viewPanel": 1,
+          "panel close: viewPanel": 1,
+          "panel transition: coordsPanel": 8,
+          "panel open: coordsPanel": 1,
+          "panel close: coordsPanel": 1,
+          "panel open: trajectoryPanel": 1,
+          "panel close: trajectoryPanel": 1,
+          "panel open: vibrationPanel": 1,
+          "panel close: vibrationPanel": 1,
+          "panel open: helpOverlay": 1,
+          "panel close: helpOverlay": 1,
+          "panel open: elementColorOverlay": 1,
+          "panel close: elementColorOverlay": 1,
+          "panel open: inspector": 1,
+          "panel close: inspector": 1,
+          "panel open: measurementsPanel": 1,
+          "panel close: measurementsPanel": 1,
+          "panel open: subspacePanel": 1,
+          "panel close: subspacePanel": 1,
+          "panel transition: figurePanel": 8,
+          "panel open: figurePanel": 1,
+          "panel close: figurePanel": 1,
+          "panel transition: editAdaptiveAddAtomPopover": 6,
+          "panel open: buildPanel": 1,
+          "panel close: buildPanel": 1,
+          "panel transition: editAdaptiveSymmetryPopover": 6,
+          "panel open: symmetryPanel": 1,
+          "panel close: symmetryPanel": 1,
+          "session restore": 1
+        },
+        "failures": [],
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "knownAbsent": {
+          "editAtomsMenuEl": {
+            "id": "editAtomsMenu",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuBodyEl": {
+            "id": "editAtomsMenuBody",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuCurrentEl": {
+            "id": "editAtomsMenuCurrent",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editSelectionFragmentCuePopoverEl": {
+            "id": "editSelectionFragmentCuePopover",
+            "issue": 15,
+            "cached": "null"
+          },
+          "elementColorBtn": {
+            "id": "elementColorBtn",
+            "issue": 14,
+            "cached": "detached"
+          }
+        }
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5463,
+          "session restore": 1,
+          "panel transition": 1103
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "modes": [
+        "Display",
+        "Measure",
+        "Edit"
+      ],
+      "panelOpenClosePairs": [
+        "styleStudio",
+        "displayInspector",
+        "moldenInspector",
+        "spinorInfo",
+        "viewInspector",
+        "viewPanel",
+        "coordsPanel",
+        "trajectoryPanel",
+        "vibrationPanel",
+        "helpOverlay",
+        "elementColorOverlay",
+        "measurementsPanel",
+        "subspacePanel",
+        "figurePanel"
+      ],
+      "identity": {
+        "supported": true,
+        "checks": {
+          "QA initialization": 1,
+          "panel transition: editSelectionCoordinationCuePopover": 193,
+          "panel transition: editSelectionMetalBondingCuePopover": 193,
+          "panel transition: editSelectionTranslateCue": 192,
+          "DOM replacement": 3290,
+          "panel transition: displayWindowAdaptiveMenu": 109,
+          "panel transition: editAddAtomOperatorPanel": 24,
+          "panel transition: editAddMoleculeOperatorPanel": 28,
+          "panel transition: bondOrderPopup": 24,
+          "panel transition: editAdaptiveSymmetryPopover": 8,
+          "panel transition: moldenInspector": 11,
+          "panel transition: trajectoryPanel": 12,
+          "panel transition: vibrationPanel": 13,
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "panel transition: measurementsPanel": 12,
+          "panel transition: editAdaptiveAddAtomPopover": 1,
+          "panel transition: styleStudio": 4,
+          "panel open: styleStudio": 1,
+          "panel close: styleStudio": 1,
+          "panel open: displayInspector": 1,
+          "panel transition: appearanceResetPopover": 2,
+          "panel close: displayInspector": 1,
+          "panel open: moldenInspector": 1,
+          "panel close: moldenInspector": 1,
+          "panel transition: spinorInfoPanel": 5,
+          "panel open: spinorInfo": 1,
+          "panel close: spinorInfo": 1,
+          "panel transition: viewInspector": 6,
+          "panel open: viewInspector": 1,
+          "panel close: viewInspector": 1,
+          "panel transition: sidePanel": 4,
+          "panel open: viewPanel": 1,
+          "panel close: viewPanel": 1,
+          "panel transition: coordsPanel": 4,
+          "panel open: coordsPanel": 1,
+          "panel close: coordsPanel": 1,
+          "panel open: trajectoryPanel": 1,
+          "panel close: trajectoryPanel": 1,
+          "panel open: vibrationPanel": 1,
+          "panel close: vibrationPanel": 1,
+          "panel open: helpOverlay": 1,
+          "panel close: helpOverlay": 1,
+          "panel open: elementColorOverlay": 1,
+          "panel close: elementColorOverlay": 1,
+          "panel open: measurementsPanel": 1,
+          "panel close: measurementsPanel": 1,
+          "panel transition: subspacePanel": 4,
+          "panel open: subspacePanel": 1,
+          "panel close: subspacePanel": 1,
+          "panel transition: figurePanel": 4,
+          "panel open: figurePanel": 1,
+          "panel close: figurePanel": 1,
+          "session restore": 1
+        },
+        "failures": [],
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "knownAbsent": {
+          "editAtomsMenuEl": {
+            "id": "editAtomsMenu",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuBodyEl": {
+            "id": "editAtomsMenuBody",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuCurrentEl": {
+            "id": "editAtomsMenuCurrent",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editSelectionFragmentCuePopoverEl": {
+            "id": "editSelectionFragmentCuePopover",
+            "issue": 15,
+            "cached": "null"
+          }
+        }
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3290,
+          "session restore": 1,
+          "panel transition": 853
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "modes": [
+        "Display",
+        "Measure",
+        "Edit"
+      ],
+      "panelOpenClosePairs": [
+        "styleStudio",
+        "displayInspector",
+        "moldenInspector",
+        "spinorInfo",
+        "viewInspector",
+        "viewPanel",
+        "coordsPanel",
+        "trajectoryPanel",
+        "vibrationPanel",
+        "helpOverlay",
+        "elementColorOverlay",
+        "measurementsPanel",
+        "subspacePanel",
+        "figurePanel"
+      ],
+      "identity": {
+        "supported": true,
+        "checks": {
+          "QA initialization": 1,
+          "panel transition: editSelectionCoordinationCuePopover": 184,
+          "panel transition: editSelectionMetalBondingCuePopover": 184,
+          "panel transition: editSelectionTranslateCue": 183,
+          "DOM replacement": 3397,
+          "panel transition: displayWindowAdaptiveMenu": 107,
+          "panel transition: editAddAtomOperatorPanel": 24,
+          "panel transition: editAddMoleculeOperatorPanel": 28,
+          "panel transition: bondOrderPopup": 24,
+          "panel transition: editAdaptiveSymmetryPopover": 8,
+          "panel transition: moldenInspector": 11,
+          "panel transition: trajectoryPanel": 12,
+          "panel transition: vibrationPanel": 13,
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "panel transition: measurementsPanel": 12,
+          "panel transition: editAdaptiveAddAtomPopover": 1,
+          "panel transition: styleStudio": 4,
+          "panel open: styleStudio": 1,
+          "panel close: styleStudio": 1,
+          "panel open: displayInspector": 1,
+          "panel transition: appearanceResetPopover": 2,
+          "panel close: displayInspector": 1,
+          "panel open: moldenInspector": 1,
+          "panel close: moldenInspector": 1,
+          "panel transition: spinorInfoPanel": 5,
+          "panel open: spinorInfo": 1,
+          "panel close: spinorInfo": 1,
+          "panel transition: viewInspector": 6,
+          "panel open: viewInspector": 1,
+          "panel close: viewInspector": 1,
+          "panel transition: sidePanel": 4,
+          "panel open: viewPanel": 1,
+          "panel close: viewPanel": 1,
+          "panel transition: coordsPanel": 4,
+          "panel open: coordsPanel": 1,
+          "panel close: coordsPanel": 1,
+          "panel open: trajectoryPanel": 1,
+          "panel close: trajectoryPanel": 1,
+          "panel open: vibrationPanel": 1,
+          "panel close: vibrationPanel": 1,
+          "panel open: helpOverlay": 1,
+          "panel close: helpOverlay": 1,
+          "panel open: elementColorOverlay": 1,
+          "panel close: elementColorOverlay": 1,
+          "panel open: measurementsPanel": 1,
+          "panel close: measurementsPanel": 1,
+          "panel transition: subspacePanel": 4,
+          "panel open: subspacePanel": 1,
+          "panel close: subspacePanel": 1,
+          "panel transition: figurePanel": 4,
+          "panel open: figurePanel": 1,
+          "panel close: figurePanel": 1,
+          "session restore": 1
+        },
+        "failures": [],
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "knownAbsent": {
+          "editAtomsMenuEl": {
+            "id": "editAtomsMenu",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuBodyEl": {
+            "id": "editAtomsMenuBody",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editAtomsMenuCurrentEl": {
+            "id": "editAtomsMenuCurrent",
+            "issue": 15,
+            "cached": "null"
+          },
+          "editSelectionFragmentCuePopoverEl": {
+            "id": "editSelectionFragmentCuePopover",
+            "issue": 15,
+            "cached": "null"
+          }
+        }
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3397,
+          "session restore": 1,
+          "panel transition": 824
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    }
+  ],
+  "elementCacheIdentityRuns": [
+    {
+      "run": 2,
+      "elementCacheIdentity": [
+        {
+          "launch": "workbench",
+          "theme": "light",
+          "modes": [
+            "Display",
+            "Measure",
+            "Edit",
+            "Calculations"
+          ],
+          "panelOpenClosePairs": [
+            "styleStudio",
+            "displayInspector",
+            "moldenInspector",
+            "spinorInfo",
+            "viewInspector",
+            "viewPanel",
+            "coordsPanel",
+            "trajectoryPanel",
+            "vibrationPanel",
+            "helpOverlay",
+            "elementColorOverlay",
+            "inspector",
+            "measurementsPanel",
+            "subspacePanel",
+            "figurePanel",
+            "buildPanel",
+            "symmetryPanel"
+          ],
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 228,
+              "panel transition: editSelectionMetalBondingCuePopover": 227,
+              "panel transition: editSelectionTranslateCue": 224,
+              "DOM replacement": 5353,
+              "panel transition: displayWindowAdaptiveMenu": 158,
+              "panel transition: editAddAtomOperatorPanel": 44,
+              "panel transition: editAddMoleculeOperatorPanel": 54,
+              "panel transition: bondOrderPopup": 47,
+              "panel transition: moldenInspector": 10,
+              "panel transition: trajectoryPanel": 11,
+              "panel transition: vibrationPanel": 12,
+              "mode switch": 408,
+              "presented checkpoint": 39,
+              "panel transition: workbenchMenu": 16,
+              "panel transition: measurementsPanel": 9,
+              "panel transition: subspacePanel": 9,
+              "panel transition: inspector": 16,
+              "panel open: styleStudio": 1,
+              "panel close: styleStudio": 1,
+              "panel open: displayInspector": 1,
+              "panel close: displayInspector": 1,
+              "panel open: moldenInspector": 1,
+              "panel close: moldenInspector": 1,
+              "panel transition: spinorInfoPanel": 5,
+              "panel open: spinorInfo": 1,
+              "panel close: spinorInfo": 1,
+              "panel open: viewInspector": 1,
+              "panel close: viewInspector": 1,
+              "panel transition: sidePanel": 8,
+              "panel open: viewPanel": 1,
+              "panel close: viewPanel": 1,
+              "panel transition: coordsPanel": 8,
+              "panel open: coordsPanel": 1,
+              "panel close: coordsPanel": 1,
+              "panel open: trajectoryPanel": 1,
+              "panel close: trajectoryPanel": 1,
+              "panel open: vibrationPanel": 1,
+              "panel close: vibrationPanel": 1,
+              "panel open: helpOverlay": 1,
+              "panel close: helpOverlay": 1,
+              "panel open: elementColorOverlay": 1,
+              "panel close: elementColorOverlay": 1,
+              "panel open: inspector": 1,
+              "panel close: inspector": 1,
+              "panel open: measurementsPanel": 1,
+              "panel close: measurementsPanel": 1,
+              "panel open: subspacePanel": 1,
+              "panel close: subspacePanel": 1,
+              "panel transition: figurePanel": 8,
+              "panel open: figurePanel": 1,
+              "panel close: figurePanel": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 6,
+              "panel open: buildPanel": 1,
+              "panel close: buildPanel": 1,
+              "panel transition: editAdaptiveSymmetryPopover": 6,
+              "panel open: symmetryPanel": 1,
+              "panel close: symmetryPanel": 1,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "exercise": {
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5353,
+              "session restore": 1,
+              "panel transition": 1106
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          }
+        },
+        {
+          "launch": "workbench",
+          "theme": "dark",
+          "modes": [
+            "Display",
+            "Measure",
+            "Edit",
+            "Calculations"
+          ],
+          "panelOpenClosePairs": [
+            "styleStudio",
+            "displayInspector",
+            "moldenInspector",
+            "spinorInfo",
+            "viewInspector",
+            "viewPanel",
+            "coordsPanel",
+            "trajectoryPanel",
+            "vibrationPanel",
+            "helpOverlay",
+            "elementColorOverlay",
+            "inspector",
+            "measurementsPanel",
+            "subspacePanel",
+            "figurePanel",
+            "buildPanel",
+            "symmetryPanel"
+          ],
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 227,
+              "panel transition: editSelectionMetalBondingCuePopover": 226,
+              "panel transition: editSelectionTranslateCue": 223,
+              "DOM replacement": 5463,
+              "panel transition: displayWindowAdaptiveMenu": 158,
+              "panel transition: editAddAtomOperatorPanel": 44,
+              "panel transition: editAddMoleculeOperatorPanel": 54,
+              "panel transition: bondOrderPopup": 47,
+              "mode switch": 408,
+              "panel transition: moldenInspector": 10,
+              "panel transition: trajectoryPanel": 11,
+              "panel transition: vibrationPanel": 12,
+              "presented checkpoint": 39,
+              "panel transition: workbenchMenu": 16,
+              "panel transition: measurementsPanel": 9,
+              "panel transition: subspacePanel": 9,
+              "panel transition: inspector": 16,
+              "panel open: styleStudio": 1,
+              "panel close: styleStudio": 1,
+              "panel open: displayInspector": 1,
+              "panel close: displayInspector": 1,
+              "panel open: moldenInspector": 1,
+              "panel close: moldenInspector": 1,
+              "panel transition: spinorInfoPanel": 5,
+              "panel open: spinorInfo": 1,
+              "panel close: spinorInfo": 1,
+              "panel open: viewInspector": 1,
+              "panel close: viewInspector": 1,
+              "panel transition: sidePanel": 8,
+              "panel open: viewPanel": 1,
+              "panel close: viewPanel": 1,
+              "panel transition: coordsPanel": 8,
+              "panel open: coordsPanel": 1,
+              "panel close: coordsPanel": 1,
+              "panel open: trajectoryPanel": 1,
+              "panel close: trajectoryPanel": 1,
+              "panel open: vibrationPanel": 1,
+              "panel close: vibrationPanel": 1,
+              "panel open: helpOverlay": 1,
+              "panel close: helpOverlay": 1,
+              "panel open: elementColorOverlay": 1,
+              "panel close: elementColorOverlay": 1,
+              "panel open: inspector": 1,
+              "panel close: inspector": 1,
+              "panel open: measurementsPanel": 1,
+              "panel close: measurementsPanel": 1,
+              "panel open: subspacePanel": 1,
+              "panel close: subspacePanel": 1,
+              "panel transition: figurePanel": 8,
+              "panel open: figurePanel": 1,
+              "panel close: figurePanel": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 6,
+              "panel open: buildPanel": 1,
+              "panel close: buildPanel": 1,
+              "panel transition: editAdaptiveSymmetryPopover": 6,
+              "panel open: symmetryPanel": 1,
+              "panel close: symmetryPanel": 1,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "exercise": {
+            "checksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 408,
+              "DOM replacement": 5463,
+              "session restore": 1,
+              "panel transition": 1103
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 39,
+              "mode switch": 5,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 4,
+            "observedModeChecks": 404
+          }
+        },
+        {
+          "launch": "legacy",
+          "theme": "light",
+          "modes": [
+            "Display",
+            "Measure",
+            "Edit"
+          ],
+          "panelOpenClosePairs": [
+            "styleStudio",
+            "displayInspector",
+            "moldenInspector",
+            "spinorInfo",
+            "viewInspector",
+            "viewPanel",
+            "coordsPanel",
+            "trajectoryPanel",
+            "vibrationPanel",
+            "helpOverlay",
+            "elementColorOverlay",
+            "measurementsPanel",
+            "subspacePanel",
+            "figurePanel"
+          ],
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 193,
+              "panel transition: editSelectionMetalBondingCuePopover": 193,
+              "panel transition: editSelectionTranslateCue": 192,
+              "DOM replacement": 3290,
+              "panel transition: displayWindowAdaptiveMenu": 109,
+              "panel transition: editAddAtomOperatorPanel": 24,
+              "panel transition: editAddMoleculeOperatorPanel": 28,
+              "panel transition: bondOrderPopup": 24,
+              "panel transition: editAdaptiveSymmetryPopover": 8,
+              "panel transition: moldenInspector": 11,
+              "panel transition: trajectoryPanel": 12,
+              "panel transition: vibrationPanel": 13,
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "panel transition: measurementsPanel": 12,
+              "panel transition: editAdaptiveAddAtomPopover": 1,
+              "panel transition: styleStudio": 4,
+              "panel open: styleStudio": 1,
+              "panel close: styleStudio": 1,
+              "panel open: displayInspector": 1,
+              "panel transition: appearanceResetPopover": 2,
+              "panel close: displayInspector": 1,
+              "panel open: moldenInspector": 1,
+              "panel close: moldenInspector": 1,
+              "panel transition: spinorInfoPanel": 5,
+              "panel open: spinorInfo": 1,
+              "panel close: spinorInfo": 1,
+              "panel transition: viewInspector": 6,
+              "panel open: viewInspector": 1,
+              "panel close: viewInspector": 1,
+              "panel transition: sidePanel": 4,
+              "panel open: viewPanel": 1,
+              "panel close: viewPanel": 1,
+              "panel transition: coordsPanel": 4,
+              "panel open: coordsPanel": 1,
+              "panel close: coordsPanel": 1,
+              "panel open: trajectoryPanel": 1,
+              "panel close: trajectoryPanel": 1,
+              "panel open: vibrationPanel": 1,
+              "panel close: vibrationPanel": 1,
+              "panel open: helpOverlay": 1,
+              "panel close: helpOverlay": 1,
+              "panel open: elementColorOverlay": 1,
+              "panel close: elementColorOverlay": 1,
+              "panel open: measurementsPanel": 1,
+              "panel close: measurementsPanel": 1,
+              "panel transition: subspacePanel": 4,
+              "panel open: subspacePanel": 1,
+              "panel close: subspacePanel": 1,
+              "panel transition: figurePanel": 4,
+              "panel open: figurePanel": 1,
+              "panel close: figurePanel": 1,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "exercise": {
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 3290,
+              "session restore": 1,
+              "panel transition": 853
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          }
+        },
+        {
+          "launch": "legacy",
+          "theme": "dark",
+          "modes": [
+            "Display",
+            "Measure",
+            "Edit"
+          ],
+          "panelOpenClosePairs": [
+            "styleStudio",
+            "displayInspector",
+            "moldenInspector",
+            "spinorInfo",
+            "viewInspector",
+            "viewPanel",
+            "coordsPanel",
+            "trajectoryPanel",
+            "vibrationPanel",
+            "helpOverlay",
+            "elementColorOverlay",
+            "measurementsPanel",
+            "subspacePanel",
+            "figurePanel"
+          ],
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 184,
+              "panel transition: editSelectionMetalBondingCuePopover": 184,
+              "panel transition: editSelectionTranslateCue": 183,
+              "DOM replacement": 3397,
+              "panel transition: displayWindowAdaptiveMenu": 107,
+              "panel transition: editAddAtomOperatorPanel": 24,
+              "panel transition: editAddMoleculeOperatorPanel": 28,
+              "panel transition: bondOrderPopup": 24,
+              "panel transition: editAdaptiveSymmetryPopover": 8,
+              "panel transition: moldenInspector": 11,
+              "panel transition: trajectoryPanel": 12,
+              "panel transition: vibrationPanel": 13,
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "panel transition: measurementsPanel": 12,
+              "panel transition: editAdaptiveAddAtomPopover": 1,
+              "panel transition: styleStudio": 4,
+              "panel open: styleStudio": 1,
+              "panel close: styleStudio": 1,
+              "panel open: displayInspector": 1,
+              "panel transition: appearanceResetPopover": 2,
+              "panel close: displayInspector": 1,
+              "panel open: moldenInspector": 1,
+              "panel close: moldenInspector": 1,
+              "panel transition: spinorInfoPanel": 5,
+              "panel open: spinorInfo": 1,
+              "panel close: spinorInfo": 1,
+              "panel transition: viewInspector": 6,
+              "panel open: viewInspector": 1,
+              "panel close: viewInspector": 1,
+              "panel transition: sidePanel": 4,
+              "panel open: viewPanel": 1,
+              "panel close: viewPanel": 1,
+              "panel transition: coordsPanel": 4,
+              "panel open: coordsPanel": 1,
+              "panel close: coordsPanel": 1,
+              "panel open: trajectoryPanel": 1,
+              "panel close: trajectoryPanel": 1,
+              "panel open: vibrationPanel": 1,
+              "panel close: vibrationPanel": 1,
+              "panel open: helpOverlay": 1,
+              "panel close: helpOverlay": 1,
+              "panel open: elementColorOverlay": 1,
+              "panel close: elementColorOverlay": 1,
+              "panel open: measurementsPanel": 1,
+              "panel close: measurementsPanel": 1,
+              "panel transition: subspacePanel": 4,
+              "panel open: subspacePanel": 1,
+              "panel close: subspacePanel": 1,
+              "panel transition: figurePanel": 4,
+              "panel open: figurePanel": 1,
+              "panel close: figurePanel": 1,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "exercise": {
+            "checksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 9,
+              "DOM replacement": 3397,
+              "session restore": 1,
+              "panel transition": 824
+            },
+            "minimumChecksByReason": {
+              "presented checkpoint": 32,
+              "mode switch": 4,
+              "panel transition": 2,
+              "DOM replacement": 1,
+              "session restore": 1
+            },
+            "explicitModeChecks": 3,
+            "observedModeChecks": 6
+          }
+        }
+      ]
+    }
+  ],
+  "sameSessionPixelChanges": [],
+  "wallTimeSeconds": 878.04,
+  "artifactIdentity": {
+    "commit": "d2110bca65b77e7dbcb15584cc7078e844dc3b04",
+    "tree": "74d76ee4e986a592ba2fbf0c137e3a91c86cfb05",
+    "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+    "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+    "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+    "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39057387687",
+    "ciRunAttempt": "1"
+  },
+  "matrixRunIndex": 2,
+  "requestedRuns": 2,
+  "repeatComparisonPending": true
+}

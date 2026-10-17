@@ -1,0 +1,65 @@
+name: Look migration comparands (diagnostic only)
+
+on:
+  push:
+    branches: [codex/pubchem-migration-diagnostic]
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: Instrumented look_references (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: tagged
+            ref: 1c609b338344aaa49ffd11b9ee2ad834a6e0d85d
+          - label: integration
+            ref: 6c583556bcc84bff9442602a7dd8aed056b4a660
+          - label: pubchem
+            ref: 25fd30a6e273fa289f17ec999b8528e82c061631
+    steps:
+      - name: Check out diagnostic harness
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check out unchanged source under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+          path: source-under-test
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install same Playwright as the failed ordinary run
+        run: python -m pip install -r source-under-test/api/requirements.txt playwright==1.64.0
+      - name: Install Chromium and Linux dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Record dependencies
+        run: python -m pip freeze > diagnostic-dependencies.txt
+      - name: Execute the full instrumented suite once
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/look-migration-pycache
+        run: >-
+          python tools/diagnostics/look_migration.py
+          --source-root source-under-test
+          --artifacts out/diagnostic-${{ matrix.label }}
+          --label ${{ matrix.label }}
+      - name: Preserve comparands on success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: look-migration-${{ matrix.label }}
+          path: |
+            out/diagnostic-${{ matrix.label }}/
+            diagnostic-dependencies.txt
+            tools/diagnostics/look_migration.py
+            tools/diagnostics/look-migration-sources.json
+            tests/e2e/look_references.py
+            .github/workflows/look-migration-diagnostic.yml
+          if-no-files-found: error

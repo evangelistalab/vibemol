@@ -1,0 +1,2 @@
+One statement inserted immediately after tagged updatePubChemMetadataPanel's opening brace in the served response only:
+if (!window.__restoreProbeThrown) { window.__restoreProbeThrown = true; throw new Error('RESTORE_FAULT_PROBE_tagged_metadata_after_settings'); }

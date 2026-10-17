@@ -1,0 +1,64 @@
+{
+  "stage": 4,
+  "scope": "PubChem controller extraction",
+  "status": "Fixed local verification complete; own first automatic ordinary CI required before merge",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+  "sourcePubchemSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+  "trackedLet": [
+    265,
+    262
+  ],
+  "genuineControllerInputs": [
+    "els",
+    "escapeHtml",
+    "setTooltipText",
+    "setHintMessage",
+    "parseXYZ",
+    "handleSceneDropRecords",
+    "setVolumes",
+    "setCurrentIndex",
+    "clearSceneMeshes",
+    "clearEditHistory",
+    "appendParsedVolumeRecord",
+    "finalizeLoadedVolumes",
+    "setNavigationHint"
+  ],
+  "dependencyCount": 13,
+  "exclusiveLimit": 15,
+  "manualCasesPerSource": 72,
+  "capturesPerRun": 102,
+  "runs": 2,
+  "identitySlots": 52,
+  "identityContexts": 8,
+  "validation": "tests/baselines/evidence/stage4/pubchem/ordering-correction/local-validation.json",
+  "appLines": 32669,
+  "appDirectFunctionDeclarations": 1163,
+  "originalFailedCandidate": {
+    "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+    "failedCi": 39057387687,
+    "counts": [
+      32,
+      5,
+      37
+    ],
+    "diagnosticCi": 39062919011,
+    "usableAsMergeGate": false
+  },
+  "restorationError": {
+    "issue": 25,
+    "taggedInducedFailureReproduced": true,
+    "caughtAs": "console.warn",
+    "pageerror": false,
+    "userFacingError": false,
+    "rollback": false,
+    "fixedHere": false
+  },
+  "constructionOrderAudit": {
+    "status": "passed",
+    "originalCandidateRejected": true,
+    "otherStagesPassed": true,
+    "toolSha256": "833bad02ad661546e9f090ff2cf57a4dc6bab865e4247ff95b22fefc36be6ce9"
+  },
+  "periodicFactoryInputs": 11
+}

@@ -1,0 +1,18 @@
+{
+  "integrationCommit": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "remoteIntegrationCommit": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "integrationLet": 265,
+  "integrationUnchanged": true,
+  "candidateHead": "25fd30a6e273fa289f17ec999b8528e82c061631",
+  "candidateWorktreeClean": true,
+  "candidateLet": 262,
+  "newControllerDeps": 13,
+  "userGitignoreFileAndDiffHashesPreserved": true,
+  "prState": "OPEN",
+  "merged": false,
+  "ciAttempt": 1,
+  "retryStarted": false,
+  "mailbox": "retired; no reads or writes",
+  "monitor": "paused; no periodic mailbox checks",
+  "durableEvidenceNext": "Write reviewable failure evidence only, without committing into either frozen candidate or accepted integration."
+}
