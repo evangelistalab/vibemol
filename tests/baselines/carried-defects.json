@@ -113,7 +113,8 @@
     },
     {
       "issue": 14,
-      "scope": "Retired Workbench elementColorBtn; preserve legacy route; Element Colors remains held"
+      "scope": "Retired Workbench elementColorBtn; editor opens through native openElementColors in both themes. Legacy button remains connected/wired and is retained while the factory excludes that input. Removed-markup sweep classifies app/module/instance/listener references; no unrelated cleanup.",
+      "evidence": "tests/baselines/evidence/stage3/colors/preflight/overlay-sweep.md"
     },
     {
       "issue": 15,

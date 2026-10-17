@@ -1,0 +1,42 @@
+[
+  {
+    "launch": "workbench",
+    "theme": "light",
+    "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+    "handler": "()=>deps.openElementColors()",
+    "opened": true,
+    "closed": true,
+    "title": "C \u2014 Carbon (Z=6)",
+    "pageErrors": []
+  },
+  {
+    "launch": "workbench",
+    "theme": "dark",
+    "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+    "handler": "()=>deps.openElementColors()",
+    "opened": true,
+    "closed": true,
+    "title": "C \u2014 Carbon (Z=6)",
+    "pageErrors": []
+  },
+  {
+    "launch": "legacy",
+    "theme": "light",
+    "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+    "handler": "() => periodicTableController.setOpen(true)",
+    "opened": true,
+    "closed": true,
+    "title": "C \u2014 Carbon (Z=6)",
+    "pageErrors": []
+  },
+  {
+    "launch": "legacy",
+    "theme": "dark",
+    "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+    "handler": "() => periodicTableController.setOpen(true)",
+    "opened": true,
+    "closed": true,
+    "title": "C \u2014 Carbon (Z=6)",
+    "pageErrors": []
+  }
+]

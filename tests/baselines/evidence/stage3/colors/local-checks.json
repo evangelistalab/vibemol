@@ -1,0 +1,11 @@
+{
+  "makeCheck": "passed (exec session 56848 exit 0) with documented PYTHONPYCACHEPREFIX under ignored output",
+  "javaScriptTests": 433,
+  "pythonTests": 29,
+  "unitExit": 0,
+  "unitExecSession": 21723,
+  "firstMakeCheck": "stopped at Python bytecode cache permission outside sandbox; no source/test edit; original make-check.log retained",
+  "supplementalLogReadbackCorrection": "First reader assumed CI TAP # prefixes; local Node uses spec reporter \u2139. Counts independently read as tests433/pass433/fail0; make check uses silent JS loop. No test rerun or test/gate change.",
+  "completedCheckLog": "make-check-pycache.log",
+  "unitLog": "unit.log"
+}

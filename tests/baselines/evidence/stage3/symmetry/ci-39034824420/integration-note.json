@@ -1,0 +1,8 @@
+{
+  "prUsedForMergeGate": 22,
+  "oldPr20State": "GitHub marked original head PR20 merged when its ancestor head entered base through PR22; no command merged PR20, and its failed run remains failed.",
+  "sameMergedAt": "2026-10-17T13:37:14Z",
+  "noDiagnosticUsedAsGate": true,
+  "immutableRawArchiveLocation": "out/test-artifacts/stage3/symmetry/ci-39034824420/immutable-evidence.tar.gz",
+  "immutableRawArchiveSha256": "6e382a899530086919eb587852d40036353aea6c006ad5b76897ddb8cc0fd55d"
+}

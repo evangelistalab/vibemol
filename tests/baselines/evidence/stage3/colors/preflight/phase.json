@@ -1,0 +1,25 @@
+{
+  "status": "Completed native routes and app-owned census; browser closed. Module-query coverage extension in progress.",
+  "sourceCommit": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "sourceTree": "f7e99c3fb3740d93aa5d9d8e1cb6658764f760de",
+  "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "started": "2026-10-17T13:09:04.984082+00:00",
+  "nativeCases": 4,
+  "censusLaunches": 2,
+  "iterations": 1,
+  "purpose": "New direct-human-requested Colors reachability and overlay baseline. Not a rerun of completed Symmetry verification. Must check actual merged integration source equality before reuse.",
+  "productionSourceEdited": false,
+  "colorsCandidateStarted": false,
+  "failedExecSession": 76349,
+  "originalHarnessSha256": "e9cc252c3c0b44384273c8d4eb9d5882c28533683d108c7cc001a820d9bce271",
+  "completedNativeCases": [
+    "workbench-light",
+    "workbench-dark",
+    "legacy-light",
+    "legacy-dark"
+  ],
+  "censusStarted": true,
+  "censusCompleted": true,
+  "completed": "2026-10-17T13:18:26.248287+00:00",
+  "originalCollectorLimit": "Original failure screenshot/html overwritten by second collector attempt; original raw traceback retained. Subsequent failure artifacts and successful proofs retained."
+}

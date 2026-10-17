@@ -1,0 +1,12 @@
+{
+  "attempt1": {
+    "failure": "Pointer theme-label click before revealing legacy hover/focus utility tray",
+    "preserved": "run.log and observe-colors-baseline-original.py; failure screenshot was viewed in chat before attempt2",
+    "limitation": "The first failure screenshot/html were accidentally reused by attempt2; original traceback remains in run.log."
+  },
+  "attempt2": {
+    "failure": "Readiness predicate called public exportActive before asynchronous import completed; expected no-active-structure exception",
+    "preserved": "collector-diagnostics-attempt2/"
+  },
+  "resumePolicy": "Do not replay completed workbench-light, workbench-dark or legacy-light cases. Keep original assertion goal and timeout; treat only the documented pending-import exception as not ready."
+}
