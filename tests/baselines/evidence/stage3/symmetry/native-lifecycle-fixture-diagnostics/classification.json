@@ -1,0 +1,12 @@
+{
+  "candidateAcceptanceEvidence": false,
+  "proposedOnlyFailure": false,
+  "collectorAssumptions": [
+    "A transient legacy Symmetry popup remains visible after Undo.",
+    "A wide-layout active right tab stays the visible compact bottom tab without explicit activation."
+  ],
+  "observed": "Legacy Undo left the popup hidden; compact layout selected another open tab. The unchanged stock symmetry suite explicitly opens Symmetry after resizing.",
+  "correction": "Record these lifecycle observations, explicitly reopen the inspector between independent actions and after compact layout, then preserve the same control, geometry and bounds assertions.",
+  "productionOrShippedAssertionChanges": false,
+  "rawFailuresPreserved": true
+}

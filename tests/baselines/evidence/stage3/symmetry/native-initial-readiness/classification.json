@@ -1,0 +1,7 @@
+{
+  "classification": "Native collector readiness predicate error on both source trees, before the workflow began. exportActive throws during asynchronous file loading; optional chaining does not catch it.",
+  "productionDefect": false,
+  "proposedOnlyFailure": false,
+  "preserved": true,
+  "correction": "Return false while exportActive has no structure; require the same exact 5/3 atoms before continuing. No timeout, UI assertion or production change."
+}

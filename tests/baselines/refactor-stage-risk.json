@@ -14,7 +14,7 @@
     "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage3/atoms/ci-38266303089/browser-results.json",
+    "evidence": "tests/baselines/evidence/stage3/selection/ci-38989104040/browser-results/browser-results.json",
     "comparison": "local 35/2/37 (historical), CI 34/3/37",
     "historicalLocalResult": {
       "passed": 35,
@@ -23,7 +23,7 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "CI 34/3/37 on the unchanged Atoms candidate, all 37 once; only the specified workflows fail. Selection requires its own artifact.",
+    "provenance": "Selection exact rebased candidate CI 34/3/37, every suite once, complete source/run conjunction independently recomputed; merged and pushed.",
     "gate": {
       "passed": 34,
       "failed": 3,
@@ -53,11 +53,11 @@
         "issue": "https://github.com/evangelistalab/vibemol/issues/11"
       }
     ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
-    "sourceAppSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+    "sourceAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
-      "site": "trajectory"
+      "site": "vibration"
     }
   },
   "stages": [
@@ -590,7 +590,7 @@
       "soakPolicy": {
         "boundary": "one soak after all sub-PRs merge into the stage branch",
         "perSubPrSoak": false,
-        "stageBranch": "codex/element-cache-consolidation"
+        "stageBranch": "codex/app-js-decomposition"
       },
       "subPrProgress": [
         {
@@ -696,8 +696,8 @@
           "letAfter": 275,
           "appAdded": 178,
           "appRemoved": 178,
-          "status": "Local verification complete: paired four unchanged suites passed, native menu observations exactly equal; issue17 assertion failures retained/carried. Own candidate CI pending.",
-          "baseCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+          "status": "Merged/pushed after own rebased candidate CI proved 34/3/37, both unchanged102-capture runs and all52 composed slots/eight contexts/minima.",
+          "baseCommit": "efa1516f97b8526582a1c8b90a31fff1c6ee7bb4",
           "evidence": "tests/baselines/evidence/stage3/selection/validation.json",
           "cacheInventoryPlusHelperCount": 14,
           "cacheInventoryDefinition": "13 cache inputs plus existing cacheElement helper; inventory sum only, not a controller dependency interface.",
@@ -706,14 +706,62 @@
           "manualEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/",
           "carriedDefects": [
             17
-          ]
+          ],
+          "pr": "https://github.com/evangelistalab/vibemol/pull/18",
+          "mergeCommit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+          "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+          "ciEvidence": "tests/baselines/evidence/stage3/selection/ci-38989104040/candidate-verification.json",
+          "appearanceMaterialPresetIntermittent": {
+            "recurred": false,
+            "bothMaterialFamiliesPathsReached": true,
+            "looksSeconds": 1021.7,
+            "looksMinutes": 17.03,
+            "wholeCiMinutes": 31.97
+          },
+          "historicalHintIncomplete": "flake under user's pre-decided34/3 outcome; fresh accessibility passed without #hint, no baseline/assertion changes"
+        },
+        {
+          "order": 5,
+          "group": "symmetry/shared launcher",
+          "cacheBindings": 10,
+          "cumulativeCacheBindings": 41,
+          "accessorConversions": 40,
+          "canonicalAliases": 1,
+          "letBefore": 275,
+          "letAfter": 265,
+          "baseCommit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+          "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+          "status": "Local checks/unit, exact whole-app source audit, paired manual verification and unchanged102x2/52x8 passed; own frozen-candidate CI remains required before merge.",
+          "evidence": "tests/baselines/evidence/stage3/symmetry/validation.json",
+          "conversionAddedLines": 86,
+          "conversionRemovedLines": 86,
+          "appLines": 33069,
+          "functionDeclarations": 1181,
+          "newControllers": 0,
+          "controllerInterfaceCount": "N/A",
+          "cacheInventoryPlusExistingHelper": 11,
+          "periodicControllerInputsUnchanged": 19,
+          "localValidation": {
+            "javascriptUnitTests": 433,
+            "pythonUnitTests": 29,
+            "characterization": "2 exactserialized repeats of102 unchangedgoldens;zero diagnosticpixelchanges",
+            "identitySlotsPerContext": 52,
+            "identityContexts": 8,
+            "currentExerciseMinimaIndependentlyMet": true,
+            "pairedStockReplays": 8,
+            "nativeLaunchThemeCases": 8,
+            "nativeObservationsExactlyEqual": true,
+            "actualRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+            "browserVersion": "145.0.7632.6"
+          },
+          "soak": "Once after Colors and the whole stage, not per group."
         }
       ],
-      "remainingPanelGroupCount": 4,
+      "remainingPanelGroupCount": 2,
       "primaryMetric": {
         "name": "mutable module-let declaration lines",
         "before": 306,
-        "current": 288,
+        "current": 275,
         "target": 265,
         "appLineGrowthExpected": true,
         "build": {
@@ -729,7 +777,8 @@
           "appNetGrowth": 0
         },
         "appLinesCurrent": 33069,
-        "topLevelFunctionsCurrent": 1181
+        "topLevelFunctionsCurrent": 1181,
+        "proposedSymmetry": 265
       },
       "orderedIntegration": {
         "integrationAfterBoth": "64c46bf71c2cd6182fe174450bea2e26ec4e78b8",
@@ -746,8 +795,8 @@
       },
       "remainingAssignment": {
         "groups": [
-          "Selection",
-          "Symmetry/shared launcher"
+          "Symmetry/shared launcher",
+          "Element Colors disposition/sweep and hand-off"
         ],
         "oneAssignment": true,
         "intermediateReviews": false,
@@ -761,9 +810,9 @@
         "stopOnMaterialPresetRecurrence": false,
         "stopOnLogicChange": true,
         "cutFrom": "pushed codex/app-js-decomposition",
-        "status": "Active: finish paired Selection verification, open one candidate PR/CI and merge only on full gate, then Symmetry on newly pushed integration.",
+        "status": "Selection merged and pushed; Symmetry local verification in progress, then separately authorized Colors group and one whole-stage boundary soak.",
         "stopEvidence": "tests/baselines/evidence/stage3/colors-stop/stop-report.json",
-        "heldGroup": "Element Colors",
+        "heldGroup": null,
         "knownAbsentIssueRequired": true,
         "identityComposition": {
           "workbench": {
@@ -790,7 +839,15 @@
         },
         "materialRecurrencePolicy": "Compare against tagged source; proposed-only blocks, identical tagged manual failure is carried; any CI gate miss still blocks.",
         "carriedDefects": "tests/baselines/carried-defects.json",
-        "maximumCacheGroupDependencies": "Not applicable: no new controller interface. Inventory counts are reported separately."
+        "maximumCacheGroupDependencies": "Not applicable: no new controller interface. Inventory counts are reported separately.",
+        "historicalColorsStopEvidence": "tests/baselines/evidence/stage3/colors-stop/stop-report.json",
+        "requestedColorsHandoffTarget": [
+          18,
+          10
+        ],
+        "colorsActualExistingInputs": 19,
+        "colorsActualMeasuredGroupedInputs": 11,
+        "colorsCountPolicy": "Audit actual inputs. All ten non-DOM inputs are used; excluding only the Workbench-retired button does not make ten non-DOM plus els equal ten. Preserve legacy access and report the actual count without new design or hidden dependencies."
       },
       "domRetirementSweep": {
         "sourceCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
@@ -1045,10 +1102,10 @@
   },
   "defectBatchPolicy": "Projection #3, video crop #11, axis-gizmo Escape, mode-consistency Coordinates Delete and Metal popover #17 are carried 0.9.x production defects. Schedule after 0.10.0 or in parallel on 0.9.x; never merge fixes into this refactor. Other follow-ups #5/#14/#15 are recorded in the carried inventory.",
   "latestCiGateAttempt": {
-    "pr": 16,
-    "head": "6bfd947cbe701073289efe3a5b047be52d2d6a8b",
-    "run": "https://github.com/evangelistalab/vibemol/actions/runs/38266303089",
-    "status": "full same-artifact conjunction passed; merged",
+    "pr": 18,
+    "head": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+    "status": "full same-artifact conjunction passed; merged and pushed",
     "counts": [
       34,
       3,
@@ -1056,9 +1113,100 @@
     ],
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
-      "site": "trajectory"
+      "site": "vibration"
     },
-    "evidence": "tests/baselines/evidence/stage3/atoms/ci-38266303089/candidate-verification.json"
+    "evidence": "tests/baselines/evidence/stage3/selection/ci-38989104040/candidate-verification.json",
+    "wallTimeVs13293": {
+      "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+      "head": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+      "attempt": 1,
+      "conclusion": "success",
+      "createdAt": "2026-10-17T01:02:17Z",
+      "lastJobCompletedAt": "2026-10-17T01:34:15Z",
+      "workflowSeconds": 1918.0,
+      "workflowMinutes": 31.966666666666665,
+      "baselineMinutes": 132.93,
+      "savedMinutes": 100.96333333333334,
+      "reductionPercent": 75.95225557310866,
+      "speedup": 4.158394160583942,
+      "jobSeconds": {
+        "WebKit Properties interactions": 77.0,
+        "Browser suites (balanced-3)": 1505.0,
+        "Characterization (1)": 989.0,
+        "Browser suites (balanced-2)": 1026.0,
+        "Browser suites (balanced-1)": 1902.0,
+        "Characterization (2)": 976.0,
+        "Browser suites (looks)": 1051.0,
+        "Browser suites (smoke)": 442.0,
+        "checks-and-unit": 30.0,
+        "Exact characterization repeat and goldens": 20.0,
+        "Aggregate browser gate (34/3/37)": 10.0
+      },
+      "shards": [
+        {
+          "shard": "balanced-1",
+          "suites": 11,
+          "subprocessSeconds": 1867.28,
+          "batchSeconds": 1867.28,
+          "jobSeconds": 1902.0
+        },
+        {
+          "shard": "balanced-2",
+          "suites": 12,
+          "subprocessSeconds": 996.05,
+          "batchSeconds": 996.07,
+          "jobSeconds": 1026.0
+        },
+        {
+          "shard": "balanced-3",
+          "suites": 12,
+          "subprocessSeconds": 1467.59,
+          "batchSeconds": 1467.61,
+          "jobSeconds": 1505.0
+        },
+        {
+          "shard": "looks",
+          "suites": 1,
+          "subprocessSeconds": 1021.7,
+          "batchSeconds": 1021.7,
+          "jobSeconds": 1051.0
+        },
+        {
+          "shard": "smoke",
+          "suites": 1,
+          "subprocessSeconds": 413.14,
+          "batchSeconds": 413.17,
+          "jobSeconds": 442.0
+        }
+      ],
+      "lastWorker": "Browser suites (balanced-1)",
+      "lastJob": "Aggregate browser gate (34/3/37)",
+      "characterizationWorkerSeconds": {
+        "1": 951.25,
+        "2": 931.54
+      },
+      "characterizationJoinSeconds": 20.0,
+      "browserJoinSeconds": 10.0,
+      "cache": {
+        "restoreHits": 0,
+        "restoreMisses": 8,
+        "hitJobs": [],
+        "missJobs": [
+          "Browser suites (balanced-1)",
+          "Browser suites (balanced-2)",
+          "Browser suites (balanced-3)",
+          "Browser suites (looks)",
+          "Browser suites (smoke)",
+          "Characterization (1)",
+          "Characterization (2)",
+          "WebKit Properties interactions"
+        ],
+        "playwrightVersions": [
+          "1.64.0"
+        ]
+      },
+      "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+    }
   },
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",

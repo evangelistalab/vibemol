@@ -1,0 +1,90 @@
+[
+  {
+    "source": "tagged-base",
+    "suite": "symmetry_panel",
+    "exitCode": 0,
+    "processWallTimeSeconds": 26.91,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "testSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/tagged-base/symmetry_panel/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "tagged-base",
+    "suite": "workbench_bar",
+    "exitCode": 0,
+    "processWallTimeSeconds": 34.07,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "testSha256": "dbcdda7fe51e2c8b7aeab0450536650e5a0ba51958fc9b923ef963652ae14872",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/tagged-base/workbench_bar/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "tagged-base",
+    "suite": "workbench_consistency",
+    "exitCode": 0,
+    "processWallTimeSeconds": 42.69,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "testSha256": "45e953ea63ce36c29fccc4163b87a0d4023b63e21738761feca84ecf94209842",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/tagged-base/workbench_consistency/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "tagged-base",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "processWallTimeSeconds": 36.51,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/tagged-base/floating_panels/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "proposed",
+    "suite": "symmetry_panel",
+    "exitCode": 0,
+    "processWallTimeSeconds": 22.83,
+    "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+    "testSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/proposed/symmetry_panel/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "proposed",
+    "suite": "workbench_bar",
+    "exitCode": 0,
+    "processWallTimeSeconds": 30.57,
+    "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+    "testSha256": "dbcdda7fe51e2c8b7aeab0450536650e5a0ba51958fc9b923ef963652ae14872",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/proposed/workbench_bar/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "proposed",
+    "suite": "workbench_consistency",
+    "exitCode": 0,
+    "processWallTimeSeconds": 41.78,
+    "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+    "testSha256": "45e953ea63ce36c29fccc4163b87a0d4023b63e21738761feca84ecf94209842",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/proposed/workbench_consistency/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  },
+  {
+    "source": "proposed",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "processWallTimeSeconds": 35.77,
+    "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+    "testSha256": "9028696f8d583c9f2a304d6d456573b633f88e1ed0ceceda1ff0dc5c27b55d42",
+    "rawLog": "out/test-artifacts/stage3/symmetry/manual/proposed/floating_panels/run.log",
+    "assertionsChanged": false,
+    "waitsChanged": false
+  }
+]

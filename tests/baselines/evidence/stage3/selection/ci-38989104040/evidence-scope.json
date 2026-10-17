@@ -1,0 +1,10 @@
+{
+  "testedHead": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+  "base": "efa1516f97b8526582a1c8b90a31fff1c6ee7bb4",
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+  "carriedAfterVerification": true,
+  "testedCandidateMutated": false,
+  "rawArchiveIgnoredLocation": "out/test-artifacts/stage3/selection/ci-38989104040/immutable-evidence.tar.gz",
+  "fullArchiveSha256": "6cf7c9eed11ad7d014f9a5137319aec9e9ea12224d37514a7adb1fb2adec98d0",
+  "scope": "Raw CI logs, worker/join reports, structured captures, identities and source/run provenance. Full images retained in immutable ignored archive."
+}

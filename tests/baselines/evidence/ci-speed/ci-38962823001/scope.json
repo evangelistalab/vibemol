@@ -1,0 +1,7 @@
+{
+  "pr": 19,
+  "role": "Completed independent workflow PR and performance measurement; not Selection or Symmetry acceptance evidence.",
+  "head": "36e2140abe9b30c2f0d29ced27509993a2e3e3b5",
+  "appSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+  "requestedBaselineMinutes": 132.93
+}

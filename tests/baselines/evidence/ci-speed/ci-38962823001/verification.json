@@ -1,0 +1,547 @@
+{
+  "pr": "https://github.com/evangelistalab/vibemol/pull/19",
+  "run": "https://github.com/evangelistalab/vibemol/actions/runs/38962823001",
+  "attempt": 1,
+  "conclusion": "success",
+  "head": "36e2140abe9b30c2f0d29ced27509993a2e3e3b5",
+  "base": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+  "checkoutMergeCommit": "12976c48961e072151050b1aa5fb78359e215d5d",
+  "tree": "9663d89c5fd5f4bb1946e51d6ac4af32b051d7ca",
+  "appSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+  "beforeRun": 38763532071,
+  "beforeWorkflowWallTimeSeconds": 10278.0,
+  "afterWorkflowWallTimeSeconds": 1922.0,
+  "beforeMinutes": 171.3,
+  "afterMinutes": 32.03333333333333,
+  "savedMinutes": 139.26666666666668,
+  "wallTimeReductionPercent": 81.29986378672893,
+  "speedup": 5.347554630593132,
+  "jobWallTimeSeconds": {
+    "WebKit Properties interactions": 94.0,
+    "Browser suites (smoke)": 619.0,
+    "Browser suites (balanced-3)": 1706.0,
+    "Browser suites (looks)": 1324.0,
+    "checks-and-unit": 24.0,
+    "Characterization (1)": 759.0,
+    "Characterization (2)": 913.0,
+    "Browser suites (balanced-1)": 1891.0,
+    "Browser suites (balanced-2)": 1896.0,
+    "Exact characterization repeat and goldens": 13.0,
+    "Aggregate browser gate (34/3/37)": 13.0
+  },
+  "stepWallTimeSeconds": {
+    "WebKit Properties interactions": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 7.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 1.0,
+      "Install Playwright WebKit": 41.0,
+      "WebKit Properties interactions": 32.0,
+      "Upload WebKit evidence": 1.0,
+      "Post Run actions/cache@v4": 3.0,
+      "Post Run actions/setup-python@v5": 1.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Browser suites (smoke)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 4.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 4.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 1.0,
+      "Install Playwright Chromium": 24.0,
+      "Collect assigned browser suites (aggregate gate runs in join)": 576.0,
+      "Upload shard evidence": 1.0,
+      "Post Run actions/cache@v4": 4.0,
+      "Post Run actions/setup-python@v5": 1.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Browser suites (balanced-3)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 4.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 7.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 0.0,
+      "Install Playwright Chromium": 22.0,
+      "Collect assigned browser suites (aggregate gate runs in join)": 1664.0,
+      "Upload shard evidence": 2.0,
+      "Post Run actions/cache@v4": 2.0,
+      "Post Run actions/setup-python@v5": 1.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Browser suites (looks)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 6.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 0.0,
+      "Install Playwright Chromium": 28.0,
+      "Collect assigned browser suites (aggregate gate runs in join)": 1280.0,
+      "Upload shard evidence": 1.0,
+      "Post Run actions/cache@v4": 2.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "checks-and-unit": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-node@v4": 0.0,
+      "Run actions/setup-python@v5": 1.0,
+      "Install Python dependencies": 3.0,
+      "Fast checks": 2.0,
+      "Unit tests": 10.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/setup-node@v4": 0.0,
+      "Post Run actions/checkout@v4": 1.0,
+      "Complete job": 0.0
+    },
+    "Characterization (1)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 2.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 3.0,
+      "Resolve Playwright version": 1.0,
+      "Run actions/cache@v4": 0.0,
+      "Install Playwright Chromium": 21.0,
+      "Capture one full characterization run": 726.0,
+      "Upload characterization worker evidence": 1.0,
+      "Post Run actions/cache@v4": 1.0,
+      "Post Run actions/setup-python@v5": 1.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Characterization (2)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 3.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 0.0,
+      "Install Playwright Chromium": 19.0,
+      "Capture one full characterization run": 880.0,
+      "Upload characterization worker evidence": 1.0,
+      "Post Run actions/cache@v4": 2.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Browser suites (balanced-1)": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 3.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 1.0,
+      "Install Playwright Chromium": 20.0,
+      "Collect assigned browser suites (aggregate gate runs in join)": 1854.0,
+      "Upload shard evidence": 3.0,
+      "Post Run actions/cache@v4": 2.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Browser suites (balanced-2)": {
+      "Set up job": 2.0,
+      "Run actions/checkout@v4": 2.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 3.0,
+      "Resolve Playwright version": 0.0,
+      "Run actions/cache@v4": 1.0,
+      "Install Playwright Chromium": 20.0,
+      "Collect assigned browser suites (aggregate gate runs in join)": 1862.0,
+      "Upload shard evidence": 1.0,
+      "Post Run actions/cache@v4": 2.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Exact characterization repeat and goldens": {
+      "Set up job": 1.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Install Python dependencies": 3.0,
+      "Run actions/download-artifact@v4": 1.0,
+      "Compare both artifacts, unchanged goldens and eight identity contexts": 2.0,
+      "Upload joined characterization evidence": 1.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    },
+    "Aggregate browser gate (34/3/37)": {
+      "Set up job": 2.0,
+      "Run actions/checkout@v4": 3.0,
+      "Run actions/setup-python@v5": 0.0,
+      "Run actions/download-artifact@v4": 2.0,
+      "Verify all suites once, raw failure workflows and aggregate counts": 0.0,
+      "Upload aggregate browser result": 2.0,
+      "Post Run actions/setup-python@v5": 0.0,
+      "Post Run actions/checkout@v4": 0.0,
+      "Complete job": 0.0
+    }
+  },
+  "shards": [
+    {
+      "shard": "smoke",
+      "suites": 1,
+      "suiteSubprocessSeconds": 575.78,
+      "batchWallTimeSeconds": 575.83,
+      "jobWallTimeSeconds": 619.0
+    },
+    {
+      "shard": "looks",
+      "suites": 1,
+      "suiteSubprocessSeconds": 1279.38,
+      "batchWallTimeSeconds": 1279.38,
+      "jobWallTimeSeconds": 1324.0
+    },
+    {
+      "shard": "balanced-1",
+      "suites": 11,
+      "suiteSubprocessSeconds": 1854.01,
+      "batchWallTimeSeconds": 1854.01,
+      "jobWallTimeSeconds": 1891.0
+    },
+    {
+      "shard": "balanced-2",
+      "suites": 12,
+      "suiteSubprocessSeconds": 1861.16,
+      "batchWallTimeSeconds": 1861.16,
+      "jobWallTimeSeconds": 1896.0
+    },
+    {
+      "shard": "balanced-3",
+      "suites": 12,
+      "suiteSubprocessSeconds": 1664.3,
+      "batchWallTimeSeconds": 1664.32,
+      "jobWallTimeSeconds": 1706.0
+    }
+  ],
+  "criticalShard": "balanced-2",
+  "characterizationWorkerWallTimeSeconds": {
+    "1": 725.16,
+    "2": 878.41
+  },
+  "characterizationJoinJobWallTimeSeconds": 13.0,
+  "browserJoinJobWallTimeSeconds": 13.0,
+  "actualSuiteCounts": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "acceptedFailures": [
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exceptionType": "AssertionError",
+      "workflow": {
+        "id": "escape-canvas-focus"
+      }
+    },
+    {
+      "test": "tests/e2e/smoke.py",
+      "exceptionType": "TimeoutError",
+      "workflow": {
+        "id": "issue-11-stop-after-second-download",
+        "site": "trajectory"
+      }
+    },
+    {
+      "test": "tests/e2e/mode_consistency.py",
+      "exceptionType": "TimeoutError",
+      "workflow": {
+        "id": "coordinates-delete-selection-card"
+      }
+    }
+  ],
+  "issue11Site": "trajectory",
+  "vibrationReached": false,
+  "goldens": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "exactRepeat": true,
+    "comparison": {
+      "floatLeaves": {
+        "relTol": 1e-09,
+        "absTol": 1e-12
+      },
+      "exact": [
+        "types",
+        "integers",
+        "booleans",
+        "strings",
+        "keys",
+        "lengths",
+        "structure"
+      ],
+      "reason": "The complete CI/local audit found only 32 one- or four-ULP bond-z differences: maximum absolute 4.235164736271502e-22, relative 7.82384323679457e-16. The tolerance accommodates floating-point platform drift while rejecting a 1e-6 change.",
+      "summary": "Goldens are compared with tolerance for float leaves and are expected to hold across machines; all other leaves, types and structure remain exact."
+    }
+  },
+  "identityContexts": [
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "light",
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1115
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "dark",
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5460,
+          "session restore": 1,
+          "panel transition": 1097
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "light",
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3283,
+          "session restore": 1,
+          "panel transition": 822
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "dark",
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3098,
+          "session restore": 1,
+          "panel transition": 766
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "light",
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1115
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "dark",
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5464,
+          "session restore": 1,
+          "panel transition": 1085
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "light",
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2992,
+          "session restore": 1,
+          "panel transition": 788
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "dark",
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3397,
+          "session restore": 1,
+          "panel transition": 804
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    }
+  ],
+  "looks": {
+    "exitCode": 0,
+    "wallTimeSeconds": 1279.38,
+    "timeout": false,
+    "studioMaterialFamilies": "passed",
+    "propertiesMaterialFamilies": "passed",
+    "intermittentRecurrence": false
+  },
+  "cache": {
+    "restoreHits": 0,
+    "restoreMisses": 8,
+    "measurement": "cold-cache run",
+    "playwrightVersion": "1.64.0",
+    "missJobs": [
+      "Browser suites (balanced-1)",
+      "Browser suites (balanced-2)",
+      "Browser suites (balanced-3)",
+      "Browser suites (looks)",
+      "Browser suites (smoke)",
+      "Characterization (1)",
+      "Characterization (2)",
+      "WebKit Properties interactions"
+    ]
+  },
+  "renderer": {
+    "suite": "smoke",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "browserName": "chromium",
+    "browserVersion": "156.0.8078.4",
+    "rendererClass": "software",
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "unmaskedVendor": "Google Inc. (Google)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38962823001"
+  },
+  "allJobsSuccessful": true,
+  "independentJoinsMatchCI": true,
+  "noProductionOrGoldenDiff": true,
+  "limitation": "One observed cold-cache workflow run, not an isolated performance benchmark. Historical before run has its own Selection source provenance; current production is integration b517."
+}

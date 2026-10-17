@@ -1,0 +1,722 @@
+{
+  "pr": 18,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040",
+  "attempt": 1,
+  "head": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+  "base": "efa1516f97b8526582a1c8b90a31fff1c6ee7bb4",
+  "tree": "6ceaa9597ba745d93b1e0632f7e6a3c7b32f0712",
+  "checkoutMergeCommit": "2ab03eb1b2802b0ac5e5d6d682aca0c6b4c472c6",
+  "candidateConjunctionVerified": true,
+  "sourceAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "checksAndUnit": "passed",
+  "webKitProperties": "passed",
+  "browser": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "allExecutedOnce": true,
+    "acceptedFailures": [
+      {
+        "test": "tests/e2e/axis_gizmo.py",
+        "exitCode": 1,
+        "seconds": 34.78,
+        "wallTimeSeconds": 34.78,
+        "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/ci-38989104040/independent/browser-suite/axis_gizmo/run.log",
+        "firstFailure": {
+          "suite": "axis_gizmo.py",
+          "line": 130,
+          "function": "run"
+        },
+        "failureCallSite": {
+          "suite": "axis_gizmo.py",
+          "line": 170,
+          "function": "main"
+        },
+        "exceptionType": "AssertionError",
+        "failureWorkflow": {
+          "id": "escape-canvas-focus"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/smoke.py",
+        "exitCode": 1,
+        "seconds": 413.14,
+        "wallTimeSeconds": 413.14,
+        "testSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/ci-38989104040/independent/browser-suite/smoke/run.log",
+        "firstFailure": {
+          "suite": "ci_gate_diagnostics.py",
+          "line": 88,
+          "function": "wait_for_video_idle"
+        },
+        "failureCallSite": {
+          "suite": "smoke.py",
+          "line": 4531,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "vibration"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/mode_consistency.py",
+        "exitCode": 1,
+        "seconds": 48.58,
+        "wallTimeSeconds": 48.58,
+        "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/selection/ci-38989104040/independent/browser-suite/mode_consistency/run.log",
+        "firstFailure": {
+          "suite": "mode_consistency.py",
+          "line": 80,
+          "function": "coordinate_row_actions"
+        },
+        "failureCallSite": {
+          "suite": "mode_consistency.py",
+          "line": 162,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "coordinates-delete-selection-card"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      }
+    ],
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "vibration"
+    },
+    "vibrationReachedThisRun": true
+  },
+  "renderer": {
+    "suite": "smoke",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "browserName": "chromium",
+    "browserVersion": "156.0.8078.4",
+    "rendererClass": "software",
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "unmaskedVendor": "Google Inc. (Google)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38989104040"
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "unchangedGoldensMatched": true,
+    "exactSerializedRepeat": true,
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1136
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5464,
+          "session restore": 1,
+          "panel transition": 1106
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3288,
+          "session restore": 1,
+          "panel transition": 853
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3395,
+          "session restore": 1,
+          "panel transition": 834
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1109
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5465,
+          "session restore": 1,
+          "panel transition": 1124
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3283,
+          "session restore": 1,
+          "panel transition": 849
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3102,
+          "session restore": 1,
+          "panel transition": 782
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "pixelChangesDiagnosticOnly": []
+  },
+  "appearanceMaterialPresetIntermittent": {
+    "recurred": false,
+    "bothMaterialFamiliesPathsReached": true,
+    "looksSeconds": 1021.7,
+    "looksMinutes": 17.03,
+    "wholeCiMinutes": 31.97
+  },
+  "sourceAudit": {
+    "group": "editSelection*",
+    "baseCommit": "efa1516f97b8526582a1c8b90a31fff1c6ee7bb4",
+    "inventory": [
+      {
+        "name": "editSelectionTranslateCueEl",
+        "declarationLine": 1188,
+        "assignmentLine": 7894,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionTranslateCue",
+        "queryLine": 7894,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7882,
+        "registrationLine": 7894,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionTranslateCueButtonEl",
+        "declarationLine": 1190,
+        "assignmentLine": 7900,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionTranslateCueButton",
+        "queryLine": 7900,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7888,
+        "registrationLine": 7900,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionRotateCueButtonEl",
+        "declarationLine": 1191,
+        "assignmentLine": 7901,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionRotateCueButton",
+        "queryLine": 7901,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7889,
+        "registrationLine": 7901,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionCoordinationCueButtonEl",
+        "declarationLine": 1192,
+        "assignmentLine": 7902,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionCoordinationCueButton",
+        "queryLine": 7902,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7890,
+        "registrationLine": 7902,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionMetalBondingCueButtonEl",
+        "declarationLine": 1193,
+        "assignmentLine": 7903,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionMetalBondingCueButton",
+        "queryLine": 7903,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7891,
+        "registrationLine": 7903,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionBondOrbitCueButtonEl",
+        "declarationLine": 1194,
+        "assignmentLine": 7904,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionBondOrbitCueButton",
+        "queryLine": 7904,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7892,
+        "registrationLine": 7904,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionBondDistanceCueButtonEl",
+        "declarationLine": 1195,
+        "assignmentLine": 7905,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionBondDistanceCueButton",
+        "queryLine": 7905,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7893,
+        "registrationLine": 7905,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionBondOrderCueButtonEl",
+        "declarationLine": 1196,
+        "assignmentLine": 7906,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionBondOrderCueButton",
+        "queryLine": 7906,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7894,
+        "registrationLine": 7906,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionAddFragmentCueButtonEl",
+        "declarationLine": 1197,
+        "assignmentLine": 7907,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionAddFragmentCueButton",
+        "queryLine": 7907,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7895,
+        "registrationLine": 7907,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionDeleteCueButtonEl",
+        "declarationLine": 1198,
+        "assignmentLine": 7908,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionDeleteCueButton",
+        "queryLine": 7908,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7896,
+        "registrationLine": 7908,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionFragmentCuePopoverEl",
+        "declarationLine": 1199,
+        "assignmentLine": 7909,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionFragmentCuePopover",
+        "queryLine": 7909,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": false,
+        "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+        "preStageAuditQueryLine": 7897,
+        "registrationLine": 7909,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionCoordinationCuePopoverEl",
+        "declarationLine": 1200,
+        "assignmentLine": 7910,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionCoordinationCuePopover",
+        "queryLine": 7910,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7898,
+        "registrationLine": 7910,
+        "registeredAtOriginalQueryPoint": true
+      },
+      {
+        "name": "editSelectionMetalBondingCuePopoverEl",
+        "declarationLine": 1201,
+        "assignmentLine": 7911,
+        "function": "app IIFE (anonymous, line 1)",
+        "conditionalAncestors": [],
+        "group": "editSelection*",
+        "kind": "DOM cache",
+        "id": "editSelectionMetalBondingCuePopover",
+        "queryLine": 7911,
+        "directGetElementByIdCount": 1,
+        "wiringSite": "Selection/old Atoms menu wiring",
+        "presentInStaticShell": true,
+        "creation": "index.html static shell",
+        "preStageAuditQueryLine": 7899,
+        "registrationLine": 7911,
+        "registeredAtOriginalQueryPoint": true
+      }
+    ],
+    "functionsWhoseBodiesReferenceTheConvertedCache": [
+      {
+        "name": "resize",
+        "beforeLine": 1248,
+        "afterLine": 1248
+      },
+      {
+        "name": "hideEditSelectionTranslateCue",
+        "beforeLine": 18319,
+        "afterLine": 18319
+      },
+      {
+        "name": "hideSelectionFragmentCuePopover",
+        "beforeLine": 19094,
+        "afterLine": 19094
+      },
+      {
+        "name": "showSelectionFragmentCuePopover",
+        "beforeLine": 19121,
+        "afterLine": 19121
+      },
+      {
+        "name": "positionSelectionFragmentCuePopover",
+        "beforeLine": 19145,
+        "afterLine": 19145
+      },
+      {
+        "name": "renderSelectionCoordinationCuePreviewCanvases",
+        "beforeLine": 19384,
+        "afterLine": 19384
+      },
+      {
+        "name": "hideSelectionCoordinationCuePopover",
+        "beforeLine": 19480,
+        "afterLine": 19480
+      },
+      {
+        "name": "positionSelectionCoordinationCuePopover",
+        "beforeLine": 19487,
+        "afterLine": 19487
+      },
+      {
+        "name": "renderSelectionCoordinationCuePopover",
+        "beforeLine": 19512,
+        "afterLine": 19512
+      },
+      {
+        "name": "showSelectionCoordinationCuePopover",
+        "beforeLine": 19556,
+        "afterLine": 19556
+      },
+      {
+        "name": "toggleSelectionCoordinationCuePopover",
+        "beforeLine": 19566,
+        "afterLine": 19566
+      },
+      {
+        "name": "hideSelectionMetalBondingCuePopover",
+        "beforeLine": 19604,
+        "afterLine": 19604
+      },
+      {
+        "name": "positionSelectionMetalBondingCuePopover",
+        "beforeLine": 19610,
+        "afterLine": 19610
+      },
+      {
+        "name": "renderSelectionMetalBondingCuePopover",
+        "beforeLine": 19635,
+        "afterLine": 19635
+      },
+      {
+        "name": "showSelectionMetalBondingCuePopover",
+        "beforeLine": 19676,
+        "afterLine": 19676
+      },
+      {
+        "name": "toggleSelectionMetalBondingCuePopover",
+        "beforeLine": 19687,
+        "afterLine": 19687
+      },
+      {
+        "name": "renderEditSelectionTranslateCue",
+        "beforeLine": 19893,
+        "afterLine": 19893
+      }
+    ],
+    "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+    "entireAppExactAfterApprovedConversions": true,
+    "lexicalReferenceSubstitutions": 174,
+    "auditedFunctionDeclarations": 1190,
+    "shadowedElsReferences": [],
+    "metrics": {
+      "before": {
+        "lines": 33069,
+        "functionDeclarations": 1181,
+        "letDeclarations": 288,
+        "constDeclarations": 590,
+        "sha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a"
+      },
+      "after": {
+        "lines": 33069,
+        "functionDeclarations": 1181,
+        "letDeclarations": 275,
+        "constDeclarations": 590,
+        "sha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45"
+      }
+    },
+    "controllerLetsRetained": true,
+    "focusStateLetRetained": true,
+    "queryRegistrationAtOriginalWiringSites": true
+  },
+  "periodicControllerIntegratedDependencyCount": 19,
+  "periodicControllerInputs": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "elementColorBtn",
+    "elementColorOverlay",
+    "elementColorClose",
+    "periodicTableViewport",
+    "periodicTableCanvas",
+    "elementColorName",
+    "elementColorPicker",
+    "elementColorResetOne",
+    "elementColorResetAll"
+  ],
+  "heldColorsMeasuredInputCount": 11,
+  "cacheBindingInventory": 13,
+  "cacheInventoryPlusHelperCount": 14,
+  "newControllers": 0,
+  "controllerInterfaceCount": "N/A",
+  "extractionDependencyLimitApplicable": false,
+  "conversionNetAppLines": 0,
+  "requestedQaInfrastructureNetAppLines": 0,
+  "independentJoinsMatchCi": true,
+  "allElevenJobsPassed": true
+}

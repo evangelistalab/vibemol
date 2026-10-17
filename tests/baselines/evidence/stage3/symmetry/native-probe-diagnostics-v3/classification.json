@@ -1,0 +1,8 @@
+{
+  "productionDefect": false,
+  "candidateAcceptanceEvidence": false,
+  "fixture": "Corrected structure JSON filename.",
+  "collectorError": "Requested tolerance0.200, which is not an offered option; index.html offers0.050/0.100/0.250/0.500/1.000.",
+  "correction": "Use offered0.050 and assert exact selected value and restoration.",
+  "processCleanup": "A SIGINT interruption was ignored; both temporary probe trees were explicitly terminated and closure verified before the next serial run. Discard this interrupted probe from acceptance."
+}
