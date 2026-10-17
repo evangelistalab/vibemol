@@ -1,0 +1,76 @@
+{
+  "suite": "tests/e2e/edit_tool.py",
+  "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+  "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/sources/tagged-base",
+  "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "focus": "Unchanged run() setup through viewport 320x1000; focus Transform button, ArrowRight selects Build; original overflow assertion and subsequent hit-test.",
+  "launch": "Workbench",
+  "query": "?appearanceStudy=1",
+  "initialViewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "targetViewport": {
+    "width": 320,
+    "height": 1000
+  },
+  "browserName": "chromium",
+  "os": "Darwin",
+  "architecture": "arm64",
+  "playwrightVersion": "1.60.0",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "ciRetry": false,
+  "claimsFullSuitePass": false,
+  "overflowObservation": {
+    "viewport": {
+      "width": 320,
+      "height": 1000
+    },
+    "launch": "Workbench",
+    "theme": "light",
+    "scrollWidth": 304,
+    "clientWidth": 304,
+    "toolsRect": {
+      "x": 8,
+      "y": 61.5,
+      "width": 304,
+      "height": 40
+    },
+    "overflowButtonPresent": true,
+    "overflowButtonVisible": true,
+    "overflowButtonHidden": false,
+    "overflowExpanded": "false",
+    "overflowMenuPresent": true,
+    "overflowMenuVisible": false,
+    "overflowMenuHidden": true,
+    "overflowMenuRows": 5,
+    "barClasses": "wb-bar wb-icon-tools",
+    "overflowedGroups": [
+      {
+        "id": "",
+        "classes": "wb-context-tools wb-overflowed"
+      },
+      {
+        "id": "workbenchQuickActions",
+        "classes": "wb-context-tools wb-overflowed"
+      }
+    ],
+    "focusedId": "editAdaptiveAddAtomBtn",
+    "buildChecked": "true",
+    "transformChecked": "false",
+    "originalOverflowAssertionValue": true,
+    "observationTiming": "Read-only snapshot immediately after the original overflow expression evaluated; the original boolean is preserved."
+  },
+  "browserVersion": "145.0.7632.6",
+  "status": "target-passed",
+  "stopReason": "Both unchanged width320 assertions and ArrowLeft completed; stopped before width390, no visual_schemes run.",
+  "pageErrors": [],
+  "renderer": {
+    "renderer": "WebKit WebGL",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+  },
+  "seconds": 20.75,
+  "exitCode": 0
+}

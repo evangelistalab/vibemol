@@ -1,0 +1,13 @@
+{
+  "testedCandidateUnchanged": true,
+  "candidateHead": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+  "evidenceBranch": "codex/symmetry-ci-stop-evidence",
+  "gatePassed": false,
+  "focusRuns": 9,
+  "fullSuitePassClaim": false,
+  "classification": "Local non-reproduction only; original CI miss unresolved.",
+  "rawArchive": "out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/immutable-evidence.tar.gz",
+  "archiveSha256": "3cc91151d9c5ef2ef5836514b515c0fd7761d41fc2a2efa8a6600e3113aa0d79",
+  "archiveBytes": 3274723,
+  "runtimeSnapshotsExcludedFromArchive": true
+}

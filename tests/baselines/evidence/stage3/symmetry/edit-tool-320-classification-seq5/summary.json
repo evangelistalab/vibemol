@@ -1,0 +1,109 @@
+{
+  "assignmentSeq": 5,
+  "sources": [
+    {
+      "label": "tagged-base",
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tree": "75275fe172ff8bfb3327a73e3a31b5fef3d19992",
+      "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/sources/tagged-base"
+    },
+    {
+      "label": "integration",
+      "commit": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+      "tree": "6ceaa9597ba745d93b1e0632f7e6a3c7b32f0712",
+      "appSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+      "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/sources/integration"
+    },
+    {
+      "label": "proposed",
+      "commit": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+      "tree": "65706809c7c337ee42a11a531e34eb2bb09c2000",
+      "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+      "testSha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/symmetry/edit-tool-320-classification-seq5/sources/proposed"
+    }
+  ],
+  "targetRuns": 9,
+  "runsPerSource": 3,
+  "perSourceResults": {
+    "tagged-base": [
+      "target-passed",
+      "target-passed",
+      "target-passed"
+    ],
+    "integration": [
+      "target-passed",
+      "target-passed",
+      "target-passed"
+    ],
+    "proposed": [
+      "target-passed",
+      "target-passed",
+      "target-passed"
+    ]
+  },
+  "focusedOverflowAssertion": "9/9 local passes; original boolean true in all nine",
+  "subsequent320HitAssertions": "9/9 passed before deliberate stop at next iteration",
+  "overflowUi": "All nine: overflow button present/visible; five-row menu exists but is hidden/closed.",
+  "viewport": {
+    "width": 320,
+    "height": 1000
+  },
+  "launch": "Workbench",
+  "theme": "light",
+  "scrollWidthAndClientWidth": [
+    304,
+    304
+  ],
+  "localRuntime": {
+    "browserName": [
+      "chromium"
+    ],
+    "browserVersion": [
+      "145.0.7632.6"
+    ],
+    "playwrightVersion": [
+      "1.60.0"
+    ],
+    "os": [
+      "Darwin"
+    ],
+    "architecture": [
+      "arm64"
+    ]
+  },
+  "ciRuntime": {
+    "browserVersion": "156.0.8078.4",
+    "playwrightVersion": "1.64.0",
+    "os": "Linux",
+    "architecture": "x86_64"
+  },
+  "ciStillFailed": {
+    "run": 38994402382,
+    "attempt": 1,
+    "passed": 33,
+    "failed": 4,
+    "total": 37,
+    "unexpectedWorkflow": "edit_tool Workbench tools overflow at 320 CSS px"
+  },
+  "classification": "Not reproduced locally on any source; the CI failure is not classified as pre-existing, Selection regression, Symmetry regression or flake by these measurements.",
+  "preDecidedBranch": "None: all local sources pass; no per-source set is inconsistent.",
+  "decision": "Stop before any merge/continuation; human handoff for second consecutive unresolved stop on the 320px CI gate cause and an outcome outside the released branches.",
+  "method": "Unchanged edit_tool.run setup/assertions/waits through the first 320px iteration; observation after original overflow evaluate; stop before 390 if target passes. No full-suite or CI retry claim.",
+  "noAssertionOrWaitRelaxation": true,
+  "claimsFullSuitePass": false,
+  "ciRerunPerformed": false,
+  "productionFixPerformed": false,
+  "acceptedGateChanged": false,
+  "frozenCandidateUnchanged": true,
+  "workingTree": [
+    " M .gitignore"
+  ],
+  "integrationHead": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "integrationLetCount": 275,
+  "candidateLetCount": 265,
+  "humanDecisionNeeded": "Authorize further diagnostics in the failing CI OS/browser environment, or leave #20 blocked. No merge exception is assumed."
+}
