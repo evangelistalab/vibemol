@@ -1,0 +1,4927 @@
+{
+  "status": "passed",
+  "config": {
+    "integrationCommit": "5da81acdeee31e70142fc0b9c9f7d36a7840d9a1",
+    "testedTree": "a36a574d2fa7b3a612c2602c0453d41259978537",
+    "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+    "periodicSha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a",
+    "minimumSeconds": 600,
+    "secondsPerContext": 150,
+    "contexts": [
+      "workbench-light",
+      "workbench-dark",
+      "legacy-light",
+      "legacy-dark"
+    ],
+    "singleWholeStageJob": true,
+    "perGroupSoak": false,
+    "harnessSha256": "57881a700710e1cbf7e76fafeed12269744fc4808cee80974ac1921050dcd5e7",
+    "gateRun": 39039061120,
+    "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
+    "purpose": "One human-authorized Stage3 boundary soak: sustained mode/Look/editor/Build/selection/Symmetry/session cycles with sticky identity reads. No Stage4/5 implementation."
+  },
+  "browserVersion": "145.0.7632.6",
+  "seconds": 630.988,
+  "cases": [
+    {
+      "case": "workbench-light",
+      "cycles": [
+        {
+          "cycle": 1,
+          "look": "basic",
+          "seconds": 14.553,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 6739,
+              "panel transition: editSelectionCoordinationCuePopover": 159,
+              "panel transition: editSelectionMetalBondingCuePopover": 158,
+              "panel transition: editSelectionTranslateCue": 182,
+              "panel transition: displayWindowAdaptiveMenu": 147,
+              "panel transition: editAddAtomOperatorPanel": 46,
+              "panel transition: editAddMoleculeOperatorPanel": 57,
+              "panel transition: bondOrderPopup": 36,
+              "panel transition: moldenInspector": 8,
+              "panel transition: trajectoryPanel": 8,
+              "panel transition: vibrationPanel": 9,
+              "mode switch": 230,
+              "soak mode": 6,
+              "presented checkpoint": 2,
+              "panel transition: workbenchMenu": 12,
+              "panel transition: inspector": 8,
+              "panel transition: inspectorObject": 1,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 9,
+              "panel transition: editAdaptiveSymmetryPopover": 6,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 2,
+          "look": "toon",
+          "seconds": 9.539,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 12537,
+              "panel transition: editSelectionCoordinationCuePopover": 295,
+              "panel transition: editSelectionMetalBondingCuePopover": 293,
+              "panel transition: editSelectionTranslateCue": 341,
+              "panel transition: displayWindowAdaptiveMenu": 273,
+              "panel transition: editAddAtomOperatorPanel": 85,
+              "panel transition: editAddMoleculeOperatorPanel": 107,
+              "panel transition: bondOrderPopup": 66,
+              "panel transition: moldenInspector": 15,
+              "panel transition: trajectoryPanel": 15,
+              "panel transition: vibrationPanel": 17,
+              "mode switch": 428,
+              "soak mode": 12,
+              "presented checkpoint": 4,
+              "panel transition: workbenchMenu": 24,
+              "panel transition: inspector": 12,
+              "panel transition: inspectorObject": 2,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 14,
+              "panel transition: editAdaptiveSymmetryPopover": 8,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 2
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 3,
+          "look": "kit",
+          "seconds": 7.047,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 18328,
+              "panel transition: editSelectionCoordinationCuePopover": 429,
+              "panel transition: editSelectionMetalBondingCuePopover": 426,
+              "panel transition: editSelectionTranslateCue": 500,
+              "panel transition: displayWindowAdaptiveMenu": 399,
+              "panel transition: editAddAtomOperatorPanel": 124,
+              "panel transition: editAddMoleculeOperatorPanel": 157,
+              "panel transition: bondOrderPopup": 96,
+              "panel transition: moldenInspector": 22,
+              "panel transition: trajectoryPanel": 22,
+              "panel transition: vibrationPanel": 25,
+              "mode switch": 626,
+              "soak mode": 18,
+              "presented checkpoint": 6,
+              "panel transition: workbenchMenu": 36,
+              "panel transition: inspector": 16,
+              "panel transition: inspectorObject": 3,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 19,
+              "panel transition: editAdaptiveSymmetryPopover": 10,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 3
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 4,
+          "look": "basic",
+          "seconds": 9.813,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 24129,
+              "panel transition: editSelectionCoordinationCuePopover": 561,
+              "panel transition: editSelectionMetalBondingCuePopover": 557,
+              "panel transition: editSelectionTranslateCue": 656,
+              "panel transition: displayWindowAdaptiveMenu": 525,
+              "panel transition: editAddAtomOperatorPanel": 163,
+              "panel transition: editAddMoleculeOperatorPanel": 207,
+              "panel transition: bondOrderPopup": 126,
+              "panel transition: moldenInspector": 29,
+              "panel transition: trajectoryPanel": 29,
+              "panel transition: vibrationPanel": 33,
+              "mode switch": 824,
+              "soak mode": 24,
+              "presented checkpoint": 8,
+              "panel transition: workbenchMenu": 48,
+              "panel transition: inspector": 20,
+              "panel transition: inspectorObject": 4,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 24,
+              "panel transition: editAdaptiveSymmetryPopover": 12,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 4
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 5,
+          "look": "toon",
+          "seconds": 8.972,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 29925,
+              "panel transition: editSelectionCoordinationCuePopover": 690,
+              "panel transition: editSelectionMetalBondingCuePopover": 685,
+              "panel transition: editSelectionTranslateCue": 808,
+              "panel transition: displayWindowAdaptiveMenu": 651,
+              "panel transition: editAddAtomOperatorPanel": 202,
+              "panel transition: editAddMoleculeOperatorPanel": 257,
+              "panel transition: bondOrderPopup": 156,
+              "panel transition: moldenInspector": 36,
+              "panel transition: trajectoryPanel": 36,
+              "panel transition: vibrationPanel": 41,
+              "mode switch": 1022,
+              "soak mode": 30,
+              "presented checkpoint": 10,
+              "panel transition: workbenchMenu": 60,
+              "panel transition: inspector": 24,
+              "panel transition: inspectorObject": 5,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 29,
+              "panel transition: editAdaptiveSymmetryPopover": 14,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 5
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 6,
+          "look": "kit",
+          "seconds": 7.273,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 35720,
+              "panel transition: editSelectionCoordinationCuePopover": 826,
+              "panel transition: editSelectionMetalBondingCuePopover": 820,
+              "panel transition: editSelectionTranslateCue": 968,
+              "panel transition: displayWindowAdaptiveMenu": 777,
+              "panel transition: editAddAtomOperatorPanel": 241,
+              "panel transition: editAddMoleculeOperatorPanel": 307,
+              "panel transition: bondOrderPopup": 186,
+              "panel transition: moldenInspector": 43,
+              "panel transition: trajectoryPanel": 43,
+              "panel transition: vibrationPanel": 49,
+              "mode switch": 1220,
+              "soak mode": 36,
+              "presented checkpoint": 12,
+              "panel transition: workbenchMenu": 72,
+              "panel transition: inspector": 28,
+              "panel transition: inspectorObject": 6,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 34,
+              "panel transition: editAdaptiveSymmetryPopover": 16,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 6
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 7,
+          "look": "basic",
+          "seconds": 10.105,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 41522,
+              "panel transition: editSelectionCoordinationCuePopover": 963,
+              "panel transition: editSelectionMetalBondingCuePopover": 956,
+              "panel transition: editSelectionTranslateCue": 1129,
+              "panel transition: displayWindowAdaptiveMenu": 903,
+              "panel transition: editAddAtomOperatorPanel": 280,
+              "panel transition: editAddMoleculeOperatorPanel": 357,
+              "panel transition: bondOrderPopup": 216,
+              "panel transition: moldenInspector": 50,
+              "panel transition: trajectoryPanel": 50,
+              "panel transition: vibrationPanel": 57,
+              "mode switch": 1418,
+              "soak mode": 42,
+              "presented checkpoint": 14,
+              "panel transition: workbenchMenu": 84,
+              "panel transition: inspector": 32,
+              "panel transition: inspectorObject": 7,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 39,
+              "panel transition: editAdaptiveSymmetryPopover": 18,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 7
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 8,
+          "look": "toon",
+          "seconds": 9.089,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 47318,
+              "panel transition: editSelectionCoordinationCuePopover": 1097,
+              "panel transition: editSelectionMetalBondingCuePopover": 1089,
+              "panel transition: editSelectionTranslateCue": 1286,
+              "panel transition: displayWindowAdaptiveMenu": 1029,
+              "panel transition: editAddAtomOperatorPanel": 319,
+              "panel transition: editAddMoleculeOperatorPanel": 407,
+              "panel transition: bondOrderPopup": 246,
+              "panel transition: moldenInspector": 57,
+              "panel transition: trajectoryPanel": 57,
+              "panel transition: vibrationPanel": 65,
+              "mode switch": 1616,
+              "soak mode": 48,
+              "presented checkpoint": 16,
+              "panel transition: workbenchMenu": 96,
+              "panel transition: inspector": 36,
+              "panel transition: inspectorObject": 8,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 44,
+              "panel transition: editAdaptiveSymmetryPopover": 20,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 8
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 9,
+          "look": "kit",
+          "seconds": 6.83,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 53109,
+              "panel transition: editSelectionCoordinationCuePopover": 1226,
+              "panel transition: editSelectionMetalBondingCuePopover": 1217,
+              "panel transition: editSelectionTranslateCue": 1438,
+              "panel transition: displayWindowAdaptiveMenu": 1155,
+              "panel transition: editAddAtomOperatorPanel": 358,
+              "panel transition: editAddMoleculeOperatorPanel": 457,
+              "panel transition: bondOrderPopup": 276,
+              "panel transition: moldenInspector": 64,
+              "panel transition: trajectoryPanel": 64,
+              "panel transition: vibrationPanel": 73,
+              "mode switch": 1814,
+              "soak mode": 54,
+              "presented checkpoint": 18,
+              "panel transition: workbenchMenu": 108,
+              "panel transition: inspector": 40,
+              "panel transition: inspectorObject": 9,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 49,
+              "panel transition: editAdaptiveSymmetryPopover": 22,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 9
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 10,
+          "look": "basic",
+          "seconds": 9.622,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 58909,
+              "panel transition: editSelectionCoordinationCuePopover": 1354,
+              "panel transition: editSelectionMetalBondingCuePopover": 1344,
+              "panel transition: editSelectionTranslateCue": 1589,
+              "panel transition: displayWindowAdaptiveMenu": 1281,
+              "panel transition: editAddAtomOperatorPanel": 397,
+              "panel transition: editAddMoleculeOperatorPanel": 507,
+              "panel transition: bondOrderPopup": 306,
+              "panel transition: moldenInspector": 71,
+              "panel transition: trajectoryPanel": 71,
+              "panel transition: vibrationPanel": 81,
+              "mode switch": 2012,
+              "soak mode": 60,
+              "presented checkpoint": 20,
+              "panel transition: workbenchMenu": 120,
+              "panel transition: inspector": 44,
+              "panel transition: inspectorObject": 10,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 54,
+              "panel transition: editAdaptiveSymmetryPopover": 24,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 10
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 11,
+          "look": "toon",
+          "seconds": 8.997,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 64705,
+              "panel transition: editSelectionCoordinationCuePopover": 1487,
+              "panel transition: editSelectionMetalBondingCuePopover": 1476,
+              "panel transition: editSelectionTranslateCue": 1745,
+              "panel transition: displayWindowAdaptiveMenu": 1407,
+              "panel transition: editAddAtomOperatorPanel": 436,
+              "panel transition: editAddMoleculeOperatorPanel": 557,
+              "panel transition: bondOrderPopup": 336,
+              "panel transition: moldenInspector": 78,
+              "panel transition: trajectoryPanel": 78,
+              "panel transition: vibrationPanel": 89,
+              "mode switch": 2210,
+              "soak mode": 66,
+              "presented checkpoint": 22,
+              "panel transition: workbenchMenu": 132,
+              "panel transition: inspector": 48,
+              "panel transition: inspectorObject": 11,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 59,
+              "panel transition: editAdaptiveSymmetryPopover": 26,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 11
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 12,
+          "look": "kit",
+          "seconds": 7.08,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 70497,
+              "panel transition: editSelectionCoordinationCuePopover": 1621,
+              "panel transition: editSelectionMetalBondingCuePopover": 1609,
+              "panel transition: editSelectionTranslateCue": 1903,
+              "panel transition: displayWindowAdaptiveMenu": 1533,
+              "panel transition: editAddAtomOperatorPanel": 475,
+              "panel transition: editAddMoleculeOperatorPanel": 607,
+              "panel transition: bondOrderPopup": 366,
+              "panel transition: moldenInspector": 85,
+              "panel transition: trajectoryPanel": 85,
+              "panel transition: vibrationPanel": 97,
+              "mode switch": 2408,
+              "soak mode": 72,
+              "presented checkpoint": 24,
+              "panel transition: workbenchMenu": 144,
+              "panel transition: inspector": 52,
+              "panel transition: inspectorObject": 12,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 64,
+              "panel transition: editAdaptiveSymmetryPopover": 28,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 12
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 13,
+          "look": "basic",
+          "seconds": 9.973,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 76299,
+              "panel transition: editSelectionCoordinationCuePopover": 1757,
+              "panel transition: editSelectionMetalBondingCuePopover": 1744,
+              "panel transition: editSelectionTranslateCue": 2062,
+              "panel transition: displayWindowAdaptiveMenu": 1659,
+              "panel transition: editAddAtomOperatorPanel": 514,
+              "panel transition: editAddMoleculeOperatorPanel": 657,
+              "panel transition: bondOrderPopup": 396,
+              "panel transition: moldenInspector": 92,
+              "panel transition: trajectoryPanel": 92,
+              "panel transition: vibrationPanel": 105,
+              "mode switch": 2606,
+              "soak mode": 78,
+              "presented checkpoint": 26,
+              "panel transition: workbenchMenu": 156,
+              "panel transition: inspector": 56,
+              "panel transition: inspectorObject": 13,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 69,
+              "panel transition: editAdaptiveSymmetryPopover": 30,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 13
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 14,
+          "look": "toon",
+          "seconds": 8.937,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 82095,
+              "panel transition: editSelectionCoordinationCuePopover": 1889,
+              "panel transition: editSelectionMetalBondingCuePopover": 1875,
+              "panel transition: editSelectionTranslateCue": 2215,
+              "panel transition: displayWindowAdaptiveMenu": 1785,
+              "panel transition: editAddAtomOperatorPanel": 553,
+              "panel transition: editAddMoleculeOperatorPanel": 707,
+              "panel transition: bondOrderPopup": 426,
+              "panel transition: moldenInspector": 99,
+              "panel transition: trajectoryPanel": 99,
+              "panel transition: vibrationPanel": 113,
+              "mode switch": 2804,
+              "soak mode": 84,
+              "presented checkpoint": 28,
+              "panel transition: workbenchMenu": 168,
+              "panel transition: inspector": 60,
+              "panel transition: inspectorObject": 14,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 74,
+              "panel transition: editAdaptiveSymmetryPopover": 32,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 14
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 15,
+          "look": "kit",
+          "seconds": 6.98,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 87886,
+              "panel transition: editSelectionCoordinationCuePopover": 2022,
+              "panel transition: editSelectionMetalBondingCuePopover": 2007,
+              "panel transition: editSelectionTranslateCue": 2372,
+              "panel transition: displayWindowAdaptiveMenu": 1911,
+              "panel transition: editAddAtomOperatorPanel": 592,
+              "panel transition: editAddMoleculeOperatorPanel": 757,
+              "panel transition: bondOrderPopup": 456,
+              "panel transition: moldenInspector": 106,
+              "panel transition: trajectoryPanel": 106,
+              "panel transition: vibrationPanel": 121,
+              "mode switch": 3002,
+              "soak mode": 90,
+              "presented checkpoint": 30,
+              "panel transition: workbenchMenu": 180,
+              "panel transition: inspector": 64,
+              "panel transition: inspectorObject": 15,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 79,
+              "panel transition: editAdaptiveSymmetryPopover": 34,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 15
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 16,
+          "look": "basic",
+          "seconds": 9.872,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 93688,
+              "panel transition: editSelectionCoordinationCuePopover": 2155,
+              "panel transition: editSelectionMetalBondingCuePopover": 2139,
+              "panel transition: editSelectionTranslateCue": 2528,
+              "panel transition: displayWindowAdaptiveMenu": 2037,
+              "panel transition: editAddAtomOperatorPanel": 631,
+              "panel transition: editAddMoleculeOperatorPanel": 807,
+              "panel transition: bondOrderPopup": 486,
+              "panel transition: moldenInspector": 113,
+              "panel transition: trajectoryPanel": 113,
+              "panel transition: vibrationPanel": 129,
+              "mode switch": 3200,
+              "soak mode": 96,
+              "presented checkpoint": 32,
+              "panel transition: workbenchMenu": 192,
+              "panel transition: inspector": 68,
+              "panel transition: inspectorObject": 16,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 84,
+              "panel transition: editAdaptiveSymmetryPopover": 36,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 16
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 17,
+          "look": "toon",
+          "seconds": 9.279,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "DOM replacement": 99483,
+              "panel transition: editSelectionCoordinationCuePopover": 2291,
+              "panel transition: editSelectionMetalBondingCuePopover": 2274,
+              "panel transition: editSelectionTranslateCue": 2687,
+              "panel transition: displayWindowAdaptiveMenu": 2163,
+              "panel transition: editAddAtomOperatorPanel": 670,
+              "panel transition: editAddMoleculeOperatorPanel": 857,
+              "panel transition: bondOrderPopup": 516,
+              "panel transition: moldenInspector": 120,
+              "panel transition: trajectoryPanel": 120,
+              "panel transition: vibrationPanel": 137,
+              "mode switch": 3398,
+              "soak mode": 102,
+              "presented checkpoint": 34,
+              "panel transition: workbenchMenu": 204,
+              "panel transition: inspector": 72,
+              "panel transition: inspectorObject": 17,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 89,
+              "panel transition: editAdaptiveSymmetryPopover": 38,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 17
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        }
+      ],
+      "status": "passed",
+      "renderer": {
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "renderer": "WebKit WebGL",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "seconds": 159.059,
+      "pageErrors": [],
+      "unexpectedConsole": []
+    },
+    {
+      "case": "workbench-dark",
+      "cycles": [
+        {
+          "cycle": 1,
+          "look": "basic",
+          "seconds": 12.848,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 165,
+              "panel transition: editSelectionMetalBondingCuePopover": 164,
+              "panel transition: editSelectionTranslateCue": 190,
+              "DOM replacement": 6736,
+              "panel transition: displayWindowAdaptiveMenu": 147,
+              "panel transition: editAddAtomOperatorPanel": 46,
+              "panel transition: editAddMoleculeOperatorPanel": 57,
+              "panel transition: bondOrderPopup": 36,
+              "panel transition: moldenInspector": 8,
+              "panel transition: trajectoryPanel": 8,
+              "panel transition: vibrationPanel": 9,
+              "mode switch": 230,
+              "soak mode": 6,
+              "presented checkpoint": 2,
+              "panel transition: workbenchMenu": 12,
+              "panel transition: inspector": 8,
+              "panel transition: inspectorObject": 1,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 9,
+              "panel transition: editAdaptiveSymmetryPopover": 6,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 2,
+          "look": "toon",
+          "seconds": 9.347,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 300,
+              "panel transition: editSelectionMetalBondingCuePopover": 298,
+              "panel transition: editSelectionTranslateCue": 348,
+              "DOM replacement": 12533,
+              "panel transition: displayWindowAdaptiveMenu": 273,
+              "panel transition: editAddAtomOperatorPanel": 85,
+              "panel transition: editAddMoleculeOperatorPanel": 107,
+              "panel transition: bondOrderPopup": 66,
+              "panel transition: moldenInspector": 15,
+              "panel transition: trajectoryPanel": 15,
+              "panel transition: vibrationPanel": 17,
+              "mode switch": 428,
+              "soak mode": 12,
+              "presented checkpoint": 4,
+              "panel transition: workbenchMenu": 24,
+              "panel transition: inspector": 12,
+              "panel transition: inspectorObject": 2,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 14,
+              "panel transition: editAdaptiveSymmetryPopover": 8,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 2
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 3,
+          "look": "kit",
+          "seconds": 7.112,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 434,
+              "panel transition: editSelectionMetalBondingCuePopover": 431,
+              "panel transition: editSelectionTranslateCue": 506,
+              "DOM replacement": 18325,
+              "panel transition: displayWindowAdaptiveMenu": 399,
+              "panel transition: editAddAtomOperatorPanel": 124,
+              "panel transition: editAddMoleculeOperatorPanel": 157,
+              "panel transition: bondOrderPopup": 96,
+              "panel transition: moldenInspector": 22,
+              "panel transition: trajectoryPanel": 22,
+              "panel transition: vibrationPanel": 25,
+              "mode switch": 626,
+              "soak mode": 18,
+              "presented checkpoint": 6,
+              "panel transition: workbenchMenu": 36,
+              "panel transition: inspector": 16,
+              "panel transition: inspectorObject": 3,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 19,
+              "panel transition: editAdaptiveSymmetryPopover": 10,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 3
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 4,
+          "look": "basic",
+          "seconds": 10.262,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 571,
+              "panel transition: editSelectionMetalBondingCuePopover": 567,
+              "panel transition: editSelectionTranslateCue": 667,
+              "DOM replacement": 24127,
+              "panel transition: displayWindowAdaptiveMenu": 525,
+              "panel transition: editAddAtomOperatorPanel": 163,
+              "panel transition: editAddMoleculeOperatorPanel": 207,
+              "panel transition: bondOrderPopup": 126,
+              "panel transition: moldenInspector": 29,
+              "panel transition: trajectoryPanel": 29,
+              "panel transition: vibrationPanel": 33,
+              "mode switch": 824,
+              "soak mode": 24,
+              "presented checkpoint": 8,
+              "panel transition: workbenchMenu": 48,
+              "panel transition: inspector": 20,
+              "panel transition: inspectorObject": 4,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 24,
+              "panel transition: editAdaptiveSymmetryPopover": 12,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 4
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 5,
+          "look": "toon",
+          "seconds": 9.02,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 702,
+              "panel transition: editSelectionMetalBondingCuePopover": 697,
+              "panel transition: editSelectionTranslateCue": 820,
+              "DOM replacement": 29923,
+              "panel transition: displayWindowAdaptiveMenu": 651,
+              "panel transition: editAddAtomOperatorPanel": 202,
+              "panel transition: editAddMoleculeOperatorPanel": 257,
+              "panel transition: bondOrderPopup": 156,
+              "panel transition: moldenInspector": 36,
+              "panel transition: trajectoryPanel": 36,
+              "panel transition: vibrationPanel": 41,
+              "mode switch": 1022,
+              "soak mode": 30,
+              "presented checkpoint": 10,
+              "panel transition: workbenchMenu": 60,
+              "panel transition: inspector": 24,
+              "panel transition: inspectorObject": 5,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 29,
+              "panel transition: editAdaptiveSymmetryPopover": 14,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 5
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 6,
+          "look": "kit",
+          "seconds": 7.28,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 839,
+              "panel transition: editSelectionMetalBondingCuePopover": 833,
+              "panel transition: editSelectionTranslateCue": 981,
+              "DOM replacement": 35715,
+              "panel transition: displayWindowAdaptiveMenu": 777,
+              "panel transition: editAddAtomOperatorPanel": 241,
+              "panel transition: editAddMoleculeOperatorPanel": 307,
+              "panel transition: bondOrderPopup": 186,
+              "panel transition: moldenInspector": 43,
+              "panel transition: trajectoryPanel": 43,
+              "panel transition: vibrationPanel": 49,
+              "mode switch": 1220,
+              "soak mode": 36,
+              "presented checkpoint": 12,
+              "panel transition: workbenchMenu": 72,
+              "panel transition: inspector": 28,
+              "panel transition: inspectorObject": 6,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 34,
+              "panel transition: editAdaptiveSymmetryPopover": 16,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 6
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 7,
+          "look": "basic",
+          "seconds": 10.271,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 976,
+              "panel transition: editSelectionMetalBondingCuePopover": 969,
+              "panel transition: editSelectionTranslateCue": 1141,
+              "DOM replacement": 41517,
+              "panel transition: displayWindowAdaptiveMenu": 903,
+              "panel transition: editAddAtomOperatorPanel": 280,
+              "panel transition: editAddMoleculeOperatorPanel": 357,
+              "panel transition: bondOrderPopup": 216,
+              "panel transition: moldenInspector": 50,
+              "panel transition: trajectoryPanel": 50,
+              "panel transition: vibrationPanel": 57,
+              "mode switch": 1418,
+              "soak mode": 42,
+              "presented checkpoint": 14,
+              "panel transition: workbenchMenu": 84,
+              "panel transition: inspector": 32,
+              "panel transition: inspectorObject": 7,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 39,
+              "panel transition: editAdaptiveSymmetryPopover": 18,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 7
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 8,
+          "look": "toon",
+          "seconds": 8.813,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1102,
+              "panel transition: editSelectionMetalBondingCuePopover": 1094,
+              "panel transition: editSelectionTranslateCue": 1289,
+              "DOM replacement": 47313,
+              "panel transition: displayWindowAdaptiveMenu": 1029,
+              "panel transition: editAddAtomOperatorPanel": 319,
+              "panel transition: editAddMoleculeOperatorPanel": 407,
+              "panel transition: bondOrderPopup": 246,
+              "panel transition: moldenInspector": 57,
+              "panel transition: trajectoryPanel": 57,
+              "panel transition: vibrationPanel": 65,
+              "mode switch": 1616,
+              "soak mode": 48,
+              "presented checkpoint": 16,
+              "panel transition: workbenchMenu": 96,
+              "panel transition: inspector": 36,
+              "panel transition: inspectorObject": 8,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 44,
+              "panel transition: editAdaptiveSymmetryPopover": 20,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 8
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 9,
+          "look": "kit",
+          "seconds": 7.021,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1235,
+              "panel transition: editSelectionMetalBondingCuePopover": 1226,
+              "panel transition: editSelectionTranslateCue": 1446,
+              "DOM replacement": 53104,
+              "panel transition: displayWindowAdaptiveMenu": 1155,
+              "panel transition: editAddAtomOperatorPanel": 358,
+              "panel transition: editAddMoleculeOperatorPanel": 457,
+              "panel transition: bondOrderPopup": 276,
+              "panel transition: moldenInspector": 64,
+              "panel transition: trajectoryPanel": 64,
+              "panel transition: vibrationPanel": 73,
+              "mode switch": 1814,
+              "soak mode": 54,
+              "presented checkpoint": 18,
+              "panel transition: workbenchMenu": 108,
+              "panel transition: inspector": 40,
+              "panel transition: inspectorObject": 9,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 49,
+              "panel transition: editAdaptiveSymmetryPopover": 22,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 9
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 10,
+          "look": "basic",
+          "seconds": 10.153,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1373,
+              "panel transition: editSelectionMetalBondingCuePopover": 1363,
+              "panel transition: editSelectionTranslateCue": 1608,
+              "DOM replacement": 58905,
+              "panel transition: displayWindowAdaptiveMenu": 1281,
+              "panel transition: editAddAtomOperatorPanel": 397,
+              "panel transition: editAddMoleculeOperatorPanel": 507,
+              "panel transition: bondOrderPopup": 306,
+              "panel transition: moldenInspector": 71,
+              "panel transition: trajectoryPanel": 71,
+              "panel transition: vibrationPanel": 81,
+              "mode switch": 2012,
+              "soak mode": 60,
+              "presented checkpoint": 20,
+              "panel transition: workbenchMenu": 120,
+              "panel transition: inspector": 44,
+              "panel transition: inspectorObject": 10,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 54,
+              "panel transition: editAdaptiveSymmetryPopover": 24,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 10
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 11,
+          "look": "toon",
+          "seconds": 9.179,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1506,
+              "panel transition: editSelectionMetalBondingCuePopover": 1495,
+              "panel transition: editSelectionTranslateCue": 1764,
+              "DOM replacement": 64701,
+              "panel transition: displayWindowAdaptiveMenu": 1407,
+              "panel transition: editAddAtomOperatorPanel": 436,
+              "panel transition: editAddMoleculeOperatorPanel": 557,
+              "panel transition: bondOrderPopup": 336,
+              "panel transition: moldenInspector": 78,
+              "panel transition: trajectoryPanel": 78,
+              "panel transition: vibrationPanel": 89,
+              "mode switch": 2210,
+              "soak mode": 66,
+              "presented checkpoint": 22,
+              "panel transition: workbenchMenu": 132,
+              "panel transition: inspector": 48,
+              "panel transition: inspectorObject": 11,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 59,
+              "panel transition: editAdaptiveSymmetryPopover": 26,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 11
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 12,
+          "look": "kit",
+          "seconds": 7.237,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1641,
+              "panel transition: editSelectionMetalBondingCuePopover": 1629,
+              "panel transition: editSelectionTranslateCue": 1923,
+              "DOM replacement": 70495,
+              "panel transition: displayWindowAdaptiveMenu": 1533,
+              "panel transition: editAddAtomOperatorPanel": 475,
+              "panel transition: editAddMoleculeOperatorPanel": 607,
+              "panel transition: bondOrderPopup": 366,
+              "panel transition: moldenInspector": 85,
+              "panel transition: trajectoryPanel": 85,
+              "panel transition: vibrationPanel": 97,
+              "mode switch": 2408,
+              "soak mode": 72,
+              "presented checkpoint": 24,
+              "panel transition: workbenchMenu": 144,
+              "panel transition: inspector": 52,
+              "panel transition: inspectorObject": 12,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 64,
+              "panel transition: editAdaptiveSymmetryPopover": 28,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 12
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 13,
+          "look": "basic",
+          "seconds": 9.887,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1773,
+              "panel transition: editSelectionMetalBondingCuePopover": 1760,
+              "panel transition: editSelectionTranslateCue": 2079,
+              "DOM replacement": 76297,
+              "panel transition: displayWindowAdaptiveMenu": 1659,
+              "panel transition: editAddAtomOperatorPanel": 514,
+              "panel transition: editAddMoleculeOperatorPanel": 657,
+              "panel transition: bondOrderPopup": 396,
+              "panel transition: moldenInspector": 92,
+              "panel transition: trajectoryPanel": 92,
+              "panel transition: vibrationPanel": 105,
+              "mode switch": 2606,
+              "soak mode": 78,
+              "presented checkpoint": 26,
+              "panel transition: workbenchMenu": 156,
+              "panel transition: inspector": 56,
+              "panel transition: inspectorObject": 13,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 69,
+              "panel transition: editAdaptiveSymmetryPopover": 30,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 13
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 14,
+          "look": "toon",
+          "seconds": 8.944,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1903,
+              "panel transition: editSelectionMetalBondingCuePopover": 1889,
+              "panel transition: editSelectionTranslateCue": 2232,
+              "DOM replacement": 82094,
+              "panel transition: displayWindowAdaptiveMenu": 1785,
+              "panel transition: editAddAtomOperatorPanel": 553,
+              "panel transition: editAddMoleculeOperatorPanel": 707,
+              "panel transition: bondOrderPopup": 426,
+              "panel transition: moldenInspector": 99,
+              "panel transition: trajectoryPanel": 99,
+              "panel transition: vibrationPanel": 113,
+              "mode switch": 2804,
+              "soak mode": 84,
+              "presented checkpoint": 28,
+              "panel transition: workbenchMenu": 168,
+              "panel transition: inspector": 60,
+              "panel transition: inspectorObject": 14,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 74,
+              "panel transition: editAdaptiveSymmetryPopover": 32,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 14
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 15,
+          "look": "kit",
+          "seconds": 7.047,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 2036,
+              "panel transition: editSelectionMetalBondingCuePopover": 2021,
+              "panel transition: editSelectionTranslateCue": 2389,
+              "DOM replacement": 87885,
+              "panel transition: displayWindowAdaptiveMenu": 1911,
+              "panel transition: editAddAtomOperatorPanel": 592,
+              "panel transition: editAddMoleculeOperatorPanel": 757,
+              "panel transition: bondOrderPopup": 456,
+              "panel transition: moldenInspector": 106,
+              "panel transition: trajectoryPanel": 106,
+              "panel transition: vibrationPanel": 121,
+              "mode switch": 3002,
+              "soak mode": 90,
+              "presented checkpoint": 30,
+              "panel transition: workbenchMenu": 180,
+              "panel transition: inspector": 64,
+              "panel transition: inspectorObject": 15,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 79,
+              "panel transition: editAdaptiveSymmetryPopover": 34,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 15
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        },
+        {
+          "cycle": 16,
+          "look": "basic",
+          "seconds": 9.754,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 2165,
+              "panel transition: editSelectionMetalBondingCuePopover": 2149,
+              "panel transition: editSelectionTranslateCue": 2541,
+              "DOM replacement": 93686,
+              "panel transition: displayWindowAdaptiveMenu": 2037,
+              "panel transition: editAddAtomOperatorPanel": 631,
+              "panel transition: editAddMoleculeOperatorPanel": 807,
+              "panel transition: bondOrderPopup": 486,
+              "panel transition: moldenInspector": 113,
+              "panel transition: trajectoryPanel": 113,
+              "panel transition: vibrationPanel": 129,
+              "mode switch": 3200,
+              "soak mode": 96,
+              "presented checkpoint": 32,
+              "panel transition: workbenchMenu": 192,
+              "panel transition: inspector": 68,
+              "panel transition: inspectorObject": 16,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 84,
+              "panel transition: editAdaptiveSymmetryPopover": 36,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 16
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2757
+        },
+        {
+          "cycle": 17,
+          "look": "toon",
+          "seconds": 8.954,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 2295,
+              "panel transition: editSelectionMetalBondingCuePopover": 2278,
+              "panel transition: editSelectionTranslateCue": 2693,
+              "DOM replacement": 99482,
+              "panel transition: displayWindowAdaptiveMenu": 2163,
+              "panel transition: editAddAtomOperatorPanel": 670,
+              "panel transition: editAddMoleculeOperatorPanel": 857,
+              "panel transition: bondOrderPopup": 516,
+              "panel transition: moldenInspector": 120,
+              "panel transition: trajectoryPanel": 120,
+              "panel transition: vibrationPanel": 137,
+              "mode switch": 3398,
+              "soak mode": 102,
+              "presented checkpoint": 34,
+              "panel transition: workbenchMenu": 204,
+              "panel transition: inspector": 72,
+              "panel transition: inspectorObject": 17,
+              "panel transition: inspectorLook": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 89,
+              "panel transition: editAdaptiveSymmetryPopover": 38,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: subspacePanel": 6,
+              "session restore": 17
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 47,
+              "knownAbsent": 5
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              },
+              "elementColorBtn": {
+                "id": "elementColorBtn",
+                "issue": 14,
+                "cached": "detached"
+              }
+            }
+          },
+          "domElementCount": 2752
+        }
+      ],
+      "status": "passed",
+      "renderer": {
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "renderer": "WebKit WebGL",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "seconds": 155.209,
+      "pageErrors": [],
+      "unexpectedConsole": []
+    },
+    {
+      "case": "legacy-light",
+      "cycles": [
+        {
+          "cycle": 1,
+          "look": "basic",
+          "seconds": 11.285,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 107,
+              "panel transition: editSelectionMetalBondingCuePopover": 106,
+              "panel transition: editSelectionTranslateCue": 125,
+              "DOM replacement": 4276,
+              "panel transition: editAdaptiveSymmetryPopover": 14,
+              "panel transition: displayWindowAdaptiveMenu": 119,
+              "panel transition: editAddAtomOperatorPanel": 36,
+              "panel transition: editAddMoleculeOperatorPanel": 39,
+              "panel transition: bondOrderPopup": 30,
+              "panel transition: moldenInspector": 8,
+              "panel transition: trajectoryPanel": 8,
+              "panel transition: vibrationPanel": 9,
+              "soak mode": 5,
+              "presented checkpoint": 2,
+              "mode switch": 8,
+              "panel transition: measurementsPanel": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 9,
+              "panel transition: appearanceResetPopover": 2,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 2,
+          "look": "toon",
+          "seconds": 9.018,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 203,
+              "panel transition: editSelectionMetalBondingCuePopover": 201,
+              "panel transition: editSelectionTranslateCue": 238,
+              "DOM replacement": 7862,
+              "panel transition: editAdaptiveSymmetryPopover": 25,
+              "panel transition: displayWindowAdaptiveMenu": 222,
+              "panel transition: editAddAtomOperatorPanel": 66,
+              "panel transition: editAddMoleculeOperatorPanel": 72,
+              "panel transition: bondOrderPopup": 55,
+              "panel transition: moldenInspector": 15,
+              "panel transition: trajectoryPanel": 15,
+              "panel transition: vibrationPanel": 17,
+              "soak mode": 10,
+              "presented checkpoint": 4,
+              "mode switch": 16,
+              "panel transition: measurementsPanel": 2,
+              "panel transition: editAdaptiveAddAtomPopover": 16,
+              "panel transition: appearanceResetPopover": 4,
+              "session restore": 2
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 3,
+          "look": "kit",
+          "seconds": 6.816,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 299,
+              "panel transition: editSelectionMetalBondingCuePopover": 296,
+              "panel transition: editSelectionTranslateCue": 352,
+              "DOM replacement": 11445,
+              "panel transition: editAdaptiveSymmetryPopover": 36,
+              "panel transition: displayWindowAdaptiveMenu": 325,
+              "panel transition: editAddAtomOperatorPanel": 96,
+              "panel transition: editAddMoleculeOperatorPanel": 105,
+              "panel transition: bondOrderPopup": 80,
+              "panel transition: moldenInspector": 22,
+              "panel transition: trajectoryPanel": 22,
+              "panel transition: vibrationPanel": 25,
+              "soak mode": 15,
+              "presented checkpoint": 6,
+              "mode switch": 24,
+              "panel transition: measurementsPanel": 3,
+              "panel transition: editAdaptiveAddAtomPopover": 23,
+              "panel transition: appearanceResetPopover": 6,
+              "session restore": 3
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 4,
+          "look": "basic",
+          "seconds": 9.541,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 395,
+              "panel transition: editSelectionMetalBondingCuePopover": 391,
+              "panel transition: editSelectionTranslateCue": 467,
+              "DOM replacement": 15036,
+              "panel transition: editAdaptiveSymmetryPopover": 47,
+              "panel transition: displayWindowAdaptiveMenu": 428,
+              "panel transition: editAddAtomOperatorPanel": 126,
+              "panel transition: editAddMoleculeOperatorPanel": 138,
+              "panel transition: bondOrderPopup": 105,
+              "panel transition: moldenInspector": 29,
+              "panel transition: trajectoryPanel": 29,
+              "panel transition: vibrationPanel": 33,
+              "soak mode": 20,
+              "presented checkpoint": 8,
+              "mode switch": 32,
+              "panel transition: measurementsPanel": 4,
+              "panel transition: editAdaptiveAddAtomPopover": 30,
+              "panel transition: appearanceResetPopover": 8,
+              "session restore": 4
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 5,
+          "look": "toon",
+          "seconds": 8.078,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 488,
+              "panel transition: editSelectionMetalBondingCuePopover": 483,
+              "panel transition: editSelectionTranslateCue": 577,
+              "DOM replacement": 18620,
+              "panel transition: editAdaptiveSymmetryPopover": 58,
+              "panel transition: displayWindowAdaptiveMenu": 531,
+              "panel transition: editAddAtomOperatorPanel": 156,
+              "panel transition: editAddMoleculeOperatorPanel": 171,
+              "panel transition: bondOrderPopup": 130,
+              "panel transition: moldenInspector": 36,
+              "panel transition: trajectoryPanel": 36,
+              "panel transition: vibrationPanel": 41,
+              "soak mode": 25,
+              "presented checkpoint": 10,
+              "mode switch": 40,
+              "panel transition: measurementsPanel": 5,
+              "panel transition: editAdaptiveAddAtomPopover": 37,
+              "panel transition: appearanceResetPopover": 10,
+              "session restore": 5
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 6,
+          "look": "kit",
+          "seconds": 6.443,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 583,
+              "panel transition: editSelectionMetalBondingCuePopover": 577,
+              "panel transition: editSelectionTranslateCue": 690,
+              "DOM replacement": 22202,
+              "panel transition: editAdaptiveSymmetryPopover": 69,
+              "panel transition: displayWindowAdaptiveMenu": 634,
+              "panel transition: editAddAtomOperatorPanel": 186,
+              "panel transition: editAddMoleculeOperatorPanel": 204,
+              "panel transition: bondOrderPopup": 155,
+              "panel transition: moldenInspector": 43,
+              "panel transition: trajectoryPanel": 43,
+              "panel transition: vibrationPanel": 49,
+              "soak mode": 30,
+              "presented checkpoint": 12,
+              "mode switch": 48,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: editAdaptiveAddAtomPopover": 44,
+              "panel transition: appearanceResetPopover": 12,
+              "session restore": 6
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 7,
+          "look": "basic",
+          "seconds": 9.284,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 678,
+              "panel transition: editSelectionMetalBondingCuePopover": 671,
+              "panel transition: editSelectionTranslateCue": 803,
+              "DOM replacement": 25792,
+              "panel transition: editAdaptiveSymmetryPopover": 80,
+              "panel transition: displayWindowAdaptiveMenu": 737,
+              "panel transition: editAddAtomOperatorPanel": 216,
+              "panel transition: editAddMoleculeOperatorPanel": 237,
+              "panel transition: bondOrderPopup": 180,
+              "panel transition: moldenInspector": 50,
+              "panel transition: trajectoryPanel": 50,
+              "panel transition: vibrationPanel": 57,
+              "soak mode": 35,
+              "presented checkpoint": 14,
+              "mode switch": 56,
+              "panel transition: measurementsPanel": 7,
+              "panel transition: editAdaptiveAddAtomPopover": 51,
+              "panel transition: appearanceResetPopover": 14,
+              "session restore": 7
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 8,
+          "look": "toon",
+          "seconds": 8.125,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 772,
+              "panel transition: editSelectionMetalBondingCuePopover": 764,
+              "panel transition: editSelectionTranslateCue": 914,
+              "DOM replacement": 29377,
+              "panel transition: editAdaptiveSymmetryPopover": 91,
+              "panel transition: displayWindowAdaptiveMenu": 840,
+              "panel transition: editAddAtomOperatorPanel": 246,
+              "panel transition: editAddMoleculeOperatorPanel": 270,
+              "panel transition: bondOrderPopup": 205,
+              "panel transition: moldenInspector": 57,
+              "panel transition: trajectoryPanel": 57,
+              "panel transition: vibrationPanel": 65,
+              "soak mode": 40,
+              "presented checkpoint": 16,
+              "mode switch": 64,
+              "panel transition: measurementsPanel": 8,
+              "panel transition: editAdaptiveAddAtomPopover": 58,
+              "panel transition: appearanceResetPopover": 16,
+              "session restore": 8
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 9,
+          "look": "kit",
+          "seconds": 6.46,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 867,
+              "panel transition: editSelectionMetalBondingCuePopover": 858,
+              "panel transition: editSelectionTranslateCue": 1027,
+              "DOM replacement": 32960,
+              "panel transition: editAdaptiveSymmetryPopover": 102,
+              "panel transition: displayWindowAdaptiveMenu": 943,
+              "panel transition: editAddAtomOperatorPanel": 276,
+              "panel transition: editAddMoleculeOperatorPanel": 303,
+              "panel transition: bondOrderPopup": 230,
+              "panel transition: moldenInspector": 64,
+              "panel transition: trajectoryPanel": 64,
+              "panel transition: vibrationPanel": 73,
+              "soak mode": 45,
+              "presented checkpoint": 18,
+              "mode switch": 72,
+              "panel transition: measurementsPanel": 9,
+              "panel transition: editAdaptiveAddAtomPopover": 65,
+              "panel transition: appearanceResetPopover": 18,
+              "session restore": 9
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 10,
+          "look": "basic",
+          "seconds": 9.24,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 961,
+              "panel transition: editSelectionMetalBondingCuePopover": 951,
+              "panel transition: editSelectionTranslateCue": 1139,
+              "DOM replacement": 36551,
+              "panel transition: editAdaptiveSymmetryPopover": 113,
+              "panel transition: displayWindowAdaptiveMenu": 1046,
+              "panel transition: editAddAtomOperatorPanel": 306,
+              "panel transition: editAddMoleculeOperatorPanel": 336,
+              "panel transition: bondOrderPopup": 255,
+              "panel transition: moldenInspector": 71,
+              "panel transition: trajectoryPanel": 71,
+              "panel transition: vibrationPanel": 81,
+              "soak mode": 50,
+              "presented checkpoint": 20,
+              "mode switch": 80,
+              "panel transition: measurementsPanel": 10,
+              "panel transition: editAdaptiveAddAtomPopover": 72,
+              "panel transition: appearanceResetPopover": 20,
+              "session restore": 10
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 11,
+          "look": "toon",
+          "seconds": 8.304,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1056,
+              "panel transition: editSelectionMetalBondingCuePopover": 1045,
+              "panel transition: editSelectionTranslateCue": 1251,
+              "DOM replacement": 40136,
+              "panel transition: editAdaptiveSymmetryPopover": 124,
+              "panel transition: displayWindowAdaptiveMenu": 1149,
+              "panel transition: editAddAtomOperatorPanel": 336,
+              "panel transition: editAddMoleculeOperatorPanel": 369,
+              "panel transition: bondOrderPopup": 280,
+              "panel transition: moldenInspector": 78,
+              "panel transition: trajectoryPanel": 78,
+              "panel transition: vibrationPanel": 89,
+              "soak mode": 55,
+              "presented checkpoint": 22,
+              "mode switch": 88,
+              "panel transition: measurementsPanel": 11,
+              "panel transition: editAdaptiveAddAtomPopover": 79,
+              "panel transition: appearanceResetPopover": 22,
+              "session restore": 11
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 12,
+          "look": "kit",
+          "seconds": 6.5,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1150,
+              "panel transition: editSelectionMetalBondingCuePopover": 1138,
+              "panel transition: editSelectionTranslateCue": 1364,
+              "DOM replacement": 43719,
+              "panel transition: editAdaptiveSymmetryPopover": 135,
+              "panel transition: displayWindowAdaptiveMenu": 1252,
+              "panel transition: editAddAtomOperatorPanel": 366,
+              "panel transition: editAddMoleculeOperatorPanel": 402,
+              "panel transition: bondOrderPopup": 305,
+              "panel transition: moldenInspector": 85,
+              "panel transition: trajectoryPanel": 85,
+              "panel transition: vibrationPanel": 97,
+              "soak mode": 60,
+              "presented checkpoint": 24,
+              "mode switch": 96,
+              "panel transition: measurementsPanel": 12,
+              "panel transition: editAdaptiveAddAtomPopover": 86,
+              "panel transition: appearanceResetPopover": 24,
+              "session restore": 12
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 13,
+          "look": "basic",
+          "seconds": 9.064,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1245,
+              "panel transition: editSelectionMetalBondingCuePopover": 1232,
+              "panel transition: editSelectionTranslateCue": 1477,
+              "DOM replacement": 47309,
+              "panel transition: editAdaptiveSymmetryPopover": 146,
+              "panel transition: displayWindowAdaptiveMenu": 1355,
+              "panel transition: editAddAtomOperatorPanel": 396,
+              "panel transition: editAddMoleculeOperatorPanel": 435,
+              "panel transition: bondOrderPopup": 330,
+              "panel transition: moldenInspector": 92,
+              "panel transition: trajectoryPanel": 92,
+              "panel transition: vibrationPanel": 105,
+              "soak mode": 65,
+              "presented checkpoint": 26,
+              "mode switch": 104,
+              "panel transition: measurementsPanel": 13,
+              "panel transition: editAdaptiveAddAtomPopover": 93,
+              "panel transition: appearanceResetPopover": 26,
+              "session restore": 13
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 14,
+          "look": "toon",
+          "seconds": 8.211,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1339,
+              "panel transition: editSelectionMetalBondingCuePopover": 1325,
+              "panel transition: editSelectionTranslateCue": 1587,
+              "DOM replacement": 50895,
+              "panel transition: editAdaptiveSymmetryPopover": 157,
+              "panel transition: displayWindowAdaptiveMenu": 1458,
+              "panel transition: editAddAtomOperatorPanel": 426,
+              "panel transition: editAddMoleculeOperatorPanel": 468,
+              "panel transition: bondOrderPopup": 355,
+              "panel transition: moldenInspector": 99,
+              "panel transition: trajectoryPanel": 99,
+              "panel transition: vibrationPanel": 113,
+              "soak mode": 70,
+              "presented checkpoint": 28,
+              "mode switch": 112,
+              "panel transition: measurementsPanel": 14,
+              "panel transition: editAdaptiveAddAtomPopover": 100,
+              "panel transition: appearanceResetPopover": 28,
+              "session restore": 14
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 15,
+          "look": "kit",
+          "seconds": 6.438,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1434,
+              "panel transition: editSelectionMetalBondingCuePopover": 1419,
+              "panel transition: editSelectionTranslateCue": 1700,
+              "DOM replacement": 54478,
+              "panel transition: editAdaptiveSymmetryPopover": 168,
+              "panel transition: displayWindowAdaptiveMenu": 1561,
+              "panel transition: editAddAtomOperatorPanel": 456,
+              "panel transition: editAddMoleculeOperatorPanel": 501,
+              "panel transition: bondOrderPopup": 380,
+              "panel transition: moldenInspector": 106,
+              "panel transition: trajectoryPanel": 106,
+              "panel transition: vibrationPanel": 121,
+              "soak mode": 75,
+              "presented checkpoint": 30,
+              "mode switch": 120,
+              "panel transition: measurementsPanel": 15,
+              "panel transition: editAdaptiveAddAtomPopover": 107,
+              "panel transition: appearanceResetPopover": 30,
+              "session restore": 15
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 16,
+          "look": "basic",
+          "seconds": 9.072,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1528,
+              "panel transition: editSelectionMetalBondingCuePopover": 1512,
+              "panel transition: editSelectionTranslateCue": 1812,
+              "DOM replacement": 58069,
+              "panel transition: editAdaptiveSymmetryPopover": 179,
+              "panel transition: displayWindowAdaptiveMenu": 1664,
+              "panel transition: editAddAtomOperatorPanel": 486,
+              "panel transition: editAddMoleculeOperatorPanel": 534,
+              "panel transition: bondOrderPopup": 405,
+              "panel transition: moldenInspector": 113,
+              "panel transition: trajectoryPanel": 113,
+              "panel transition: vibrationPanel": 129,
+              "soak mode": 80,
+              "presented checkpoint": 32,
+              "mode switch": 128,
+              "panel transition: measurementsPanel": 16,
+              "panel transition: editAdaptiveAddAtomPopover": 114,
+              "panel transition: appearanceResetPopover": 32,
+              "session restore": 16
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 17,
+          "look": "toon",
+          "seconds": 8.222,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1621,
+              "panel transition: editSelectionMetalBondingCuePopover": 1604,
+              "panel transition: editSelectionTranslateCue": 1921,
+              "DOM replacement": 61654,
+              "panel transition: editAdaptiveSymmetryPopover": 190,
+              "panel transition: displayWindowAdaptiveMenu": 1767,
+              "panel transition: editAddAtomOperatorPanel": 516,
+              "panel transition: editAddMoleculeOperatorPanel": 567,
+              "panel transition: bondOrderPopup": 430,
+              "panel transition: moldenInspector": 120,
+              "panel transition: trajectoryPanel": 120,
+              "panel transition: vibrationPanel": 137,
+              "soak mode": 85,
+              "presented checkpoint": 34,
+              "mode switch": 136,
+              "panel transition: measurementsPanel": 17,
+              "panel transition: editAdaptiveAddAtomPopover": 121,
+              "panel transition: appearanceResetPopover": 34,
+              "session restore": 17
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 18,
+          "look": "kit",
+          "seconds": 6.397,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1716,
+              "panel transition: editSelectionMetalBondingCuePopover": 1698,
+              "panel transition: editSelectionTranslateCue": 2035,
+              "DOM replacement": 65237,
+              "panel transition: editAdaptiveSymmetryPopover": 201,
+              "panel transition: displayWindowAdaptiveMenu": 1870,
+              "panel transition: editAddAtomOperatorPanel": 546,
+              "panel transition: editAddMoleculeOperatorPanel": 600,
+              "panel transition: bondOrderPopup": 455,
+              "panel transition: moldenInspector": 127,
+              "panel transition: trajectoryPanel": 127,
+              "panel transition: vibrationPanel": 145,
+              "soak mode": 90,
+              "presented checkpoint": 36,
+              "mode switch": 144,
+              "panel transition: measurementsPanel": 18,
+              "panel transition: editAdaptiveAddAtomPopover": 128,
+              "panel transition: appearanceResetPopover": 36,
+              "session restore": 18
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 19,
+          "look": "basic",
+          "seconds": 9.181,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1810,
+              "panel transition: editSelectionMetalBondingCuePopover": 1791,
+              "panel transition: editSelectionTranslateCue": 2146,
+              "DOM replacement": 68827,
+              "panel transition: editAdaptiveSymmetryPopover": 212,
+              "panel transition: displayWindowAdaptiveMenu": 1973,
+              "panel transition: editAddAtomOperatorPanel": 576,
+              "panel transition: editAddMoleculeOperatorPanel": 633,
+              "panel transition: bondOrderPopup": 480,
+              "panel transition: moldenInspector": 134,
+              "panel transition: trajectoryPanel": 134,
+              "panel transition: vibrationPanel": 153,
+              "soak mode": 95,
+              "presented checkpoint": 38,
+              "mode switch": 152,
+              "panel transition: measurementsPanel": 19,
+              "panel transition: editAdaptiveAddAtomPopover": 135,
+              "panel transition: appearanceResetPopover": 38,
+              "session restore": 19
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        }
+      ],
+      "status": "passed",
+      "renderer": {
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "renderer": "WebKit WebGL",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "seconds": 157.966,
+      "pageErrors": [],
+      "unexpectedConsole": []
+    },
+    {
+      "case": "legacy-dark",
+      "cycles": [
+        {
+          "cycle": 1,
+          "look": "basic",
+          "seconds": 10.81,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 106,
+              "panel transition: editSelectionMetalBondingCuePopover": 105,
+              "panel transition: editSelectionTranslateCue": 124,
+              "DOM replacement": 4274,
+              "panel transition: editAdaptiveSymmetryPopover": 14,
+              "panel transition: displayWindowAdaptiveMenu": 119,
+              "panel transition: editAddAtomOperatorPanel": 36,
+              "panel transition: editAddMoleculeOperatorPanel": 39,
+              "panel transition: bondOrderPopup": 30,
+              "panel transition: moldenInspector": 8,
+              "panel transition: trajectoryPanel": 8,
+              "panel transition: vibrationPanel": 9,
+              "soak mode": 5,
+              "presented checkpoint": 2,
+              "mode switch": 8,
+              "panel transition: measurementsPanel": 1,
+              "panel transition: editAdaptiveAddAtomPopover": 9,
+              "panel transition: appearanceResetPopover": 2,
+              "session restore": 1
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 2,
+          "look": "toon",
+          "seconds": 8.77,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 202,
+              "panel transition: editSelectionMetalBondingCuePopover": 200,
+              "panel transition: editSelectionTranslateCue": 237,
+              "DOM replacement": 7860,
+              "panel transition: editAdaptiveSymmetryPopover": 25,
+              "panel transition: displayWindowAdaptiveMenu": 222,
+              "panel transition: editAddAtomOperatorPanel": 66,
+              "panel transition: editAddMoleculeOperatorPanel": 72,
+              "panel transition: bondOrderPopup": 55,
+              "panel transition: moldenInspector": 15,
+              "panel transition: trajectoryPanel": 15,
+              "panel transition: vibrationPanel": 17,
+              "soak mode": 10,
+              "presented checkpoint": 4,
+              "mode switch": 16,
+              "panel transition: measurementsPanel": 2,
+              "panel transition: editAdaptiveAddAtomPopover": 16,
+              "panel transition: appearanceResetPopover": 4,
+              "session restore": 2
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 3,
+          "look": "kit",
+          "seconds": 6.49,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 296,
+              "panel transition: editSelectionMetalBondingCuePopover": 293,
+              "panel transition: editSelectionTranslateCue": 347,
+              "DOM replacement": 11443,
+              "panel transition: editAdaptiveSymmetryPopover": 36,
+              "panel transition: displayWindowAdaptiveMenu": 325,
+              "panel transition: editAddAtomOperatorPanel": 96,
+              "panel transition: editAddMoleculeOperatorPanel": 105,
+              "panel transition: bondOrderPopup": 80,
+              "panel transition: moldenInspector": 22,
+              "panel transition: trajectoryPanel": 22,
+              "panel transition: vibrationPanel": 25,
+              "soak mode": 15,
+              "presented checkpoint": 6,
+              "mode switch": 24,
+              "panel transition: measurementsPanel": 3,
+              "panel transition: editAdaptiveAddAtomPopover": 23,
+              "panel transition: appearanceResetPopover": 6,
+              "session restore": 3
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 4,
+          "look": "basic",
+          "seconds": 9.386,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 390,
+              "panel transition: editSelectionMetalBondingCuePopover": 386,
+              "panel transition: editSelectionTranslateCue": 459,
+              "DOM replacement": 15035,
+              "panel transition: editAdaptiveSymmetryPopover": 47,
+              "panel transition: displayWindowAdaptiveMenu": 428,
+              "panel transition: editAddAtomOperatorPanel": 126,
+              "panel transition: editAddMoleculeOperatorPanel": 138,
+              "panel transition: bondOrderPopup": 105,
+              "panel transition: moldenInspector": 29,
+              "panel transition: trajectoryPanel": 29,
+              "panel transition: vibrationPanel": 33,
+              "soak mode": 20,
+              "presented checkpoint": 8,
+              "mode switch": 32,
+              "panel transition: measurementsPanel": 4,
+              "panel transition: editAdaptiveAddAtomPopover": 30,
+              "panel transition: appearanceResetPopover": 8,
+              "session restore": 4
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 5,
+          "look": "toon",
+          "seconds": 8.256,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 484,
+              "panel transition: editSelectionMetalBondingCuePopover": 479,
+              "panel transition: editSelectionTranslateCue": 571,
+              "DOM replacement": 18619,
+              "panel transition: editAdaptiveSymmetryPopover": 58,
+              "panel transition: displayWindowAdaptiveMenu": 531,
+              "panel transition: editAddAtomOperatorPanel": 156,
+              "panel transition: editAddMoleculeOperatorPanel": 171,
+              "panel transition: bondOrderPopup": 130,
+              "panel transition: moldenInspector": 36,
+              "panel transition: trajectoryPanel": 36,
+              "panel transition: vibrationPanel": 41,
+              "soak mode": 25,
+              "presented checkpoint": 10,
+              "mode switch": 40,
+              "panel transition: measurementsPanel": 5,
+              "panel transition: editAdaptiveAddAtomPopover": 37,
+              "panel transition: appearanceResetPopover": 10,
+              "session restore": 5
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 6,
+          "look": "kit",
+          "seconds": 6.378,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 579,
+              "panel transition: editSelectionMetalBondingCuePopover": 573,
+              "panel transition: editSelectionTranslateCue": 683,
+              "DOM replacement": 22202,
+              "panel transition: editAdaptiveSymmetryPopover": 69,
+              "panel transition: displayWindowAdaptiveMenu": 634,
+              "panel transition: editAddAtomOperatorPanel": 186,
+              "panel transition: editAddMoleculeOperatorPanel": 204,
+              "panel transition: bondOrderPopup": 155,
+              "panel transition: moldenInspector": 43,
+              "panel transition: trajectoryPanel": 43,
+              "panel transition: vibrationPanel": 49,
+              "soak mode": 30,
+              "presented checkpoint": 12,
+              "mode switch": 48,
+              "panel transition: measurementsPanel": 6,
+              "panel transition: editAdaptiveAddAtomPopover": 44,
+              "panel transition: appearanceResetPopover": 12,
+              "session restore": 6
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 7,
+          "look": "basic",
+          "seconds": 9.028,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 672,
+              "panel transition: editSelectionMetalBondingCuePopover": 665,
+              "panel transition: editSelectionTranslateCue": 792,
+              "DOM replacement": 25792,
+              "panel transition: editAdaptiveSymmetryPopover": 80,
+              "panel transition: displayWindowAdaptiveMenu": 737,
+              "panel transition: editAddAtomOperatorPanel": 216,
+              "panel transition: editAddMoleculeOperatorPanel": 237,
+              "panel transition: bondOrderPopup": 180,
+              "panel transition: moldenInspector": 50,
+              "panel transition: trajectoryPanel": 50,
+              "panel transition: vibrationPanel": 57,
+              "soak mode": 35,
+              "presented checkpoint": 14,
+              "mode switch": 56,
+              "panel transition: measurementsPanel": 7,
+              "panel transition: editAdaptiveAddAtomPopover": 51,
+              "panel transition: appearanceResetPopover": 14,
+              "session restore": 7
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 8,
+          "look": "toon",
+          "seconds": 8.41,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 767,
+              "panel transition: editSelectionMetalBondingCuePopover": 759,
+              "panel transition: editSelectionTranslateCue": 904,
+              "DOM replacement": 29377,
+              "panel transition: editAdaptiveSymmetryPopover": 91,
+              "panel transition: displayWindowAdaptiveMenu": 840,
+              "panel transition: editAddAtomOperatorPanel": 246,
+              "panel transition: editAddMoleculeOperatorPanel": 270,
+              "panel transition: bondOrderPopup": 205,
+              "panel transition: moldenInspector": 57,
+              "panel transition: trajectoryPanel": 57,
+              "panel transition: vibrationPanel": 65,
+              "soak mode": 40,
+              "presented checkpoint": 16,
+              "mode switch": 64,
+              "panel transition: measurementsPanel": 8,
+              "panel transition: editAdaptiveAddAtomPopover": 58,
+              "panel transition: appearanceResetPopover": 16,
+              "session restore": 8
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 9,
+          "look": "kit",
+          "seconds": 6.332,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 862,
+              "panel transition: editSelectionMetalBondingCuePopover": 853,
+              "panel transition: editSelectionTranslateCue": 1017,
+              "DOM replacement": 32959,
+              "panel transition: editAdaptiveSymmetryPopover": 102,
+              "panel transition: displayWindowAdaptiveMenu": 943,
+              "panel transition: editAddAtomOperatorPanel": 276,
+              "panel transition: editAddMoleculeOperatorPanel": 303,
+              "panel transition: bondOrderPopup": 230,
+              "panel transition: moldenInspector": 64,
+              "panel transition: trajectoryPanel": 64,
+              "panel transition: vibrationPanel": 73,
+              "soak mode": 45,
+              "presented checkpoint": 18,
+              "mode switch": 72,
+              "panel transition: measurementsPanel": 9,
+              "panel transition: editAdaptiveAddAtomPopover": 65,
+              "panel transition: appearanceResetPopover": 18,
+              "session restore": 9
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 10,
+          "look": "basic",
+          "seconds": 9.348,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 957,
+              "panel transition: editSelectionMetalBondingCuePopover": 947,
+              "panel transition: editSelectionTranslateCue": 1130,
+              "DOM replacement": 36549,
+              "panel transition: editAdaptiveSymmetryPopover": 113,
+              "panel transition: displayWindowAdaptiveMenu": 1046,
+              "panel transition: editAddAtomOperatorPanel": 306,
+              "panel transition: editAddMoleculeOperatorPanel": 336,
+              "panel transition: bondOrderPopup": 255,
+              "panel transition: moldenInspector": 71,
+              "panel transition: trajectoryPanel": 71,
+              "panel transition: vibrationPanel": 81,
+              "soak mode": 50,
+              "presented checkpoint": 20,
+              "mode switch": 80,
+              "panel transition: measurementsPanel": 10,
+              "panel transition: editAdaptiveAddAtomPopover": 72,
+              "panel transition: appearanceResetPopover": 20,
+              "session restore": 10
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 11,
+          "look": "toon",
+          "seconds": 8.056,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1049,
+              "panel transition: editSelectionMetalBondingCuePopover": 1038,
+              "panel transition: editSelectionTranslateCue": 1238,
+              "DOM replacement": 40135,
+              "panel transition: editAdaptiveSymmetryPopover": 124,
+              "panel transition: displayWindowAdaptiveMenu": 1149,
+              "panel transition: editAddAtomOperatorPanel": 336,
+              "panel transition: editAddMoleculeOperatorPanel": 369,
+              "panel transition: bondOrderPopup": 280,
+              "panel transition: moldenInspector": 78,
+              "panel transition: trajectoryPanel": 78,
+              "panel transition: vibrationPanel": 89,
+              "soak mode": 55,
+              "presented checkpoint": 22,
+              "mode switch": 88,
+              "panel transition: measurementsPanel": 11,
+              "panel transition: editAdaptiveAddAtomPopover": 79,
+              "panel transition: appearanceResetPopover": 22,
+              "session restore": 11
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 12,
+          "look": "kit",
+          "seconds": 6.508,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1144,
+              "panel transition: editSelectionMetalBondingCuePopover": 1132,
+              "panel transition: editSelectionTranslateCue": 1351,
+              "DOM replacement": 43718,
+              "panel transition: editAdaptiveSymmetryPopover": 135,
+              "panel transition: displayWindowAdaptiveMenu": 1252,
+              "panel transition: editAddAtomOperatorPanel": 366,
+              "panel transition: editAddMoleculeOperatorPanel": 402,
+              "panel transition: bondOrderPopup": 305,
+              "panel transition: moldenInspector": 85,
+              "panel transition: trajectoryPanel": 85,
+              "panel transition: vibrationPanel": 97,
+              "soak mode": 60,
+              "presented checkpoint": 24,
+              "mode switch": 96,
+              "panel transition: measurementsPanel": 12,
+              "panel transition: editAdaptiveAddAtomPopover": 86,
+              "panel transition: appearanceResetPopover": 24,
+              "session restore": 12
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 13,
+          "look": "basic",
+          "seconds": 9.356,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1240,
+              "panel transition: editSelectionMetalBondingCuePopover": 1227,
+              "panel transition: editSelectionTranslateCue": 1465,
+              "DOM replacement": 47309,
+              "panel transition: editAdaptiveSymmetryPopover": 146,
+              "panel transition: displayWindowAdaptiveMenu": 1355,
+              "panel transition: editAddAtomOperatorPanel": 396,
+              "panel transition: editAddMoleculeOperatorPanel": 435,
+              "panel transition: bondOrderPopup": 330,
+              "panel transition: moldenInspector": 92,
+              "panel transition: trajectoryPanel": 92,
+              "panel transition: vibrationPanel": 105,
+              "soak mode": 65,
+              "presented checkpoint": 26,
+              "mode switch": 104,
+              "panel transition: measurementsPanel": 13,
+              "panel transition: editAdaptiveAddAtomPopover": 93,
+              "panel transition: appearanceResetPopover": 26,
+              "session restore": 13
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 14,
+          "look": "toon",
+          "seconds": 8.174,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1333,
+              "panel transition: editSelectionMetalBondingCuePopover": 1319,
+              "panel transition: editSelectionTranslateCue": 1575,
+              "DOM replacement": 50893,
+              "panel transition: editAdaptiveSymmetryPopover": 157,
+              "panel transition: displayWindowAdaptiveMenu": 1458,
+              "panel transition: editAddAtomOperatorPanel": 426,
+              "panel transition: editAddMoleculeOperatorPanel": 468,
+              "panel transition: bondOrderPopup": 355,
+              "panel transition: moldenInspector": 99,
+              "panel transition: trajectoryPanel": 99,
+              "panel transition: vibrationPanel": 113,
+              "soak mode": 70,
+              "presented checkpoint": 28,
+              "mode switch": 112,
+              "panel transition: measurementsPanel": 14,
+              "panel transition: editAdaptiveAddAtomPopover": 100,
+              "panel transition: appearanceResetPopover": 28,
+              "session restore": 14
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 15,
+          "look": "kit",
+          "seconds": 6.737,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1427,
+              "panel transition: editSelectionMetalBondingCuePopover": 1412,
+              "panel transition: editSelectionTranslateCue": 1687,
+              "DOM replacement": 54476,
+              "panel transition: editAdaptiveSymmetryPopover": 168,
+              "panel transition: displayWindowAdaptiveMenu": 1561,
+              "panel transition: editAddAtomOperatorPanel": 456,
+              "panel transition: editAddMoleculeOperatorPanel": 501,
+              "panel transition: bondOrderPopup": 380,
+              "panel transition: moldenInspector": 106,
+              "panel transition: trajectoryPanel": 106,
+              "panel transition: vibrationPanel": 121,
+              "soak mode": 75,
+              "presented checkpoint": 30,
+              "mode switch": 120,
+              "panel transition: measurementsPanel": 15,
+              "panel transition: editAdaptiveAddAtomPopover": 107,
+              "panel transition: appearanceResetPopover": 30,
+              "session restore": 15
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 16,
+          "look": "basic",
+          "seconds": 9.142,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1522,
+              "panel transition: editSelectionMetalBondingCuePopover": 1506,
+              "panel transition: editSelectionTranslateCue": 1800,
+              "DOM replacement": 58066,
+              "panel transition: editAdaptiveSymmetryPopover": 179,
+              "panel transition: displayWindowAdaptiveMenu": 1664,
+              "panel transition: editAddAtomOperatorPanel": 486,
+              "panel transition: editAddMoleculeOperatorPanel": 534,
+              "panel transition: bondOrderPopup": 405,
+              "panel transition: moldenInspector": 113,
+              "panel transition: trajectoryPanel": 113,
+              "panel transition: vibrationPanel": 129,
+              "soak mode": 80,
+              "presented checkpoint": 32,
+              "mode switch": 128,
+              "panel transition: measurementsPanel": 16,
+              "panel transition: editAdaptiveAddAtomPopover": 114,
+              "panel transition: appearanceResetPopover": 32,
+              "session restore": 16
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        },
+        {
+          "cycle": 17,
+          "look": "toon",
+          "seconds": 8.276,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1617,
+              "panel transition: editSelectionMetalBondingCuePopover": 1600,
+              "panel transition: editSelectionTranslateCue": 1912,
+              "DOM replacement": 61651,
+              "panel transition: editAdaptiveSymmetryPopover": 190,
+              "panel transition: displayWindowAdaptiveMenu": 1767,
+              "panel transition: editAddAtomOperatorPanel": 516,
+              "panel transition: editAddMoleculeOperatorPanel": 567,
+              "panel transition: bondOrderPopup": 430,
+              "panel transition: moldenInspector": 120,
+              "panel transition: trajectoryPanel": 120,
+              "panel transition: vibrationPanel": 137,
+              "soak mode": 85,
+              "presented checkpoint": 34,
+              "mode switch": 136,
+              "panel transition: measurementsPanel": 17,
+              "panel transition: editAdaptiveAddAtomPopover": 121,
+              "panel transition: appearanceResetPopover": 34,
+              "session restore": 17
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 18,
+          "look": "kit",
+          "seconds": 6.387,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1710,
+              "panel transition: editSelectionMetalBondingCuePopover": 1692,
+              "panel transition: editSelectionTranslateCue": 2024,
+              "DOM replacement": 65233,
+              "panel transition: editAdaptiveSymmetryPopover": 201,
+              "panel transition: displayWindowAdaptiveMenu": 1870,
+              "panel transition: editAddAtomOperatorPanel": 546,
+              "panel transition: editAddMoleculeOperatorPanel": 600,
+              "panel transition: bondOrderPopup": 455,
+              "panel transition: moldenInspector": 127,
+              "panel transition: trajectoryPanel": 127,
+              "panel transition: vibrationPanel": 145,
+              "soak mode": 90,
+              "presented checkpoint": 36,
+              "mode switch": 144,
+              "panel transition: measurementsPanel": 18,
+              "panel transition: editAdaptiveAddAtomPopover": 128,
+              "panel transition: appearanceResetPopover": 36,
+              "session restore": 18
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2643
+        },
+        {
+          "cycle": 19,
+          "look": "basic",
+          "seconds": 9.301,
+          "positionsAndLookSessionRestored": true,
+          "selectionCount": 5,
+          "symmetryPreviewCancelApplyUndo": true,
+          "editorChangeResetClose": true,
+          "identity": {
+            "supported": true,
+            "checks": {
+              "QA initialization": 1,
+              "panel transition: editSelectionCoordinationCuePopover": 1805,
+              "panel transition: editSelectionMetalBondingCuePopover": 1786,
+              "panel transition: editSelectionTranslateCue": 2136,
+              "DOM replacement": 68825,
+              "panel transition: editAdaptiveSymmetryPopover": 212,
+              "panel transition: displayWindowAdaptiveMenu": 1973,
+              "panel transition: editAddAtomOperatorPanel": 576,
+              "panel transition: editAddMoleculeOperatorPanel": 633,
+              "panel transition: bondOrderPopup": 480,
+              "panel transition: moldenInspector": 134,
+              "panel transition: trajectoryPanel": 134,
+              "panel transition: vibrationPanel": 153,
+              "soak mode": 95,
+              "presented checkpoint": 38,
+              "mode switch": 152,
+              "panel transition: measurementsPanel": 19,
+              "panel transition: editAdaptiveAddAtomPopover": 135,
+              "panel transition: appearanceResetPopover": 38,
+              "session restore": 19
+            },
+            "failures": [],
+            "nodeCount": 52,
+            "composition": {
+              "live": 48,
+              "knownAbsent": 4
+            },
+            "knownAbsent": {
+              "editAtomsMenuEl": {
+                "id": "editAtomsMenu",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuBodyEl": {
+                "id": "editAtomsMenuBody",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editAtomsMenuCurrentEl": {
+                "id": "editAtomsMenuCurrent",
+                "issue": 15,
+                "cached": "null"
+              },
+              "editSelectionFragmentCuePopoverEl": {
+                "id": "editSelectionFragmentCuePopover",
+                "issue": 15,
+                "cached": "null"
+              }
+            }
+          },
+          "domElementCount": 2648
+        }
+      ],
+      "status": "passed",
+      "renderer": {
+        "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+        "renderer": "WebKit WebGL",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+      },
+      "seconds": 157.453,
+      "pageErrors": [],
+      "unexpectedConsole": []
+    }
+  ],
+  "method": "One sustained job, four serial long-lived layout/theme contexts. Native mode, palette/search, selection, Symmetry and both editor entry paths; standard picker change event and native reset/close; public Look/session APIs. QA performs read-only/sticky identity checks. No source rewrite, listener replacement, sleeps, shipped assertion changes or new acceptance exception.",
+  "carriedFindings": "tests/baselines/carried-defects.json; this soak does not close #3/#11/#17/#21 or the material-preset intermittent."
+}

@@ -1,0 +1,47 @@
+{
+  "encoding": "Large raw artifact JSON is gzip-compressed; decompressed bytes were independently checked against each original. All raw originals and downloaded ZIPs remain untouched in ignored out/test-artifacts.",
+  "files": {
+    "artifacts/browser-suite-balanced-2/browser-suite/accessibility/contrast-dark-calculations.json": {
+      "storedAs": "artifacts/browser-suite-balanced-2/browser-suite/accessibility/contrast-dark-calculations.json.gz",
+      "originalBytes": 505128,
+      "originalSha256": "8338812ffbb56c85918fed3ac2f2e6992f113f92eda14e45e435bcc2e442fb28",
+      "gzipBytes": 25739
+    },
+    "artifacts/browser-suite-balanced-2/browser-suite/accessibility/contrast-light-calculations.json": {
+      "storedAs": "artifacts/browser-suite-balanced-2/browser-suite/accessibility/contrast-light-calculations.json.gz",
+      "originalBytes": 505126,
+      "originalSha256": "5b280501f3a2d69500421bb506c825927f0b4ed28b67188c3b578925e84d8897",
+      "gzipBytes": 25697
+    },
+    "artifacts/browser-suite-balanced-2/browser-suite/periodic_table/periodic-table-proof.json": {
+      "storedAs": "artifacts/browser-suite-balanced-2/browser-suite/periodic_table/periodic-table-proof.json.gz",
+      "originalBytes": 1430268,
+      "originalSha256": "8f0519fceae098f978c0238defc7f327a6f365696f61726befa40cb8750da1d3",
+      "gzipBytes": 45488
+    },
+    "artifacts/characterization-results/characterize-run-1.json": {
+      "storedAs": "artifacts/characterization-results/characterize-run-1.json.gz",
+      "originalBytes": 12054992,
+      "originalSha256": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+      "gzipBytes": 1475453
+    },
+    "artifacts/characterization-results/characterize-run-2.json": {
+      "storedAs": "artifacts/characterization-results/characterize-run-2.json.gz",
+      "originalBytes": 12054992,
+      "originalSha256": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+      "gzipBytes": 1475453
+    },
+    "artifacts/characterize-1/characterize/characterize-run-1.json": {
+      "storedAs": "artifacts/characterize-1/characterize/characterize-run-1.json.gz",
+      "originalBytes": 12054992,
+      "originalSha256": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+      "gzipBytes": 1475453
+    },
+    "artifacts/characterize-2/characterize/characterize-run-2.json": {
+      "storedAs": "artifacts/characterize-2/characterize/characterize-run-2.json.gz",
+      "originalBytes": 12054992,
+      "originalSha256": "f57b11202ae022bc4b46f15300bac2ed071085f8ae2c25ef49bb62eb5d4d5274",
+      "gzipBytes": 1475453
+    }
+  }
+}

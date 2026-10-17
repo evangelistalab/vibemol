@@ -1,0 +1,325 @@
+{
+  "sourceAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+  "sourcePeriodicSha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a",
+  "factoryInputs": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "els"
+  ],
+  "actualFactoryInputCount": 11,
+  "nonDomInputs": [
+    {
+      "name": "THREE",
+      "references": [
+        {
+          "line": 38,
+          "function": "createPeriodicTableController",
+          "statement": "const periodicRaycaster = new THREE.Raycaster();"
+        },
+        {
+          "line": 39,
+          "function": "createPeriodicTableController",
+          "statement": "const periodicPointer = new THREE.Vector2();"
+        },
+        {
+          "line": 67,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const tex = new THREE.CanvasTexture(c);"
+        },
+        {
+          "line": 68,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "tex.minFilter = THREE.LinearFilter;"
+        },
+        {
+          "line": 69,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "tex.magFilter = THREE.LinearFilter;"
+        },
+        {
+          "line": 71,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });"
+        },
+        {
+          "line": 72,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const spr = new THREE.Sprite(mat);"
+        },
+        {
+          "line": 91,
+          "function": "getPeriodicTablePosition",
+          "statement": "return new THREE.Vector3(x, y, z);"
+        },
+        {
+          "line": 193,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableRenderer = new THREE.WebGLRenderer({\n        canvas: els.periodicTableCanvas,\n        antialias: true,\n        alpha: true,\n      });"
+        },
+        {
+          "line": 198,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableScene = new THREE.Scene();"
+        },
+        {
+          "line": 199,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);"
+        },
+        {
+          "line": 204,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableScene.add(\n        new THREE.AmbientLight(0xffffff, 0.85)\n      );"
+        },
+        {
+          "line": 206,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const d1 = new THREE.DirectionalLight(0xffffff, 0.95);"
+        },
+        {
+          "line": 210,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.45);"
+        },
+        {
+          "line": 214,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableRoot = new THREE.Group();"
+        },
+        {
+          "line": 219,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const sphereGeom = new THREE.SphereGeometry(PERIODIC_TABLE_SPHERE_RADIUS, 24, 18);"
+        },
+        {
+          "line": 231,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 232,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 235,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 238,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mesh = new THREE.Mesh(sphereGeom, mat);"
+        },
+        {
+          "line": 243,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outlineMat = new THREE.MeshBasicMaterial({\n            color: 0x0c1624,\n            side: THREE.BackSide,\n            transparent: true,\n            opacity: 0.62,\n          });"
+        },
+        {
+          "line": 245,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outlineMat = new THREE.MeshBasicMaterial({\n            color: 0x0c1624,\n            side: THREE.BackSide,\n            transparent: true,\n            opacity: 0.62,\n          });"
+        },
+        {
+          "line": 249,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outline = new THREE.Mesh(sphereGeom, outlineMat);"
+        }
+      ]
+    },
+    {
+      "name": "ATOM_Z_TO_DATA",
+      "references": [
+        {
+          "line": 108,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 108,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 228,
+          "function": "ensurePeriodicTableScene",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 228,
+          "function": "ensurePeriodicTableScene",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        }
+      ]
+    },
+    {
+      "name": "ATOM_SYMBOL_TO_Z",
+      "references": [
+        {
+          "line": 107,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 107,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 227,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 227,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        }
+      ]
+    },
+    {
+      "name": "UI_PALETTE",
+      "references": [
+        {
+          "line": 62,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "ctx.fillStyle = UI_PALETTE.periodicSymbolFill;"
+        },
+        {
+          "line": 63,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "ctx.strokeStyle = UI_PALETTE.periodicSymbolStroke;"
+        }
+      ]
+    },
+    {
+      "name": "getActiveElementHexColor",
+      "references": [
+        {
+          "line": 230,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const colorHex = getActiveElementHexColor(z);"
+        },
+        {
+          "line": 292,
+          "function": "refreshPeriodicCell",
+          "statement": "const hex = getActiveElementHexColor(z);"
+        },
+        {
+          "line": 317,
+          "function": "selectElementForColorEditor",
+          "statement": "els.elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 371,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(els.elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 391,
+          "function": "getPendingColor",
+          "statement": "const active = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 397,
+          "function": "syncColorPicker",
+          "statement": "if (els.elementColorPicker) els.elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "getElementSymbol",
+      "references": [
+        {
+          "line": 320,
+          "function": "selectElementForColorEditor",
+          "statement": "const symbol = getElementSymbol(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "getElementName",
+      "references": [
+        {
+          "line": 321,
+          "function": "selectElementForColorEditor",
+          "statement": "const name = getElementName(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "editAppearanceSettings",
+      "references": [
+        {
+          "line": 370,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(els.elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 383,
+          "function": "(anonymous)",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': colors });"
+        },
+        {
+          "line": 386,
+          "function": "(anonymous)",
+          "statement": "if (els.elementColorResetAll) els.elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });"
+        }
+      ]
+    },
+    {
+      "name": "exportElementColorOverrides",
+      "references": [
+        {
+          "line": 371,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(els.elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 381,
+          "function": "(anonymous)",
+          "statement": "const colors = exportElementColorOverrides();"
+        }
+      ]
+    },
+    {
+      "name": "normalizeHexColor",
+      "references": [
+        {
+          "line": 371,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(els.elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 392,
+          "function": "getPendingColor",
+          "statement": "const pending = normalizeHexColor(els.elementColorPicker.value, active);"
+        }
+      ]
+    }
+  ],
+  "allTenNonDomInputsUsed": true,
+  "domFieldsReadFromEls": [
+    "periodicTableViewport",
+    "elementColorOverlay",
+    "periodicTableCanvas",
+    "elementColorPicker",
+    "elementColorName",
+    "elementColorClose",
+    "elementColorResetOne",
+    "elementColorResetAll"
+  ],
+  "factoryBefore": 19,
+  "afterButtonExclusion": 18,
+  "afterGrouping": 11,
+  "arithmetic": "10 used non-DOM inputs + 1 shared els = 11. Excluding a field inside els does not remove the els argument. No extra helper/controller or hidden genuine input."
+}
