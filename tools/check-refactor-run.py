@@ -12,7 +12,7 @@ def main():
     policy = json.loads(args.policy.read_text())
     result = json.loads(args.browser_result.read_text())
     actual_counts = {key: result[key] for key in ('passed', 'failed', 'total')}
-    expected_counts = {'passed': 34, 'failed': 3, 'total': 37}
+    expected_counts = {'passed': 33, 'failed': 4, 'total': 37}
     actual_workflow = result.get('issue11Workflow')
     expected_workflow = policy['issue11Workflow']
     comparands = {

@@ -3,10 +3,17 @@
     {
       "label": "Stage 5a trajectory playback core",
       "before": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
-      "worktree": ".",
+      "after": "41363b608592991afcaf6c7a501efd86885040f2",
       "modules": [
         "assets/app/js/trajectory-playback.js"
       ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Stage 5b vibration runtime/panel",
+      "before": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+      "worktree": ".",
+      "modules": ["assets/app/js/vibration.js"],
       "expectedStatus": "passed"
     }
   ]

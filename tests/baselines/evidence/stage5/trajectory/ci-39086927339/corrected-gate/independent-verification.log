@@ -1,0 +1,42 @@
+{"actual": ["Aggregate browser gate (34/3/37)"], "expected": ["Aggregate browser gate (34/3/37)"], "gate": "sole failed job is superseded aggregate policy", "passed": true}
+{"actual": ["Verify all suites once, raw failure workflows and aggregate counts"], "expected": ["Verify all suites once, raw failure workflows and aggregate counts"], "gate": "sole failed step is original aggregate workflow/count assertion", "passed": true}
+{"actual": "failure", "expected": "failure", "gate": "original overall conclusion preserved", "passed": true}
+{"actual": "passed", "expected": "passed", "gate": "required construction-order gate", "passed": true}
+{"actual": true, "expected": true, "gate": "all construction stages passed", "passed": true}
+[browser-join] 33 passing / 4 failing / 37; accepted workflows: False
+{"actual": true, "expected": true, "gate": "all 37 suites once", "passed": true}
+{"actual": {"failed": 4, "passed": 33, "total": 37}, "expected": {"failed": 4, "passed": 33, "total": 37}, "gate": "ordinary counts", "passed": true}
+{"actual": true, "expected": true, "gate": "ordinary exact raw failing-workflow set", "passed": true}
+{"actual": {"id": "issue-11-stop-after-second-download", "site": "trajectory"}, "expected": {"id": "issue-11-stop-after-second-download", "site": "trajectory"}, "gate": "unchanged #11 behavior", "passed": true}
+{"actual": {"caller": {"function": "main", "suite": "smoke.py"}, "exceptionType": "TimeoutError", "origin": {"function": "wait_for_video_idle", "suite": "ci_gate_diagnostics.py"}}, "expected": {"caller": {"function": "main", "suite": "smoke.py"}, "exceptionType": "TimeoutError", "origin": {"function": "wait_for_video_idle", "suite": "ci_gate_diagnostics.py"}}, "gate": "unchanged #11 exception/origin/calling workflow (no line-number acceptance)", "passed": true}
+[characterize-join] 2 exact repeats, 102 captures each, 8 composed identity contexts; 0 diagnostic pixel differences
+{"actual": true, "expected": true, "gate": "102 goldens twice, exact repeat,52 slots/eight contexts/all minima", "passed": true}
+{"actual": 0, "expected": 0, "gate": "Looks completed", "passed": true}
+{"actual": true, "expected": true, "gate": "Looks raw completion without timeout/traceback", "passed": true}
+{"actual": true, "expected": true, "gate": "Studio material-family path", "passed": true}
+{"actual": true, "expected": true, "gate": "Properties material-family path", "passed": true}
+{"actual": "success", "expected": "success", "gate": "WebKit Properties", "passed": true}
+{"actual": ["433"], "expected": ["433"], "gate": "JS unit count", "passed": true}
+{"actual": ["34"], "expected": ["34"], "gate": "Python unit count", "passed": true}
+{
+  "candidateConjunctionVerified": true,
+  "stopReasons": [],
+  "appearanceMaterialPresetIntermittent": {
+    "looksSeconds": 1794.63,
+    "looksMinutes": 29.910500000000003,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "constructionOrder": {
+    "status": "passed",
+    "appBindings": 29,
+    "moduleBindings": 129,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  }
+}

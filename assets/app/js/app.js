@@ -10,14 +10,7 @@
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
   const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
   const HINT_START = '';
-  const VIBRATION_KIND = 'vibemol.vibrations';
-  const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
-  const VIBRATION_DEFAULT_SPEED = 0.75;
-  const VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1 = 5.0;
-  const VIBRATION_IR_MIN_FREQ_CM1 = 20;
-  const VIBRATION_IR_DEFAULT_SIGMA_CM1 = 28;
-  const CM_INV_TEXT = 'cm⁻¹';
-  const CM_INV_HTML = 'cm<sup>−1</sup>';
+  const { VIBRATION_KIND, VIBRATION_DEFAULT_AMPLITUDE, VIBRATION_DEFAULT_SPEED, VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1, VIBRATION_IR_MIN_FREQ_CM1, VIBRATION_IR_DEFAULT_SIGMA_CM1, CM_INV_TEXT, CM_INV_HTML } = window.VibeMolVibration;
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
@@ -332,6 +325,10 @@
     throw new Error('VibeMolDisplayWindows is not loaded. Ensure assets/app/js/display-windows.js is included before assets/app/js/app.js.');
   }
 
+  const { createVibrationController } = window.VibeMolVibration || {};
+  if (typeof createVibrationController !== 'function') {
+    throw new Error('VibeMolVibration is not loaded. Ensure assets/app/js/vibration.js is included before assets/app/js/app.js.');
+  }
   const { createTrajectoryPlaybackController } = window.VibeMolTrajectoryPlayback || {};
   if (typeof createTrajectoryPlaybackController !== 'function') {
     throw new Error('VibeMolTrajectoryPlayback is not loaded. Ensure assets/app/js/trajectory-playback.js is included before assets/app/js/app.js.');
@@ -1202,6 +1199,23 @@
     editBuildFragmentsHostEl: null,
     editBuildMoleculesHostEl: null,
   };
+  // Runtime state is private; construction only captures inputs. DOM fields
+  // are assigned at their original query sites, before any panel operation.
+  const vibrationRuntimeController = createVibrationController({
+    els,
+    getActiveRecord: () => (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null,
+    snapshotAtomCoordinates,
+    applyAtomCoordinateFrame,
+    markSessionChanged,
+    isEditMode: () => currentMode === MODES.EDIT,
+    UI_PALETTE,
+    escapeHtml,
+    getVideoController: () => vibrationVideoController,
+    setTooltipText,
+    setMotionPanelButtonGlyph,
+    setVibrationPanelOpen,
+    updateDisplayWindowAdaptiveMenuUi,
+  });
   // Inert construction precedes startup callbacks. Live getters defer reading
   // scene, selection, mode and export owners until their original call sites.
   const trajectoryPlaybackController = createTrajectoryPlaybackController({
@@ -5332,10 +5346,6 @@
   }
   function setInputValueIfIdle(...args) { return getTrajectoryUi().setInputValueIfIdle(...args); }
 
-  let vibrationPlaying = false;
-  let vibrationLastStepMs = 0;
-  let vibrationHideSmallFrequencies = true;
-  let vibrationPanelLayoutRaf = 0;
   /**
    * Snapshot atom coordinates from one volume into a flat native-units array.
    * @param {*} vol
@@ -5538,30 +5548,7 @@
    * Resolve vibrational-mode metadata for the active volume.
    * @returns {{enabled:boolean,record:*,vol:*,vib:*,atomCount:number,modeCount:number,mode:*}}
    */
-  function getActiveVibrationInfo() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
-    const vib = vol && vol.vibration;
-    if (!vib || !Array.isArray(vib.modes) || vib.modes.length === 0 || atomCount <= 0) {
-      return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-    }
-    const frameSize = atomCount * 3;
-    const validModes = vib.modes.every((m) => m && m.displacements && m.displacements.length === frameSize);
-    if (!validModes) return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-    if (!vib.equilibrium || vib.equilibrium.length !== frameSize) {
-      vib.equilibrium = snapshotAtomCoordinates(vol, atomCount);
-    }
-    if (!vib.frameBuffer || vib.frameBuffer.length !== frameSize) {
-      vib.frameBuffer = new Float32Array(frameSize);
-    }
-    const modeCount = vib.modes.length;
-    vib.modeIndex = Math.max(0, Math.min(modeCount - 1, Number(vib.modeIndex) | 0));
-    vib.amplitude = Math.max(0, Math.min(8, Number.isFinite(Number(vib.amplitude)) ? Number(vib.amplitude) : VIBRATION_DEFAULT_AMPLITUDE));
-    vib.speed = Math.max(0.1, Math.min(30, Number.isFinite(Number(vib.speed)) ? Number(vib.speed) : VIBRATION_DEFAULT_SPEED));
-    const mode = vib.modes[vib.modeIndex] || vib.modes[0];
-    return { enabled: true, record, vol, vib, atomCount, modeCount, mode };
-  }
+  function getActiveVibrationInfo(...args) { return vibrationRuntimeController.getActiveVibrationInfo(...args); }
 
   /**
    * Format one mode frequency for the vibration table.
@@ -5569,23 +5556,14 @@
    * @param {*} value
    * @returns {string}
    */
-  function formatVibrationFrequencyCell(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return '--';
-    const mag = Math.abs(n).toFixed(1);
-    return n < 0 ? `${mag}i` : mag;
-  }
+  function formatVibrationFrequencyCell(...args) { return vibrationRuntimeController.formatVibrationFrequencyCell(...args); }
 
   /**
    * Format one mode IR intensity cell.
    * @param {*} value
    * @returns {string}
    */
-  function formatVibrationIntensityCell(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return '--';
-    return n.toFixed(1);
-  }
+  function formatVibrationIntensityCell(...args) { return vibrationRuntimeController.formatVibrationIntensityCell(...args); }
 
   /**
    * Resolve one mode IR intensity in km/mol when available.
@@ -5593,13 +5571,7 @@
    * @param {*} mode
    * @returns {number}
    */
-  function getVibrationModeIrIntensity(mode) {
-    const n = Number(
-      mode && (mode.irIntensityKmMol ?? mode.irIntensity ?? mode.intensityKmMol ?? mode.intensity)
-    );
-    if (!Number.isFinite(n)) return NaN;
-    return Math.max(0, n);
-  }
+  function getVibrationModeIrIntensity(...args) { return vibrationRuntimeController.getVibrationModeIrIntensity(...args); }
 
   /**
    * Build one list of spectrum peaks from the currently visible modes.
@@ -5607,43 +5579,7 @@
    * @param {number[]} visibleIndices
    * @returns {{peaks:Array<{modeIndex:number,freqCm1:number,intensity:number}>,hasExplicitIntensities:boolean}}
    */
-  function collectVisibleVibrationSpectrumPeaks(vib, visibleIndices) {
-    const peaks = [];
-    let hasExplicitIntensities = false;
-    const indices = Array.isArray(visibleIndices) ? visibleIndices : [];
-    for (const idx of indices) {
-      const mode = vib && vib.modes ? vib.modes[idx] : null;
-      const rawFreq = Number(mode && mode.frequencyCm1);
-      if (!Number.isFinite(rawFreq)) continue;
-      const freqCm1 = Math.abs(rawFreq);
-      if (!(freqCm1 >= VIBRATION_IR_MIN_FREQ_CM1)) continue;
-      const parsedIntensity = getVibrationModeIrIntensity(mode);
-      let intensity = parsedIntensity;
-      if (Number.isFinite(parsedIntensity)) {
-        hasExplicitIntensities = true;
-      }
-      peaks.push({
-        modeIndex: idx,
-        freqCm1,
-        intensity,
-      });
-    }
-    if (hasExplicitIntensities) {
-      for (const p of peaks) {
-        if (!Number.isFinite(p.intensity)) p.intensity = 0;
-      }
-    } else {
-      for (const p of peaks) p.intensity = 1;
-    }
-    if (hasExplicitIntensities) {
-      const maxExplicit = peaks.reduce((m, p) => Number.isFinite(p.intensity) ? Math.max(m, p.intensity) : m, 0);
-      if (!(maxExplicit > 0)) {
-        for (const p of peaks) p.intensity = 1;
-        hasExplicitIntensities = false;
-      }
-    }
-    return { peaks, hasExplicitIntensities };
-  }
+  function collectVisibleVibrationSpectrumPeaks(...args) { return vibrationRuntimeController.collectVisibleVibrationSpectrumPeaks(...args); }
 
   /**
    * Draw the IR spectrum preview for the active vibrational payload.
@@ -5652,459 +5588,58 @@
    * @param {{enabled:boolean,vib?:*}} info
    * @param {{visibleIndices:number[]}=} tableState
    */
-  function renderVibrationSpectrum(info, tableState = null) {
-    if (!vibrationSpectrumWrap || !vibrationSpectrumCanvas) return;
-    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
-      vibrationSpectrumWrap.style.display = 'none';
-      if (vibrationSpectrumMeta) vibrationSpectrumMeta.textContent = 'IR spectrum preview';
-      return;
-    }
-    const vib = info.vib;
-    const visibleIndices = (tableState && Array.isArray(tableState.visibleIndices))
-      ? tableState.visibleIndices
-      : getVisibleVibrationModeIndices(vib);
-    const peakData = collectVisibleVibrationSpectrumPeaks(vib, visibleIndices);
-    const peaks = peakData.peaks;
-    const hasExplicitIntensities = peakData.hasExplicitIntensities;
-
-    vibrationSpectrumWrap.style.display = 'block';
-    if (vibrationSpectrumMeta) {
-      vibrationSpectrumMeta.textContent = hasExplicitIntensities
-        ? `IR spectrum (${CM_INV_TEXT}, using parsed intensities)`
-        : `IR spectrum (${CM_INV_TEXT}, relative intensities)`;
-    }
-
-    const ctx = vibrationSpectrumCanvas.getContext('2d');
-    if (!ctx) return;
-    const cssW = Math.max(220, Math.round(vibrationSpectrumCanvas.clientWidth || 0));
-    const cssH = Math.max(88, Math.round(vibrationSpectrumCanvas.clientHeight || 128));
-    const dpr = Math.max(1, Math.min(2, Number(window.devicePixelRatio) || 1));
-    const pxW = Math.max(1, Math.round(cssW * dpr));
-    const pxH = Math.max(1, Math.round(cssH * dpr));
-    if (vibrationSpectrumCanvas.width !== pxW || vibrationSpectrumCanvas.height !== pxH) {
-      vibrationSpectrumCanvas.width = pxW;
-      vibrationSpectrumCanvas.height = pxH;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssW, cssH);
-
-    const padL = 36;
-    const padR = 10;
-    const padT = 8;
-    const padB = 20;
-    const innerW = Math.max(1, cssW - padL - padR);
-    const innerH = Math.max(1, cssH - padT - padB);
-
-    ctx.strokeStyle = UI_PALETTE.irAxisStroke;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padL, padT + innerH + 0.5);
-    ctx.lineTo(padL + innerW, padT + innerH + 0.5);
-    ctx.stroke();
-
-    if (peaks.length === 0) {
-      ctx.fillStyle = UI_PALETTE.irTextMuted;
-      ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No visible IR-active frequencies', padL + innerW * 0.5, padT + innerH * 0.58);
-      if (vibrationSpectrumMeta) {
-        vibrationSpectrumMeta.textContent = `IR spectrum (${CM_INV_TEXT}) unavailable for current visible modes`;
-      }
-      return;
-    }
-
-    let minFreq = peaks[0].freqCm1;
-    let maxFreq = peaks[0].freqCm1;
-    for (let i = 1; i < peaks.length; i++) {
-      const f = peaks[i].freqCm1;
-      if (f < minFreq) minFreq = f;
-      if (f > maxFreq) maxFreq = f;
-    }
-    const spanRaw = Math.max(1, maxFreq - minFreq);
-    const minSpan = 420;
-    const span = Math.max(minSpan, spanRaw * 1.18);
-    const centerFreq = 0.5 * (minFreq + maxFreq);
-    const xMin = Math.max(0, centerFreq - span * 0.5);
-    const xMax = xMin + span;
-    const sigma = Math.max(12, Math.min(48, Math.max(VIBRATION_IR_DEFAULT_SIGMA_CM1, span * 0.04)));
-
-    let maxIntensity = 0;
-    for (const p of peaks) maxIntensity = Math.max(maxIntensity, Number(p.intensity) || 0);
-    maxIntensity = Math.max(1e-8, maxIntensity);
-    const normalized = peaks.map((p) => ({
-      modeIndex: p.modeIndex,
-      freqCm1: p.freqCm1,
-      amp: Math.max(0, (Number(p.intensity) || 0) / maxIntensity),
-    }));
-
-    /**
-     * Evaluate broadened intensity at one frequency coordinate.
-     * @param {number} xFreq
-     * @returns {number}
-     */
-    function spectrumAt(xFreq) {
-      let y = 0;
-      for (const p of normalized) {
-        const z = (xFreq - p.freqCm1) / sigma;
-        y += p.amp * Math.exp(-0.5 * z * z);
-      }
-      return y;
-    }
-
-    const ySamples = new Float32Array(innerW + 1);
-    let yMax = 0;
-    for (let i = 0; i <= innerW; i++) {
-      const xFreq = xMin + (i / innerW) * (xMax - xMin);
-      const y = spectrumAt(xFreq);
-      ySamples[i] = y;
-      if (y > yMax) yMax = y;
-    }
-    yMax = Math.max(1e-8, yMax);
-
-    ctx.strokeStyle = UI_PALETTE.irCurve;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    for (let i = 0; i <= innerW; i++) {
-      const x = padL + i;
-      const y = padT + innerH - (ySamples[i] / yMax) * innerH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    const selected = normalized.find((p) => p.modeIndex === (vib.modeIndex | 0));
-    if (selected && Number.isFinite(selected.freqCm1)) {
-      const xSel = padL + ((selected.freqCm1 - xMin) / (xMax - xMin)) * innerW;
-      if (xSel >= padL - 2 && xSel <= padL + innerW + 2) {
-        const ySel = spectrumAt(selected.freqCm1);
-        const yPx = padT + innerH - (ySel / yMax) * innerH;
-        ctx.strokeStyle = UI_PALETTE.irSelectedLine;
-        ctx.fillStyle = UI_PALETTE.irSelectedBand;
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(xSel, padT + innerH);
-        ctx.lineTo(xSel, yPx);
-        ctx.stroke();
-
-        const bandHalfFreq = Math.max(14, sigma * 0.9);
-        const leftFreq = Math.max(xMin, selected.freqCm1 - bandHalfFreq);
-        const rightFreq = Math.min(xMax, selected.freqCm1 + bandHalfFreq);
-        const leftIdx = Math.max(0, Math.min(innerW, Math.floor(((leftFreq - xMin) / (xMax - xMin)) * innerW)));
-        const rightIdx = Math.max(0, Math.min(innerW, Math.ceil(((rightFreq - xMin) / (xMax - xMin)) * innerW)));
-        if (rightIdx > leftIdx) {
-          ctx.beginPath();
-          ctx.moveTo(padL + leftIdx, padT + innerH);
-          for (let i = leftIdx; i <= rightIdx; i++) {
-            const x = padL + i;
-            const y = padT + innerH - (ySamples[i] / yMax) * innerH;
-            ctx.lineTo(x, y);
-          }
-          ctx.lineTo(padL + rightIdx, padT + innerH);
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        ctx.fillStyle = UI_PALETTE.irSelectedText;
-        ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-        ctx.textAlign = 'left';
-        const selectedLabel = `${selected.freqCm1.toFixed(1)} ${CM_INV_TEXT}`;
-        const textX = Math.min(padL + innerW - 92, Math.max(padL + 2, xSel + 5));
-        const textY = Math.max(padT + 12, yPx - 6);
-        ctx.fillText(selectedLabel, textX, textY);
-      }
-    }
-
-    ctx.fillStyle = UI_PALETTE.irAxisText;
-    ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${Math.round(xMin)}`, padL, cssH - 6);
-    ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round((xMin + xMax) * 0.5)}`, padL + innerW * 0.5, cssH - 6);
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(xMax)} ${CM_INV_TEXT}`, padL + innerW, cssH - 6);
-  }
+  function renderVibrationSpectrum(...args) { return vibrationRuntimeController.renderVibrationSpectrum(...args); }
 
   /**
    * Return true when a mode should be hidden by the low-frequency filter.
    * @param {*} mode
    * @returns {boolean}
    */
-  function shouldHideVibrationMode(mode) {
-    if (!vibrationHideSmallFrequencies) return false;
-    const freq = Number(mode && mode.frequencyCm1);
-    if (!Number.isFinite(freq)) return false;
-    return Math.abs(freq) < VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1;
-  }
+  function shouldHideVibrationMode(...args) { return vibrationRuntimeController.shouldHideVibrationMode(...args); }
 
   /**
    * Build a list of visible mode indices for the current vibration payload.
    * @param {*} vib
    * @returns {number[]}
    */
-  function getVisibleVibrationModeIndices(vib) {
-    if (!vib || !Array.isArray(vib.modes)) return [];
-    const out = [];
-    for (let i = 0; i < vib.modes.length; i++) {
-      if (!shouldHideVibrationMode(vib.modes[i])) out.push(i);
-    }
-    return out;
-  }
+  function getVisibleVibrationModeIndices(...args) { return vibrationRuntimeController.getVisibleVibrationModeIndices(...args); }
 
   /**
    * Render the clickable vibration frequency table.
    * @param {{enabled:boolean,vib?:*,modeCount?:number}=} info
    * @returns {{visibleIndices:number[],visibleCount:number,modeCount:number}}
    */
-  function renderVibrationModeTable(info) {
-    const emptyState = { visibleIndices: [], visibleCount: 0, modeCount: 0 };
-    if (!vibrationModeTableWrap || !vibrationModeTable || !vibrationModeTableBody || !vibrationModeEmpty) return emptyState;
-    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
-      vibrationModeTableWrap.style.display = 'none';
-      vibrationModeEmpty.style.display = 'none';
-      vibrationModeTableBody.innerHTML = '';
-      vibrationModeTable.setAttribute('data-has-intensity', 'false');
-      return emptyState;
-    }
-    const vib = info.vib;
-    const modeCount = Math.max(0, info.modeCount | 0);
-    const visibleIndices = getVisibleVibrationModeIndices(vib);
-    const hasAnyIntensity = visibleIndices.some((i) => {
-      const mode = vib.modes[i] || null;
-      return Number.isFinite(getVibrationModeIrIntensity(mode));
-    });
-    vibrationModeTable.setAttribute('data-has-intensity', hasAnyIntensity ? 'true' : 'false');
-    const rows = [];
-    for (const i of visibleIndices) {
-      const mode = vib.modes[i] || {};
-      const rawLabel = (typeof mode.label === 'string' && mode.label.trim()) ? mode.label.trim() : `Mode ${i + 1}`;
-      const activeClass = (i === (vib.modeIndex | 0)) ? ' active' : '';
-      const freqCell = formatVibrationFrequencyCell(mode.frequencyCm1);
-      const intensity = getVibrationModeIrIntensity(mode);
-      const intensityCell = hasAnyIntensity ? formatVibrationIntensityCell(intensity) : '--';
-      rows.push(
-        `<tr class="mode-row${activeClass}" data-mode-index="${i}" data-tooltip="Select ${escapeHtml(rawLabel)}">`
-        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" data-tooltip="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
-        + `<td>${i + 1}</td>`
-        + `<td>${escapeHtml(rawLabel)}</td>`
-        + `<td>${escapeHtml(freqCell)}</td>`
-        + `<td class="vibrationIntensityCol">${escapeHtml(intensityCell)}</td>`
-        + '</tr>'
-      );
-    }
-    vibrationModeTableBody.innerHTML = rows.join('');
-    const visibleCount = visibleIndices.length;
-    vibrationModeTableWrap.style.display = visibleCount > 0 ? 'block' : 'none';
-    vibrationModeEmpty.style.display = modeCount > 0 && visibleCount === 0 ? 'block' : 'none';
-    if (modeCount > 0 && visibleCount === 0 && vibrationHideSmallFrequencies) {
-      vibrationModeEmpty.textContent = `No visible modes: |freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} are hidden.`;
-    } else {
-      vibrationModeEmpty.textContent = 'No vibrational modes available for the active file.';
-    }
-    return { visibleIndices, visibleCount, modeCount };
-  }
+  function renderVibrationModeTable(...args) { return vibrationRuntimeController.renderVibrationModeTable(...args); }
 
   /**
    * Update vibrational-mode controls for the active record.
    */
-  function syncVibrationControls() {
-    const info = getActiveVibrationInfo();
-    if (
-      vibrationVideoController
-      && vibrationVideoController.isActive()
-      && vibrationVideoController.getTargetRecord()
-      && info.enabled
-      && info.record !== vibrationVideoController.getTargetRecord()
-    ) {
-      vibrationVideoController.discardForTargetRecordChange();
-    }
-    if (vibrationPanelBtn) {
-      setTooltipText(vibrationPanelBtn, info.enabled
-        ? 'Vibrational mode controls (F)'
-        : 'No vibrational mode data in active file');
-    }
-    if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
-    if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
-    if (vibrationSpectrumWrap) vibrationSpectrumWrap.style.display = info.enabled ? 'block' : 'none';
-    if (!info.enabled) {
-      renderVibrationModeTable(info);
-      renderVibrationSpectrum(info);
-      setVibrationPanelOpen(false, {
-        syncUi: false,
-        restoreVibrationVideoState: false,
-        vibrationVideoReason: 'Vibration video export discarded because vibrational data is unavailable',
-      });
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-      if (vibrationNowPlaying) vibrationNowPlaying.textContent = 'No mode selected';
-      if (vibrationVideoController) vibrationVideoController.syncUi(info);
-      updateDisplayWindowAdaptiveMenuUi();
-      return;
-    }
-    const vib = info.vib;
-    const visibleIndices = getVisibleVibrationModeIndices(vib);
-    const currentModeIndex = vib.modeIndex | 0;
-    const hasCurrentVisible = visibleIndices.includes(currentModeIndex);
-    let activeModeChanged = false;
-    if (!hasCurrentVisible && visibleIndices.length > 0) {
-      vib.modeIndex = visibleIndices[0];
-      vib.phase = 0;
-      activeModeChanged = true;
-    }
-
-    const tableState = renderVibrationModeTable(info);
-    if (tableState.visibleCount <= 0) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-      vib.phase = 0;
-      applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
-      if (vibrationModeLabel) vibrationModeLabel.textContent = 'No visible mode';
-      if (vibrationNowPlaying) {
-        vibrationNowPlaying.textContent = vibrationHideSmallFrequencies
-          ? `No visible mode (|freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} hidden)`
-          : 'No mode selected';
-      }
-      setMotionPanelButtonGlyph(vibrationPlayBtn, 'play_arrow');
-      if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
-      renderVibrationSpectrum(info, tableState);
-      if (vibrationVideoController) vibrationVideoController.syncUi(info);
-      updateDisplayWindowAdaptiveMenuUi();
-      return;
-    }
-
-    if (activeModeChanged) {
-      if (vibrationPlaying) vibrationLastStepMs = 0;
-      else applyActiveVibrationPhase(0, { syncUi: false });
-    }
-    const mode = vib.modes[vib.modeIndex] || info.mode;
-    const labelSuffix = (mode && typeof mode.label === 'string' && mode.label.trim())
-      ? ` ${mode.label.trim()}`
-      : '';
-    const freq = Number(mode && mode.frequencyCm1);
-    const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} ${CM_INV_TEXT}` : `-- ${CM_INV_TEXT}`;
-    if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
-    if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
-    setMotionPanelButtonGlyph(vibrationPlayBtn, vibrationPlaying ? 'pause' : 'play_arrow');
-    if (vibrationAmplitudeEl && document.activeElement !== vibrationAmplitudeEl) {
-      vibrationAmplitudeEl.value = Number(vib.amplitude).toFixed(2);
-    }
-    if (vibrationSpeedEl && document.activeElement !== vibrationSpeedEl) {
-      vibrationSpeedEl.value = Number(vib.speed).toFixed(2);
-    }
-    if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = Number.isFinite(freq)
-      ? `${freq.toFixed(1)} ${CM_INV_HTML}`
-      : `-- ${CM_INV_HTML}`;
-    renderVibrationSpectrum(info, tableState);
-    if (vibrationVideoController) vibrationVideoController.syncUi(info);
-    updateDisplayWindowAdaptiveMenuUi();
-  }
+  function syncVibrationControls(...args) { return vibrationRuntimeController.syncVibrationControls(...args); }
 
   /**
    * Redraw vibration UI after the floating panel has entered layout.
    * This avoids first-open canvas stretch when initial render happens while hidden.
    * @param {number=} rafFrames
    */
-  function scheduleVibrationPanelLayoutSync(rafFrames = 2) {
-    const frames = Math.max(1, Math.round(Number(rafFrames) || 1));
-    if (vibrationPanelLayoutRaf) {
-      cancelAnimationFrame(vibrationPanelLayoutRaf);
-      vibrationPanelLayoutRaf = 0;
-    }
-    /**
-     * @param {number} remaining
-     */
-    const tick = (remaining) => {
-      vibrationPanelLayoutRaf = requestAnimationFrame(() => {
-        if (remaining > 1) {
-          tick(remaining - 1);
-          return;
-        }
-        vibrationPanelLayoutRaf = 0;
-        if (!vibrationPanel || !vibrationPanel.classList.contains('open')) return;
-        syncVibrationControls();
-      });
-    };
-    tick(frames);
-  }
+  function scheduleVibrationPanelLayoutSync(...args) { return vibrationRuntimeController.scheduleVibrationPanelLayoutSync(...args); }
   /**
    * Restore active vibrational displacement to equilibrium geometry.
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function restoreActiveVibrationEquilibrium(options = {}) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) return false;
-    const syncUi = options.syncUi !== false;
-    const vib = info.vib;
-    vib.phase = 0;
-    applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
-    if (syncUi) syncVibrationControls();
-    return true;
-  }
+  function restoreActiveVibrationEquilibrium(...args) { return vibrationRuntimeController.restoreActiveVibrationEquilibrium(...args); }
   /**
    * Apply the selected vibrational mode at one phase angle.
    * @param {number} phase
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function applyActiveVibrationPhase(phase, options = {}) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) return false;
-    const syncUi = options.syncUi !== false;
-    const vib = info.vib;
-    const mode = info.mode;
-    const wave = Math.sin(Number(phase) || 0);
-    const amp = Number(vib.amplitude) || 0;
-    const eq = vib.equilibrium;
-    const disp = mode.displacements;
-    const frame = vib.frameBuffer;
-    for (let i = 0; i < frame.length; i++) {
-      frame[i] = eq[i] + (amp * disp[i] * wave);
-    }
-    vib.phase = Number(phase) || 0;
-    applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
-    if (syncUi) syncVibrationControls();
-    return true;
-  }
+  function applyActiveVibrationPhase(...args) { return vibrationRuntimeController.applyActiveVibrationPhase(...args); }
   /**
    * Advance active vibrational playback from wall-clock time.
    * @param {number} nowMs
    */
-  function updateVibrationPlayback(nowMs) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) {
-      if (vibrationPlaying) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
-        syncVibrationControls();
-      }
-      return;
-    }
-    if (!vibrationPlaying) return;
-    if (currentMode === MODES.EDIT) return;
-
-    const vib = info.vib;
-    const speed = Math.max(0.1, Math.min(30, Number(vib.speed) || VIBRATION_DEFAULT_SPEED));
-    vib.speed = speed;
-    if (vibrationLastStepMs <= 0) {
-      vibrationLastStepMs = nowMs;
-      return;
-    }
-    const dtSec = Math.max(0, Math.min(0.2, (nowMs - vibrationLastStepMs) / 1000));
-    vibrationLastStepMs = nowMs;
-    let nextPhase = (Number(vib.phase) || 0) + dtSec * speed * Math.PI * 2;
-    const exportAdvance = vibrationVideoController
-      ? vibrationVideoController.resolveAdvance(nextPhase, Math.PI * 2)
-      : null;
-    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'phase')) {
-      nextPhase = Number(exportAdvance.phase) || 0;
-    }
-    if (exportAdvance && exportAdvance.stopPlayback) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-    }
-    applyActiveVibrationPhase(nextPhase, { syncUi: false });
-    markSessionChanged();
-  }
+  function updateVibrationPlayback(...args) { return vibrationRuntimeController.updateVibrationPlayback(...args); }
   /**
    * Apply one trajectory frame to active atom positions and refresh geometry transforms.
    * @param {number} frameIndex
@@ -6152,8 +5687,8 @@
     const currentPlaying = info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing;
     const nextPlaying = !currentPlaying;
     if (nextPlaying) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
     }
     setTrajectoryPlayingForInfo(info, nextPlaying);
@@ -6172,8 +5707,8 @@
     const current = Math.max(0, Math.min(info.frameCount - 1, Number(info.traj.frameIndex) | 0));
     const step = Number(delta) || 0;
     const next = Math.max(0, Math.min(info.frameCount - 1, current + step));
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     restoreActiveVibrationEquilibrium({ syncUi: false });
     if (info.traj.syncEnabled) {
       const master = getTrajectorySyncMaster();
@@ -6753,7 +6288,7 @@
   const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
   const moldenInspector = document.getElementById('moldenInspector');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
-  const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
+  const vibrationPanelBtn = els.vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
   const coordsPanel = document.getElementById('coordsPanel');
@@ -6764,7 +6299,7 @@
   const trajectoryResetBtn = document.getElementById('trajectoryResetBtn');
   const trajectorySaveVideoBtn = document.getElementById('trajectorySaveVideoBtn');
   const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
-  const vibrationPanel = document.getElementById('vibrationPanel');
+  const vibrationPanel = els.vibrationPanel = document.getElementById('vibrationPanel');
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationSaveVideoBtn = document.getElementById('vibrationSaveVideoBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
@@ -6844,22 +6379,22 @@
   const vibrationVideoCropActions = document.getElementById('vibrationVideoCropActions');
   const vibrationVideoCropStartBtn = document.getElementById('vibrationVideoCropStartBtn');
   const vibrationVideoCropCancelBtn = document.getElementById('vibrationVideoCropCancelBtn');
-  const vibrationRow = document.getElementById('vibrationRow');
-  const vibrationRow2 = document.getElementById('vibrationRow2');
+  const vibrationRow = els.vibrationRow = document.getElementById('vibrationRow');
+  const vibrationRow2 = els.vibrationRow2 = document.getElementById('vibrationRow2');
   const vibrationHideLowFreqEl = document.getElementById('vibrationHideLowFreq');
-  const vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
-  const vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
-  const vibrationModeLabel = document.getElementById('vibrationModeLabel');
-  const vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
-  const vibrationSpeedEl = document.getElementById('vibrationSpeed');
-  const vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
-  const vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
-  const vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
-  const vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
-  const vibrationModeTable = document.getElementById('vibrationModeTable');
-  const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
-  const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
-  const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
+  const vibrationPlayBtn = els.vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
+  const vibrationNowPlaying = els.vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
+  const vibrationModeLabel = els.vibrationModeLabel = document.getElementById('vibrationModeLabel');
+  const vibrationAmplitudeEl = els.vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
+  const vibrationSpeedEl = els.vibrationSpeedEl = document.getElementById('vibrationSpeed');
+  const vibrationFreqLabel = els.vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
+  const vibrationSpectrumWrap = els.vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
+  const vibrationSpectrumCanvas = els.vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
+  const vibrationSpectrumMeta = els.vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
+  const vibrationModeTable = els.vibrationModeTable = document.getElementById('vibrationModeTable');
+  const vibrationModeTableWrap = els.vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
+  const vibrationModeTableBody = els.vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
+  const vibrationModeEmpty = els.vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
 
   const getCanvasExportOverlayBounds = () => {
     const size = readViewportCssSize();
@@ -6932,8 +6467,8 @@
       return next;
     },
     prepareSceneForRecording: () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
     },
     captureSessionState: (info) => ({
@@ -7020,12 +6555,12 @@
     syncPrimaryControls: syncVibrationControls,
     syncSecondaryControls: syncTrajectoryControls,
     getPlaybackState: () => ({
-      playing: vibrationPlaying,
-      lastStepMs: vibrationLastStepMs,
+      playing: vibrationRuntimeController.getPlaybackState().playing,
+      lastStepMs: vibrationRuntimeController.getPlaybackState().lastStepMs,
     }),
     setPlaybackState: (nextState = {}) => {
-      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) vibrationPlaying = !!nextState.playing;
-      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) vibrationLastStepMs = Number(nextState.lastStepMs) || 0;
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) vibrationRuntimeController.setPlaybackState({ playing: !!nextState.playing });
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) vibrationRuntimeController.setPlaybackState({ lastStepMs: Number(nextState.lastStepMs) || 0 });
     },
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
@@ -7040,7 +6575,7 @@
       targetRecord: info && info.record ? info.record : null,
       modeIndex: info && info.vib ? (info.vib.modeIndex | 0) : 0,
       phase: info && info.vib ? (Number(info.vib.phase) || 0) : 0,
-      wasPlaying: !!vibrationPlaying,
+      wasPlaying: !!vibrationRuntimeController.getPlaybackState().playing,
     }),
     restoreSessionState: (snapshot) => {
       if (!(snapshot && snapshot.targetRecord)) return;
@@ -7049,18 +6584,18 @@
       info.vib.modeIndex = Math.max(0, Math.min(info.modeCount - 1, Number(snapshot.modeIndex) | 0));
       applyActiveVibrationPhase(snapshot.phase, { syncUi: false });
       if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
-        vibrationPlaying = true;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: true });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       } else {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       }
     },
     startRecordingSequence: (info) => {
       info.vib.phase = 0;
       applyActiveVibrationPhase(0, { syncUi: false });
-      vibrationPlaying = true;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: true });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     },
     resolveRecordingAdvance: (nextPhase, cycleEndPhase) => {
       const next = Number(nextPhase) || 0;
@@ -10637,8 +10172,8 @@
     if (currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       const vibInfo = getActiveVibrationInfo();
       if (vibInfo.enabled) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
         restoreActiveVibrationEquilibrium({ syncUi: false });
         syncVibrationControls();
       }
@@ -11426,13 +10961,10 @@
           reason: String(options.vibrationVideoReason || 'Vibration video export discarded because the panel was closed'),
         });
       }
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
-      if (vibrationPanelLayoutRaf) {
-        cancelAnimationFrame(vibrationPanelLayoutRaf);
-        vibrationPanelLayoutRaf = 0;
-      }
+      vibrationRuntimeController.cancelPanelLayoutSync();
     }
     setFloatingPanelOpen(vibrationPanel, shouldOpen);
     if (shouldOpen) scheduleVibrationPanelLayoutSync(2);
@@ -27014,9 +26546,9 @@
     info.vib.speed = Math.max(0.1, Math.min(30, asFiniteNumber(value, info.vib.speed || VIBRATION_DEFAULT_SPEED)));
     syncVibrationControls();
   });
-  registerPresetSetting('vibration.hideSmallFrequencies', () => !!vibrationHideSmallFrequencies, (value) => {
-    vibrationHideSmallFrequencies = asBoolean(value);
-    if (vibrationHideLowFreqEl) vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+  registerPresetSetting('vibration.hideSmallFrequencies', () => !!vibrationRuntimeController.getHideSmallFrequencies(), (value) => {
+    vibrationRuntimeController.setHideSmallFrequencies(asBoolean(value));
+    if (vibrationHideLowFreqEl) vibrationHideLowFreqEl.checked = !!vibrationRuntimeController.getHideSmallFrequencies();
     syncVibrationControls();
   });
 
@@ -28299,8 +27831,8 @@
       if (evt && evt.stopPropagation) evt.stopPropagation();
       const shouldPlay = !isAnyTrajectoryPlaybackActive();
       if (shouldPlay) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
         restoreActiveVibrationEquilibrium({ syncUi: false });
       }
       setAllTrajectoryPlayback(shouldPlay, { syncUi: true });
@@ -28309,8 +27841,8 @@
   }
   if (trajectoryResetBtn) {
     trajectoryResetBtn.onclick = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
       resetAllTrajectoryFrames({ syncUi: true });
       syncVibrationControls();
@@ -28318,8 +27850,8 @@
   }
   if (trajectoryFrameEl) {
     trajectoryFrameEl.oninput = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
       stopTrajectoryPlayback({ syncUi: false });
       const idx = Number(trajectoryFrameEl.value);
@@ -28347,12 +27879,12 @@
     vibrationPlayBtn.onclick = () => {
       const info = getActiveVibrationInfo();
       if (!info.enabled) return;
-      const nextPlaying = !vibrationPlaying;
+      const nextPlaying = !vibrationRuntimeController.getPlaybackState().playing;
       if (nextPlaying) {
         stopAllTrajectoryPlayback({ syncUi: false });
       }
-      vibrationPlaying = nextPlaying;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: nextPlaying });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       if (!nextPlaying) applyActiveVibrationPhase(info.vib.phase || 0, { syncUi: false });
       syncTrajectoryControls();
       syncVibrationControls();
@@ -28360,8 +27892,8 @@
   }
   if (vibrationResetBtn) {
     vibrationResetBtn.onclick = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: true });
     };
   }
@@ -28382,11 +27914,11 @@
       info.vib.phase = 0;
       stopAllTrajectoryPlayback({ syncUi: false });
       if (shouldTogglePlayback) {
-        vibrationPlaying = !vibrationPlaying;
+        vibrationRuntimeController.setPlaybackState({ playing: !vibrationRuntimeController.getPlaybackState().playing });
       } else {
-        vibrationPlaying = true;
+        vibrationRuntimeController.setPlaybackState({ playing: true });
       }
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       applyActiveVibrationPhase(0, { syncUi: false });
       syncTrajectoryControls();
       syncVibrationControls();
@@ -28413,9 +27945,9 @@
     };
   }
   if (vibrationHideLowFreqEl) {
-    vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+    vibrationHideLowFreqEl.checked = !!vibrationRuntimeController.getHideSmallFrequencies();
     vibrationHideLowFreqEl.onchange = () => {
-      vibrationHideSmallFrequencies = !!vibrationHideLowFreqEl.checked;
+      vibrationRuntimeController.setHideSmallFrequencies(!!vibrationHideLowFreqEl.checked);
       syncVibrationControls();
     };
   }
@@ -28569,8 +28101,8 @@
     vol.natoms = vol.atoms.length;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     stopAllTrajectoryPlayback({ syncUi: false });
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     syncBuilderExtensionFromVolumes();
     currentIndex = idx;
     clearTransientInteractionState();
@@ -28616,8 +28148,8 @@
     const afterState = cloneCoordsPanelEditState(vol);
     pushCoordsPanelEditHistoryEntry(record, beforeState, afterState, actionLabel);
     stopAllTrajectoryPlayback({ syncUi: false });
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     clearTransientInteractionState();
     rebuildScene({ preserveView: true });
     updateSidePanel();
@@ -30077,8 +29609,8 @@
     };
 
     if (target.index === currentIndex) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       applyActiveVibrationPhase(0, { syncUi: false });
       syncVibrationControls();
     }
@@ -31656,13 +31188,13 @@
           camera: camera.clone(), target: controls.target.clone(),
           master: Object.assign({}, getTrajectorySyncMaster()),
           trajectories: getAllTrajectoryInfos().map(info => ({ traj: info.traj, playing: info.traj.playing })),
-          vibrationPlaying,
+          vibrationPlaying: vibrationRuntimeController.getPlaybackState().playing,
           orbitals: volumes.filter(record => record.vol.kind === 'molden').map(record => ({ record, index: record.moldenMoIndex })),
         }),
         activate: target => {
           getTrajectorySyncMaster().playing = false;
           for (const info of getAllTrajectoryInfos()) info.traj.playing = false;
-          vibrationPlaying = false;
+          vibrationRuntimeController.setPlaybackState({ playing: false });
           exporter.activateTarget(sceneGraphController, target);
           currentIndex = Math.max(0, getRecordIndex(target.layer.record || target.scene.moleculeRecord));
           syncLoadedSceneControls();
@@ -31688,8 +31220,8 @@
           currentIndex = saved.currentIndex;
           Object.assign(getTrajectorySyncMaster(), saved.master, { lastStepMs: 0 });
           for (const { traj, playing } of saved.trajectories) Object.assign(traj, { playing, _lastStepMs: 0 });
-          vibrationPlaying = saved.vibrationPlaying;
-          vibrationLastStepMs = 0;
+          vibrationRuntimeController.setPlaybackState({ playing: saved.vibrationPlaying });
+          vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
           for (const { record, index } of saved.orbitals) record.moldenMoIndex = index;
           camera.copy(saved.camera);
           controls.target.copy(saved.target);
@@ -31802,11 +31334,11 @@
         surfaceRenderSuppressed,showSurfaces,surfaceGeometryDeferred,
         layers:getAllLookLayers().map(layer=>({layer,values:Object.fromEntries(figureLayerKeys.map(key=>[key,{own:Object.hasOwn(layer,key),value:cloneJsonLike(layer[key])}]))})),
         helpers:figureHelpers().map(obj=>({obj,visible:obj.visible})),
-        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying,
+        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying: vibrationRuntimeController.getPlaybackState().playing,
         orbitals:volumes.filter(r=>r.vol.kind==='molden').map(record=>({record,index:record.moldenMoIndex})),
       };
       figureRendering=true;pauseFigureUI(preview);
-      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationPlaying=false;
+      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationRuntimeController.setPlaybackState({ playing: false });
       currentMode=MODES.DISPLAY;surfaceRenderSuppressed=false;showSurfaces=true;
       return state;
     },
@@ -31817,7 +31349,7 @@
       for(const {layer,values} of state.layers)for(const [key,entry] of Object.entries(values)){if(entry.own)layer[key]=entry.value;else delete layer[key];}
       currentIndex=state.currentIndex;currentMode=state.currentMode;surfaceRenderSuppressed=state.surfaceRenderSuppressed;showSurfaces=state.showSurfaces;
       Object.assign(getTrajectorySyncMaster(),state.master,{lastStepMs:0});for(const {traj,playing} of state.trajectories)Object.assign(traj,{playing,_lastStepMs:0});
-      vibrationPlaying=state.vibrationPlaying;vibrationLastStepMs=0;
+      vibrationRuntimeController.setPlaybackState({ playing: state.vibrationPlaying });vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       for(const {record,index} of state.orbitals)record.moldenMoIndex=index;
       rebuildScene({preserveView:true,skipAutoIso:true});surfaceGeometryDeferred=state.surfaceGeometryDeferred;
       for(const {obj,visible} of state.helpers)obj.visible=visible;
@@ -31957,8 +31489,8 @@
       sceneSources.restore(saved.sources);
       for (const record of volumes) if (record.vol.isTwoComponent) setVolume2CComponent(record, global2CComponentMode);
       trajectoryPlaybackController.forgetPlaybackOwner();
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreSessionView(saved.view);
     };
     applyingSession = true;

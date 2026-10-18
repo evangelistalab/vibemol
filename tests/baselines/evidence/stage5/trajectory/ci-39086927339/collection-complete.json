@@ -1,0 +1,79 @@
+{
+  "runId": 39086927339,
+  "attempt": 1,
+  "head": "41363b608592991afcaf6c7a501efd86885040f2",
+  "conclusion": "failure",
+  "checkoutMergeCommit": "e2652a4365aa99f210f4884a3daa16fe88336703",
+  "artifacts": [
+    {
+      "name": "browser-suite-smoke",
+      "id": 12121725888,
+      "zipSha256": "1092aaa7cdb88e3d2595fe42c4454ade6b5390cea53c82ce3c19916330c10552",
+      "zipBytes": 143273,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-balanced-1",
+      "id": 12121702977,
+      "zipSha256": "b037cde1970b8458b6195ee66fc919854c86a9b1c95346ce91efbffe530bdd95",
+      "zipBytes": 7147179,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterize-2",
+      "id": 12121447643,
+      "zipSha256": "209a2c92451aa04d12c9b166145d98fcba351dcdea82c51a05c8472b63510b75",
+      "zipBytes": 1525583,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-results",
+      "id": 12121338487,
+      "zipSha256": "3155a64fd40376afe6d2a570a2b5989dda9623f0c71234217cb9ed4c5f234b42",
+      "zipBytes": 21891,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-balanced-3",
+      "id": 12121243910,
+      "zipSha256": "19b42cad5bc4d204d7ab98f467fa3119550cf68a70deb204ba41d4e8322d020b",
+      "zipBytes": 5125740,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-looks",
+      "id": 12121243741,
+      "zipSha256": "e6c389c1834d6599e348db3a383cf394aa74b91fad5b1fa175bebbe71f1e661b",
+      "zipBytes": 1473346,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "browser-suite-balanced-2",
+      "id": 12121138896,
+      "zipSha256": "33ac925c00ea75e53be20e4861a14d60b98e481f684b37a246094876fb00e24e",
+      "zipBytes": 6379855,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterization-results",
+      "id": 12121089597,
+      "zipSha256": "7c2e1ab6b8ab30b5a66fc4b8744b4becdd23357ded329e0de9002bf0cba4b2a2",
+      "zipBytes": 3045452,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "construction-order",
+      "id": 12120593214,
+      "zipSha256": "7e4b9f077ab2dee6da1ccefbfb545db8e31aa463fd6b9bae62e0b7111908edab",
+      "zipBytes": 16631,
+      "digestMatchedGitHub": true
+    },
+    {
+      "name": "characterize-1",
+      "id": 12120569642,
+      "zipSha256": "b66b88ecff3bf174cb58e27d723e659021fda7ae5e6239f22e906d6108650986",
+      "zipBytes": 1525593,
+      "digestMatchedGitHub": true
+    }
+  ]
+}

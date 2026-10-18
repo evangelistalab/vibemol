@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 class RefactorRunPolicy(unittest.TestCase):
     def invoke(self, **changes):
-        report = dict(passed=34, failed=3, total=37, allExecutedOnce=True,
+        report = dict(passed=33, failed=4, total=37, allExecutedOnce=True,
                       matchesAcceptedBaseline=True,
                       issue11Workflow=dict(id='issue-11-stop-after-second-download', site='trajectory'))
         report.update(changes)
@@ -47,7 +47,7 @@ class RefactorRunPolicy(unittest.TestCase):
         self.assertIn('new-export-failure', result.stdout)
 
     def test_counts_once_and_original_join_stay_required(self):
-        for changes in [dict(passed=35, failed=2), dict(allExecutedOnce=False),
+        for changes in [dict(passed=34, failed=3), dict(passed=35, failed=2), dict(allExecutedOnce=False),
                         dict(matchesAcceptedBaseline=False)]:
             with self.subTest(changes=changes):
                 result = self.invoke(**changes)

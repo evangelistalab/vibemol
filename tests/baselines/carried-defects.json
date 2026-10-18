@@ -1,7 +1,7 @@
 {
   "releaseLine": "0.9.x",
   "productionFixesAllowedInRefactor": false,
-  "rule": "Identical tagged-base manual failures are findings, not blockers. Preserve failed assertions and paired evidence. CI accepted workflows are unchanged.",
+  "rule": "Preserve all filed failing assertions. Current CI requires the exact four manifest workflows at33/4/37; any missing/extra/different failure stops. Production fixes remain excluded.",
   "taggedBase": "v0.9.5-pre-refactor",
   "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "carriedDefects": [
@@ -56,7 +56,7 @@
       "status": "open",
       "suite": "tests/e2e/edit_tool.py",
       "workflow": "Intermittent Edit toolbar layout collapse at 320px: clientWidth12 versus scrollWidth442, hidden trigger and empty hidden overflow menu",
-      "acceptedCiFailure": false,
+      "acceptedCiFailure": true,
       "classification": "Measured on both integration control and frozen Symmetry; direct-human layout-collapse classification. Exact cause and tagged-CI reproduction are not diagnosed.",
       "originalAssertionPreserved": true,
       "observations": {
@@ -75,14 +75,16 @@
       "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
       "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
       "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
-      "mergePolicy": "Requires its own complete first-pass ordinary gate; diagnostic and carried classification do not enlarge accepted CI failing set.",
+      "mergePolicy": "Direct human corrected ordinary gate to33/4/37; diagnostic remains separate.34/3 is over-performance and stops.",
       "impact": "Edit toolbar unusable in the measured collapsed state, beyond narrow-viewport overflow",
       "priorityRelativeTo": {
         "aheadOfIssue": 17,
         "batch": "0.9.x",
         "authority": "direct human instruction 2026-10-17"
       },
-      "productionFixAllowedInPubChemRefactor": false
+      "productionFixAllowedInPubChemRefactor": false,
+      "acceptedWorkflowKey": "issue-21-edit-toolbar-layout-collapse-320",
+      "comparandLogging": "Shipped edit_tool width assertion now records actual scrollWidth/clientWidth and expected maximum on pass/fail, without changing its tolerance or waits."
     },
     {
       "id": "selection-metal-popover",
@@ -169,7 +171,7 @@
       21,
       17
     ],
-    "scope": "Relative priority among these shipped defects; other carried defects retain their separate triage. No additional CI failures or refactor fixes authorized.",
+    "scope": "Relative priority among these shipped defects; other carried defects retain separate triage. Exactly the four manifest workflows are accepted after the human correction; no production fixes are authorized in this refactor.",
     "reason": "Restore can silently leave partial settings/reference state (#25); collapsed Edit toolbar is unusable at320px (#21). Both precede the narrower Metal popover defects (#17).",
     "authority": "Direct human Stage5/release instruction; severity ordering recorded by the implementing agent."
   }

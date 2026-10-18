@@ -1,0 +1,42 @@
+{
+  "group": "trajectory",
+  "branch": "codex/trajectory-playback",
+  "base": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+  "head": "41363b608592991afcaf6c7a501efd86885040f2",
+  "tree": "78a1a75b7783077587813a93d1eec979565f3ecf",
+  "appSha256": "f3c5e0759afd86c2bcc73821ef1b0c13cd8aec8883513fc0aafd94b9448ac9d2",
+  "moduleSha256": "18fe3450a725a12b70011bf9ce316b0846b5475c738795d713f113632fd61a55",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "controllerInputs": [
+    "getSceneGraphController",
+    "getActiveRecord",
+    "TrajectoryClock",
+    "applyAtomCoordinateFrame",
+    "markSessionChanged",
+    "isEditMode",
+    "syncTrajectoryControls",
+    "getVideoController"
+  ],
+  "controllerDependencyCount": 8,
+  "letBefore": 262,
+  "letAfter": 260,
+  "periodicFactoryInputs": 11,
+  "localValidationSha256": "17ee0bdffa1762f764b3a704b3f404e5c7ce57ceb28672bb7c84c9e28ef1a960",
+  "sourceAuditSha256": "e387cd975e9149031f6d6b6187090659387f061739f3e82c871752798b1f62d7",
+  "constructionOrderSha256": "291558c6125ffbcf798aa48f2501e5fbed44723e89225d78242364c35c4b5056",
+  "runPolicySha256": "c4fc1cd5aa0a6ad7747c75ad109437d360db88c618499f62cc9a476e989199ee",
+  "issue11Workflow": {
+    "id": "issue-11-stop-after-second-download",
+    "site": "trajectory"
+  },
+  "baselineRun": 39071994182,
+  "frozen": "2026-10-18T01:32:36.005656+00:00",
+  "pr": 26,
+  "runId": 39086927339,
+  "prUrl": "https://github.com/evangelistalab/vibemol/pull/26",
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+  "attempt": 1,
+  "artifactDir": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/trajectory/ci-39086927339",
+  "baselineRecordRun": 39086927251,
+  "sourceAuditScriptSha256": "648853854d988b48ed9151c57ee6f3bde78fdc6bb2a2185270bdaadae3a3af2e"
+}
