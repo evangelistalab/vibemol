@@ -10,12 +10,12 @@
     1
   ],
   "currentBrowserBaseline": {
-    "passed": 33,
-    "failed": 4,
+    "passed": 34,
+    "failed": 3,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/browser-results.json",
-    "comparison": "local35/2/37 historical; currentCI33/4/37;34/3 is over-performance and stops",
+    "evidence": null,
+    "comparison": "Historical local35/2/37; current required CI34/3/37.35/2 is over-performance and stops.",
     "historicalLocalResult": {
       "passed": 35,
       "failed": 2,
@@ -23,13 +23,14 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Direct human corrected the previously inconsistent accepted set to include carried#21. PR26 original attempt1 was independently recomputed under that policy, with no retry. Original GitHub aggregate remains failed under superseded34/3; all other gates pass.",
+    "provenance": "Direct human reclassified#21 as a closed synchronization test defect after diagnostic39129507791. A new harness-only CI must establish this restored gate; diagnostics do not supply acceptance.",
     "gate": {
-      "passed": 33,
-      "failed": 4,
+      "passed": 34,
+      "failed": 3,
       "total": 37,
       "environment": "CI",
-      "satisfied": true
+      "satisfied": false,
+      "status": "pending own first harness-fix CI"
     },
     "acceptedDefects": [
       {
@@ -57,17 +58,9 @@
         "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
         "issue": "https://github.com/evangelistalab/vibemol/issues/11",
         "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
-      },
-      {
-        "suite": "edit_tool.py",
-        "workflow": "issue-21-edit-toolbar-layout-collapse-320",
-        "exceptionType": "AssertionError",
-        "defect": "Issue #21: .wb-tools layout collapse at 320px",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/21",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
       }
     ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+    "ciRunUrl": null,
     "sourceAppSha256": "f3c5e0759afd86c2bcc73821ef1b0c13cd8aec8883513fc0aafd94b9448ac9d2",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
@@ -92,7 +85,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element caches, completed Build/adaptive plus Element Colors, Atoms menu, Selection and Symmetry/shared launcher.",
-      "reason": "Historical Stage3 cache conversion is complete. Lazy panels require manual event/identity checks. The current ordinary gate is33/4/37 with the four exact manifest workflows, including320pxEdit layout collapse#21. Production fixes remain outside the refactor; the material-preset intermittent stays open.",
+      "reason": "Historical Stage3 cache conversion is complete. Current ordinary gate34/3/37 has the exact three manifest workflows. Closed#21 is a harness synchronization issue; state readiness replaces its fixed sleep. Production fixes remain outside this refactor and the material-preset intermittent stays open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Selection then Symmetry/shared launcher, each cut from pushed integration, own exact-candidate CI gate and sequential merge without intermediate review. Only the three canonical conversion blockers apply; identical tagged manual failures are findings.",
       "panelPrPlan": [
@@ -466,7 +459,7 @@
           }
         ],
         "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
-        "provenance": "Historical approved Build/adaptive CI34/3/37; every new group requires its own33/4/37 artifact and52 composed slots/eight contexts/minima.",
+        "provenance": "Historical approved Build/adaptive CI34/3/37; every new group requires its own restored34/3/37 artifact and52 composed slots/eight contexts/all minima.",
         "ciEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
         "ciGateSatisfied": true,
         "latestCiResult": {
@@ -1249,7 +1242,7 @@
                 }
               ]
             },
-            "ciStatus": "Historical Colors local checkpoint; its completed own ordinary run39039061120 is recorded separately. Current candidates require33/4/37 and exact four workflows.",
+            "ciStatus": "Historical Colors local checkpoint; completed ordinary run39039061120 is recorded separately. Current candidates require34/3/37 and exactly the three manifest workflows.",
             "carriedDefects": "tests/baselines/carried-defects.json",
             "materialPresetIntermittent": "Open; local captures are not the two Looks material-family paths."
           },
@@ -1976,9 +1969,9 @@
       },
       "appearanceMaterialPresetReporting": "Every run: actual Looks duration and separate Studio/Properties material-family completion. Risk remains open.",
       "releaseOrder": [
-        "Offline standalone HTML file:// with network disabled FIRST",
         "Four modes /two themes /1512,1280,1024 /every fixture /native session save-load",
-        "0.10.0; no user-facing changes in release notes"
+        "Version0.10.0 and explicit no-user-facing-changes release notes",
+        "After shipping, explicit0.10.0 golden recording and removal of the single-release204-leaf metadata mapping"
       ],
       "trajectoryCandidateLocal": {
         "appLetBefore": 262,
@@ -2000,7 +1993,7 @@
     "modeConsistency": "Selection card overlays Coordinates Delete in legacy mode; preserve the failing assertion. Separate 0.9.x defect batch.",
     "videoCrop": "#11 https://github.com/evangelistalab/vibemol/issues/11: click-time Save/Stop branch reopens crop selection after trajectory/vibration completion. Do not fix in the refactor; schedule after 0.10.0 or in parallel on 0.9.x. Figure path gets one probe only.",
     "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor.",
-    "editTool320": "Carried issue#21: .wb-tools layout collapse at320px; historical integration and Symmetry measuredscroll442/client12. The exact width workflow is now the fourth accepted CI failure; preserve its assertion and comparand logging. No production layout fix in the refactor."
+    "editTool320": "Closed test-synchronization issue#21. Diagnostic39129507791 showed mixed304/304 and442/12 on both integration/5c; overflow was sampled before compact sync. Wait for observable compact=true and a presentation boundary, preserving the comparison/tolerance and logging. No production layout fix is included. Presented-frame flash remains a separate nonblocking product question."
   },
   "stage1BlockedByTheseFollowups": false,
   "baselineCountScope": "Every current candidate executes all37 browser entry points once, with exactly33pass/4fail and the manifest exact failing workflow set.102 goldens twice/exact repeat and52slots/eight contexts/all minima remain additional gates. Earlier34/3 candidate results are immutable historical observations, never the current acceptance policy.",
@@ -2109,7 +2102,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "CI requires exactly 33 passing / 4 failing / 37 with the exact four (suite, workflow) keys. Accepted: axis Escape/canvas focus; Coordinates Delete intercepted by selection card; #11 trajectory OR vibration idle wait after the second download; #21 .wb-tools layout collapse at 320px. Traceback lines and hashes are diagnostic, never acceptance keys. Any missing carried failure (including 34/3 over-performance), extra failure, or different workflow stops. The Stage5a/5b exporter-shape comparison and all golden/identity/construction/source gates remain required.",
+    "browserCiGate": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -2194,7 +2187,7 @@
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": true,
-    "completeBaselineComparison": "local35/2/37 historical; currentCI33/4/37;34/3 is over-performance and stops",
+    "completeBaselineComparison": "Historical local35/2/37; current required CI34/3/37;35/2 is over-performance and stops.",
     "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
     "gateEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
   },
@@ -2315,7 +2308,7 @@
     "lineNumbers": "diagnostic only; never acceptance keys",
     "smokeScope": "Only wait_for_video_idle after the second download for trajectory or vibration, issue #11",
     "perRunSiteEvidence": "browser-results.json issue11Workflow and each failureWorkflow.site",
-    "reRunForThisCorrection": false,
+    "reRunForThisCorrection": true,
     "acceptedWorkflows": [
       {
         "suite": "axis_gizmo.py",
@@ -2342,27 +2335,19 @@
         "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
         "issue": "https://github.com/evangelistalab/vibemol/issues/11",
         "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
-      },
-      {
-        "suite": "edit_tool.py",
-        "workflow": "issue-21-edit-toolbar-layout-collapse-320",
-        "exceptionType": "AssertionError",
-        "defect": "Issue #21: .wb-tools layout collapse at 320px",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/21",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
       }
     ],
     "expected": {
-      "passed": 33,
-      "failed": 4,
+      "passed": 34,
+      "failed": 3,
       "total": 37
     },
-    "overPerformance": "34/3/37 is a stop: a carried failure is missing",
-    "authority": "Direct human correction in this chat; unchanged PR26 first attempt independently re-evaluated without rerun"
+    "overPerformance": "35/2/37 is a stop: an accepted failure is missing",
+    "authority": "Direct human synchronization correction after diagnostic39129507791; own new harness and unchanged5c gates required"
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
-    "cacheGroups": "Each new group gets one CI run on its exact merge candidate, carrying all37 suite outcomes, current33/4/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order for extractions.",
+    "cacheGroups": "Each new group gets one CI run on its exact candidate: all37 suites once, current34/3/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order for extractions.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
     "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack.",
@@ -2378,30 +2363,24 @@
     ],
     "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here.",
     "currentBrowserGate": {
-      "passed": 33,
-      "failed": 4,
+      "passed": 34,
+      "failed": 3,
       "total": 37
     },
-    "humanCorrection": "Direct human explicitly adds#21 and requires missing carried failures to stop; no diagnostic supplies merge evidence.",
+    "humanCorrection": "Direct human removed closed test-synchronization issue#21 from accepted failures and restored34/3/37. Missing accepted failures, including35/2 over-performance, still stop. Diagnostic evidence does not substitute for a merge gate.",
     "cacheOnlyRestrictionScope": "The let-to-els/line-neutral limitation applies to historical Stage3 cache conversions. The direct human separately authorizes Stage4 and Stage5 real controller extractions under their accepted seams, with preserved behavior and construction-order gate."
   },
   "editTool320Diagnostic": {
     "issue": 21,
-    "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+    "classification": "closed test-synchronization issue",
+    "run": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+    "evidence": "tests/baselines/evidence/browser-sync-21/diagnostic-39129507791/readbacks.json",
+    "acceptedCiFailure": false,
     "usableAsMergeGate": false,
-    "acceptedCiFailure": true,
-    "humanOutcomeBranch": "both integration and Symmetry overflow",
-    "sourceChanges": false,
-    "testChanges": false,
-    "firstPassFullCandidateConjunctionStillRequired": true,
-    "ownOrdinaryCandidateConjunctionSatisfiedBy": {
-      "pr": 22,
-      "run": "https://github.com/evangelistalab/vibemol/actions/runs/39034824420",
-      "head": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
-      "editToolPassedSeconds": 85.45,
-      "diagnosticUsedAsGate": false
-    },
-    "mergePolicy": "Diagnostic remains diagnostic. The direct human separately corrected the ordinary failing set to include#21, requiring own first-pass33/4/37 conjunction."
+    "productionChanges": false,
+    "harnessChange": "Wait for compact=true and presentation before the unchanged overflow assertion; remove fixed100ms sleep.",
+    "relativePriorityRemoved": true,
+    "residualProductQuestion": "Measure whether pre-compact state ever reaches a presented frame; separate low-priority issue only if perceptible."
   },
   "historicalCompleteCiGates": [
     {
@@ -2848,5 +2827,89 @@
       "status": "released after vibration merge",
       "projectedDependencies": 11
     }
+  },
+  "historicalBrowserBaselineWithIssue21": {
+    "passed": 33,
+    "failed": 4,
+    "total": 37,
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/browser-results.json",
+    "comparison": "local35/2/37 historical; currentCI33/4/37;34/3 is over-performance and stops",
+    "historicalLocalResult": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "environment": "local",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    },
+    "provenance": "Direct human corrected the previously inconsistent accepted set to include carried#21. PR26 original attempt1 was independently recomputed under that policy, with no retry. Original GitHub aggregate remains failed under superseded34/3; all other gates pass.",
+    "gate": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": true
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      },
+      {
+        "suite": "edit_tool.py",
+        "workflow": "issue-21-edit-toolbar-layout-collapse-320",
+        "exceptionType": "AssertionError",
+        "defect": "Issue #21: .wb-tools layout collapse at 320px",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/21",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
+      }
+    ],
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+    "sourceAppSha256": "f3c5e0759afd86c2bcc73821ef1b0c13cd8aec8883513fc0aafd94b9448ac9d2",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationExportReached": false
+  },
+  "historicalEditTool320Diagnostic": {
+    "issue": 21,
+    "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+    "usableAsMergeGate": false,
+    "acceptedCiFailure": true,
+    "humanOutcomeBranch": "both integration and Symmetry overflow",
+    "sourceChanges": false,
+    "testChanges": false,
+    "firstPassFullCandidateConjunctionStillRequired": true,
+    "ownOrdinaryCandidateConjunctionSatisfiedBy": {
+      "pr": 22,
+      "run": "https://github.com/evangelistalab/vibemol/actions/runs/39034824420",
+      "head": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+      "editToolPassedSeconds": 85.45,
+      "diagnosticUsedAsGate": false
+    },
+    "mergePolicy": "Diagnostic remains diagnostic. The direct human separately corrected the ordinary failing set to include#21, requiring own first-pass33/4/37 conjunction."
   }
 }

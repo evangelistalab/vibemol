@@ -1,0 +1,45 @@
+{
+  "status": "passed",
+  "base": "63082febadb22d5351365b8f75267534494893e6",
+  "appSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+  "trackedLet": 256,
+  "noProductionSourceChange": true,
+  "noGoldenOrFixtureChange": true,
+  "editToolExactAfterReplacingOnlyReadinessBlock": true,
+  "overflowAssertionAndComparandLoggingUnchanged": true,
+  "all37UniqueSuitesPreserved": true,
+  "requiredGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "acceptedWorkflowKeys": [
+    [
+      "tests/e2e/axis_gizmo.py",
+      "escape-canvas-focus"
+    ],
+    [
+      "tests/e2e/mode_consistency.py",
+      "coordinates-delete-selection-card"
+    ],
+    [
+      "tests/e2e/smoke.py",
+      "issue-11-stop-after-second-download"
+    ]
+  ],
+  "overPerformanceStops": "35/2/37",
+  "carriedProductPriority": [
+    25,
+    17
+  ],
+  "issue21ClosedTestSynchronization": true,
+  "diagnosticCitation": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+  "jsUnitPassed": 433,
+  "pythonUnitExpected": 39,
+  "editToolExactAfterReplacingOnlyReadinessBlockAndHelperImport": true,
+  "harnessSha256": "7a191dcad05a0a319618ae7c2071ee76df8713e77df01c8db1f8b76272547a05",
+  "helperImportDirectlyVerified": true,
+  "pythonUnitPassed": 39,
+  "nativeCases": 3,
+  "eachOriginalWidthPassed": true
+}

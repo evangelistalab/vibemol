@@ -1,15 +1,16 @@
 {
-  "group": "5b vibration runtime/panel",
-  "baselineRun": 39086927339,
-  "baselineHead": "41363b608592991afcaf6c7a501efd86885040f2",
+  "group": "edit320 state synchronization (harness only)",
+  "baselineRun": 39093054459,
+  "baselineHead": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Current human-corrected ordinary gate is33/4/37. The separately required Stage5a/5b unchanged-exporter check still compares the actual trajectory second-download failure with the prior accepted attempt; no silent signature changes.",
+  "reason": "The strict signature-preservation stop applied to completed5a/5b exporter changes. This harness-only correction leaves every production source unchanged and uses restored34/3/37, whose exact Smoke#11 workflow permits trajectory OR vibration after the second download. Record the actual site; disappearance, a new shape or any other failing key stops.",
   "ordinaryExpected": {
-    "passed": 33,
-    "failed": 4,
+    "passed": 34,
+    "failed": 3,
     "total": 37
-  }
+  },
+  "preserveExporterSignature": false
 }

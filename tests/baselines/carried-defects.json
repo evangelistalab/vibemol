@@ -1,7 +1,7 @@
 {
   "releaseLine": "0.9.x",
   "productionFixesAllowedInRefactor": false,
-  "rule": "Preserve all filed failing assertions. Current CI requires the exact four manifest workflows at33/4/37; any missing/extra/different failure stops. Production fixes remain excluded.",
+  "rule": "Preserve filed production-failure assertions. Current CI requires exactly the three manifest workflows at34/3/37; missing/extra/different failures, including35/2 over-performance, stop. Closed test-synchronization issue#21 waits on compact readiness while retaining its overflow comparison and logging. Production fixes remain excluded.",
   "taggedBase": "v0.9.5-pre-refactor",
   "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "carriedDefects": [
@@ -48,43 +48,6 @@
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/mode_consistency.py"
-    },
-    {
-      "id": "edit-tool-320-overflow",
-      "issue": 21,
-      "url": "https://github.com/evangelistalab/vibemol/issues/21",
-      "status": "open",
-      "suite": "tests/e2e/edit_tool.py",
-      "workflow": "Intermittent Edit toolbar layout collapse at 320px: clientWidth12 versus scrollWidth442, hidden trigger and empty hidden overflow menu",
-      "acceptedCiFailure": true,
-      "classification": "Measured on both integration control and frozen Symmetry; direct-human layout-collapse classification. Exact cause and tagged-CI reproduction are not diagnosed.",
-      "originalAssertionPreserved": true,
-      "observations": {
-        "integration": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 244.2
-        },
-        "symmetry": {
-          "scrollWidth": 442,
-          "clientWidth": 12,
-          "millisecondsSinceLastFitToolsCall": 230.8
-        }
-      },
-      "diagnosticOnly": true,
-      "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
-      "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
-      "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
-      "mergePolicy": "Direct human corrected ordinary gate to33/4/37; diagnostic remains separate.34/3 is over-performance and stops.",
-      "impact": "Edit toolbar unusable in the measured collapsed state, beyond narrow-viewport overflow",
-      "priorityRelativeTo": {
-        "aheadOfIssue": 17,
-        "batch": "0.9.x",
-        "authority": "direct human instruction 2026-10-17"
-      },
-      "productionFixAllowedInPubChemRefactor": false,
-      "acceptedWorkflowKey": "issue-21-edit-toolbar-layout-collapse-320",
-      "comparandLogging": "Shipped edit_tool width assertion now records actual scrollWidth/clientWidth and expected maximum on pass/fail, without changing its tolerance or waits."
     },
     {
       "id": "selection-metal-popover",
@@ -134,7 +97,6 @@
       "impact": "A failed startup restoration leaves partially applied settings and wrong appearance reference bookkeeping without rollback or a visible failure.",
       "priorityRelativeTo": {
         "aheadOfIssues": [
-          21,
           17
         ],
         "batch": "0.9.x",
@@ -168,11 +130,60 @@
   "relativeBatchPriority": {
     "orderedIssues": [
       25,
-      21,
       17
     ],
-    "scope": "Relative priority among these shipped defects; other carried defects retain separate triage. Exactly the four manifest workflows are accepted after the human correction; no production fixes are authorized in this refactor.",
-    "reason": "Restore can silently leave partial settings/reference state (#25); collapsed Edit toolbar is unusable at320px (#21). Both precede the narrower Metal popover defects (#17).",
-    "authority": "Direct human Stage5/release instruction; severity ordering recorded by the implementing agent."
+    "scope": "Relative priority among carried product defects; closed test-synchronization issue#21 is removed. Exactly three manifest workflows are accepted.",
+    "reason": "Silent partial restoration#25 precedes Metal/Coordination/Translate popover#17.",
+    "authority": "Direct human correction after diagnostic39129507791."
+  },
+  "closedTestIssues": [
+    {
+      "issue": 21,
+      "status": "closed",
+      "classification": "test synchronization",
+      "workflow": "edit_tool sampled .wb-tools before compact=true/presentation",
+      "diagnostic": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+      "evidence": "tests/baselines/evidence/browser-sync-21/diagnostic-39129507791/readbacks.json",
+      "acceptedCiFailure": false,
+      "originalOverflowAssertionPreserved": true,
+      "productFlashQuestionSeparate": true
+    }
+  ],
+  "historicalIssue21Classification": {
+    "id": "edit-tool-320-overflow",
+    "issue": 21,
+    "url": "https://github.com/evangelistalab/vibemol/issues/21",
+    "status": "open",
+    "suite": "tests/e2e/edit_tool.py",
+    "workflow": "Intermittent Edit toolbar layout collapse at 320px: clientWidth12 versus scrollWidth442, hidden trigger and empty hidden overflow menu",
+    "acceptedCiFailure": true,
+    "classification": "Measured on both integration control and frozen Symmetry; direct-human layout-collapse classification. Exact cause and tagged-CI reproduction are not diagnosed.",
+    "originalAssertionPreserved": true,
+    "observations": {
+      "integration": {
+        "scrollWidth": 442,
+        "clientWidth": 12,
+        "millisecondsSinceLastFitToolsCall": 244.2
+      },
+      "symmetry": {
+        "scrollWidth": 442,
+        "clientWidth": 12,
+        "millisecondsSinceLastFitToolsCall": 230.8
+      }
+    },
+    "diagnosticOnly": true,
+    "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39034319620",
+    "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
+    "originalFailedGate": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+    "mergePolicy": "Direct human corrected ordinary gate to33/4/37; diagnostic remains separate.34/3 is over-performance and stops.",
+    "impact": "Edit toolbar unusable in the measured collapsed state, beyond narrow-viewport overflow",
+    "priorityRelativeTo": {
+      "aheadOfIssue": 17,
+      "batch": "0.9.x",
+      "authority": "direct human instruction 2026-10-17"
+    },
+    "productionFixAllowedInPubChemRefactor": false,
+    "acceptedWorkflowKey": "issue-21-edit-toolbar-layout-collapse-320",
+    "comparandLogging": "Shipped edit_tool width assertion now records actual scrollWidth/clientWidth and expected maximum on pass/fail, without changing its tolerance or waits."
   }
 }
