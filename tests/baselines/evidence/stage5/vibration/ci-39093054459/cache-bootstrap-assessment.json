@@ -1,0 +1,37 @@
+{
+  "status": "feature-branch prime did not restore",
+  "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "runId": 39093054459,
+  "observedJob": "WebKit Properties interactions",
+  "actual": "Cache not found",
+  "initialExpectation": "Restore the same-key/version feature-branch entry",
+  "comparands": {
+    "featureBranchCache": {
+      "createdAt": "2026-10-18T03:15:41.066421Z",
+      "id": 9108282556,
+      "key": "Linux-X64-playwright-1.64.0-webkit",
+      "lastAccessedAt": "2026-10-18T03:15:41.066421Z",
+      "ref": "refs/heads/codex/vibration-runtime",
+      "sizeInBytes": 102454911,
+      "version": "b11b119dfd10565044882f81f06d3a75b1602bec6f8658ac905dd63583b2a885"
+    },
+    "prMergeCache": {
+      "createdAt": "2026-10-18T03:18:11.333097Z",
+      "id": 9108329342,
+      "key": "Linux-X64-playwright-1.64.0-webkit",
+      "lastAccessedAt": "2026-10-18T03:18:11.333097Z",
+      "ref": "refs/pull/27/merge",
+      "sizeInBytes": 102455292,
+      "version": "b11b119dfd10565044882f81f06d3a75b1602bec6f8658ac905dd63583b2a885"
+    }
+  },
+  "sameKey": true,
+  "sameVersion": true,
+  "cacheExistedBeforePrRun": true,
+  "sourceCandidateUnchanged": true,
+  "noRerun": true,
+  "correctiveVerification": "Observe integration-branch warmup after merging the passing refactor, then independently verify each next-PR worker restore from raw logs. Do not claim cache fixed until that proof exists.",
+  "mergeGateScope": "Only the direct human33/4/37 workflow, characterization, identity, checks/unit/WebKit, construction and source/behavior conjunction controls merging. The unexecuted extra feature-prime expectation was an incorrect harness assumption, not an authorized gate amendment.",
+  "previousHelperSha256": "1822838b4e9eca61df99ac982cf21fc36a607bdc7b7b61bbc7b1d25a3428cae6",
+  "rawLog": "early-webkit.log"
+}

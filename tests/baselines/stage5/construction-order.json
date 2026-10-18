@@ -12,8 +12,19 @@
     {
       "label": "Stage 5b vibration runtime/panel",
       "before": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+      "modules": [
+        "assets/app/js/vibration.js"
+      ],
+      "expectedStatus": "passed",
+      "after": "fe765f8c3e3f943a22f190535e0f16e6f3a03049"
+    },
+    {
+      "label": "Stage 5c symmetry presentation",
+      "before": "63082febadb22d5351365b8f75267534494893e6",
       "worktree": ".",
-      "modules": ["assets/app/js/vibration.js"],
+      "modules": [
+        "assets/app/js/symmetry-panel.js"
+      ],
       "expectedStatus": "passed"
     }
   ]

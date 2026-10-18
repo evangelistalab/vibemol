@@ -1,0 +1,17 @@
+{
+  "runId": 39093054459,
+  "attempt": 1,
+  "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "base": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+  "tree": "1f077cd729b634da2d8868dfa22724af6ffaa08a",
+  "candidateConjunctionVerified": true,
+  "stopReasons": [],
+  "rawArchive": {
+    "name": "immutable-evidence.tar.gz",
+    "bytes": 55896142,
+    "sha256": "ee67526b91506b4394d32dfd1727e25ae66689009910c3541d99bf0a802a94c8",
+    "entries": 345,
+    "allEntriesReadBackAndMatched": true
+  },
+  "preservation": "All original ZIPs, raw logs, screenshots/HTML and captures remain untouched in the ignored attempt folder and sealed archive. This durable bundle preserves structured readbacks, logs, identities, assertions and per-file hashes; it never upgrades a failed gate to acceptance."
+}

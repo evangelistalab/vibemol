@@ -1,5 +1,5 @@
 {
-  "status": "local verification complete",
+  "status": "complete merged pushed",
   "group": "5b vibration runtime/panel",
   "base": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
   "appSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
@@ -334,7 +334,15 @@
       "site": "trajectory"
     }
   },
-  "ci": "Pending own first automatic ordinary conjunction; no retry supplies acceptance",
+  "ci": {
+    "runId": 39093054459,
+    "attempt": 1,
+    "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+    "integration": "63082febadb22d5351365b8f75267534494893e6",
+    "fullConjunctionVerified": true,
+    "evidence": "tests/baselines/evidence/stage5/vibration/ci-39093054459",
+    "cacheFixDeployment": "integration cache saved; next-PR restore verification pending"
+  },
   "harnessChanges": "Directly authorized33/4/37 exact workflow set and over-performance rejection; shipped320px assertion gains comparand logging only; browser cache warmup fixes ref scope with identical keys.",
   "collectorDiagnostics": "Preserved initial native helper left recorder/download stubs active for session save; corrected collector restores browser facilities. Audit normalizers initially omitted destructuring holes/source-range metadata. No product failure, source expectation, shipped comparison, wait or tolerance was relaxed."
 }
