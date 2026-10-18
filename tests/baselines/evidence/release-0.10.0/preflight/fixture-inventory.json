@@ -1,0 +1,216 @@
+{
+  "status": "preflight inventory only; no release UI run yet",
+  "fixtureFiles": 32,
+  "geometryAssetsVerified": 18,
+  "contexts": {
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "widths": [
+      1512,
+      1280,
+      1024
+    ],
+    "modes": [
+      "Display",
+      "Measure",
+      "Edit",
+      "Calculations"
+    ]
+  },
+  "fixtures": [
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_0.2ccube.gz",
+      "bytes": 1222420,
+      "sha256": "93fcefbdac3eaf673fda60b242806fd470e4053a8da77f372e784288b5b079ca",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_1.2ccube.gz",
+      "bytes": 1222229,
+      "sha256": "174a26f4a5146dc33294d7f7cfe48ea7ee4f1438a5cbb659d0b4862f8fde4a19",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_2.2ccube.gz",
+      "bytes": 1183722,
+      "sha256": "c05b694ca3a639c7799d7df205a3357f68c6615673734d7963b247bd2a9402b0",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_3.2ccube.gz",
+      "bytes": 1183784,
+      "sha256": "bef5551dfb1a3319dc7c8bafb93942ed1d78fb6f5f9e10a0f819f9667e3e344b",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_4.2ccube.gz",
+      "bytes": 1189074,
+      "sha256": "ee80f7f479d50f15518803132527c56d45945ee7f5e0f8f9fffe55ad7032b05d",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_5.2ccube.gz",
+      "bytes": 1189583,
+      "sha256": "5206eab344c16663982ed53c6274f5178c36083c5045fdb1799f3d3d16f74469",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_6.2ccube.gz",
+      "bytes": 1406404,
+      "sha256": "e3cd6297559f5a3a5c171e36997aaf9d7e8e12aaeac763f23fc2bec0513f9fc3",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_7.2ccube.gz",
+      "bytes": 1019191,
+      "sha256": "4bbcfd8b377dc5d8a33845ba16db423ec093d611c8c8e5724f9351e5716f746d",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/2ccubes/orbital_8.2ccube.gz",
+      "bytes": 1035228,
+      "sha256": "9c0b56312d500ea9d0529ded91267dfa6f25569ed70b7ab95bcdc7e27593a022",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/assets.json",
+      "bytes": 3343,
+      "sha256": "d8bf36650e0f60ef7368463fd39013d4fb07042a9e757c7eb3ec39c1634a794a",
+      "plannedCoverage": "Verify all18 compressed geometry hashes against original assets; load every listed geometry in UI matrix"
+    },
+    {
+      "path": "tests/fixtures/characterize/basic.look.json",
+      "bytes": 5826,
+      "sha256": "386ea3896b3b2154e507c572c06c54839e1b8d43d3e45e89ad5f6cb2705bc8bf",
+      "plannedCoverage": "Native Look file import then all four modes at each theme/width"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/canonical_1.cube.gz",
+      "bytes": 717881,
+      "sha256": "c3f99c1f9f2748fa5d04d119df9a78715697c576725365d4f8fcdc1177308392",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/canonical_2.cube.gz",
+      "bytes": 745374,
+      "sha256": "ebedd278fbf9025a469739a1bb47069dd588cdd44b0676356ce02d4bddbddd4f",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/canonical_3.cube.gz",
+      "bytes": 752230,
+      "sha256": "11c15108e5a2252b0a3406844680ad0a63a88fcc47e5ef2c083710e10921b927",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/canonical_4.cube.gz",
+      "bytes": 744979,
+      "sha256": "f639d57e2bbba04a210d30b9c0e20b9ec0a1f23be61d27e210795556cb24aa27",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/localized_1.cube.gz",
+      "bytes": 750229,
+      "sha256": "d605842069c21c990339483a42c6ada4ab28798bea1d05ed40e231564aa66de7",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/localized_2.cube.gz",
+      "bytes": 747857,
+      "sha256": "93eb9dcfce33f73e91c0b4c2ae22c35de608af55f8f9b5add4444601e690595b",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/localized_3.cube.gz",
+      "bytes": 748301,
+      "sha256": "22638751e034bcf84adb5213967c66d08a3458fe985fd437492ac168802a493d",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/methane/localized_4.cube.gz",
+      "bytes": 727565,
+      "sha256": "cf639d53e9c6f344cd0ff7a467127ceb508dc8a1e34b043404df8c6b5cf048a2",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/autocomplete.json",
+      "bytes": 390,
+      "sha256": "549e4b8a81c5b7b01865ebc11323cf24a89af5fda8314c1db21c5c468bbe109c",
+      "plannedCoverage": "Recorded PubChem endpoint replay, including autocomplete and SDF import; every fixture response consumed"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/benzene.sdf",
+      "bytes": 2245,
+      "sha256": "03014ac42633ba3691fafd20c5841bc9e81845993f5a0e62710d0602e760ec1f",
+      "plannedCoverage": "Recorded PubChem endpoint replay, including autocomplete and SDF import; every fixture response consumed"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/cids.json",
+      "bytes": 59,
+      "sha256": "7159dfdccf7d8ad36d0e1b6d09646375af830609c17b0685e648aa91e68abec9",
+      "plannedCoverage": "Recorded PubChem endpoint replay, including autocomplete and SDF import; every fixture response consumed"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/conformers.json",
+      "bytes": 158,
+      "sha256": "09dd95c9b0b99e7a5f15dc81b94590cc2ba84f61993620ba2609ed135bafb612",
+      "plannedCoverage": "Recorded PubChem endpoint replay, including autocomplete and SDF import; every fixture response consumed"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/properties.json",
+      "bytes": 267,
+      "sha256": "67dc1428bd4921ed2334c58c678ec24750ec73e0df1233fbb035ed4d69843658",
+      "plannedCoverage": "Recorded PubChem endpoint replay, including autocomplete and SDF import; every fixture response consumed"
+    },
+    {
+      "path": "tests/fixtures/characterize/pubchem/sources.json",
+      "bytes": 564,
+      "sha256": "22c16dc9fcb14686bced0c457f78b1e7b489cea9fb886b3586193a13cb03870e",
+      "plannedCoverage": "Verify all five recorded response filenames and endpoint URLs; replay actual PubChem flow"
+    },
+    {
+      "path": "tests/fixtures/characterize/sample.cube.gz",
+      "bytes": 1460456,
+      "sha256": "dd9085293d0eac4097bdda61233d4daf67fd7ad4e84f4cfc9e1409d2be647062",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/trajectory.xyz",
+      "bytes": 160,
+      "sha256": "60228b811bf4d89b43c089d7ff2476c0bf01a084b7dfd4c3d80ba8d099272db8",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/two-scenes.vibemol-session.gz",
+      "bytes": 1336549,
+      "sha256": "3899c2774059173265bcffe8e15c65d535a907e2711ac4acb6c583fb6a0445c1",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/characterize/vibration.vib.json",
+      "bytes": 495,
+      "sha256": "15f4b38b40b4cbecc192d41b96f6890198a7fbe3f926fce298bc2ee686ff17b2",
+      "plannedCoverage": "Native vibrational sidecar paired with vibration.xyz, then all four modes at each theme/width"
+    },
+    {
+      "path": "tests/fixtures/characterize/vibration.xyz",
+      "bytes": 35,
+      "sha256": "7fc90a6cf527a74c20d7053ee80f8f64c0e961d24edc0cb25cc60e7f1aee45fa",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    },
+    {
+      "path": "tests/fixtures/element-utils-legacy.json",
+      "bytes": 4201,
+      "sha256": "9349c766e2a1837eb48f80ead8e03aa384a4c8986ceef4799bbd0ac7d9a69e79",
+      "plannedCoverage": "Browserless433-unit regression corpus; not a molecular import"
+    },
+    {
+      "path": "tests/fixtures/psi4-bohr-frequencies.dat",
+      "bytes": 3582,
+      "sha256": "46d78b2cad216f86aa8a5976acac82dcbfe646a389cf9242e1ce46434d6912da",
+      "plannedCoverage": "Load fixture then four modes at each theme and width; preserve coordinates and no page errors"
+    }
+  ]
+}

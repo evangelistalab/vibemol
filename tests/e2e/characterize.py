@@ -431,10 +431,13 @@ def verify_element_caches(browser, url, inject):
     return results
 
 
-def metadata(source_root):
+def metadata(source_root, baseline_identity=None):
     app = (source_root / 'assets/app/js/app.js').read_bytes()
     text = app.decode()
-    return {'commit': BASE_COMMIT, 'tag': BASE_TAG, 'appSha256': hashlib.sha256(app).hexdigest(), 'viewport': VIEWPORT,
+    if baseline_identity is None:
+        saved = json.loads(SUMMARY.read_text())['baseline']
+        baseline_identity = {key: saved[key] for key in ('commit', 'tag')}
+    return {**baseline_identity, 'appSha256': hashlib.sha256(app).hexdigest(), 'viewport': VIEWPORT,
             'captureTimestampFields': ['savedAt', 'preset.meta.createdAt', 'preset.meta.updatedAt'],
             'pinnedCamera': [30, 0, 0],
             'metrics': {'lines': len(text.splitlines()),
@@ -467,7 +470,9 @@ def expected_captures(golden, source_root):
         for capture in captures.values():
             assert module['global'] not in capture['api'], module['global']
             capture['api'][module['global']] = module['keys']
-    return captures
+    # Temporary and limited to the single human-authorized release tree.
+    from release_version_mapping import release_expectations
+    return release_expectations(captures, source_root, BASELINE)
 
 
 def main():
@@ -476,6 +481,8 @@ def main():
     parser.add_argument('--inject-harness', action='store_true')
     parser.add_argument('--prepare-fixtures', action='store_true')
     parser.add_argument('--update-baseline', action='store_true')
+    parser.add_argument('--record-release-tag', choices=('v0.10.0',),
+                        help='Explicit CI refresh from the published0.10.0 tag; never a future version exemption.')
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
                         help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')
@@ -490,8 +497,12 @@ def main():
     run_numbers = [matrix_run] if matrix_run else range(1, args.runs + 1)
     if args.update_baseline:
         assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
-    meta = metadata(args.source_root)
-    if args.update_baseline or args.prepare_fixtures:
+    baseline_identity = {'commit': BASE_COMMIT, 'tag': BASE_TAG} if args.update_baseline or args.prepare_fixtures else None
+    if args.record_release_tag:
+        from release_baseline_recording import require_published_release_source
+        baseline_identity = require_published_release_source(ROOT, args.source_root, args, ARTIFACTS / 'release-baseline-source.json')
+    meta = metadata(args.source_root, baseline_identity)
+    if (args.update_baseline or args.prepare_fixtures) and not args.record_release_tag:
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()
         assert tagged == BASE_COMMIT, 'The pre-refactor tag must still identify the original base.'
         original = subprocess.check_output(['git', 'show', BASE_COMMIT + ':assets/app/js/app.js'], cwd=ROOT)

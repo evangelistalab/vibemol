@@ -1,0 +1,10 @@
+{
+  "integrationCommit": "726079fb8bbf68d7224ef4b9621c5ec323535e8e",
+  "tree": "843bb6b3b5ec8d4f5d63b2c59ccf2f1a437929d2",
+  "entireTreeEqualsTestedCandidate": true,
+  "appSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+  "moduleSha256": "59f3a599f6c97e9c070ff293f9b518402f328b9763edac4a53d6d82b73e5eb64",
+  "trackedLet": 249,
+  "pushedRemote": "726079fb8bbf68d7224ef4b9621c5ec323535e8e",
+  "userGitignorePreserved": true
+}
