@@ -1,0 +1,10 @@
+{
+  "group": "5a trajectory playback core",
+  "baselineRun": 39071994182,
+  "baselineHead": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "issue11Workflow": {
+    "id": "issue-11-stop-after-second-download",
+    "site": "trajectory"
+  },
+  "reason": "Direct human instruction: any change in #11 behavior during 5a or 5b is a stop, even if the older ordinary join accepts either exporter site. This policy narrows acceptance and never changes shipped suite assertions."
+}

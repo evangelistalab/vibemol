@@ -24,6 +24,15 @@ Both joins require identical commit/tree, app/QA/golden/manifest hashes and CI r
 - `browser-results`: the independently joined result and raw logs in manifest order.
 - `characterize-{1,2}`: one full capture pass and its four identity contexts under `characterize/`.
 - `characterization-results`: both captures, combined eight-context identities and exact-repeat evidence.
-- `webkit-properties`: the independent WebKit interaction evidence.
+- `webkit-properties`: the independent WebKit interaction evidence (it may emit no artifact on success).
+- `construction-order`: Stage 5 checks/unit retains the inverse audit report and exact source/run identity. It uses pinned test-only Babel packages and full Git history; it checks app/module construction plus newly introduced parameters/locals inside existing wrappers and callbacks.
 
 For wall-time comparisons, use workflow creation to the latest job completion, and report queue/setup/artifact overhead as part of the observed result. Do not sum parallel job durations. Compare the critical path and cache-hit status separately. If Smoke becomes the measured critical path, propose a themed-file split for review before changing it.
+
+## Additional Stage 5 gates
+
+The eleven-job layout and both aggregate joins remain unchanged. The checks/unit job now requires the inverse construction-order audit in `tests/baselines/stage5/construction-order.json`; its separate artifact makes ten core artifacts, plus optional WebKit output. The self-test includes old-wrapper parameters and an early reading closure inside an existing callback. Unresolved early activation is a failed gate.
+
+For trajectory 5a and vibration 5b, the direct human rule also requires unchanged #11 behavior, stricter than the older trajectory-or-vibration accepted workflow. After the ordinary browser join, `tools/check-refactor-run.py` compares the exact signature with accepted run 39071994182 (trajectory, after the second download). A changed site/shape or disappearance stops the group. It prints counts, workflow and original-join comparands on both pass and fail. The five Python tests protect the stricter policy; no shipped browser assertion or accepted manifest changes.
+
+Report Looks wall time and the actual completion of BOTH Studio and Properties material-family paths for every group run. If either path was not reached, record coverage as not exercised rather than absence of recurrence. The material-preset intermittent remains open after a passing run.

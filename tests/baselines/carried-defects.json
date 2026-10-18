@@ -128,7 +128,16 @@
       "acceptedCiFailure": false,
       "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
       "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
-      "productionFixIncluded": false
+      "productionFixIncluded": false,
+      "impact": "A failed startup restoration leaves partially applied settings and wrong appearance reference bookkeeping without rollback or a visible failure.",
+      "priorityRelativeTo": {
+        "aheadOfIssues": [
+          21,
+          17
+        ],
+        "batch": "0.9.x",
+        "reason": "Silent partial restoration and state inconsistency"
+      }
     }
   ],
   "otherCarriedFollowups": [
@@ -156,10 +165,12 @@
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
     "orderedIssues": [
+      25,
       21,
       17
     ],
-    "scope": "Explicit relative order only; does not rank these against the other carried defects.",
-    "reason": "The measured320px toolbar layout collapse makes Edit controls unusable."
+    "scope": "Relative priority among these shipped defects; other carried defects retain their separate triage. No additional CI failures or refactor fixes authorized.",
+    "reason": "Restore can silently leave partial settings/reference state (#25); collapsed Edit toolbar is unusable at320px (#21). Both precede the narrower Metal popover defects (#17).",
+    "authority": "Direct human Stage5/release instruction; severity ordering recorded by the implementing agent."
   }
 }

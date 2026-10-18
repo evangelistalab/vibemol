@@ -1,4 +1,6 @@
-# Stage 5 seam audit — design only
+# Stage 5 seam audit — accepted design record
+
+**Execution release:** After accepting Stage4, the human directly released5a trajectory shadows/core,5b vibration runtime/panel, then5c symmetry presentation, one PR each, followed by0.10.0. The original design-only/unreleased statements below describe the historical audit checkpoint. Its8/13/11-input boundaries and refuted#11 hypothesis remain unchanged. Construction order is now a required gate, and changed#11 behavior during5a/5b is a stop.
 
 Audited immutable commit `6c583556bcc84bff9442602a7dd8aed056b4a660` (accepted Stage 3). App SHA-256: `03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d`. Line references below refer to this commit, not the subsequently edited Stage 4 worktree. The initial read-only audit changed no production, test, golden, repository documentation, branch, issue or commit and ran no browser, suite or network request. Its accepted design was subsequently promoted to repository notes at the direct human request; Stage 5 production remains untouched.
 
@@ -242,3 +244,7 @@ The human accepted this design and corrected 5a → 5b → 5c ordering on 2026-1
 ## Accepted design record (2026-10-17)
 
 The human accepted the 17-let inventory, two true trajectory shadows, authoritative vibration pair, distinct discrete/continuous policies, corrected ordering and different 8/13/11-input seams. All three broad 22-input cuts reached the 20-input design stop before code was written. The mirrored-clock hypothesis for #11 is **refuted**. No Stage 5 implementation has begun.
+
+## 5a implementation boundary
+
+The concrete eight-input controller uses `getSceneGraphController` for the same scene-graph owner listed in the design. That live getter permits inert construction before startup callback registrations without reading a not-yet-initialized graph. The remaining seven inputs and retained host responsibilities are unchanged. The two shadows are removed; one private reference retains the authoritative clock only until last-record cleanup, with no copied playing/timestamp values. Actual inventories and construction proof are recorded in the trajectory validation evidence.

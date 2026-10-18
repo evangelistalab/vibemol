@@ -1919,9 +1919,9 @@
     {
       "stage": 5,
       "risk": "high feature coupling, second to Stage 3 element-cache consolidation for manual verification",
-      "scope": "Trajectory, symmetry and vibration state/wiring, one feature per PR",
+      "scope": "5a trajectory playback/scene-clock core,5b vibration runtime/panel,5c symmetry presentation; one PR each",
       "verification": "Audit dependency seams, exercise all moved controls and cancellation paths, playback/video/session preservation, and use the affected panel manual matrix. Preserve per-feature beta soak.",
-      "status": "Design accepted; no implementation released",
+      "status": "5a candidate local verification complete; own first automatic ordinary CI pending.5b/5c not started; no Stage5 merge yet.",
       "design": "docs/stage5-seam-design.md",
       "moduleLets": 17,
       "trueTrajectoryMirrors": 2,
@@ -1946,6 +1946,37 @@
         "status": "refuted",
         "productDefectRemainsOpen": true,
         "reason": "Vibration has no mirror; trajectory export reads authoritative state; exporter owns idle mode and never calls getPlaybackState"
+      },
+      "constructionOrderRequiredGate": true,
+      "issue11BehaviorPolicy": {
+        "strictDuring": [
+          "5a",
+          "5b"
+        ],
+        "baselineRun": 39071994182,
+        "expected": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "trajectory"
+        },
+        "onAnyChange": "STOP and report; do not adjust accepted set or retry"
+      },
+      "appearanceMaterialPresetReporting": "Every run: actual Looks duration and separate Studio/Properties material-family completion. Risk remains open.",
+      "releaseOrder": [
+        "Offline standalone HTML file:// with network disabled FIRST",
+        "Four modes /two themes /1512,1280,1024 /every fixture /native session save-load",
+        "0.10.0; no user-facing changes in release notes"
+      ],
+      "trajectoryCandidateLocal": {
+        "appLetBefore": 262,
+        "appLetAfter": 260,
+        "dependencies": 8,
+        "sourceChecks": 1220,
+        "differentialScenarios": 109,
+        "differentialCheckpoints": 2559,
+        "nativeContexts": 8,
+        "characterizeSeconds": 1047.13,
+        "soakSeconds": 281.072716916,
+        "validation": "tests/baselines/trajectory-playback-validation.json"
       }
     }
   ],
