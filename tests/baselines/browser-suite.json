@@ -79,5 +79,16 @@
     "changedExpectation": "The bar must first reach compact=true and a presentation boundary at320px; elapsed100ms alone does not establish readiness.",
     "assertionToleranceUnchanged": true,
     "noProductionChange": true
+  },
+  "accessibilitySynchronizationCorrection": {
+    "diagnostic": "https://github.com/evangelistalab/vibemol/actions/runs/39154813750",
+    "harnessPr": 32,
+    "mechanism": "hint auto-hide fade, not a pre-canvas-paint scan in the measured failures",
+    "readiness": "fonts ready, CSS transitions completed, two frames",
+    "namedIncompleteContract": "tests/e2e/accessibility_contract.py",
+    "baselineIncompletePreserved": true,
+    "newUnresolvedOutsideNamedSetFails": true,
+    "ordinaryGateUnchanged": true,
+    "evidence": "tests/baselines/evidence/release-0.10.0/accessibility-hint-timing"
   }
 }

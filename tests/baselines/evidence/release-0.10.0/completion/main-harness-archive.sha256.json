@@ -1,0 +1,10 @@
+{
+  "archive": "out/test-artifacts/release-0.10.0/accessibility-settled-scan/ci-39158578780/immutable-evidence.tar.gz",
+  "sha256": "2d5245e52378b6fbb446b20b0589c3a1ca2c0117ba2f00a022b8d17b51895b28",
+  "bytes": 63627332,
+  "runId": 39158578780,
+  "attempt": 1,
+  "head": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "candidateConjunctionVerified": true,
+  "noCiRerun": true
+}

@@ -25,8 +25,8 @@ test('element utilities load before atomic metadata without DOM or rendering dep
     globals: { document: forbidden, THREE: forbidden },
   });
   assert.equal(Object.isFrozen(context.VibeMolElementUtils), true);
-  const contract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'tests/baselines/characterize-api-additions.json'), 'utf8'));
-  assert.deepEqual(Object.keys(context.VibeMolElementUtils).sort(), contract.modules[0].keys);
+  const contract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, 'tests/baselines/characterize-summary.json'), 'utf8'));
+  assert.deepEqual(Object.keys(context.VibeMolElementUtils).sort(), contract.api.VibeMolElementUtils);
   assert.equal(context.VibeMolElementUtils.getElementSymbol(6), 'Z6');
 });
 

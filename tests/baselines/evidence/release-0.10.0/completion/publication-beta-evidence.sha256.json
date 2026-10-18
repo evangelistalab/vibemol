@@ -1,0 +1,11 @@
+{
+  "archive": "out/test-artifacts/release-0.10.0/publication-beta-evidence.tar.gz",
+  "sha256": "08701f82d730cb91880c2bb48bdb2aad732aa52a48bd8158eadf2e03b85243b6",
+  "bytes": 1716692,
+  "publishedTag": "v0.10.0",
+  "publishedCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "betaMirrorCommit": "57f072dbfb032614354b0bf36bc86189bcc78fc0",
+  "namespaceCount": 6,
+  "themeModeCases": 8,
+  "role": "Publication/deployment proof; ordinary acceptance resides in the independently verified CI archives"
+}
