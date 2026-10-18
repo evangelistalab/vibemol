@@ -1,0 +1,89 @@
+name: Stage 5c Edit 320 three-point diagnostic (not a merge gate)
+
+on:
+  push:
+    branches: [codex/stage5c-edit320-diagnostic]
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: Nine controlled width observations
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Check out common diagnostic harness
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check out tagged control
+        uses: actions/checkout@v4
+        with:
+          ref: 1c609b338344aaa49ffd11b9ee2ad834a6e0d85d
+          path: diagnostic-sources/tagged
+          persist-credentials: false
+      - name: Check out accepted integration
+        uses: actions/checkout@v4
+        with:
+          ref: 63082febadb22d5351365b8f75267534494893e6
+          path: diagnostic-sources/integration
+          persist-credentials: false
+      - name: Check out held 249-let candidate
+        uses: actions/checkout@v4
+        with:
+          ref: 8d75a4fa83045d2244f5cd1fe980ebd323141a90
+          path: diagnostic-sources/held
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install exact ordinary-CI Playwright version
+        run: python -m pip install -r api/requirements.txt playwright==1.64.0
+      - name: Install Chromium and Linux dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Record dependency versions
+        run: |
+          mkdir -p out/edit320-threepoint
+          python -m pip freeze > out/edit320-threepoint/dependencies.txt
+      - name: Run three observations per immutable source, interleaved on one runner
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/edit320-threepoint-pycache
+        run: |
+          python - <<'PY'
+          import json,subprocess,sys
+          from pathlib import Path
+          root=Path.cwd();out=root/'out/edit320-threepoint'
+          completed=[]
+          for repetition in [1,2,3]:
+              for label in ['tagged','integration','held']:
+                  destination=out/(label+'-'+str(repetition))
+                  command=[sys.executable,'tools/diagnostics/edit_tool_320_threepoint.py',
+                      '--config','tools/diagnostics/edit320-threepoint-sources.json',
+                      '--harness-root',str(root),'--source-root',str(root/'diagnostic-sources'/label),
+                      '--artifacts',str(destination),'--label',label,'--repetition',str(repetition)]
+                  with (out/(label+'-'+str(repetition)+'.log')).open('w') as log:
+                      result=subprocess.run(command,stdout=log,stderr=subprocess.STDOUT)
+                  reportPath=destination/'result.json'
+                  report=json.loads(reportPath.read_text()) if reportPath.exists() else {}
+                  item={'label':label,'repetition':repetition,'exitCode':result.returncode,
+                        'probeValid':report.get('probeValid',False),'suiteRunStatus':report.get('suiteRunStatus'),
+                        'observations':report.get('observations',[])}
+                  completed.append(item)
+                  (out/'measurement-index.json').write_text(json.dumps({'diagnosticOnly':True,
+                      'usableAsMergeGate':False,'expectedObservations':9,'completed':completed},indent=2)+'\n')
+                  print(json.dumps(item,sort_keys=True),flush=True)
+          assert len(completed)==9 and all(x['probeValid'] for x in completed), completed
+          print('All nine measurements recorded. Assertion outcomes are evidence, not a merge gate.',flush=True)
+          PY
+      - name: Preserve all diagnostic evidence on assertion success or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edit320-threepoint
+          path: |
+            out/edit320-threepoint/
+            tools/diagnostics/edit_tool_320_threepoint.py
+            tools/diagnostics/edit320-threepoint-sources.json
+            .github/workflows/edit-tool-320-threepoint.yml
+          if-no-files-found: error
