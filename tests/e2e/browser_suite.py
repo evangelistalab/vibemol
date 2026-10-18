@@ -51,8 +51,9 @@ def failure_workflow(suite, log, source):
         if len(failed) == 1 and same_statement(failed[0], expected[0]) and intercepted:
             return {'id': 'coordinates-delete-selection-card'}
     elif pathlib.Path(suite).name == 'edit_tool.py':
-        # #21 is this width assertion at 320px, never a later hit test or a
-        # different viewport. Old tracebacks remain readable as provenance.
+        # Historical #21 logs remain readable as provenance; this classification
+        # is not in the accepted set after the state-synchronization fix.
+        # Match only the width assertion at320px, never a later hit test.
         old = parsed_statement("assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width")
         measured = parsed_statement("assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width")
         if len(failed) == 1 and re.search(r'^AssertionError: 320\s*$', log, re.M):
@@ -155,7 +156,7 @@ def finish_report(report, manifest, aggregate=True):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--allow-known-defects', action='store_true',
-                        help='Require exactly the four filed workflows; still report them as failing.')
+                        help='Require exactly the three filed workflows; still report them as failing.')
     parser.add_argument('--shard', help='Collect one planned shard; the join, not this worker, asserts the full gate.')
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())

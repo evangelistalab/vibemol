@@ -1,0 +1,269 @@
+{
+  "status": "complete local harness verification",
+  "base": "63082febadb22d5351365b8f75267534494893e6",
+  "appSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+  "harnessSha256": "7a191dcad05a0a319618ae7c2071ee76df8713e77df01c8db1f8b76272547a05",
+  "jsTestsPassed": 433,
+  "pythonTestsPassed": 39,
+  "makeCheckPassed": true,
+  "sources": [
+    {
+      "label": "tagged",
+      "status": "passed",
+      "widths": [
+        {
+          "widths": {
+            "scrollWidth": 304,
+            "clientWidth": 304
+          },
+          "state": {
+            "viewport": 320,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 320,
+            "atMs": 18739.19999998808,
+            "timeOrigin": 1792330702192.1
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 374,
+            "clientWidth": 374
+          },
+          "state": {
+            "viewport": 390,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 390,
+            "atMs": 18927.899999976158,
+            "timeOrigin": 1792330702192.1
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 272,
+            "clientWidth": 272
+          },
+          "state": {
+            "viewport": 768,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 768,
+            "atMs": 19146.099999964237,
+            "timeOrigin": 1792330702192.1
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 678,
+            "clientWidth": 678
+          },
+          "state": {
+            "viewport": 1440,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1440,
+            "atMs": 19593.099999964237,
+            "timeOrigin": 1792330702192.1
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 1146,
+            "clientWidth": 1146
+          },
+          "state": {
+            "viewport": 1920,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1920,
+            "atMs": 20201.30000001192,
+            "timeOrigin": 1792330702192.1
+          }
+        }
+      ],
+      "browserVersion": "145.0.7632.6",
+      "seconds": 20.901
+    },
+    {
+      "label": "integration",
+      "status": "passed",
+      "widths": [
+        {
+          "widths": {
+            "scrollWidth": 304,
+            "clientWidth": 304
+          },
+          "state": {
+            "viewport": 320,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 320,
+            "atMs": 18019.69999998808,
+            "timeOrigin": 1792330723252.4
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 374,
+            "clientWidth": 374
+          },
+          "state": {
+            "viewport": 390,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 390,
+            "atMs": 18201.100000023842,
+            "timeOrigin": 1792330723252.4
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 272,
+            "clientWidth": 272
+          },
+          "state": {
+            "viewport": 768,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 768,
+            "atMs": 18437.80000001192,
+            "timeOrigin": 1792330723252.4
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 678,
+            "clientWidth": 678
+          },
+          "state": {
+            "viewport": 1440,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1440,
+            "atMs": 18923.30000001192,
+            "timeOrigin": 1792330723252.4
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 1146,
+            "clientWidth": 1146
+          },
+          "state": {
+            "viewport": 1920,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1920,
+            "atMs": 19227.30000001192,
+            "timeOrigin": 1792330723252.4
+          }
+        }
+      ],
+      "browserVersion": "145.0.7632.6",
+      "seconds": 19.904
+    },
+    {
+      "label": "held-5c",
+      "status": "passed",
+      "widths": [
+        {
+          "widths": {
+            "scrollWidth": 304,
+            "clientWidth": 304
+          },
+          "state": {
+            "viewport": 320,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 320,
+            "atMs": 18459.099999964237,
+            "timeOrigin": 1792330743355.2
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 374,
+            "clientWidth": 374
+          },
+          "state": {
+            "viewport": 390,
+            "compact": "true",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 390,
+            "atMs": 18649.599999964237,
+            "timeOrigin": 1792330743355.2
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 272,
+            "clientWidth": 272
+          },
+          "state": {
+            "viewport": 768,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 768,
+            "atMs": 18898.5,
+            "timeOrigin": 1792330743355.2
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 678,
+            "clientWidth": 678
+          },
+          "state": {
+            "viewport": 1440,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1440,
+            "atMs": 19345.799999952316,
+            "timeOrigin": 1792330743355.2
+          }
+        },
+        {
+          "widths": {
+            "scrollWidth": 1146,
+            "clientWidth": 1146
+          },
+          "state": {
+            "viewport": 1920,
+            "compact": "false",
+            "mode": "edit",
+            "barX": 0,
+            "barWidth": 1920,
+            "atMs": 19791.399999976158,
+            "timeOrigin": 1792330743355.2
+          }
+        }
+      ],
+      "browserVersion": "145.0.7632.6",
+      "seconds": 20.473
+    }
+  ],
+  "noProductionGoldenFixtureChange": true,
+  "diagnosticCitation": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+  "frameVisibilityQuestion": "Separate nonblocking observation; no conclusion of global absence from these local samples.",
+  "developmentFailure": {
+    "cause": "Missing direct helper import; corrected before candidate freeze",
+    "evidence": "Preserved outside source under collector-diagnostics/missing-helper-import",
+    "notProductFinding": true,
+    "noCiRerun": true
+  }
+}

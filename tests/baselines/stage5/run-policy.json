@@ -6,10 +6,10 @@
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "The direct human signature-preservation stop applies to5a/5b, which touch exporters. Symmetry leaves both exporter sources unchanged and retains the ordinary33/4/37 exact workflow set, whose #11 key permits trajectory OR vibration after the second download. Record the actual site. No other shape or count is accepted.",
+  "reason": "The strict exporter-signature stop applies to5a/5b. Unchanged5c production does not touch exporters and uses the restored34/3/37 exact workflow set, allowing #11 at trajectory OR vibration after the second download. Record the actual site; disappearance, a different shape, extra failure or35/2 over-performance stops.",
   "ordinaryExpected": {
-    "passed": 33,
-    "failed": 4,
+    "passed": 34,
+    "failed": 3,
     "total": 37
   },
   "preserveExporterSignature": false

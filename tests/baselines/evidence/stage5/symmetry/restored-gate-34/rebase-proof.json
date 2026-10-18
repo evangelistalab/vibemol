@@ -1,0 +1,20 @@
+{
+  "status": "all static and combined-policy checks passed; original browser proof reused for byte-identical production",
+  "originalProductionHead": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+  "harnessBase": "892922addc10463e21a5bfe3f15aeb52ecc840e7",
+  "appSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+  "moduleSha256": "59f3a599f6c97e9c070ff293f9b518402f328b9763edac4a53d6d82b73e5eb64",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "productionDiffFromOriginalEmpty": true,
+  "fixedEditHarnessSha256": "7a191dcad05a0a319618ae7c2071ee76df8713e77df01c8db1f8b76272547a05",
+  "originalLocalValidationSha256": "af447042b722fd3a2c056a1b31a88c8293c4ceba4cc09123925e6f2c50b35495",
+  "sourceAuditChecks": 89,
+  "dependencyCount": 11,
+  "trackedLetBefore": 256,
+  "trackedLetAfter": 249,
+  "pythonPolicyUnitTests": 39,
+  "makeCheckPassed": true,
+  "originalNativeDifferentialAndCharacterizationNotRepeated": true,
+  "newOwnFirstOrdinaryCiRequired": true,
+  "originalFailedRunRemainsFailed": 39096866233
+}

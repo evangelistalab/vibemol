@@ -1,0 +1,220 @@
+{
+  "status": "local observations only; CI residual question pending",
+  "browserVersion": "145.0.7632.6",
+  "sources": [
+    {
+      "label": "tagged",
+      "screencastFrames": [
+        {
+          "file": "presented-000.png",
+          "metadata": {
+            "offsetTop": 0,
+            "pageScaleFactor": 1,
+            "deviceWidth": 320,
+            "deviceHeight": 1000,
+            "scrollOffsetX": 0,
+            "scrollOffsetY": 0,
+            "timestamp": 1792330720.819242
+          }
+        },
+        {
+          "file": "presented-001.png",
+          "metadata": {
+            "offsetTop": 0,
+            "pageScaleFactor": 1,
+            "deviceWidth": 320,
+            "deviceHeight": 1000,
+            "scrollOffsetX": 0,
+            "scrollOffsetY": 0,
+            "timestamp": 1792330720.923404
+          }
+        }
+      ],
+      "frameProbeLimitation": "Compositor screencast plus read-only requestAnimationFrame attribute sampling can affect timing. The probe observes a possible visible transient; it never drives compact state or refreshes Workbench.",
+      "browserVersion": "145.0.7632.6",
+      "requestAnimationFrames": [
+        {
+          "atMs": 18440.1,
+          "epochMs": 1792330720632.2002,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18631.1,
+          "epochMs": 1792330720823.2002,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18639.4,
+          "epochMs": 1792330720831.5,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18648.5,
+          "epochMs": 1792330720840.6,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18731.9,
+          "epochMs": 1792330720924,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        }
+      ]
+    },
+    {
+      "label": "integration",
+      "screencastFrames": [
+        {
+          "file": "presented-000.png",
+          "metadata": {
+            "offsetTop": 0,
+            "pageScaleFactor": 1,
+            "deviceWidth": 320,
+            "deviceHeight": 1000,
+            "scrollOffsetX": 0,
+            "scrollOffsetY": 0,
+            "timestamp": 1792330741.265041
+          }
+        }
+      ],
+      "frameProbeLimitation": "Compositor screencast plus read-only requestAnimationFrame attribute sampling can affect timing. The probe observes a possible visible transient; it never drives compact state or refreshes Workbench.",
+      "browserVersion": "145.0.7632.6",
+      "requestAnimationFrames": [
+        {
+          "atMs": 17821.3,
+          "epochMs": 1792330741073.7,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 17971.4,
+          "epochMs": 1792330741223.7998,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 17979.7,
+          "epochMs": 1792330741232.0999,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18013,
+          "epochMs": 1792330741265.4,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        }
+      ]
+    },
+    {
+      "label": "held-5c",
+      "screencastFrames": [
+        {
+          "file": "presented-000.png",
+          "metadata": {
+            "offsetTop": 0,
+            "pageScaleFactor": 1,
+            "deviceWidth": 320,
+            "deviceHeight": 1000,
+            "scrollOffsetX": 0,
+            "scrollOffsetY": 0,
+            "timestamp": 1792330761.703584
+          }
+        },
+        {
+          "file": "presented-001.png",
+          "metadata": {
+            "offsetTop": 0,
+            "pageScaleFactor": 1,
+            "deviceWidth": 320,
+            "deviceHeight": 1000,
+            "scrollOffsetX": 0,
+            "scrollOffsetY": 0,
+            "timestamp": 1792330761.809438
+          }
+        }
+      ],
+      "frameProbeLimitation": "Compositor screencast plus read-only requestAnimationFrame attribute sampling can affect timing. The probe observes a possible visible transient; it never drives compact state or refreshes Workbench.",
+      "browserVersion": "145.0.7632.6",
+      "requestAnimationFrames": [
+        {
+          "atMs": 18168.5,
+          "epochMs": 1792330761523.7,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18351.7,
+          "epochMs": 1792330761706.9,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18360.1,
+          "epochMs": 1792330761715.3,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18368.4,
+          "epochMs": 1792330761723.5999,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        },
+        {
+          "atMs": 18451.8,
+          "epochMs": 1792330761807,
+          "width": 320,
+          "height": 1000,
+          "compact": "true",
+          "left": "0px",
+          "mode": "edit"
+        }
+      ]
+    }
+  ],
+  "noProductChange": true
+}

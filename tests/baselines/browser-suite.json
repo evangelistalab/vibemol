@@ -1,7 +1,7 @@
 {
   "expected": {
-    "passed": 33,
-    "failed": 4,
+    "passed": 34,
+    "failed": 3,
     "total": 37
   },
   "suites": [
@@ -66,16 +66,18 @@
       "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
       "issue": "https://github.com/evangelistalab/vibemol/issues/11",
       "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
-    },
-    "tests/e2e/edit_tool.py": {
-      "workflow": "issue-21-edit-toolbar-layout-collapse-320",
-      "exceptionType": "AssertionError",
-      "defect": "Issue #21: .wb-tools layout collapse at 320px",
-      "issue": "https://github.com/evangelistalab/vibemol/issues/21",
-      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
     }
   },
-  "policy": "CI requires exactly 33 passing / 4 failing / 37 with the exact four (suite, workflow) keys. Accepted: axis Escape/canvas focus; Coordinates Delete intercepted by selection card; #11 trajectory OR vibration idle wait after the second download; #21 .wb-tools layout collapse at 320px. Traceback lines and hashes are diagnostic, never acceptance keys. Any missing carried failure (including 34/3 over-performance), extra failure, or different workflow stops. The Stage5a/5b exporter-shape comparison and all golden/identity/construction/source gates remain required.",
+  "policy": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
   "gateEnvironment": "CI",
-  "baselineComparison": "Current CI 33/4/37; earlier 34/3/37 results remain historical."
+  "baselineComparison": "Current restored CI34/3/37. Historical33/4/37 gates and original failed attempts retain their observed values.",
+  "synchronizationCorrection": {
+    "issue": 21,
+    "classification": "closed test-synchronization defect",
+    "diagnostic": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+    "evidence": "tests/baselines/evidence/browser-sync-21/diagnostic-39129507791/readbacks.json",
+    "changedExpectation": "The bar must first reach compact=true and a presentation boundary at320px; elapsed100ms alone does not establish readiness.",
+    "assertionToleranceUnchanged": true,
+    "noProductionChange": true
+  }
 }

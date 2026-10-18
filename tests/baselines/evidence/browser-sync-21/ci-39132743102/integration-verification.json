@@ -1,0 +1,9 @@
+{
+  "integrationCommit": "892922addc10463e21a5bfe3f15aeb52ecc840e7",
+  "tree": "1db309f2d93392491fbce31cc09717d68d327c17",
+  "entireTreeEqualsTestedCandidate": true,
+  "appSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+  "trackedLet": 256,
+  "pushedRemote": "892922addc10463e21a5bfe3f15aeb52ecc840e7",
+  "userGitignorePreserved": true
+}

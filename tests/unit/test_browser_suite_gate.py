@@ -20,8 +20,8 @@ class WorkflowGateTests(unittest.TestCase):
                 **GATE.failure_details(log, suite, source or (ROOT / 'tests/e2e' / suite).read_text())}
 
     def accepted(self, suite, log, source=None):
-        return GATE.matches_known_defect(self.result(suite, log, source),
-                                        MANIFEST['knownDefects'][f'tests/e2e/{suite}'])
+        known = MANIFEST['knownDefects'].get(f'tests/e2e/{suite}')
+        return bool(known) and GATE.matches_known_defect(self.result(suite, log, source), known)
 
     def test_completed_ci_workflows_and_both_issue11_sites(self):
         for suite in ('axis_gizmo.py', 'mode_consistency.py', 'smoke.py'):
@@ -40,11 +40,15 @@ class WorkflowGateTests(unittest.TestCase):
             source = '\n' * 123 + (ROOT / 'tests/e2e' / suite).read_text()
             self.assertTrue(self.accepted(suite, shifted, source))
 
-    def test_edit_layout_failure_is_only_the_320px_width_workflow(self):
+    def test_closed_edit_sync_issue_is_diagnostic_only(self):
+        self.assertNotIn('tests/e2e/edit_tool.py', MANIFEST['knownDefects'])
+        def classified(log):
+            return self.result('edit_tool.py', log)['failureWorkflow'] is not None
         old = (EVIDENCE / 'ci-39086927339/edit_tool.log').read_text()
-        self.assertTrue(self.accepted('edit_tool.py', old))
-        self.assertTrue(self.accepted('edit_tool.py', re.sub(r'line \d+', 'line 9999', old)))
-        self.assertFalse(self.accepted('edit_tool.py', old.replace('AssertionError: 320', 'AssertionError: 390')))
+        self.assertTrue(classified(old))
+        self.assertFalse(self.accepted('edit_tool.py', old))
+        self.assertTrue(classified(re.sub(r'line \d+', 'line 9999', old)))
+        self.assertFalse(classified(old.replace('AssertionError: 320', 'AssertionError: 390')))
         measurement = dict(viewportWidth=320, actual=dict(scrollWidth=442, clientWidth=12),
                            expected=dict(maximumScrollWidth=13), passed=False)
         trace = ('Traceback (most recent call last):\n'
@@ -53,14 +57,15 @@ class WorkflowGateTests(unittest.TestCase):
                  'AssertionError: 320\n')
         def log(value):
             return '[edit-tool-layout] '+json.dumps(value)+'\n'+trace
-        self.assertTrue(self.accepted('edit_tool.py', log(measurement)))
-        self.assertFalse(self.accepted('edit_tool.py', trace))
+        self.assertTrue(classified(log(measurement)))
+        self.assertFalse(self.accepted('edit_tool.py', log(measurement)))
+        self.assertFalse(classified(trace))
         for changes in [dict(viewportWidth=390), dict(passed=True),
                         dict(expected=dict(maximumScrollWidth=14)),
                         dict(actual=dict(scrollWidth=442, clientWidth=442))]:
             with self.subTest(changes=changes):
-                self.assertFalse(self.accepted('edit_tool.py', log({**measurement, **changes})))
-        self.assertFalse(self.accepted('edit_tool.py', log(measurement).replace(
+                self.assertFalse(classified(log({**measurement, **changes})))
+        self.assertFalse(classified(log(measurement).replace(
             "assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width",
             "assert page.locator('#editToolStrip').is_visible(), width")))
 

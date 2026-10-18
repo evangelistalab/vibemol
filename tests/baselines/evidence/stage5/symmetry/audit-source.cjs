@@ -4,7 +4,7 @@ const {isDeepStrictEqual}=require('node:util');
 const parser=require('/usr/local/lib/node_modules/gatsby-cli/node_modules/@babel/parser');
 const traverse=require('/usr/local/lib/node_modules/gatsby-cli/node_modules/@babel/traverse').default;
 const out=process.argv[2];assert(out);fs.mkdirSync(out,{recursive:true});
-const base='63082febadb22d5351365b8f75267534494893e6',app='assets/app/js/app.js',mod='assets/app/js/symmetry-panel.js';
+const base='892922addc10463e21a5bfe3f15aeb52ecc840e7',app='assets/app/js/app.js',mod='assets/app/js/symmetry-panel.js';
 const git=(...a)=>cp.execFileSync('git',a,{encoding:'utf8',maxBuffer:32e6}),old=p=>git('show',base+':'+p),read=p=>fs.readFileSync(p,'utf8'),parse=s=>parser.parse(s),hash=s=>crypto.createHash('sha256').update(s).digest('hex');
 const names=['isSymmetryPopoverOpen','getSymmetryTargetKey','invalidateSymmetryPopoverAnalysisCache','buildSymmetryAnalysisCacheKey','getSymmetryPopoverAnalysis','clearSymmetryPreview','snapSymmetryTolerance','syncSymmetryToleranceUi','findInternalSymmetryCandidate','getSymmetryPopoverCandidateList','getSymmetryPopoverSelectedGroupId','getSymmetryPopoverSelectedCandidate','getSymmetryElementDisplayAnalysis','clearSymmetryCurrentGroupHighlight','updateSymmetryCurrentGroupUi','buildSymmetryElementOptionHtml','renderSymmetryElementOptions','formatSymmetryResidual','renderSymmetryCandidates','renderSymmetryPopover','hideSymmetryPopover','setSymmetryTolerance','previewSymmetryCandidate','cancelSymmetryPreview'];
 const deps=['els','Symmetry','resolveEditSymmetryTarget','resolveVolumeAtomId','workspaceEnabled','isEditMode','clearSymmetryElementGuide','renderSymmetryElementGuide','positionSymmetryPopover','updateEditAdaptiveMenuUi','setHintMessage'];
