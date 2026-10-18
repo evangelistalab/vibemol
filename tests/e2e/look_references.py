@@ -210,4 +210,5 @@ def reference_migration(page, context, url):
 
 if __name__ == '__main__':
     from helpers import run_appearance_scenarios
-    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration])
+    from appearance_autosave import restore_reporting
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, restore_reporting])

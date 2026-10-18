@@ -21,10 +21,17 @@
     {
       "label": "Stage 5c symmetry presentation",
       "before": "63082febadb22d5351365b8f75267534494893e6",
-      "worktree": ".",
+      "after": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
       "modules": [
         "assets/app/js/symmetry-panel.js"
       ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue 25 PR1 restore reporting and persistent notice",
+      "before": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+      "worktree": ".",
+      "consumers": ["assets/app/js/looks-ui.js"],
       "expectedStatus": "passed"
     }
   ]

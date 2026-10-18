@@ -205,7 +205,8 @@ for (const stage of config.stages) {
   report.constructorProofs=constructorProofs;
   report.consumers=[];
   for(const file of stage.consumers||[]) {
-    const old=git('show',stage.before+':'+file),current=git('show',stage.after+':'+file);
+    const old=git('show',stage.before+':'+file),current=stage.worktree
+      ?fs.readFileSync(path.join(stage.worktree,file),'utf8'):git('show',stage.after+':'+file);
     report.consumers.push({file,...auditSource(old,current)});
   }
   if(report.consumers.some(c=>c.status!=='passed'))report.status='review-required';

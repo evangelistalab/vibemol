@@ -1,0 +1,112 @@
+{
+  "status": "local-passed-awaiting-own-CI",
+  "scope": "PR1 reporting, persistent user notice and payload preservation; #25 remains open pending PR2 validate-then-commit and silent-shortfall accounting.",
+  "sourceSha256": "3adaff220a6b871a538685c845ad30dd1c7244945e75bfee486574e68cc31bd4",
+  "harness": "tests/e2e/appearance_autosave.py",
+  "harnessSha256": "bd7036ed955d003d9d6b1cf733933892f518a4b7bc8c6341b3d6859b1a146b14",
+  "historicalEvidenceUnchanged": true,
+  "matrix": {
+    "cases": 19,
+    "failureCases": 16,
+    "controls": 3,
+    "launches": [
+      "workbench",
+      "legacy"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "faults": [
+      "malformed-json",
+      "storage-read-throws",
+      "import-callback-throws",
+      "import-and-defaults-throw"
+    ],
+    "assertions": "Exact default getter readback at fallback completion, visible aria-hidden=false after real4200ms+300ms deadline before a mode change, every supported mode change, durable Looks status, exact original saved bytes and zero writes after a real edit/750ms opportunity, exact injected call counts, no pageerrors."
+  },
+  "states": [
+    "skipped",
+    "empty",
+    "restored",
+    "failed"
+  ],
+  "failureReasons": [
+    "storage-read",
+    "parse",
+    "import"
+  ],
+  "notice": {
+    "channel": "Existing persistent hint shell plus dedicated Look section status line",
+    "pause": "Session-long latch checked at schedule and write; workspace session change tracking continues.",
+    "guidance": "Save a session to keep changes. Reload is required to retry restoration and autosave.",
+    "defaultsClaim": "Defaults were applied at startup; compound fallback failure never makes that claim."
+  },
+  "dependencyInventory": {
+    "newController": false,
+    "functions": [
+      {
+        "name": "restoreAppearancePresetAutosave",
+        "appInputs": [
+          "AUTOSAVE_STORAGE_KEY",
+          "appearanceStudy",
+          "failAppearancePresetAutosaveRestore",
+          "importAppearancePresetEnvelope",
+          "syncAppearancePersistenceUi"
+        ],
+        "count": 5,
+        "platformGlobals": [
+          "Error",
+          "JSON",
+          "window"
+        ]
+      },
+      {
+        "name": "failAppearancePresetAutosaveRestore",
+        "appInputs": [
+          "appearancePresetAutosaveFailure",
+          "cancelAppearancePresetAutosave",
+          "defaultAppearancePresetEnvelope",
+          "importAppearancePresetEnvelope",
+          "syncAppearancePersistenceUi"
+        ],
+        "count": 5,
+        "platformGlobals": [
+          "Error",
+          "console"
+        ],
+        "writtenAppInputs": [
+          "appearancePresetAutosaveFailure"
+        ]
+      },
+      {
+        "name": "getAppearanceRestoreFailureMessage",
+        "appInputs": [
+          "appearancePresetAutosaveFailure"
+        ],
+        "count": 1,
+        "platformGlobals": []
+      }
+    ]
+  },
+  "construction": {
+    "status": "passed",
+    "newAppBindings": 11,
+    "newLooksBindings": 1,
+    "newController": false
+  },
+  "pendingPR2": [
+    "required envelope fields",
+    "range/type validation",
+    "missing recipe reference",
+    "future schema",
+    "actual requested/applied field and reference report",
+    "STRICT after compatibility normalization"
+  ],
+  "validationLimits": "Characterization is regression coverage only, never evidence for this repair. Defaults readback must precede ordinary startup enabling axes at app.js global.__showAxes__ initialization; the original stronger-check failure and all prior probe logs are preserved.",
+  "raw": {
+    "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1",
+    "resultSha256": "0a12912dfe8b277c87d88d8e3bb7bc263c501296c8dd1ca23ea2436be746a900",
+    "logSha256": "e239f9363946a027c3457f76564d7cc3abae1899e00002cdd1e69fb40029e328"
+  }
+}

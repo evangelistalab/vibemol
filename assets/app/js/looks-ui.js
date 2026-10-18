@@ -48,8 +48,9 @@
           <div class="vm-popover__actions"><button id="lookUpdate" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Update saved</button><button id="lookRename" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Rename</button><button id="lookDelete" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Delete</button></div>
           <div class="vm-popover__actions"><button id="lookExport" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Export look</button><button id="lookImport" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Import look</button></div>
           <div class="vm-popover__actions"><button id="lookDefault" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Set as default</button><button id="lookClearDefault" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" hidden>Use last appearance</button></div>
-          <p id="lookDefaultStatus" class="vm-status-text"></p><input id="lookFileInput" type="file" accept=".json,application/json" hidden>
-        </details><p id="lookStatus" class="vm-status-text" role="status" aria-live="polite"></p>
+        <p id="lookDefaultStatus" class="vm-status-text"></p><input id="lookFileInput" type="file" accept=".json,application/json" hidden>
+        </details><p id="lookRestoreStatus" class="vm-status-text" role="status" aria-live="polite" hidden></p>
+        <p id="lookStatus" class="vm-status-text" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), state = () => references.project(deps.captureSettings());
     const managedLook = () => {
@@ -100,6 +101,9 @@
     }
     function sync() {
       syncPending = false;
+      const restoreNotice = deps.getRestoreNotice?.() || '';
+      $('lookRestoreStatus').textContent = restoreNotice;
+      $('lookRestoreStatus').hidden = !restoreNotice;
       const view = state(), modified = view.styleModified || view.colorsModified, managed = managedLook();
       const savedPair = L.sameReference(view.styleRef, view.colorsRef) && view.styleRef.kind === 'user'
         && library.find(look => look.id === view.styleRef.id);

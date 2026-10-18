@@ -1,0 +1,1359 @@
+{
+  "purpose": "Pre-production STRICT compatibility census; acceptance is not semantic completeness or proof of the #25 fix.",
+  "testedAppCommit": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "testedAppSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+  "browserVersion": "145.0.7632.6",
+  "strictMode": "strict",
+  "testedUnique": 64,
+  "passed": 64,
+  "passRate": 1,
+  "sourceUnchanged": true,
+  "corpus": {
+    "jsonFilesScanned": 1158,
+    "logFilesScanned": 1279,
+    "requiredDistinct": 18,
+    "requiredOccurrences": 6431,
+    "supplementaryDistinct": 6,
+    "newLogVariants": 0
+  },
+  "generated": {
+    "builds": {
+      "v0.9.0": {
+        "commit": "af0fe94ce66f5bf4eca501f214961590c43a13e6",
+        "payloads": 20
+      },
+      "v0.9.5-pre-refactor": {
+        "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+        "payloads": 20
+      }
+    },
+    "coverage": "All nine built-in recipes in both themes, retained user recipe, mixed style/colors with an appearance edit; bytes written by each build normal autosave timer."
+  },
+  "normalization": {
+    "policy": "Reuse explicit legacy aliases/retired-key handling and appearance-only scope before STRICT. STRICT does not validate silent fallback by itself.",
+    "additionalNormalizationRequiredForStrictAcceptance": false,
+    "readbackDifferences": [
+      {
+        "sha256": "360c27ed1cdc93614111a76f5550d185cb9edc61a97aabb69072152b8508719e",
+        "sources": [
+          "out/local_api_path.preset.json"
+        ],
+        "keys": [
+          "surface.negColor",
+          "surface.posColor"
+        ],
+        "explanation": "Named Emory palette is authoritative over embedded fallback colors in these older CLI exports; current canonical Emory colors are returned. PR2 must report this normalization explicitly."
+      },
+      {
+        "sha256": "74749f5da03596f5de7054e0ef2a3b23cb495e77165d9f0511caf8f2dc5b6983",
+        "sources": [
+          "out/rc_auto_test.preset.json"
+        ],
+        "keys": [
+          "surface.negColor",
+          "surface.posColor"
+        ],
+        "explanation": "Named Emory palette is authoritative over embedded fallback colors in these older CLI exports; current canonical Emory colors are returned. PR2 must report this normalization explicitly."
+      },
+      {
+        "sha256": "9fd3b450a7f58f0cb60c6e83783571dc22cea627267c9e8babca795106cf7871",
+        "sources": [
+          "out/sample_toon_cli.preset.json"
+        ],
+        "keys": [
+          "surface.negColor",
+          "surface.posColor"
+        ],
+        "explanation": "Named Emory palette is authoritative over embedded fallback colors in these older CLI exports; current canonical Emory colors are returned. PR2 must report this normalization explicitly."
+      }
+    ],
+    "referenceShortfalls": 0
+  },
+  "raw": {
+    "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/strict-census",
+    "executedHarnessSha256": "acfa1176ba41273b3022d2799e265ae55635a6a0fcd5dc608b9058b3013e21a3",
+    "files": {
+      "strict-import-results.json": "e00251c59f72ece6905743782a38903777001a8b95afd8445c34a76342f96d3c",
+      "corpus-payloads.json": "720195a98315cb441d98fa2cc86ef66a910ba13a95bd9aeb59827c2535778122",
+      "corpus-occurrences.json": "0a8715adc7518bb54e4bac82ae84752e4145bd1d74553830472e41ddbd1b2672",
+      "generated-payloads.json": "02fed13ba4d49ecda08967b2fca1940b18eaa9a01ea0f6dd28d698ed3eb9d570",
+      "log-scan.json": "b3e614061a633fd7cc833a1681c8b524ecd43cb733519a6ded7ac9bd9dd2e05f"
+    }
+  },
+  "reproduction": "tools/diagnostics/autosave_census.py --output <fresh-directory>",
+  "cases": [
+    {
+      "sha256": "e0dd83baa54f902735be0acf9b39efe8744cabadd308cd324dad28bb6d69dbc6",
+      "appVersion": null,
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 11,
+      "referenceIds": [
+        null,
+        null
+      ],
+      "sourceSample": [
+        "docs/experiments/style-lab/presets/orbital-emissive.preset.json"
+      ]
+    },
+    {
+      "sha256": "fb0d2cee8cd6f74cc11281ca86a6982560a522275bb36029a160eaed7ba806a0",
+      "appVersion": null,
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 11,
+      "referenceIds": [
+        null,
+        null
+      ],
+      "sourceSample": [
+        "docs/experiments/style-lab/presets/orbital-enamel.preset.json"
+      ]
+    },
+    {
+      "sha256": "81676eff70d3dca5142a76f2a896916712bef873b9b69675bb672f28be918906",
+      "appVersion": null,
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 11,
+      "referenceIds": [
+        null,
+        null
+      ],
+      "sourceSample": [
+        "docs/experiments/style-lab/presets/orbital-satin.preset.json"
+      ]
+    },
+    {
+      "sha256": "360c27ed1cdc93614111a76f5550d185cb9edc61a97aabb69072152b8508719e",
+      "appVersion": "0.4.3",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 17,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "out/local_api_path.preset.json"
+      ]
+    },
+    {
+      "sha256": "74749f5da03596f5de7054e0ef2a3b23cb495e77165d9f0511caf8f2dc5b6983",
+      "appVersion": "0.4.3",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 17,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "out/rc_auto_test.preset.json"
+      ]
+    },
+    {
+      "sha256": "9fd3b450a7f58f0cb60c6e83783571dc22cea627267c9e8babca795106cf7871",
+      "appVersion": null,
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 13,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "out/sample_toon_cli.preset.json"
+      ]
+    },
+    {
+      "sha256": "2612c3e3ea5ce874e942efae4cabdf06f66ab1de63a279021fc035f658116bdf",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 46,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "0d1c9abd3b6637095959f7d172d87617c9d5d351f063f616080d5bbb71602839",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 38,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "02afbc15490bd1c8b2d51a791863c89e5edb59ddbbb3a51d73cdb6057eb2cd0e",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 4,
+      "appliedCount": 49,
+      "referenceIds": [
+        null,
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "06f0143c03e35d1a7da31113f1accd9023cb601953ef0b99ccc8c0ff0c1d5c77",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 4,
+      "appliedCount": 49,
+      "referenceIds": [
+        null,
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "17156edc0a55a5f1e52affb2c0da07190ab670d32b65ef6bf6ef05a173b1c6e9",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 4,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "0d37b224f549a42f0e4747632141a5431a05b02c2bf4007b83e7465c371696cd",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "5a5dea9dc0b1b42e17d7f3185f55eaeca2fe045bc8774a8fabf23cd436e119e0",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 4,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "c5fbfa4ad749e2329958d5093cefd496b487245fa3e9e661418974fcde5fefd0",
+      "appVersion": "0.10.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/characterize.json.gz"
+      ]
+    },
+    {
+      "sha256": "036e929aa3b935dde6951eaa6ebad11dfd165a29f22036764a71f760e48ee832",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 2852,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "8284eb9889541d6b007df694257d8e3f1a7310f0436e3baad4a109ebedf84d59",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 2356,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "7a898f0b6e0ce08263811eddf08912f83f2df26e7c94339ef205484f8cf589c1",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 248,
+      "appliedCount": 49,
+      "referenceIds": [
+        null,
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "7c9a1c61b7d904f5f4bd2099ecb5e2dd67219f0da9bb0151fd42c51eda15102c",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 248,
+      "appliedCount": 49,
+      "referenceIds": [
+        null,
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "a8eeb7af7da82772f375f05a919c2af163dec644d0cdd46138752f9166b17b1f",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 248,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "e225291fa2245db26de97fcab78bb90ae996175e92edbefd21875260f3cc1838",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 62,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "4400e7c51212ab69780c22cbb224245d26d7e8a4d904aae56504e447768042b3",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 248,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "f842d5f57df8c2c132cd3d912e09aff2bbab3f26a800241655be604efa556ae4",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 62,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-1.json.gz",
+        "tests/baselines/evidence/stage3/adaptive/ci-38177282064/characterize-run-2.json.gz"
+      ]
+    },
+    {
+      "sha256": "53b7fec3763b86532ab6e9cd849af5aad31fc7dc268fcfa3c7ead890dd4ac3e2",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 4,
+      "appliedCount": 15,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "tests/baselines/evidence/stage4/pubchem/restore-fault/input-preset.json",
+        "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json"
+      ]
+    },
+    {
+      "sha256": "0446b7f379d8313948349ea7620be47af33d5cac706c18b20c44e50f39abcb41",
+      "appVersion": null,
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 15,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "tests/fixtures/characterize/basic.look.json"
+      ]
+    },
+    {
+      "sha256": "f4d33549e57a32cb3ed24ac9cf2664f743ec227e56155660cebfd4fef5731443",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "5783be15198f6476e4b4dedde2be80bdbe227fe28c98f1ac33c75915979ff78e",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "07aad4ff52563bd30aac313b2a523dda8735f65f48bb4634d4676832d0f75ed9",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "kit"
+        },
+        {
+          "kind": "builtin",
+          "id": "kit"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "f2467a65b86b216813a1ecedc9506d3082c2420c0053bea40734970ffcb7b4cf",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "classic"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "62f865eaec66062655b442653547b9b53f44e8ccce33a3c008bf41c9ba7b23df",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        },
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "5d2b32cde20849461b7f9f03b08e863c90655edca1cd2db8405d21ac7d68073a",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "ink"
+        },
+        {
+          "kind": "builtin",
+          "id": "ink"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "3169b6f1a7ff92998ae460307cacdc07a9dc98d7fac9f279a3688c232e0abe53",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "opal"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "2b16a775d013eaba1c2358a9e1bc90c2e95628bc908ddeec3465e2fb10f30ef3",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        },
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "92d1940371548745226aee3174000a1d0977e56abdce455d45f2ded774903f93",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        },
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "2b544d1ae1853ef6e6f447d098c6b285d58859d11c345a4883824270ba63682f",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "40b9303f2266b67a574339f1a99ef07f72e47bcc080e7a0d11adba31fea95888",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "fe5173bbe96cb42a0cb9506f2ccfe10a4c3c45e1660c9b6f43e9be8e74a68eb0",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "kit"
+        },
+        {
+          "kind": "builtin",
+          "id": "kit"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "853869062f0a90faba4122d959e18071b7c2abb1578486bf0602fb3c03af4b22",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "classic"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "4793334d819b2bbf9859380c696447b68fd51bebc1d027687149e5e33320dce2",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        },
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "9f84d158a2f73423b55a163ec6a7903f681c45510ef2193b09fdd6587958908f",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "ink"
+        },
+        {
+          "kind": "builtin",
+          "id": "ink"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "7246c0e30294ed0410216cab70bcd5747bf19f1efd93974fc742c9ce2ce9abaa",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "opal"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "5ea33e7a2f2b760d2641e95709e8f53282875aa8035e2a746f80d16c5abcf68c",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        },
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "2ac238d6d1cfef1e1dbf6f7863b2d50cc80e9e7e9c60e9dcaf9dc22c7cabac03",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        },
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "42bfe497c79f2a1bbb773995696c56c3f84f08a9e4bba98442e82979eb72ed91",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "user",
+          "id": "user-30cd9409-0d6f-4a36-8f03-ef0a713f57cb"
+        },
+        {
+          "kind": "user",
+          "id": "user-30cd9409-0d6f-4a36-8f03-ef0a713f57cb"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "9d807dff78ff7915150b01962d93e33d6602b999e5c908bf83b6b7c685645c8c",
+      "appVersion": "0.9.0",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.0"
+      ]
+    },
+    {
+      "sha256": "ce7ee6d343d8b63947747cefbc7f782c5c706cd70abb02f391019f4015099870",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "b0c13bbf6be605f9e4d9d2829461023edab4a0c09c96af3c340568e4cd7119b1",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "710819735fe3f9c079f7fd9e7fc297d686bfbd3ba479b1318af6c46415564083",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "kit"
+        },
+        {
+          "kind": "builtin",
+          "id": "kit"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "4d78279cfe2621f7d091e22e386b8650d305b9961bd2e0524ab624b602ee34b2",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "classic"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "2b15da6e308e844c9128745044909a8d8abcd99bd67f9e9d1f68b4085a95a3f3",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        },
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "d5357d6e28ec9736e85e34a047dd24c10f874e84d4e573b717e8fadc82741f8e",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "ink"
+        },
+        {
+          "kind": "builtin",
+          "id": "ink"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "3cd099489c34b7d8582f4e7b7611a319d41cd8f4e7fbdfc4c1463034c83f68b0",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "opal"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "d41d136d4c13af8ea596bd5fa806c115132d97d37c4ba75c100f220f3454e7e2",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        },
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "fa5a7599a067d1a16e79fbbc1687f1f9e9f2ed5c03f1bb223bc4a75779584102",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        },
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "74fd5d48ce90926f5c97fa91ee110a251c2397c07f0c36fcd23af550fe61c61b",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        {
+          "kind": "builtin",
+          "id": "basic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "ef42f8c3a58c0e61c2e0998ae736220ab723ee418d11f524f9cf0d5cd8cdd60c",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        {
+          "kind": "builtin",
+          "id": "toon"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "261d2c667785890b63dbe96decac38ee86a64e74c05d195ace3f4586ffed5fc6",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "kit"
+        },
+        {
+          "kind": "builtin",
+          "id": "kit"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "4b23a0f4b4f212ddfb9aa2a34728e6062a0dc7a120da74c61418b7328d047983",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "classic"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "14ba78d35aa9e663af2bb41e451a57e387074651b1bc5b0a94ad6e9d488032c0",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        },
+        {
+          "kind": "builtin",
+          "id": "porcelain"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "03c42549178d0d034b38f205d79ae1295260ad61ff05a3739e22e3254495e8b3",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "ink"
+        },
+        {
+          "kind": "builtin",
+          "id": "ink"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "d250b3e4bc9986ab95598034bdd14a98e4824cbc4fbb9a1598faa635730953c0",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "opal"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "a0117715e45824cb3c22eb0bc329a28432ce5d8b4ca023c3a296f5a57dec9239",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        },
+        {
+          "kind": "builtin",
+          "id": "nocturne"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "de53a28cb6962b526fa9c6440cd88d2e98ad7073b963297b5ea7fd71283d718c",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        },
+        {
+          "kind": "builtin",
+          "id": "atelier"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "387bc60434e0efa662317e11fb039ae145aa5a1b3d399c1bb59883258140ccc4",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "user",
+          "id": "user-8dbe3612-0c8c-45e3-bb2e-08fdddefe56e"
+        },
+        {
+          "kind": "user",
+          "id": "user-8dbe3612-0c8c-45e3-bb2e-08fdddefe56e"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    },
+    {
+      "sha256": "fb22ecad89710cf3f49c2923373e95ed96bb0d5cc5608367c9738087d618fea1",
+      "appVersion": "0.9.5",
+      "strictPassed": true,
+      "origins": 1,
+      "appliedCount": 49,
+      "referenceIds": [
+        {
+          "kind": "builtin",
+          "id": "opal"
+        },
+        {
+          "kind": "builtin",
+          "id": "classic"
+        }
+      ],
+      "sourceSample": [
+        "generated:v0.9.5"
+      ]
+    }
+  ],
+  "startupConfirmation": {
+    "passed": 64,
+    "tested": 64,
+    "passRate": 1,
+    "referenceReadbacksMatchDirect": true,
+    "sourceUnchanged": true,
+    "sourceSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+    "servedSha256": "2655b8323fcb1a2a7afc2643e6a87fa16aaad40895ecdcddebbe691273977ab4",
+    "browserVersion": "145.0.7632.6",
+    "rawDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/strict-startup-census-final",
+    "rawResultSha256": "0885db6e0dc2368eaeccefa8a8fd0fe7d765db8242bd6adbd64cfd4713495a2e",
+    "instrumentation": "Only autosave import mode is changed to STRICT; same immutable payload bytes seeded before ordinary startup. Mode/result and resolved references checked after startup."
+  },
+  "strictWarningCount": 0
+}

@@ -47,6 +47,7 @@
   let vibrationVideoController = null;
   let appearancePresetAutosaveTimer = 0;
   let appearancePresetAutosaveSuppressDepth = 0;
+  let appearancePresetAutosaveFailure = null;
   let defaultAppearancePresetEnvelope = null;
   /**
    * Centralized app color palette used by canvas drawing and inline style snippets.
@@ -26390,12 +26391,13 @@
     if (appearanceStudy) return;
     if (appearancePresetAutosaveSuppressDepth > 0) return;
     markSessionChanged();
+    if (appearancePresetAutosaveFailure) return;
     const presetApi = window.VibeMolPreset;
     if (!presetApi || typeof presetApi.export !== 'function') return;
     cancelAppearancePresetAutosave();
     appearancePresetAutosaveTimer = window.setTimeout(() => {
       appearancePresetAutosaveTimer = 0;
-      if (appearancePresetAutosaveSuppressDepth > 0) return;
+      if (appearancePresetAutosaveSuppressDepth > 0 || appearancePresetAutosaveFailure) return;
       try {
         const preset = exportAppearancePresetEnvelope('Autosave');
         if (!preset) return;
@@ -26413,19 +26415,57 @@
   }
 
   function restoreAppearancePresetAutosave() {
-    if (appearanceStudy) return false;
+    if (appearanceStudy) return { status: 'skipped', reason: 'appearance-study' };
+    let raw;
     try {
-      const raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);
-      if (!raw) return false;
-      const parsed = JSON.parse(raw);
-      importAppearancePresetEnvelope(parsed);
-      syncAppearancePersistenceUi();
-      console.info('VibeMol: restored autosaved appearance preset');
-      return true;
-    } catch (err) {
-      console.warn('VibeMol: autosave restore failed', err);
-      return false;
+      raw = window.localStorage.getItem(AUTOSAVE_STORAGE_KEY);
+    } catch (error) {
+      return failAppearancePresetAutosaveRestore('storage-read', error);
     }
+    if (raw === null) return { status: 'empty' };
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (error) {
+      return failAppearancePresetAutosaveRestore('parse', error);
+    }
+    try {
+      const imported = importAppearancePresetEnvelope(parsed);
+      if (!imported || imported.ok !== true) throw new Error('Appearance importer did not report success.');
+      syncAppearancePersistenceUi();
+      return { status: 'restored', imported };
+    } catch (error) {
+      return failAppearancePresetAutosaveRestore('import', error);
+    }
+  }
+
+  function failAppearancePresetAutosaveRestore(reason, error) {
+    cancelAppearancePresetAutosave();
+    const failure = { status: 'failed', reason, error, defaultsInUse: false, fallbackError: null };
+    // Unlike the scoped suppression depth, this latch lasts until page reload.
+    // Keep the original storage bytes even when later appearance edits occur.
+    appearancePresetAutosaveFailure = failure;
+    console.warn('VibeMol: autosave restore failed', error);
+    try {
+      // This fixed startup envelope is already available. Do not call Reset:
+      // that deliberate user action also deletes the saved payload.
+      const fallback = importAppearancePresetEnvelope(defaultAppearancePresetEnvelope);
+      if (!fallback || fallback.ok !== true) throw new Error('Appearance defaults importer did not report success.');
+      syncAppearancePersistenceUi();
+      failure.defaultsInUse = true;
+    } catch (fallbackError) {
+      failure.fallbackError = fallbackError;
+      console.warn('VibeMol: appearance defaults fallback failed', fallbackError);
+    }
+    return failure;
+  }
+
+  function getAppearanceRestoreFailureMessage() {
+    if (!appearancePresetAutosaveFailure) return '';
+    const outcome = appearancePresetAutosaveFailure.defaultsInUse
+      ? 'Saved appearance could not be restored. Defaults were applied at startup.'
+      : 'Saved appearance could not be restored, and defaults could not be fully applied.';
+    return `${outcome} Appearance autosave is paused for this session. Save a session to keep changes. Reload is required to retry restoration and autosave.`;
   }
 
   function clearAppearancePresetAutosaveStorage() {
@@ -26741,7 +26781,20 @@
   }
 
   defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
-  restoreAppearancePresetAutosave();
+  const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();
+  switch (appearanceAutosaveRestoreResult.status) {
+    case 'restored':
+      console.info('VibeMol: restored autosaved appearance preset');
+      break;
+    case 'failed':
+      setHintMessage('', { accent: false });
+      break;
+    case 'empty':
+    case 'skipped':
+      break;
+    default:
+      throw new Error('Unexpected appearance restore result.');
+  }
 
   const structureTransportController = createStructureTransportController({
     getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null),
@@ -29641,7 +29694,7 @@
     if (!hintEl || String(hintEl.textContent || '').trim().length === 0) return;
     setHintVisible(true);
     clearHintVisibilityTimer();
-    if (currentMode === MODES.EDIT) return;
+    if (appearancePresetAutosaveFailure || currentMode === MODES.EDIT) return;
     hintVisibilityTimer = window.setTimeout(() => {
       hintVisibilityTimer = 0;
       setHintVisible(false);
@@ -29666,6 +29719,10 @@
    */
   function setHintMessage(message, options = {}) {
     if (!hintEl) return;
+    const restoreFailureMessage = getAppearanceRestoreFailureMessage();
+    if (restoreFailureMessage && !String(message || '').includes(restoreFailureMessage)) {
+      message = [restoreFailureMessage, message].filter(Boolean).join(' • ');
+    }
     lastHintMessage = message;
     hintEl.textContent = '';
     if (currentMode === MODES.EDIT && editTools) {
@@ -31398,7 +31455,8 @@
     presetSelect: workspaceEnabled ? null : document.getElementById('appearanceLookPreset'),
     atomFields: document.getElementById('appearanceAtomColorFields'), bondFields: document.getElementById('appearanceBondColorFields'),
     getAtomBaseRadius: z => 0.5 * getCovalentRadiusAngstrom(z),
-    applyStartupDefault: !appearanceStudy,
+    applyStartupDefault: !appearanceStudy && !appearancePresetAutosaveFailure,
+    getRestoreNotice: getAppearanceRestoreFailureMessage,
     createSlider: root => { const slider = new VmSlider(root); viewSliderRegistry.set(slider.valueInput, slider); return slider; },
     getRendering: () => appearanceModel.clone(appearanceState), editComponent: editAppearanceComponent,
     editBackgroundColor: editSceneBackgroundColor,

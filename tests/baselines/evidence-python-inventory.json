@@ -1,0 +1,1201 @@
+{
+  "baseCommit": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "trackedPythonFiles": 119,
+  "counts": {
+    "harness-to-keep": 19,
+    "artifact-to-prune": 100
+  },
+  "policy": "Inventory only; no deletions or historical evidence edits. Proposed prune requires individually reviewed provenance/archive and reference handling in a later cleanup PR.",
+  "files": [
+    {
+      "path": "tests/baselines/evidence/browser-ci-gate/figure-export-probe.py",
+      "lines": 78,
+      "id": 1,
+      "sha256": "04737da671d8d626a6d408eb7a1d7dcdfd7159f05d0c3b02723f649ca9107a06",
+      "bytes": 5406,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/video_export.py",
+      "reason": "Issue #11 native exporter reproducer; retain and parameterize."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/accessibility-hint-timing/analyze.py",
+      "lines": 48,
+      "id": 2,
+      "sha256": "c192e053dc66fe54147372e3ae32d68caad03f6a1b0ae61eb21fc2c96002a17c",
+      "bytes": 6818,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/accessibility-hint-timing/collect.py",
+      "lines": 29,
+      "id": 3,
+      "sha256": "dd981c677ef6d91fc9300509d35f2593186259aaaeb60eb699c5500798f64d3f",
+      "bytes": 2350,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/accessibility-settled-scan/barrier-cancellation-control.py",
+      "lines": 24,
+      "id": 4,
+      "sha256": "09965da3123da7906693cc5231d075ae5bd90652b23f5f176e0590d1b9f7cd23",
+      "bytes": 2287,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/accessibility_barrier.py",
+      "reason": "Real-browser settled-frame negative control; retain live."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/accessibility-settled-scan/barrier-control.py",
+      "lines": 23,
+      "id": 5,
+      "sha256": "8c64df73f665ab462de043b8566f44dd1421f56bcfd9a63659fa646e673e3c21",
+      "bytes": 1902,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/accessibility_barrier.py",
+      "reason": "Stronger active-transition cancellation control; consolidate with barrier control."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/finalize-baseline-docs.py",
+      "lines": 57,
+      "id": 6,
+      "sha256": "7b3d9e46172cec816007344b86a6e1d3d3b1c58b47b3c01f079ece8a76e06856",
+      "bytes": 12699,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/prepare-baseline-refresh-with-accessibility.py",
+      "lines": 73,
+      "id": 7,
+      "sha256": "b8c7a9bda8d715855bb628e506e5b84bbdcccf2f8afbe3f9e0e6a1cfe8033a21",
+      "bytes": 6911,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/adaptive/probe-actions.py",
+      "lines": 132,
+      "id": 8,
+      "sha256": "8d13a61eaa1e1bf2c97473d1dc800188eea68e6078c0e2d2d46e0384ca75aea6",
+      "bytes": 9002,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/adaptive/replay-ui-suite.py",
+      "lines": 47,
+      "id": 9,
+      "sha256": "b2e1007938930f6acad4cf3ea900623e6eeeca39b29e63bfbbb793a8a417bf36",
+      "bytes": 2074,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/replay_ui_suite.py",
+      "reason": "Canonical parameterized unchanged-suite replay; other copies are duplicates."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/atoms/ci-38266303089/verify-candidate.py",
+      "lines": 58,
+      "id": 10,
+      "sha256": "9e6a6c05a040a83424cdbc52d625651304078e44edc9e9b97d903da52e65b0cf",
+      "bytes": 6514,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/atoms/replay-ui-suite.py",
+      "lines": 47,
+      "id": 11,
+      "sha256": "b2e1007938930f6acad4cf3ea900623e6eeeca39b29e63bfbbb793a8a417bf36",
+      "bytes": 2074,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #9."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors-stop/diagnose-boot.py",
+      "lines": 37,
+      "id": 12,
+      "sha256": "765484f4190bde34ea3cc3c9fd29ff472c89ae375727dbca24ccddb9efc453e1",
+      "bytes": 2904,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/ci-39039061120/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 77,
+      "id": 13,
+      "sha256": "fd3fad4e41053d1640404e84ed52f4054c9d28ac33963feb127f90a638e5bcd8",
+      "bytes": 4267,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/ci-39039061120/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 14,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #99."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/ci-39039061120/proof-scripts/verify-colors-ci-candidate.py",
+      "lines": 154,
+      "id": 15,
+      "sha256": "7e4822731b779b63bd8758c8fc8ad559a43edfcbddb32de77f330d98903e8304",
+      "bytes": 11943,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/harness/prepare-local-evidence.py",
+      "lines": 88,
+      "id": 16,
+      "sha256": "9ed1cc832c6c48f841a1f051ac123308fb2e7920c6478e1ebb4f0fa074d0dad7",
+      "bytes": 6993,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/harness/verify-colors-ci-candidate.py",
+      "lines": 154,
+      "id": 17,
+      "sha256": "7e4822731b779b63bd8758c8fc8ad559a43edfcbddb32de77f330d98903e8304",
+      "bytes": 11943,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/harness/verify-native-editor.py",
+      "lines": 91,
+      "id": 18,
+      "sha256": "e42d7bef0e49579e3700b1a539a88a24139d549cfb62a3ee6ab9f37b2c1c5de5",
+      "bytes": 5737,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/element_colors.py",
+      "reason": "Native Workbench and retained legacy editor access; retain live."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/preflight/classify-dom-census.py",
+      "lines": 98,
+      "id": 19,
+      "sha256": "e45c409479f15356bb424e2b8a4db2ffbedb1ee1c42a1906e8f28423ee42e4ff",
+      "bytes": 14187,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/classify_dom_census.py",
+      "reason": "Per-use-site overlay census disposition logic; retain with its census producer."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/preflight/collector-diagnostics-attempt2/harness.py",
+      "lines": 186,
+      "id": 20,
+      "sha256": "805f2b871b56423050f08eaaab2719aca12c6ff29baeac38db1520e3651f6327",
+      "bytes": 12339,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/preflight/observe-colors-baseline.py",
+      "lines": 194,
+      "id": 21,
+      "sha256": "dd0fa79a864c705f074b5330e8ddfd0745d6497e6da470981fae42daccf195ef",
+      "bytes": 12716,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/observe_colors_dom.py",
+      "reason": "Final valid native entry and DOM retirement census; supersedes diagnostic collectors."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/preflight/observe-module-dom-queries.py",
+      "lines": 106,
+      "id": 22,
+      "sha256": "ffe6473063735bad144f34e390fcee14c2e9fb03dd478443587b8346ef7fdc10",
+      "bytes": 5869,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/observe_module_dom_queries.py",
+      "reason": "Module-private lookup observation supplements app DOM census."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/colors/preflight/original-collector.py",
+      "lines": 170,
+      "id": 23,
+      "sha256": "e9cc252c3c0b44384273c8d4eb9d5882c28533683d108c7cc001a820d9bce271",
+      "bytes": 11101,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/completion/boundary-soak/executed-harness.py",
+      "lines": 188,
+      "id": 24,
+      "sha256": "57881a700710e1cbf7e76fafeed12269744fc4808cee80974ac1921050dcd5e7",
+      "bytes": 12464,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/stage_boundary_soak.py",
+      "reason": "Parameterizable sustained mode/theme/session soak; retain live and remove historical identity hardcodes."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/cruft-sweep/sweep-workbench-dom.py",
+      "lines": 60,
+      "id": 25,
+      "sha256": "82449134675d543e37c72b0f773402e0936283baa38383c27f609dcba03c1837",
+      "bytes": 4566,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/cruft-sweep/verify-element-colors-reachable.py",
+      "lines": 39,
+      "id": 26,
+      "sha256": "4aa99af4a2a80dcc3c722420a07a33fcd0248eace5f4967e928b71508a7552f8",
+      "bytes": 2936,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/complete-manual-matrix.py",
+      "lines": 79,
+      "id": 27,
+      "sha256": "a53e861c0e88853b708284e1e5388eda6bf23b3819f346160534df0dcd6f9e2d",
+      "bytes": 4037,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/manual-fixture-diagnostic/collector-before-legacy-hover.py",
+      "lines": 80,
+      "id": 28,
+      "sha256": "8e7756bce7598b6973a466650b209c761e92ac1bed3603aea9d9fd79648cfd68",
+      "bytes": 6766,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/manual-resumed-stop/selection-menu-matrix.py",
+      "lines": 69,
+      "id": 29,
+      "sha256": "648d0e03b57bd6ac16d241f3793283b690975dd4aa3e094fd3f2dfc23a9e4267",
+      "bytes": 5909,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/manual-stop/original-selection-menu-matrix.py",
+      "lines": 60,
+      "id": 30,
+      "sha256": "1399c7d06ff3284a2bc868255335d82b833fcfdb230259e19e2a8913e4b2d61e",
+      "bytes": 5348,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/measure-overlay-overlaps.py",
+      "lines": 92,
+      "id": 31,
+      "sha256": "0075dde476bb53a1e78eeefda39480ffe286e759132a58a610c20bec161fe11f",
+      "bytes": 5227,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/overlay_overlaps.py",
+      "reason": "Open issue #17 geometry and interception evidence; retain reproducer."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/replay-ui-suite.py",
+      "lines": 47,
+      "id": 32,
+      "sha256": "2920dd453f5d7d5ed4cde466508b427229a2a7f338695042ce47fb181487907d",
+      "bytes": 2125,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Duplicate older suite replay; retain canonical harness #9."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/run-manual-matrix.py",
+      "lines": 15,
+      "id": 33,
+      "sha256": "ddac88e74bf0c9e16a8538bbe1f39d0b2b31431bcb1e38c98edff80520e89d9b",
+      "bytes": 2039,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/selection/selection-menu-matrix.py",
+      "lines": 86,
+      "id": 34,
+      "sha256": "47f4848ed811de6059d406b4c4c42e3e963471c0d6839f2bd10e51fe1430d035",
+      "bytes": 7122,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/selection_menus.py",
+      "reason": "Final valid native Selection workflow matrix including carried #17 behavior."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/ci-38994402382/source/edit_tool.py",
+      "lines": 183,
+      "id": 35,
+      "sha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "bytes": 12189,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/ci-39034824420/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 77,
+      "id": 36,
+      "sha256": "fd3fad4e41053d1640404e84ed52f4054c9d28ac33963feb127f90a638e5bcd8",
+      "bytes": 4267,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/ci-39034824420/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 37,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #99."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/ci-39034824420/proof-scripts/verify-sharded-cache-candidate.py",
+      "lines": 134,
+      "id": 38,
+      "sha256": "9f4bfa6c6c33f484aff8a7152eec0b2369a946ddd50bf511e2a229d178870f85",
+      "bytes": 9984,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/edit-tool-320-classification-seq5/run-focused.py",
+      "lines": 150,
+      "id": 39,
+      "sha256": "40d6cf5588bd7474e0c62a5048f8da7e5a0c3981bf0f268aeda5313047e662a9",
+      "bytes": 7523,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Closed #21 one-off classification runner; observable compact readiness is now in the shipped suite."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/edit-tool-320-classification-seq5/run-matrix.py",
+      "lines": 69,
+      "id": 40,
+      "sha256": "6f03d3b4271d4b476b8f7337fadacb728c6e189ca5281e4f5e17eda41ec083a8",
+      "bytes": 4191,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Closed #21 one-off classification runner; observable compact readiness is now in the shipped suite."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/edit-tool-320-classification-seq5/source/edit_tool.py",
+      "lines": 183,
+      "id": 41,
+      "sha256": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0",
+      "bytes": 12189,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/harness/edit_tool_320.py",
+      "lines": 238,
+      "id": 42,
+      "sha256": "d75755264c2455dd7d08131514e87eaac9e1fee37c2957ac8f1108e9706bfdcb",
+      "bytes": 11754,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Closed #21 one-off classification runner; observable compact readiness is now in the shipped suite."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-initial-readiness/native-matrix.py",
+      "lines": 158,
+      "id": 43,
+      "sha256": "e5560e5f62e47a2a6255eb89d1d3298f1352027d4035dcad74f15686faba2419",
+      "bytes": 9606,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-initial-readiness/run-paired-native.py",
+      "lines": 33,
+      "id": 44,
+      "sha256": "a632ce6d5f8d89fe27c70923439769ef7f0ec0b6011b380900a45c2dbe08b8a0",
+      "bytes": 2235,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-invalid-fixture/native-matrix.py",
+      "lines": 160,
+      "id": 45,
+      "sha256": "1b82d840a87a31d1c7258245ec537157d2e56a76f957825eea660094fdfac662",
+      "bytes": 9883,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-invalid-fixture/run-paired-native.py",
+      "lines": 33,
+      "id": 46,
+      "sha256": "a632ce6d5f8d89fe27c70923439769ef7f0ec0b6011b380900a45c2dbe08b8a0",
+      "bytes": 2235,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-lifecycle-fixture-diagnostics/native-matrix.py",
+      "lines": 162,
+      "id": 47,
+      "sha256": "2625d4cfa0fa76b16f2b38e601b60e8df1b37194613672508d8abc5d11f9fd29",
+      "bytes": 10050,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-lifecycle-fixture-diagnostics/run-paired-native.py",
+      "lines": 33,
+      "id": 48,
+      "sha256": "a632ce6d5f8d89fe27c70923439769ef7f0ec0b6011b380900a45c2dbe08b8a0",
+      "bytes": 2235,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-matrix.py",
+      "lines": 181,
+      "id": 49,
+      "sha256": "41b231fb4bef9b281fb71e4a6bdd657ac7788187a900193ac691023d66170a7c",
+      "bytes": 10977,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-probe-diagnostics-v3/native-matrix.py",
+      "lines": 161,
+      "id": 50,
+      "sha256": "9395bc9195e02540a37bcad52c2825c6efaa2c61ede7c5e4727bcb9ad67a6ba8",
+      "bytes": 9964,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/native-probe-diagnostics-v3/run-paired-native.py",
+      "lines": 33,
+      "id": 51,
+      "sha256": "a632ce6d5f8d89fe27c70923439769ef7f0ec0b6011b380900a45c2dbe08b8a0",
+      "bytes": 2235,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Superseded or invalid diagnostic collector; retain failure metadata and archived provenance, not an executable live copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/replay-ui-suite.py",
+      "lines": 47,
+      "id": 52,
+      "sha256": "9d01926da92cf3b9c916b4faf386a7648ffc686f2ddde9c4eb245a07eb0f00b3",
+      "bytes": 2149,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Duplicate older suite replay; retain canonical harness #9."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/run-paired-native.py",
+      "lines": 33,
+      "id": 53,
+      "sha256": "a632ce6d5f8d89fe27c70923439769ef7f0ec0b6011b380900a45c2dbe08b8a0",
+      "bytes": 2235,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage3/symmetry/run-paired-stock.py",
+      "lines": 38,
+      "id": 54,
+      "sha256": "30479e1188e5dca65d7718ed272c95ba9e972544ca2e58257fed3886d8d4745e",
+      "bytes": 2214,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/archive-failed-ci.py",
+      "lines": 43,
+      "id": 55,
+      "sha256": "12534b24d407f583b15f404b61c3cc2ffb6e21dca447e7233acdc53a5e8b0265",
+      "bytes": 2326,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 77,
+      "id": 56,
+      "sha256": "fd3fad4e41053d1640404e84ed52f4054c9d28ac33963feb127f90a638e5bcd8",
+      "bytes": 4267,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 57,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #99."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/preserve-failed-evidence.py",
+      "lines": 73,
+      "id": 58,
+      "sha256": "c99d3a4898a2026274612ad1830de4314f75a2416ab7ce1711c9ddfd76c2b7ff",
+      "bytes": 7929,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/verify-failed-evidence.py",
+      "lines": 96,
+      "id": 59,
+      "sha256": "6ee5bda004758a4502d4c8dabb911b308565dd6c54aa2f7b758bfcd7411b6701",
+      "bytes": 7281,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/verify-manual-pair.py",
+      "lines": 39,
+      "id": 60,
+      "sha256": "cd04a05b10c312aa40b6dd37d5d804e18f3d9ca600e2293ce0f010c1addb0de8",
+      "bytes": 3261,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39057387687/proof-scripts/verify-pubchem-ci-candidate.py",
+      "lines": 145,
+      "id": 61,
+      "sha256": "67ddd44dc125d8da9c2faedb7178d009e5df6909eb30a57cf02059de53f45fde",
+      "bytes": 11140,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/archive-own-ci.py",
+      "lines": 37,
+      "id": 62,
+      "sha256": "40d7f81b5cf1d8afb60f0baa152df2b897f5beceba9c5c52a6bbb49dc1dca554",
+      "bytes": 2037,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 77,
+      "id": 63,
+      "sha256": "fd3fad4e41053d1640404e84ed52f4054c9d28ac33963feb127f90a638e5bcd8",
+      "bytes": 4267,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/finish-local.py",
+      "lines": 108,
+      "id": 64,
+      "sha256": "960475fd64e73a1a8d2f57e382d0a3cca3e51229c484491e8ddb4dc00dedd8e9",
+      "bytes": 10131,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/freeze-fixed.py",
+      "lines": 61,
+      "id": 65,
+      "sha256": "2925ce259468cdcc12aa5b08bbee77f0016da8c9627a3e0013dd4f8e4552084b",
+      "bytes": 8164,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 66,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #99."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/postmerge-bookkeeping.py",
+      "lines": 65,
+      "id": 67,
+      "sha256": "6c03beee0cabd6926125204c7530d0179a1725d3c2030f00b158bbe8fb035524",
+      "bytes": 7963,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/preserve-ci-proof.py",
+      "lines": 51,
+      "id": 68,
+      "sha256": "ff51b806e20ec4078ef1ed4298291d4ceb5d7420f7364da2f418e59c9a5c2140",
+      "bytes": 3319,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/verify-integrated-candidate.py",
+      "lines": 48,
+      "id": 69,
+      "sha256": "9d97c2075a6a0f5febb0dc490fac7aa0f89f7f1be51812cbdeea8eaf87fa9c26",
+      "bytes": 2960,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/verify-manual-pair.py",
+      "lines": 40,
+      "id": 70,
+      "sha256": "3d388ffa28b83eb7f015acb2480451d2e28289f2215bd89a1c918ff6e2ab724c",
+      "bytes": 3600,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/verify-pre-merge.py",
+      "lines": 52,
+      "id": 71,
+      "sha256": "1a96b291f48f6496ff26313a90709b0e50d839be43df0f6482f4d211ccc3588e",
+      "bytes": 3635,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/proof-scripts/verify-pubchem-ci-candidate.py",
+      "lines": 159,
+      "id": 72,
+      "sha256": "546c35f40dc0042bb7ccd3e4dda513b8e0f8c956cbec2b486edf8665e4a6d9ee",
+      "bytes": 12376,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/collect-completed-sharded-run.py",
+      "lines": 77,
+      "id": 73,
+      "sha256": "fd3fad4e41053d1640404e84ed52f4054c9d28ac33963feb127f90a638e5bcd8",
+      "bytes": 4267,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/manual-network-matrix.py",
+      "lines": 200,
+      "id": 74,
+      "sha256": "ef04eb32198926a1a25a2cb733f3fd57cd4b3daf72a4dcf2ccdbf404c11839e8",
+      "bytes": 13153,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/pubchem_network.py",
+      "reason": "Real native network success/failure/abort coverage; retain live."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/measure-sharded-run.py",
+      "lines": 61,
+      "id": 75,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #99."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/prepare-local-evidence.py",
+      "lines": 103,
+      "id": 76,
+      "sha256": "04a5084380c9399a662a2abcbfd850fab6a875e2f8ae3fca168fa568667ffe47",
+      "bytes": 9308,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/verify-manual-pair.py",
+      "lines": 39,
+      "id": 77,
+      "sha256": "cd04a05b10c312aa40b6dd37d5d804e18f3d9ca600e2293ce0f010c1addb0de8",
+      "bytes": 3261,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/harness/verify-pubchem-ci-candidate.py",
+      "lines": 145,
+      "id": 78,
+      "sha256": "67ddd44dc125d8da9c2faedb7178d009e5df6909eb30a57cf02059de53f45fde",
+      "bytes": 11140,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-integration/tests/e2e/look_references.py",
+      "lines": 213,
+      "id": 79,
+      "sha256": "2a1c894c25894779414bb7ca439d5b93fb6feab3a9436760fb76c1a2b340ec87",
+      "bytes": 15397,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-integration/tools/diagnostics/look_migration.py",
+      "lines": 63,
+      "id": 80,
+      "sha256": "a3cc71f5052f7b6ce470ce64bd47522118405d0302b37726e2a7a7b77d21ee7e",
+      "bytes": 3747,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical PubChem ordering diagnostic; #25 live restore harness replaces ongoing investigation use."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-pubchem/tests/e2e/look_references.py",
+      "lines": 213,
+      "id": 81,
+      "sha256": "2a1c894c25894779414bb7ca439d5b93fb6feab3a9436760fb76c1a2b340ec87",
+      "bytes": 15397,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-pubchem/tools/diagnostics/look_migration.py",
+      "lines": 63,
+      "id": 82,
+      "sha256": "a3cc71f5052f7b6ce470ce64bd47522118405d0302b37726e2a7a7b77d21ee7e",
+      "bytes": 3747,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical PubChem ordering diagnostic; #25 live restore harness replaces ongoing investigation use."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-tagged/tests/e2e/look_references.py",
+      "lines": 213,
+      "id": 83,
+      "sha256": "2a1c894c25894779414bb7ca439d5b93fb6feab3a9436760fb76c1a2b340ec87",
+      "bytes": 15397,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/look-migration-tagged/tools/diagnostics/look_migration.py",
+      "lines": 63,
+      "id": 84,
+      "sha256": "a3cc71f5052f7b6ce470ce64bd47522118405d0302b37726e2a7a7b77d21ee7e",
+      "bytes": 3747,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical PubChem ordering diagnostic; #25 live restore harness replaces ongoing investigation use."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/proof-scripts/collect-diagnostic.py",
+      "lines": 40,
+      "id": 85,
+      "sha256": "d763ee5dc5e5f11b40ff852af08b7c23741f1d23b882455ee6e46eab540528ba",
+      "bytes": 2415,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/migration-diagnostic-ci-39062919011/proof-scripts/verify-diagnostic.py",
+      "lines": 67,
+      "id": 86,
+      "sha256": "be4ac6d9790f19737257d336910309e9ff21ac1445af87180f8c1951b7b3929a",
+      "bytes": 5285,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ordering-correction/finish-local.py",
+      "lines": 108,
+      "id": 87,
+      "sha256": "960475fd64e73a1a8d2f57e382d0a3cca3e51229c484491e8ddb4dc00dedd8e9",
+      "bytes": 10131,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/ordering-correction/verify-manual-pair.py",
+      "lines": 40,
+      "id": 88,
+      "sha256": "3d388ffa28b83eb7f015acb2480451d2e28289f2215bd89a1c918ff6e2ab724c",
+      "bytes": 3600,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage4/pubchem/restore-fault/probe.py",
+      "lines": 95,
+      "id": 89,
+      "sha256": "eead1002b0c35322cf45fa0ac5b0d5f3cffb757cc982d225aad1c5a127c5b0de",
+      "bytes": 5683,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/appearance_autosave.py",
+      "reason": "Open #25 reproducer; relocate live now, preserve historical copy unchanged until reviewed cleanup."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/symmetry/finish-local.py",
+      "lines": 87,
+      "id": 90,
+      "sha256": "b547a0c29db2a51c2ae525d2a80ee5c99cc6a5e16a8461ff688344852350cece",
+      "bytes": 9830,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/symmetry/native-matrix.py",
+      "lines": 217,
+      "id": 91,
+      "sha256": "d115f1289760ca6550e9cabf4ed8bbb758d16096315fe1546b947e53e144184d",
+      "bytes": 14594,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/symmetry_native.py",
+      "reason": "Latest full native Symmetry workflow matrix; supersedes earlier collector revisions."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/symmetry/run-characterize.py",
+      "lines": 31,
+      "id": 92,
+      "sha256": "cff5c7077d0ddc0c271f2922b10d0263011a8010f02fecfa2f824fdabbda5cc5",
+      "bytes": 1751,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/symmetry/run-paired-native.py",
+      "lines": 36,
+      "id": 93,
+      "sha256": "4b4225cc376620bf7994a4aea51ba76332ba5876b57cf22ae7c0d5e511d8ebde",
+      "bytes": 2501,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Historical one-off probe or orchestrator superseded by the retained feature harnesses and current shipped suites."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/browser_policy.py",
+      "lines": 203,
+      "id": 94,
+      "sha256": "0466799932f179a7b05a46e14591ae85b7cc4aa55834f23dcc36e464537ce594",
+      "bytes": 11850,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Frozen source snapshot of a shipped harness; live implementation already exists and historical source is recoverable from its recorded commit."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/premerge.py",
+      "lines": 57,
+      "id": 95,
+      "sha256": "73fcb3892115571377692a99dd65de0ea50803f819817bbf228c5ea270e7d32e",
+      "bytes": 3930,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/prepare-corrected-gate.py",
+      "lines": 79,
+      "id": 96,
+      "sha256": "8ab59d70a6aee7f106d335442d8e8bbaba81364e59ad08f7c868ac015edc2ec0",
+      "bytes": 5852,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/verify-corrected-gate.py",
+      "lines": 185,
+      "id": 97,
+      "sha256": "352c06720a266cc26b463d82077860017f2c2ff1b31708e9787c94f9174673db",
+      "bytes": 14517,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 83,
+      "id": 98,
+      "sha256": "9fa880f1ce1deff8487695a0685049697df7fa8c287e7ea2b735f8c83e38a641",
+      "bytes": 4723,
+      "disposition": "harness-to-keep",
+      "destination": "tools/collect_completed_ci.py",
+      "reason": "Latest immutable attempt collector with construction-order artifacts; retain one canonical copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 99,
+      "sha256": "00c46b82e209f900496db2a67824740fc10ca87c0c67210672416cdd45cfb653",
+      "bytes": 3961,
+      "disposition": "harness-to-keep",
+      "destination": "tools/measure_sharded_ci.py",
+      "reason": "Reusable raw CI timing and cache measurement; retain one canonical copy."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/premerge.py",
+      "lines": 37,
+      "id": 100,
+      "sha256": "33f1c98eefa3dd0a390c1a3a290772123a0c8ba803c2f08a976a9ff393cbde49",
+      "bytes": 2749,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/preserve-ci.py",
+      "lines": 45,
+      "id": 101,
+      "sha256": "86edcdbfd03c0dcdc6ccfe5126c4f77da7ae4e6a66c5463de1f93241d0b797df",
+      "bytes": 3572,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/seal-ci.py",
+      "lines": 40,
+      "id": 102,
+      "sha256": "a5308ba3f989def4050fb56d47d6f779e28af5e78d976ef36c5c0cba3e6ff23d",
+      "bytes": 2508,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/verify-ci.py",
+      "lines": 157,
+      "id": 103,
+      "sha256": "21e3438907fa37eeac2219864137827bacd705462a1ae6e5ab2cc671083e48c8",
+      "bytes": 12416,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/proof-scripts/verify-integrated.py",
+      "lines": 31,
+      "id": 104,
+      "sha256": "0d04161029a2c3c91489ae8ab3bf9380c37bc4c5f4a946d4490fb91419844fe4",
+      "bytes": 2220,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/finish-local.py",
+      "lines": 104,
+      "id": 105,
+      "sha256": "7249bddc9235f5822e433541cee00bbefad008ad711f2abcae94b5f03b9e2ede",
+      "bytes": 9835,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/native-matrix.py",
+      "lines": 183,
+      "id": 106,
+      "sha256": "c5ea953c0c3c4a9b3199ae86ded920a8526330717d3d6c3ea21b3c1a413b8746",
+      "bytes": 11235,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/trajectory_native.py",
+      "reason": "Native playback/scene-clock controls; retain live."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/run-characterize.py",
+      "lines": 29,
+      "id": 107,
+      "sha256": "b6bbfb7814afe00e848a78da4ac5879663826f616d39c175d12743f5d52b4d68",
+      "bytes": 1605,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/trajectory/soak.py",
+      "lines": 106,
+      "id": 108,
+      "sha256": "16f553a0a0616b0f7db780d69d191a9f948b32a30cda17546fe805ad905c8b31",
+      "bytes": 7697,
+      "disposition": "harness-to-keep",
+      "destination": "tools/diagnostics/trajectory_soak.py",
+      "reason": "Sustained trajectory/last-record cleanup exercise beyond ordinary snapshots."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/collect-completed-sharded-run.py",
+      "lines": 83,
+      "id": 109,
+      "sha256": "9fa880f1ce1deff8487695a0685049697df7fa8c287e7ea2b735f8c83e38a641",
+      "bytes": 4723,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Byte-identical duplicate of retained harness #98."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/measure-sharded-run.py",
+      "lines": 61,
+      "id": 110,
+      "sha256": "9933477a33719643669fedc64d162efd269f5c9d2af5fe2044920e75eec5924a",
+      "bytes": 3961,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/premerge.py",
+      "lines": 42,
+      "id": 111,
+      "sha256": "d006dc433dae9324eb048c7644edcdfa54213e7b1a08ee0da2c5b3ed96ddb9d5",
+      "bytes": 3755,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/preserve-ci.py",
+      "lines": 45,
+      "id": 112,
+      "sha256": "877f4fe64d848d98a0bfc9b5713fd07c8a783a797b73911ec24ce46dcd55634e",
+      "bytes": 3803,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/seal-ci.py",
+      "lines": 40,
+      "id": 113,
+      "sha256": "a5308ba3f989def4050fb56d47d6f779e28af5e78d976ef36c5c0cba3e6ff23d",
+      "bytes": 2508,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/verify-ci-with-feature-prime-expectation.py",
+      "lines": 145,
+      "id": 114,
+      "sha256": "1822838b4e9eca61df99ac982cf21fc36a607bdc7b7b61bbc7b1d25a3428cae6",
+      "bytes": 12629,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/verify-ci.py",
+      "lines": 151,
+      "id": 115,
+      "sha256": "36a067724a8ea0c7725abc390e1cab1916c9508569fb28f3adfa76c68436c771",
+      "bytes": 13215,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/ci-39093054459/proof-scripts/verify-integrated.py",
+      "lines": 26,
+      "id": 116,
+      "sha256": "cf7faf620966613a5ee5a8e6c4c63d36f2e813c7c1b470a32bbdb4c0fe91d34a",
+      "bytes": 2162,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/finish-local.py",
+      "lines": 104,
+      "id": 117,
+      "sha256": "9cc53a1c534d517448261afcf41d0df5b4a1b3e5fc0e491df084f5557e22ffd1",
+      "bytes": 9592,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/native-matrix.py",
+      "lines": 157,
+      "id": 118,
+      "sha256": "4e538524357825654c9734e430314588aa80941a10c7b51f87830f525cbc88ac",
+      "bytes": 10841,
+      "disposition": "harness-to-keep",
+      "destination": "tests/e2e/vibration_native.py",
+      "reason": "Native vibration phase/panel matrix; retain live."
+    },
+    {
+      "path": "tests/baselines/evidence/stage5/vibration/run-characterize.py",
+      "lines": 29,
+      "id": 119,
+      "sha256": "a93c10d946a8890f41cc39d25bd231c7d8377be07f7b7c99de0fc9a3515892bc",
+      "bytes": 1604,
+      "disposition": "artifact-to-prune",
+      "destination": null,
+      "reason": "Commit/run-specific evidence collection, verification, policy amendment or mutation script; permanent checks live in tools/check-refactor-run.py and the CI joins."
+    }
+  ]
+}
