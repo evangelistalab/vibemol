@@ -1,0 +1,21 @@
+{
+  "runId": 39154813750,
+  "attempt": 1,
+  "artifacts": [
+    {
+      "name": "hint-diagnostic-1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "sha256": "8c986c0aba20295e0530f5af7e41f36c7749b56db68d5b947421f9f08c8b1ce9",
+      "bytes": 8301971
+    },
+    {
+      "name": "hint-diagnostic-323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "sha256": "aa6a0d5a9928daf1898a4bee458cab384b0c9c80b6641eac51a18fbec9fca894",
+      "bytes": 8293841
+    },
+    {
+      "name": "hint-diagnostic-04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "sha256": "2a9efd83f953c39780d0e5e923fb69d1128edf1cfdbbf4c09d272a0a4a636fa4",
+      "bytes": 8320344
+    }
+  ]
+}

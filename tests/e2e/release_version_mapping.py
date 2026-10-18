@@ -9,6 +9,14 @@ import subprocess
 CONTRACT_PATH='tests/baselines/release-version-mapping.json'
 AUDIT_PATH='tests/baselines/evidence/release-0.10.0/preflight/version-field-consumers.json'
 APP_VERSION_PATH='assets/app/js/asset-urls.js'
+HARNESS_SCOPE_PATH='tests/baselines/release-accessibility-scope.json'
+HARNESS_SCOPE={
+    'releaseHead':'04eaf660607072b6f4bebafa3f8daef92a92afe8',
+    'releaseTree':'d65e13321c8027fe555b992be4186b815a1e1be1',
+    'diagnosticRun':39154813750,
+    'authorization':'direct human: separate accessibility harness fix before0.10.0 publication; no production changes',
+    'scope':'only the complete tree first adding this scope; same-tree merges; expires with release mapping',
+}
 FIXED_CONTRACT={
     'fromVersion':'0.9.5', 'toVersion':'0.10.0',
     'expectedCaptureCount':102, 'expectedMappedLeaves':204,
@@ -18,6 +26,34 @@ FIXED_CONTRACT={
     'expires':'after0.10.0 ships: explicitly record0.10.0 CI goldens, then remove contract/helper/call',
     'authorization':'direct human; field-consumer audit confirms no behavioral read of saved appVersion values',
 }
+
+
+def authorized_release_tree(root, git, head_tree, original_tree):
+    if head_tree == original_tree:
+        return
+    # The human subsequently required this separate harness-only fix before
+    # publication. Pin its one complete tree by first creation too, rather than
+    # turning the release exception into permission for future feature trees.
+    path=root/HARNESS_SCOPE_PATH
+    assert path.is_file(), dict(actualTree=head_tree,expectedReleaseTree=original_tree)
+    actual=json.loads(path.read_text())
+    assert actual==HARNESS_SCOPE, dict(actual=actual,expected=HARNESS_SCOPE)
+    added=git('log','--diff-filter=A','--format=%H','--',HARNESS_SCOPE_PATH).splitlines()
+    permitted_tree=git('rev-parse',added[0]+'^{tree}') if len(added)==1 else None
+    changed=git('diff','--name-only',HARNESS_SCOPE['releaseHead'],'HEAD').splitlines()
+    allowed={'AGENTS.md','docs/accessibility-qa.md','docs/refactor-release-retrospective.md',
+        'tests/e2e/accessibility.py','tests/e2e/accessibility_contract.py',
+        'tests/e2e/release_version_mapping.py','tests/unit/test_accessibility_contract.py',
+        'tests/unit/test_release_version_mapping.py',HARNESS_SCOPE_PATH}
+    unexpected=[p for p in changed if p not in allowed and
+        not p.startswith('tests/baselines/evidence/release-0.10.0/')]
+    comparands=dict(actualTree=head_tree,expectedHarnessTree=permitted_tree,
+        actualCreationCommitCount=len(added),expectedCreationCommitCount=1,
+        actualOriginalTree=original_tree,expectedOriginalTree=HARNESS_SCOPE['releaseTree'],
+        actualChangedFiles=changed,actualUnexpectedFiles=unexpected,expectedUnexpectedFiles=[])
+    print('[release-accessibility-scope] '+json.dumps(comparands,sort_keys=True),flush=True)
+    assert len(added)==1 and head_tree==permitted_tree,comparands
+    assert original_tree==HARNESS_SCOPE['releaseTree'] and unexpected==[],comparands
 
 
 def map_metadata(captures):
@@ -85,7 +121,7 @@ def release_expectations(captures,source_root,golden_path):
     print('[release-version-scope] '+json.dumps(scope,sort_keys=True),flush=True)
     assert source_root.resolve()==root,scope
     assert len(added)==1,scope
-    assert head_tree==original_tree,scope
+    authorized_release_tree(root,git,head_tree,original_tree)
     assert declared=='0.10.0',scope
     assert actual_sha==FIXED_CONTRACT['goldenSha256'],scope
     audit=json.loads((root/AUDIT_PATH).read_text())

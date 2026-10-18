@@ -1,0 +1,9 @@
+{
+  "archive": "out/test-artifacts/release-0.10.0/hint-diagnostic/immutable-evidence.tar.gz",
+  "sha256": "85a8855faface2c200f6bf116292034cbfb12b208a4d5c557d8eafc281903f2c",
+  "bytes": 45428352,
+  "runId": 39154813750,
+  "attempt": 1,
+  "diagnosticOnly": true,
+  "all9OriginalSuiteExecutionsPreserved": true
+}

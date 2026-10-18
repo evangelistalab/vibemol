@@ -1,0 +1,7 @@
+{
+  "releaseHead": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+  "releaseTree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+  "diagnosticRun": 39154813750,
+  "authorization": "direct human: separate accessibility harness fix before0.10.0 publication; no production changes",
+  "scope": "only the complete tree first adding this scope; same-tree merges; expires with release mapping"
+}

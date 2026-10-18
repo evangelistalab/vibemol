@@ -1,0 +1,15 @@
+{
+  "status": "single automatic run in progress",
+  "head": "629f9bd5f8e50414a23e5bc5358905337dc6dc64",
+  "runId": 39154813750,
+  "attempt": 1,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39154813750",
+  "sources": [
+    "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+    "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea"
+  ],
+  "repeats": 3,
+  "notMergeAcceptance": true,
+  "productionAndOriginalSuiteWaitsAssertionsBaselineUnchanged": true
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+    "repeat": 1,
+    "frame": "04eaf66-run-1-before-axe.png",
+    "sha256": "d3980fd06e4b749ad9c2894912fc51fd27819fc12da8c1f9089ed87b84567394",
+    "renderedMoleculeVisibleBeforeAxe": true,
+    "msBeforeAxe": 561.3070312500058
+  },
+  {
+    "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+    "repeat": 2,
+    "frame": "323d03f-run-2-before-axe.png",
+    "sha256": "6b9906777a185c832fbeca9161549bc749d2481146f71beab67d1da61f593c0e",
+    "renderedMoleculeVisibleBeforeAxe": true,
+    "msBeforeAxe": 540.1281250000466
+  },
+  {
+    "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+    "repeat": 3,
+    "frame": "323d03f-run-3-before-axe.png",
+    "sha256": "1011f5ff23633497b170cd4ae63107acaf406111d7ce40232474169f3ee668da",
+    "renderedMoleculeVisibleBeforeAxe": true,
+    "msBeforeAxe": 572.3440429687616
+  }
+]

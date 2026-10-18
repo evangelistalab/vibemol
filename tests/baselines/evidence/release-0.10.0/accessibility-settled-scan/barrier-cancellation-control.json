@@ -1,0 +1,35 @@
+{
+  "status": "passed",
+  "results": [
+    {
+      "action": "cancellation",
+      "state": {
+        "at": 174.0999999642372,
+        "fonts": "loaded",
+        "theme": null,
+        "activeTransitions": 0,
+        "hint": {
+          "className": "changed",
+          "ariaHidden": null,
+          "opacity": "1"
+        }
+      },
+      "observation": {
+        "events": [
+          {
+            "kind": "active-before-cancel",
+            "at": 107.59999996423721,
+            "count": 1
+          },
+          {
+            "kind": "transitioncancel",
+            "at": 170.0999999642372
+          }
+        ],
+        "frames": 6,
+        "at": 187.19999998807907,
+        "color": "rgb(255, 255, 255)"
+      }
+    }
+  ]
+}

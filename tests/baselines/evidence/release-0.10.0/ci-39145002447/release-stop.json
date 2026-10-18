@@ -1,0 +1,189 @@
+{
+  "status": "human decision required; release publication held",
+  "reason": "Actual33/4/37 has unaccepted accessibility.py dark/Calculations incomplete#hint, so the standing34/3/37 conjunction fails.",
+  "head": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+  "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+  "firstPassingPrRun": 39142040274,
+  "failedAutomaticMainRun": 39145002447,
+  "identicalEntireGitTree": true,
+  "testAndBaselineUnchanged": true,
+  "numericReadbacks": [
+    {
+      "runId": 39142040274,
+      "caseCounts": {
+        "scanCount": 3,
+        "violationsCount": 0,
+        "incompleteCount": 7,
+        "passesCount": 184,
+        "inapplicableCount": 0
+      },
+      "hintComparands": [
+        {
+          "position": "top",
+          "kind": "passes",
+          "rule": "color-contrast",
+          "node": {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": "#e9f1ff",
+                  "bgColor": "#0c1119",
+                  "contrastRatio": 16.66,
+                  "fontSize": "8.3pt (11px)",
+                  "fontWeight": "normal",
+                  "messageKey": null,
+                  "expectedContrastRatio": "4.5:1",
+                  "shadowColor": null
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element has sufficient color contrast of 16.66"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": null,
+            "html": "<div id=\"hint\" class=\"is-visible\" aria-hidden=\"false\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+            "target": [
+              "#hint"
+            ]
+          }
+        },
+        {
+          "position": 586,
+          "kind": "passes",
+          "rule": "color-contrast",
+          "node": {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": "#e9f1ff",
+                  "bgColor": "#0c1119",
+                  "contrastRatio": 16.66,
+                  "fontSize": "8.3pt (11px)",
+                  "fontWeight": "normal",
+                  "messageKey": null,
+                  "expectedContrastRatio": "4.5:1",
+                  "shadowColor": null
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element has sufficient color contrast of 16.66"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": null,
+            "html": "<div id=\"hint\" class=\"is-visible\" aria-hidden=\"false\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+            "target": [
+              "#hint"
+            ]
+          }
+        },
+        {
+          "position": 636,
+          "kind": "passes",
+          "rule": "color-contrast",
+          "node": {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": "#e9f1ff",
+                  "bgColor": "#0c1119",
+                  "contrastRatio": 16.66,
+                  "fontSize": "8.3pt (11px)",
+                  "fontWeight": "normal",
+                  "messageKey": null,
+                  "expectedContrastRatio": "4.5:1",
+                  "shadowColor": null
+                },
+                "relatedNodes": [],
+                "impact": "serious",
+                "message": "Element has sufficient color contrast of 16.66"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": null,
+            "html": "<div id=\"hint\" class=\"is-visible\" aria-hidden=\"false\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+            "target": [
+              "#hint"
+            ]
+          }
+        }
+      ],
+      "suiteSourceSha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4"
+    },
+    {
+      "runId": 39145002447,
+      "caseCounts": {
+        "scanCount": 3,
+        "violationsCount": 0,
+        "incompleteCount": 8,
+        "passesCount": 183,
+        "inapplicableCount": 0
+      },
+      "hintComparands": [
+        {
+          "position": "top",
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "node": {
+            "any": [
+              {
+                "id": "color-contrast",
+                "data": {
+                  "fgColor": null,
+                  "bgColor": null,
+                  "contrastRatio": 0,
+                  "fontSize": "8.3pt (11px)",
+                  "fontWeight": "normal",
+                  "messageKey": "imgNode",
+                  "expectedContrastRatio": "4.5:1",
+                  "shadowColor": null
+                },
+                "relatedNodes": [
+                  {
+                    "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                    "target": [
+                      "#hint"
+                    ]
+                  },
+                  {
+                    "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                    "target": [
+                      "#canvas"
+                    ]
+                  }
+                ],
+                "impact": "serious",
+                "message": "Element's background color could not be determined because element contains an image node"
+              }
+            ],
+            "all": [],
+            "none": [],
+            "impact": "serious",
+            "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+            "target": [
+              "#hint"
+            ],
+            "failureSummary": "Fix any of the following:\n  Element's background color could not be determined because element contains an image node"
+          }
+        }
+      ],
+      "suiteSourceSha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4"
+    }
+  ],
+  "failureInterpretation": "Observed nondeterministic outcome on identical tree. Incomplete is not a pass; no new product regression or timer mechanism is diagnosed by these two runs alone.",
+  "historicalHintFlakeException": "Selection had a human pre-decided classification. It creates no exception for this run or the current accepted set.",
+  "noCiRetry": true,
+  "noGateChange": true,
+  "noPublicationOrTag": true,
+  "noRecordingDispatch": true,
+  "noGoldenReRecordOrExceptionExpansion": true,
+  "mappingExpiryPending": "Still scoped to unpublished release tree; do not broaden or remove expiry requirement.",
+  "nextProposedAction": "Harness-only instrumented full accessibility suite on tagged1c609, acceptedPR04e and main323d;3 runs per source in one diagnostic CI. Log hint identity/creation/attributes/computed opacity/transitions/timestamps before,during,after axe and preserve original assertions/waits/baseline."
+}
