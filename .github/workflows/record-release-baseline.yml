@@ -1,0 +1,69 @@
+name: Record published 0.10.0 characterization baseline
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    if: github.ref == 'refs/tags/v0.10.0'
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        capture: [1, 2]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the ordinary CI browser
+        run: |
+          python -m pip install -r api/requirements.txt playwright==1.64.0
+          python -m playwright install --with-deps chromium
+      - name: Record only the published tag, twice per independent runner
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/release-record-pycache
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/release-baseline
+          VIBEMOL_PUBLISHED_RELEASE_JSON: ${{ runner.temp }}/published-0.10.0.json
+        run: |
+          gh release view v0.10.0 --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease,publishedAt,url > "$VIBEMOL_PUBLISHED_RELEASE_JSON"
+          source_root="$RUNNER_TEMP/published-vibemol-0.10.0"
+          mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
+          git archive v0.10.0 | tar -x -C "$source_root"
+          python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.0 --update-baseline --runs 2
+          cp tests/baselines/characterize.json.gz tests/baselines/characterize-summary.json "$VIBEMOL_TEST_ARTIFACT_DIR/"
+          cp "$VIBEMOL_PUBLISHED_RELEASE_JSON" "$VIBEMOL_TEST_ARTIFACT_DIR/"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: characterization-baseline-${{ matrix.capture }}
+          path: out/test-artifacts/release-baseline/
+          if-no-files-found: error
+
+  compare:
+    needs: record
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: characterization-baseline-*
+          path: out/test-artifacts/release-baselines
+      - name: Require four exact 102-capture serializations before promotion
+        run: python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: characterization-ci-comparison
+          path: out/test-artifacts/release-baselines/ci-comparison.json

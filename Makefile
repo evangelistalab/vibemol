@@ -86,7 +86,7 @@ version-assets:
 check:
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
-	python3 -m py_compile tests/e2e/characterize.py tests/e2e/browser_suite.py tests/e2e/ci_evidence.py tests/e2e/join_browser_shards.py tests/e2e/join_characterize.py tests/e2e/compare_ci_baselines.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
+	python3 -m py_compile tests/e2e/characterize.py tests/e2e/browser_suite.py tests/e2e/ci_evidence.py tests/e2e/join_browser_shards.py tests/e2e/join_characterize.py tests/e2e/compare_ci_baselines.py tests/e2e/release_version_mapping.py tests/e2e/release_baseline_recording.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \
 		node --check $$file; \

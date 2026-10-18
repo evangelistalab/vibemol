@@ -146,7 +146,10 @@
       "evidence": "tests/baselines/evidence/browser-sync-21/diagnostic-39129507791/readbacks.json",
       "acceptedCiFailure": false,
       "originalOverflowAssertionPreserved": true,
-      "productFlashQuestionSeparate": true
+      "productFlashQuestionSeparate": true,
+      "presentedFrameQuestion": "closed: observed sub-frame in all9foreground CI cases;23actual320x1000rasters all compact",
+      "presentedFrameRun": 39133906847,
+      "productIssueOpened": false
     }
   ],
   "historicalIssue21Classification": {

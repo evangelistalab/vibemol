@@ -1,12 +1,12 @@
 {
-  "group": "5c symmetry presentation",
-  "baselineRun": 39093054459,
-  "baselineHead": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "group": "0.10.0 release",
+  "baselineRun": 39135895060,
+  "baselineHead": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "The strict exporter-signature stop applies to5a/5b. Unchanged5c production does not touch exporters and uses the restored34/3/37 exact workflow set, allowing #11 at trajectory OR vibration after the second download. Record the actual site; disappearance, a different shape, extra failure or35/2 over-performance stops.",
+  "reason": "Release metadata, URLs and notes leave exporter sources byte-identical. Use exactly34/3/37 and the ordinary second-download trajectory-or-vibration key; disappearance or any different workflow stops.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,

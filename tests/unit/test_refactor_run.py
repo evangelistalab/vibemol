@@ -75,7 +75,7 @@ class RefactorRunPolicy(unittest.TestCase):
 
     def test_current_group_uses_ordinary_site_policy(self):
         policy = json.loads((ROOT/'tests/baselines/stage5/run-policy.json').read_text())
-        self.assertIn(policy['group'], ('5c symmetry presentation', 'edit320 state synchronization (harness only)'))
+        self.assertIn(policy['group'], ('5c symmetry presentation', 'edit320 state synchronization (harness only)', '0.10.0 release', '0.10.0 baseline refresh'))
         self.assertIs(policy['preserveExporterSignature'], False)
 
 
