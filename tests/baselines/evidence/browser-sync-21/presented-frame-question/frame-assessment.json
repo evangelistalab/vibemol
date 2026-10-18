@@ -1,0 +1,34 @@
+{
+  "status": "residual question closed: sub-frame in the observed runs",
+  "diagnosticRun": 39133906847,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39133906847",
+  "attempt": 1,
+  "usableAsMergeGate": false,
+  "sourceObservations": 9,
+  "sources": [
+    "tagged1c609b3",
+    "integration63082fe",
+    "held5c8d75a4f"
+  ],
+  "browser": "Chromium156.0.8078.4 / Playwright1.64.0, foreground under Xvfb, Linux SwiftShader",
+  "valid320x1000CompositorFrames": 23,
+  "uniquePngHashesVisuallyInspected": [
+    "6cda1e351e0684e61f70d2cb9afcb686d91ef0e9b3cd94fc5f387d59b4336ce4",
+    "e168b1ea686f34f099da4c589fab3ce85d838277fb7f157ccbdcba7a98237118",
+    "e79852776c6b4c24f120d629073b1842fcd5a21b1586c31d84fc16e01f92b1fe"
+  ],
+  "allValidRastersShowFullWidthCompactToolbar": true,
+  "narrowAnimationFrameSamples": 74,
+  "precompactAnimationFrameSamples": 0,
+  "firstAnimationFrameCompactInAllNineCases": true,
+  "widthReadbacks": "304/304 on all nine fixed-harness observations",
+  "sourceMechanism": "workbench.js resize listener calls sync() synchronously; sync writes wbCompact and bar regions in that resize task, before presentation. schedule() uses a microtask, not a delayed timer. The old assertion could read between viewport metrics changing and the resize handler.",
+  "conclusion": "No collapsed narrow frame was presented in these observations. Compact synchronization completed before the first observed narrow frame, so no separate perceptible-flash product issue is opened. This is an observed frame-boundary conclusion, not a claim of a universal16ms wall-time bound.",
+  "limitations": [
+    "A screencast and rAF observer can affect scheduling.",
+    "The earlier headless39133050593 emitted zero compositor rasters; its rAF-only evidence remains explicitly incomplete for pixels.",
+    "Old320x222 scaled desktop rasters are excluded from the320x1000 presentation evidence."
+  ],
+  "newProductIssue": null,
+  "productionSourceChanged": false
+}

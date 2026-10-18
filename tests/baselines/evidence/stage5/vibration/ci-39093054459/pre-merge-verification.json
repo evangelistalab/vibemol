@@ -1,0 +1,1623 @@
+{
+  "status": "passed",
+  "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "base": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+  "tree": "1f077cd729b634da2d8868dfa22724af6ffaa08a",
+  "runId": 39093054459,
+  "attempt": 1,
+  "pr": {
+    "baseRefOid": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+    "headRefOid": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+    "isDraft": false,
+    "mergeStateStatus": "CLEAN",
+    "mergeable": "MERGEABLE",
+    "number": 27,
+    "state": "OPEN",
+    "statusCheckRollup": [
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:16:45Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054435/job/117573669315",
+        "name": "request",
+        "startedAt": "2026-10-18T03:16:45Z",
+        "status": "COMPLETED",
+        "workflowName": "Record characterization baseline on CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:17:23Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668946",
+        "name": "checks-and-unit",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:15:33Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39092934677/job/117573315698",
+        "name": "Cache Playwright (chromium)",
+        "startedAt": "2026-10-18T03:14:52Z",
+        "status": "COMPLETED",
+        "workflowName": "Warm shared Playwright cache"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:15:42Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39092934677/job/117573315591",
+        "name": "Cache Playwright (webkit)",
+        "startedAt": "2026-10-18T03:14:52Z",
+        "status": "COMPLETED",
+        "workflowName": "Warm shared Playwright cache"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:16:45Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054435/job/117573669548",
+        "name": "record",
+        "startedAt": "2026-10-18T03:16:45Z",
+        "status": "COMPLETED",
+        "workflowName": "Record characterization baseline on CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:29:37Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668975",
+        "name": "Browser suites (smoke)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:40:09Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669125",
+        "name": "Browser suites (looks)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:48:55Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669045",
+        "name": "Browser suites (balanced-1)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:46:11Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668896",
+        "name": "Browser suites (balanced-2)",
+        "startedAt": "2026-10-18T03:16:47Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:34:43Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669015",
+        "name": "Browser suites (balanced-3)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:16:45Z",
+        "conclusion": "SKIPPED",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054435/job/117573669694",
+        "name": "compare",
+        "startedAt": "2026-10-18T03:16:45Z",
+        "status": "COMPLETED",
+        "workflowName": "Record characterization baseline on CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:25:18Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668885",
+        "name": "Characterization (1)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:33:14Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668956",
+        "name": "Characterization (2)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:18:14Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668785",
+        "name": "WebKit Properties interactions",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:49:15Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117579301062",
+        "name": "Aggregate browser gate (33/4/37)",
+        "startedAt": "2026-10-18T03:48:59Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      },
+      {
+        "__typename": "CheckRun",
+        "completedAt": "2026-10-18T03:33:41Z",
+        "conclusion": "SUCCESS",
+        "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117576590912",
+        "name": "Exact characterization repeat and goldens",
+        "startedAt": "2026-10-18T03:33:17Z",
+        "status": "COMPLETED",
+        "workflowName": "CI"
+      }
+    ],
+    "url": "https://github.com/evangelistalab/vibemol/pull/27"
+  },
+  "ci": {
+    "attempt": 1,
+    "conclusion": "success",
+    "databaseId": 39093054459,
+    "headSha": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+    "jobs": [
+      {
+        "completedAt": "2026-10-18T03:18:14Z",
+        "conclusion": "success",
+        "databaseId": 117573668785,
+        "name": "WebKit Properties interactions",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:39Z",
+            "conclusion": "success",
+            "name": "Install Playwright WebKit",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:07Z",
+            "conclusion": "success",
+            "name": "WebKit Properties interactions",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:07Z",
+            "conclusion": "success",
+            "name": "Upload WebKit evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:18:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:18:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:18:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:18:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:18:11Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:18:11Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668785"
+      },
+      {
+        "completedAt": "2026-10-18T03:25:18Z",
+        "conclusion": "success",
+        "databaseId": 117573668885,
+        "name": "Characterization (1)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:49Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:53Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:53Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:18Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:12Z",
+            "conclusion": "success",
+            "name": "Capture one full characterization run",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:13Z",
+            "conclusion": "success",
+            "name": "Upload characterization worker evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:25:12Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:16Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:25:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:16Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:25:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:16Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:25:16Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:25:16Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:25:16Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668885"
+      },
+      {
+        "completedAt": "2026-10-18T03:46:11Z",
+        "conclusion": "success",
+        "databaseId": 117573668896,
+        "name": "Browser suites (balanced-2)",
+        "startedAt": "2026-10-18T03:16:47Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:49Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:53Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:19Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:06Z",
+            "conclusion": "success",
+            "name": "Collect assigned browser suites (aggregate gate runs in join)",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:07Z",
+            "conclusion": "success",
+            "name": "Upload shard evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:46:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:09Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:46:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:09Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:46:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:10Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:46:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:46:10Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:46:10Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668896"
+      },
+      {
+        "completedAt": "2026-10-18T03:17:23Z",
+        "conclusion": "success",
+        "databaseId": 117573668946,
+        "name": "checks-and-unit",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-node@v4",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:56Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:56Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:02Z",
+            "conclusion": "success",
+            "name": "Fast checks",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:13Z",
+            "conclusion": "success",
+            "name": "Unit tests",
+            "number": 7,
+            "startedAt": "2026-10-18T03:17:02Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:15Z",
+            "conclusion": "success",
+            "name": "Install pinned construction-audit tooling",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:13Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:19Z",
+            "conclusion": "success",
+            "name": "Inverse construction-order gate",
+            "number": 9,
+            "startedAt": "2026-10-18T03:17:15Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:20Z",
+            "conclusion": "success",
+            "name": "Upload construction-order evidence",
+            "number": 10,
+            "startedAt": "2026-10-18T03:17:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 18,
+            "startedAt": "2026-10-18T03:17:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-node@v4",
+            "number": 19,
+            "startedAt": "2026-10-18T03:17:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:20Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 20,
+            "startedAt": "2026-10-18T03:17:20Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:20Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 21,
+            "startedAt": "2026-10-18T03:17:20Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668946"
+      },
+      {
+        "completedAt": "2026-10-18T03:33:14Z",
+        "conclusion": "success",
+        "databaseId": 117573668956,
+        "name": "Characterization (2)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:59Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:21Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:06Z",
+            "conclusion": "success",
+            "name": "Capture one full characterization run",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:21Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:08Z",
+            "conclusion": "success",
+            "name": "Upload characterization worker evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:33:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:33:08Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:33:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:11Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:33:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:11Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:33:11Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668956"
+      },
+      {
+        "completedAt": "2026-10-18T03:29:37Z",
+        "conclusion": "success",
+        "databaseId": 117573668975,
+        "name": "Browser suites (smoke)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:19Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:31Z",
+            "conclusion": "success",
+            "name": "Collect assigned browser suites (aggregate gate runs in join)",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:32Z",
+            "conclusion": "success",
+            "name": "Upload shard evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:29:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:35Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:29:32Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:35Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:29:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:35Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:29:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:29:35Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:29:35Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573668975"
+      },
+      {
+        "completedAt": "2026-10-18T03:34:43Z",
+        "conclusion": "success",
+        "databaseId": 117573669015,
+        "name": "Browser suites (balanced-3)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:19Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:38Z",
+            "conclusion": "success",
+            "name": "Collect assigned browser suites (aggregate gate runs in join)",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:39Z",
+            "conclusion": "success",
+            "name": "Upload shard evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:34:38Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:34:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:34:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:34:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:34:41Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:34:41Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669015"
+      },
+      {
+        "completedAt": "2026-10-18T03:48:55Z",
+        "conclusion": "success",
+        "databaseId": 117573669045,
+        "name": "Browser suites (balanced-1)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:50Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:50Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:55Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:55Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:18Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:49Z",
+            "conclusion": "success",
+            "name": "Collect assigned browser suites (aggregate gate runs in join)",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:51Z",
+            "conclusion": "success",
+            "name": "Upload shard evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:48:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:53Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:48:51Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:54Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:48:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:54Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:48:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:48:54Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:48:54Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669045"
+      },
+      {
+        "completedAt": "2026-10-18T03:40:09Z",
+        "conclusion": "success",
+        "databaseId": 117573669125,
+        "name": "Browser suites (looks)",
+        "startedAt": "2026-10-18T03:16:48Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:16:49Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:16:48Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:16:49Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:54Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:16:54Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:57Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:16:58Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:16:57Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:17:19Z",
+            "conclusion": "success",
+            "name": "Install Playwright Chromium",
+            "number": 7,
+            "startedAt": "2026-10-18T03:16:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:04Z",
+            "conclusion": "success",
+            "name": "Collect assigned browser suites (aggregate gate runs in join)",
+            "number": 8,
+            "startedAt": "2026-10-18T03:17:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:06Z",
+            "conclusion": "success",
+            "name": "Upload shard evidence",
+            "number": 9,
+            "startedAt": "2026-10-18T03:40:04Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:07Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 16,
+            "startedAt": "2026-10-18T03:40:06Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:07Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 17,
+            "startedAt": "2026-10-18T03:40:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:08Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 18,
+            "startedAt": "2026-10-18T03:40:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:40:08Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 19,
+            "startedAt": "2026-10-18T03:40:08Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117573669125"
+      },
+      {
+        "completedAt": "2026-10-18T03:33:41Z",
+        "conclusion": "success",
+        "databaseId": 117576590912,
+        "name": "Exact characterization repeat and goldens",
+        "startedAt": "2026-10-18T03:33:17Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:33:19Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:33:18Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:25Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:33:19Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:25Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:33:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:33Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:33:25Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:35Z",
+            "conclusion": "success",
+            "name": "Run actions/download-artifact@v4",
+            "number": 5,
+            "startedAt": "2026-10-18T03:33:33Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:37Z",
+            "conclusion": "success",
+            "name": "Compare both artifacts, unchanged goldens and eight identity contexts",
+            "number": 6,
+            "startedAt": "2026-10-18T03:33:35Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:39Z",
+            "conclusion": "success",
+            "name": "Upload joined characterization evidence",
+            "number": 7,
+            "startedAt": "2026-10-18T03:33:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:39Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 13,
+            "startedAt": "2026-10-18T03:33:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:39Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-18T03:33:39Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:33:39Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-18T03:33:39Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117576590912"
+      },
+      {
+        "completedAt": "2026-10-18T03:49:15Z",
+        "conclusion": "success",
+        "databaseId": 117579301062,
+        "name": "Aggregate browser gate (33/4/37)",
+        "startedAt": "2026-10-18T03:48:59Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:49:01Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:48:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:07Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:49:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:07Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:49:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:09Z",
+            "conclusion": "success",
+            "name": "Run actions/download-artifact@v4",
+            "number": 4,
+            "startedAt": "2026-10-18T03:49:07Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:11Z",
+            "conclusion": "success",
+            "name": "Verify all suites once, raw failure workflows and aggregate counts",
+            "number": 5,
+            "startedAt": "2026-10-18T03:49:09Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:11Z",
+            "conclusion": "success",
+            "name": "Require unchanged Stage 5 exporter-defect behavior",
+            "number": 6,
+            "startedAt": "2026-10-18T03:49:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:12Z",
+            "conclusion": "success",
+            "name": "Upload aggregate browser result",
+            "number": 7,
+            "startedAt": "2026-10-18T03:49:11Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:12Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 13,
+            "startedAt": "2026-10-18T03:49:12Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:12Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-18T03:49:12Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:49:12Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-18T03:49:12Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39093054459/job/117579301062"
+      }
+    ],
+    "status": "completed"
+  },
+  "cacheWarmRun": {
+    "attempt": 1,
+    "conclusion": "success",
+    "databaseId": 39092934677,
+    "headSha": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+    "jobs": [
+      {
+        "completedAt": "2026-10-18T03:15:42Z",
+        "conclusion": "success",
+        "databaseId": 117573315591,
+        "name": "Cache Playwright (webkit)",
+        "startedAt": "2026-10-18T03:14:52Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:14:53Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:14:52Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:14:58Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:14:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:14:58Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:14:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:14:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:37Z",
+            "conclusion": "success",
+            "name": "Install browser binaries and system dependencies",
+            "number": 7,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 12,
+            "startedAt": "2026-10-18T03:15:37Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 13,
+            "startedAt": "2026-10-18T03:15:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:41Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-18T03:15:41Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:41Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-18T03:15:41Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39092934677/job/117573315591"
+      },
+      {
+        "completedAt": "2026-10-18T03:15:33Z",
+        "conclusion": "success",
+        "databaseId": 117573315698,
+        "name": "Cache Playwright (chromium)",
+        "startedAt": "2026-10-18T03:14:52Z",
+        "status": "completed",
+        "steps": [
+          {
+            "completedAt": "2026-10-18T03:14:53Z",
+            "conclusion": "success",
+            "name": "Set up job",
+            "number": 1,
+            "startedAt": "2026-10-18T03:14:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:14:58Z",
+            "conclusion": "success",
+            "name": "Run actions/checkout@v4",
+            "number": 2,
+            "startedAt": "2026-10-18T03:14:53Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:14:59Z",
+            "conclusion": "success",
+            "name": "Run actions/setup-python@v5",
+            "number": 3,
+            "startedAt": "2026-10-18T03:14:58Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Install Python dependencies",
+            "number": 4,
+            "startedAt": "2026-10-18T03:14:59Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Resolve Playwright version",
+            "number": 5,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:01Z",
+            "conclusion": "success",
+            "name": "Run actions/cache@v4",
+            "number": 6,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:27Z",
+            "conclusion": "success",
+            "name": "Install browser binaries and system dependencies",
+            "number": 7,
+            "startedAt": "2026-10-18T03:15:01Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:31Z",
+            "conclusion": "success",
+            "name": "Post Run actions/cache@v4",
+            "number": 12,
+            "startedAt": "2026-10-18T03:15:27Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:31Z",
+            "conclusion": "success",
+            "name": "Post Run actions/setup-python@v5",
+            "number": 13,
+            "startedAt": "2026-10-18T03:15:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:31Z",
+            "conclusion": "success",
+            "name": "Post Run actions/checkout@v4",
+            "number": 14,
+            "startedAt": "2026-10-18T03:15:31Z",
+            "status": "completed"
+          },
+          {
+            "completedAt": "2026-10-18T03:15:31Z",
+            "conclusion": "success",
+            "name": "Complete job",
+            "number": 15,
+            "startedAt": "2026-10-18T03:15:31Z",
+            "status": "completed"
+          }
+        ],
+        "url": "https://github.com/evangelistalab/vibemol/actions/runs/39092934677/job/117573315698"
+      }
+    ],
+    "status": "completed"
+  },
+  "archiveSha256": "ee67526b91506b4394d32dfd1727e25ae66689009910c3541d99bf0a802a94c8",
+  "checkedAt": "2026-10-18T03:50:46.997214+00:00"
+}

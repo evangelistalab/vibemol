@@ -1,12 +1,12 @@
 {
-  "group": "edit320 state synchronization (harness only)",
+  "group": "5c symmetry presentation",
   "baselineRun": 39093054459,
   "baselineHead": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "The strict signature-preservation stop applied to completed5a/5b exporter changes. This harness-only correction leaves every production source unchanged and uses restored34/3/37, whose exact Smoke#11 workflow permits trajectory OR vibration after the second download. Record the actual site; disappearance, a new shape or any other failing key stops.",
+  "reason": "The strict exporter-signature stop applies to5a/5b. Unchanged5c production does not touch exporters and uses the restored34/3/37 exact workflow set, allowing #11 at trajectory OR vibration after the second download. Record the actual site; disappearance, a different shape, extra failure or35/2 over-performance stops.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,

@@ -56,6 +56,18 @@
         "VIBRATION_KIND",
         "createVibrationController"
       ]
+    },
+    {
+      "stage": "5c",
+      "script": "assets/app/js/symmetry-panel.js",
+      "global": "VibeMolSymmetryPanel",
+      "keys": [
+        "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+        "EXACT_SYMMETRY_TOLERANCE_ANG",
+        "MAX_SYMMETRY_TOLERANCE_ANG",
+        "SYMMETRY_TOLERANCE_OPTIONS_ANG",
+        "createSymmetryPanelController"
+      ]
     }
   ]
 }

@@ -1,0 +1,347 @@
+{
+  "status": "local verification complete",
+  "group": "5c symmetry presentation",
+  "base": "63082febadb22d5351365b8f75267534494893e6",
+  "appSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+  "moduleSha256": "59f3a599f6c97e9c070ff293f9b518402f328b9763edac4a53d6d82b73e5eb64",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "trackedLetBefore": 256,
+  "trackedLetAfter": 249,
+  "metrics": {
+    "beforeApp": {
+      "lines": 31917,
+      "trackedTwoSpaceLetDeclarationLines": 256,
+      "directIifeFunctionDeclarations": 1163,
+      "allFunctionDeclarations": 1171
+    },
+    "proposedApp": {
+      "lines": 31639,
+      "trackedTwoSpaceLetDeclarationLines": 249,
+      "directIifeFunctionDeclarations": 1163,
+      "allFunctionDeclarations": 1171
+    },
+    "module": {
+      "lines": 420,
+      "trackedTwoSpaceLetDeclarationLines": 0,
+      "directIifeFunctionDeclarations": 1,
+      "allFunctionDeclarations": 32
+    }
+  },
+  "controllerInputs": [
+    "els",
+    "Symmetry",
+    "resolveEditSymmetryTarget",
+    "resolveVolumeAtomId",
+    "workspaceEnabled",
+    "isEditMode",
+    "clearSymmetryElementGuide",
+    "renderSymmetryElementGuide",
+    "positionSymmetryPopover",
+    "updateEditAdaptiveMenuUi",
+    "setHintMessage"
+  ],
+  "controllerDependencyCount": 11,
+  "periodicFactoryDependencyCount": 11,
+  "sourceAudit": {
+    "status": "passed",
+    "checks": 89,
+    "proof": {
+      "wholeAppReconstructed": true,
+      "allMovedBodiesExactAfterLexicalAdapterSubstitution": true,
+      "allExistingDeclarationsAccounted": true,
+      "allDepsUsed": true,
+      "noHiddenAppClosureReferences": true,
+      "inertHolderBeforeCallbackExposure": true,
+      "analysisConstructionAtOriginalPoint": true,
+      "guideSelectedIdExplicit": true,
+      "analysisAndExportersUntouched": true,
+      "ambientGlobals": [
+        "Array",
+        "Boolean",
+        "Math",
+        "Number",
+        "Object",
+        "String",
+        "clearTimeout",
+        "document",
+        "window"
+      ]
+    }
+  },
+  "differential": {
+    "status": "passed",
+    "scenarios": 16,
+    "checkpoints": 624,
+    "constructorDependencyCalls": 0,
+    "realAnalysisModule": true
+  },
+  "manualMatrix": {
+    "status": "passed",
+    "contexts": 8,
+    "taggedContexts": 4,
+    "proposedContexts": 4,
+    "comparandsExactAcrossSources": true,
+    "seconds": 119.69,
+    "harnessSha256": "d115f1289760ca6550e9cabf4ed8bbb758d16096315fe1546b947e53e144184d",
+    "workflows": [
+      "tolerances",
+      "preview/cancel",
+      "apply/Undo",
+      "Auto/Undo",
+      "element guide",
+      "mode suspension/return",
+      "keyboard",
+      "shared launcher",
+      "responsive390",
+      "native session save/load",
+      "file scene change"
+    ]
+  },
+  "constructionOrder": {
+    "status": "passed",
+    "appBindings": 27,
+    "moduleBindings": 125,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  },
+  "checksAndUnit": {
+    "status": "passed",
+    "js": 433,
+    "python": 39
+  },
+  "characterization": {
+    "status": "passed",
+    "runs": 2,
+    "captures": 102,
+    "exactSerializedRepeat": true,
+    "goldensUnchanged": true,
+    "identityContexts": 8,
+    "identityCounts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5319,
+          "session restore": 1,
+          "panel transition": 1058
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5433,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2970,
+          "session restore": 1,
+          "panel transition": 666
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3082,
+          "session restore": 1,
+          "panel transition": 678
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5318,
+          "session restore": 1,
+          "panel transition": 1058
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5430,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2964,
+          "session restore": 1,
+          "panel transition": 669
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3079,
+          "session restore": 1,
+          "panel transition": 681
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "pixelChanges": [],
+    "seconds": 1031.56,
+    "browserVersion": "145.0.7632.6"
+  },
+  "ordinaryGate": {
+    "passed": 33,
+    "failed": 4,
+    "total": 37,
+    "workflowKeys": "exact four manifest keys; over-performance stops"
+  },
+  "issue11": {
+    "hypothesis": "refuted",
+    "productDefectOpen": true,
+    "exporterSourcesUnchanged": true,
+    "gatePolicy": "ordinary workflow permits either second-download idle site; the extra signature stop was scoped to5a/5b"
+  },
+  "ci": "pending own first automatic ordinary full conjunction",
+  "harnessChanges": "No shipped browser assertion or wait changes. Scope the extra5a/5b exporter policy correctly; remove ineffective feature-cache prime; record shared integration cache and require actual next-PR restores.",
+  "collectorDiagnostics": "Preserve two interrupted tagged-control interaction mistakes: sidebar remained collapsed after390px; session correctly restored View before Edit-only Symmetry check. Corrected same native collector reopens sidebar and enters Edit, logs both comparands, then passes8cases. Differential initially omitted real element-utils dependency; bootstrap log retained. No production source or shipped assertion was relaxed."
+}

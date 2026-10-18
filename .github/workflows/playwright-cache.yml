@@ -2,7 +2,7 @@ name: Warm shared Playwright cache
 
 on:
   push:
-    branches: [main, 'codex/**']
+    branches: [main, codex/app-js-decomposition]
     paths:
       - api/requirements.txt
       - .github/workflows/ci.yml
@@ -10,8 +10,8 @@ on:
 
 # PR-created caches belong to refs/pull/N/merge and cannot be shared with the
 # next PR. A push creates a cache on the branch itself; integration caches are
-# visible to every PR targeting it. The first feature push can also warm its
-# own branch before the PR's single acceptance run starts.
+# visible to PRs targeting it. The measured feature-branch prime did not restore
+# in PR27 despite identical keys/versions; warm only the shared integration/base.
 jobs:
   browsers:
     name: Cache Playwright (${{ matrix.browser }})

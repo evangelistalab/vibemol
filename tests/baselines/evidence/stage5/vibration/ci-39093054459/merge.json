@@ -1,0 +1,10 @@
+{
+  "baseRefOid": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+  "headRefOid": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "mergeCommit": {
+    "oid": "63082febadb22d5351365b8f75267534494893e6"
+  },
+  "mergedAt": "2026-10-18T03:51:02Z",
+  "state": "MERGED",
+  "url": "https://github.com/evangelistalab/vibemol/pull/27"
+}

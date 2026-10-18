@@ -1,0 +1,15 @@
+{
+  "status": "passed",
+  "integration": "63082febadb22d5351365b8f75267534494893e6",
+  "testedHead": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "testedTree": "1f077cd729b634da2d8868dfa22724af6ffaa08a",
+  "entireTreeMatches": true,
+  "appSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+  "moduleSha256": "90d0cb0d570c4dc367025482815d8ccc82ddca72fe08bb999135a3254abd1732",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "trackedLet": 256,
+  "controllerInputs": 13,
+  "periodicFactoryInputs": 11,
+  "pushed": true,
+  "userGitignorePreserved": true
+}
