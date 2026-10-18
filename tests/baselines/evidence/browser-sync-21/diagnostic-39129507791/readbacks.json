@@ -1,0 +1,323 @@
+{
+  "runId": 39129507791,
+  "attempt": 1,
+  "head": "2e3997ad4a48588f59270c67f1213f589307b8b3",
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+  "diagnosticOnly": true,
+  "usableAsMergeGate": false,
+  "sameRunner": {
+    "RUNNER_NAME": "GitHub Actions 1000015404",
+    "ImageOS": "ubuntu24",
+    "ImageVersion": "20261012.334.1"
+  },
+  "summary": {
+    "tagged": {
+      "observations": 3,
+      "widthPairs": [
+        [
+          304,
+          304
+        ]
+      ],
+      "sameAcrossThree": true,
+      "is304over304EveryTime": true,
+      "is442over12EveryTime": false
+    },
+    "integration": {
+      "observations": 3,
+      "widthPairs": [
+        [
+          304,
+          304
+        ],
+        [
+          442,
+          12
+        ]
+      ],
+      "sameAcrossThree": false,
+      "is304over304EveryTime": false,
+      "is442over12EveryTime": false
+    },
+    "held": {
+      "observations": 3,
+      "widthPairs": [
+        [
+          304,
+          304
+        ],
+        [
+          442,
+          12
+        ]
+      ],
+      "sameAcrossThree": false,
+      "is304over304EveryTime": false,
+      "is442over12EveryTime": false
+    }
+  },
+  "readbacks": [
+    {
+      "label": "tagged",
+      "repetition": 1,
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 155,
+      "millisecondsSinceLastFitToolsCall": 183.5,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 32.695,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/tagged-1/result.json"
+    },
+    {
+      "label": "integration",
+      "repetition": 1,
+      "commit": "63082febadb22d5351365b8f75267534494893e6",
+      "scrollWidth": 442,
+      "clientWidth": 12,
+      "assertionPass": false,
+      "bodyMode": "edit",
+      "compact": "false",
+      "fitToolsCalls": 153,
+      "millisecondsSinceLastFitToolsCall": 229.09999999997672,
+      "overflowTrigger": {
+        "present": true,
+        "visible": false,
+        "hidden": true,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 0,
+        "childCount": 0,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar",
+      "seconds": 26.603,
+      "suiteRunStatus": "failed",
+      "reportPath": "artifacts/out/edit320-threepoint/integration-1/result.json"
+    },
+    {
+      "label": "held",
+      "repetition": 1,
+      "commit": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 157,
+      "millisecondsSinceLastFitToolsCall": 9,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 28.744,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/held-1/result.json"
+    },
+    {
+      "label": "tagged",
+      "repetition": 2,
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 155,
+      "millisecondsSinceLastFitToolsCall": 17.099999999976717,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 27.924,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/tagged-2/result.json"
+    },
+    {
+      "label": "integration",
+      "repetition": 2,
+      "commit": "63082febadb22d5351365b8f75267534494893e6",
+      "scrollWidth": 442,
+      "clientWidth": 12,
+      "assertionPass": false,
+      "bodyMode": "edit",
+      "compact": "false",
+      "fitToolsCalls": 149,
+      "millisecondsSinceLastFitToolsCall": 270.70000000001164,
+      "overflowTrigger": {
+        "present": true,
+        "visible": false,
+        "hidden": true,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 0,
+        "childCount": 0,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar",
+      "seconds": 27.092,
+      "suiteRunStatus": "failed",
+      "reportPath": "artifacts/out/edit320-threepoint/integration-2/result.json"
+    },
+    {
+      "label": "held",
+      "repetition": 2,
+      "commit": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 160,
+      "millisecondsSinceLastFitToolsCall": 142.10000000003492,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 29.421,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/held-2/result.json"
+    },
+    {
+      "label": "tagged",
+      "repetition": 3,
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 157,
+      "millisecondsSinceLastFitToolsCall": 12.900000000023283,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 29.063,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/tagged-3/result.json"
+    },
+    {
+      "label": "integration",
+      "repetition": 3,
+      "commit": "63082febadb22d5351365b8f75267534494893e6",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "assertionPass": true,
+      "bodyMode": "edit",
+      "compact": "true",
+      "fitToolsCalls": 157,
+      "millisecondsSinceLastFitToolsCall": 16,
+      "overflowTrigger": {
+        "present": true,
+        "visible": true,
+        "hidden": false,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 5,
+        "childCount": 5,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar wb-icon-tools",
+      "seconds": 30.327,
+      "suiteRunStatus": "passed",
+      "reportPath": "artifacts/out/edit320-threepoint/integration-3/result.json"
+    },
+    {
+      "label": "held",
+      "repetition": 3,
+      "commit": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+      "scrollWidth": 442,
+      "clientWidth": 12,
+      "assertionPass": false,
+      "bodyMode": "edit",
+      "compact": "false",
+      "fitToolsCalls": 154,
+      "millisecondsSinceLastFitToolsCall": 218.79999999998836,
+      "overflowTrigger": {
+        "present": true,
+        "visible": false,
+        "hidden": true,
+        "ariaExpanded": "false"
+      },
+      "overflowMenu": {
+        "present": true,
+        "rowCount": 0,
+        "childCount": 0,
+        "hidden": true,
+        "visible": false
+      },
+      "barClasses": "wb-bar",
+      "seconds": 27.776,
+      "suiteRunStatus": "failed",
+      "reportPath": "artifacts/out/edit320-threepoint/held-3/result.json"
+    }
+  ],
+  "observerEffect": "Same non-pausing conditional DevTools breakpoint timestamps fitTools entry on all sources. Debugger instrumentation can affect timing; numeric reads execute before additional DOM diagnostics."
+}
