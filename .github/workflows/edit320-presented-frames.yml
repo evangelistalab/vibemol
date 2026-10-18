@@ -1,0 +1,53 @@
+name: Edit320 presented-frame diagnostic (nonblocking)
+
+on:
+  push:
+    branches: [codex/edit320-presentation-diagnostic]
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 1c609b338344aaa49ffd11b9ee2ad834a6e0d85d
+          path: diagnostic-sources/tagged
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 63082febadb22d5351365b8f75267534494893e6
+          path: diagnostic-sources/integration
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: 8d75a4fa83045d2244f5cd1fe980ebd323141a90
+          path: diagnostic-sources/held
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install ordinary-CI Chromium
+        run: |
+          python -m pip install -r api/requirements.txt playwright==1.64.0
+          python -m playwright install --with-deps chromium
+      - name: Observe native320px presentation on three sources, three times each
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/edit320-frame-pycache
+        run: python tools/diagnostics/edit320_presented_frames.py
+      - name: Preserve frame evidence regardless of observation outcome
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edit320-presented-frames
+          path: |
+            out/edit320-presented-frames/
+            tools/diagnostics/edit320_presented_frames.py
+            tools/diagnostics/edit320-frame-sources.json
+          if-no-files-found: error

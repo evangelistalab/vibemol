@@ -1,0 +1,58 @@
+{
+  "sources": {
+    "tagged": {
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tree": "75275fe172ff8bfb3327a73e3a31b5fef3d19992",
+      "hashes": {
+        "assets/app/js/app.js": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+        "assets/app/js/workbench.js": "2c2f076d1942ae9508debd82130e5424e61b52ece30ba10f072d106ab58d88b5",
+        "assets/app/css/workbench.css": "925ad1d5052a19a8ca115864c5058af46bfae9afc9acc86e0d443140ef46047c",
+        "index.html": "776c49b33caa3f68817fd2674a30aac6070ada67dca5273c2bab2998531924a0",
+        "tests/e2e/edit_tool.py": "98a36be008222ed186e27e78db1c32bbc56bdbce093e1635b51b4ce7a0c647f0"
+      }
+    },
+    "integration": {
+      "commit": "63082febadb22d5351365b8f75267534494893e6",
+      "tree": "1f077cd729b634da2d8868dfa22724af6ffaa08a",
+      "hashes": {
+        "assets/app/js/app.js": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+        "assets/app/js/workbench.js": "2c2f076d1942ae9508debd82130e5424e61b52ece30ba10f072d106ab58d88b5",
+        "assets/app/css/workbench.css": "925ad1d5052a19a8ca115864c5058af46bfae9afc9acc86e0d443140ef46047c",
+        "index.html": "80758c809edbfde4cd0d38930a7aa36eb7867e971df093e480a31222b7d824b8",
+        "tests/e2e/edit_tool.py": "0bdc0912443a6232d091f33418696b1081668ac731859ed109f93ecdf2dd7418"
+      }
+    },
+    "held": {
+      "commit": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+      "tree": "87c66eca58438e19c2107ae833669cce096cf30a",
+      "hashes": {
+        "assets/app/js/app.js": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+        "assets/app/js/workbench.js": "2c2f076d1942ae9508debd82130e5424e61b52ece30ba10f072d106ab58d88b5",
+        "assets/app/css/workbench.css": "925ad1d5052a19a8ca115864c5058af46bfae9afc9acc86e0d443140ef46047c",
+        "index.html": "182357969003866a77dec1cbf5e46e42980fa420e78bf136626087e5cd3082b8",
+        "tests/e2e/edit_tool.py": "0bdc0912443a6232d091f33418696b1081668ac731859ed109f93ecdf2dd7418"
+      }
+    }
+  },
+  "suiteFromIntegration": {
+    "commit": "63082febadb22d5351365b8f75267534494893e6",
+    "hashes": {
+      "tests/e2e/edit_tool.py": "0bdc0912443a6232d091f33418696b1081668ac731859ed109f93ecdf2dd7418",
+      "tests/e2e/premerge.py": "6e525e27e7c5ada224a4c503ea7975a0fbcec79f2ab759b2766269d4767909eb",
+      "tests/e2e/helpers.py": "9f886bdcce286e605af3eeae7a25a08307c2e3bb5317a33cfbf4ea6808ae9b8b"
+    }
+  },
+  "repetitionsPerSource": 3,
+  "sourceOrder": [
+    "tagged",
+    "integration",
+    "held"
+  ],
+  "diagnosticOnly": true,
+  "usableAsMergeGate": false,
+  "originalEvidenceBranchUploadDeclined": true,
+  "held537ReferenceResolution": "Use actual PR28 249-let head8d75a4f; 537e95f is historical Stage3.",
+  "fixedHarnessSha256": "7a191dcad05a0a319618ae7c2071ee76df8713e77df01c8db1f8b76272547a05",
+  "ordinaryHConditionCommit": "517d5f91cb5332fd1952ac5591fefb0f23b409aa",
+  "purpose": "Nonblocking question: whether a pre-compact320px state reaches a presented frame. No production changes and no merge-gate role."
+}
