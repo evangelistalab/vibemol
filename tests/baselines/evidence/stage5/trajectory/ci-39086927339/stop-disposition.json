@@ -1,0 +1,50 @@
+{
+  "status": "stopped; human decision required before further assignment work",
+  "reason": "Ordinary CI gate miss:33/4/37, extra edit_tool320px assertion",
+  "runId": 39086927339,
+  "attempt": 1,
+  "head": "41363b608592991afcaf6c7a501efd86885040f2",
+  "base": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+  "mergeAllowed": false,
+  "rerunAuthorized": false,
+  "acceptedFailingSetChanged": false,
+  "extraFailure": {
+    "suite": "tests/e2e/edit_tool.py",
+    "assertion": "scrollWidth <= clientWidth +1",
+    "viewportWidth": 320,
+    "exception": "AssertionError:320",
+    "currentScrollWidth": null,
+    "currentClientWidth": null,
+    "diagnostics": "The shipped assertion does not log its comparands; no numerical current width measurement or causal classification is claimed.",
+    "trackedIssue": 21,
+    "historicalMeasurementOnly": {
+      "ciRun": 39034319620,
+      "clientWidth": 12,
+      "scrollWidth": 442
+    },
+    "requiredBeforeAnyRerun": "Harness-only comparand instrumentation before a new diagnostic; a diagnostic may never supply the merge gate."
+  },
+  "acceptedIntegration": {
+    "commit": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+    "trackedLet": 262
+  },
+  "candidate": {
+    "pr": 26,
+    "trackedLet": 260,
+    "dependencies": 8,
+    "constructionOrder": "passed"
+  },
+  "issue11": {
+    "unchanged": true,
+    "site": "trajectory",
+    "afterSecondDownload": true,
+    "vibrationExportReached": false
+  },
+  "laterWork": {
+    "vibration": "not started",
+    "symmetry": "not started",
+    "standaloneExport": "not started",
+    "release0100": "not started"
+  },
+  "updated": "2026-10-18T02:10:33.225523+00:00"
+}

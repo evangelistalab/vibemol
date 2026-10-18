@@ -1,0 +1,426 @@
+{
+  "status": "held; no merge or rerun",
+  "acceptedIntegration": {
+    "commit": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+    "trackedLet": 262
+  },
+  "candidate": {
+    "pr": 26,
+    "trackedLet": 260,
+    "dependencies": 8,
+    "constructionOrder": "passed",
+    "head": "41363b608592991afcaf6c7a501efd86885040f2",
+    "base": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+    "tree": "78a1a75b7783077587813a93d1eec979565f3ecf",
+    "prUrl": "https://github.com/evangelistalab/vibemol/pull/26"
+  },
+  "ci": {
+    "runId": 39086927339,
+    "attempt": 1,
+    "url": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+    "counts": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37
+    },
+    "extraFailure": {
+      "suite": "tests/e2e/edit_tool.py",
+      "assertion": "scrollWidth <= clientWidth +1",
+      "viewportWidth": 320,
+      "exception": "AssertionError:320",
+      "currentScrollWidth": null,
+      "currentClientWidth": null,
+      "diagnostics": "The shipped assertion does not log its comparands; no numerical current width measurement or causal classification is claimed.",
+      "trackedIssue": 21,
+      "historicalMeasurementOnly": {
+        "ciRun": 39034319620,
+        "clientWidth": 12,
+        "scrollWidth": 442
+      },
+      "requiredBeforeAnyRerun": "Harness-only comparand instrumentation before a new diagnostic; a diagnostic may never supply the merge gate."
+    },
+    "conjunctionPassed": false
+  },
+  "constructionOrder": {
+    "status": "passed",
+    "appBindings": 29,
+    "moduleBindings": 129,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  },
+  "sourceAudit": {
+    "status": "passed",
+    "checks": 1220,
+    "proof": {
+      "wholeAppReconstructed": true,
+      "movedFunctionCount": 27,
+      "originalDeclarationCount": 1172,
+      "unchangedDeclarationCount": 1143,
+      "allExistingDeclarationsAccounted": true,
+      "allDepsUsed": true,
+      "noHiddenAppClosureReferences": true,
+      "ambientGlobals": [
+        "Array",
+        "Float32Array",
+        "Math",
+        "Number",
+        "Object",
+        "String"
+      ]
+    },
+    "metrics": {
+      "beforeApp": {
+        "lines": 32669,
+        "trackedTwoSpaceLetDeclarationLines": 262,
+        "directIifeFunctionDeclarations": 1163,
+        "allFunctionDeclarations": 1172
+      },
+      "proposedApp": {
+        "lines": 32385,
+        "trackedTwoSpaceLetDeclarationLines": 260,
+        "directIifeFunctionDeclarations": 1163,
+        "allFunctionDeclarations": 1172
+      },
+      "module": {
+        "lines": 410,
+        "trackedTwoSpaceLetDeclarationLines": 0,
+        "directIifeFunctionDeclarations": 1,
+        "allFunctionDeclarations": 30
+      }
+    }
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5356,
+          "session restore": 1,
+          "panel transition": 1124
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5464,
+          "session restore": 1,
+          "panel transition": 1118
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3289,
+          "session restore": 1,
+          "panel transition": 850
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3398,
+          "session restore": 1,
+          "panel transition": 837
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5354,
+          "session restore": 1,
+          "panel transition": 1115
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5465,
+          "session restore": 1,
+          "panel transition": 1112
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3288,
+          "session restore": 1,
+          "panel transition": 843
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3101,
+          "session restore": 1,
+          "panel transition": 774
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "unchangedGoldensMatched": true,
+    "exactSerializedRepeat": true,
+    "pixelChangesDiagnosticOnly": []
+  },
+  "appearanceMaterialPresetIntermittent": {
+    "looksSeconds": 1794.63,
+    "looksMinutes": 29.910500000000003,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "timing": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+    "head": "41363b608592991afcaf6c7a501efd86885040f2",
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-10-18T01:33:27Z",
+    "lastJobCompletedAt": "2026-10-18T02:06:16Z",
+    "workflowSeconds": 1969.0,
+    "workflowMinutes": 32.81666666666667,
+    "baselineMinutes": 132.93,
+    "savedMinutes": 100.11333333333333,
+    "reductionPercent": 75.31282128438527,
+    "speedup": 4.05068562722194,
+    "jobSeconds": {
+      "WebKit Properties interactions": 68.0,
+      "checks-and-unit": 30.0,
+      "Browser suites (smoke)": 774.0,
+      "Characterization (2)": 973.0,
+      "Characterization (1)": 1003.0,
+      "Browser suites (balanced-3)": 1951.0,
+      "Browser suites (looks)": 1832.0,
+      "Browser suites (balanced-2)": 1745.0,
+      "Browser suites (balanced-1)": 1907.0,
+      "Exact characterization repeat and goldens": 25.0,
+      "Aggregate browser gate (34/3/37)": 12.0
+    },
+    "shards": [
+      {
+        "shard": "balanced-1",
+        "suites": 11,
+        "subprocessSeconds": 1870.69,
+        "batchSeconds": 1870.71,
+        "jobSeconds": 1907.0
+      },
+      {
+        "shard": "balanced-2",
+        "suites": 12,
+        "subprocessSeconds": 1709.26,
+        "batchSeconds": 1709.29,
+        "jobSeconds": 1745.0
+      },
+      {
+        "shard": "balanced-3",
+        "suites": 12,
+        "subprocessSeconds": 1909.75,
+        "batchSeconds": 1909.75,
+        "jobSeconds": 1951.0
+      },
+      {
+        "shard": "looks",
+        "suites": 1,
+        "subprocessSeconds": 1794.63,
+        "batchSeconds": 1794.63,
+        "jobSeconds": 1832.0
+      },
+      {
+        "shard": "smoke",
+        "suites": 1,
+        "subprocessSeconds": 734.79,
+        "batchSeconds": 734.85,
+        "jobSeconds": 774.0
+      }
+    ],
+    "lastWorker": "Browser suites (balanced-3)",
+    "lastJob": "Aggregate browser gate (34/3/37)",
+    "characterizationWorkerSeconds": {
+      "1": 962.02,
+      "2": 937.23
+    },
+    "characterizationJoinSeconds": 25.0,
+    "browserJoinSeconds": 12.0,
+    "cache": {
+      "restoreHits": 0,
+      "restoreMisses": 8,
+      "hitJobs": [],
+      "missJobs": [
+        "Browser suites (balanced-1)",
+        "Browser suites (balanced-2)",
+        "Browser suites (balanced-3)",
+        "Browser suites (looks)",
+        "Browser suites (smoke)",
+        "Characterization (1)",
+        "Characterization (2)",
+        "WebKit Properties interactions"
+      ],
+      "playwrightVersions": [
+        "1.64.0"
+      ]
+    },
+    "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+  },
+  "issue11": {
+    "unchanged": true,
+    "site": "trajectory",
+    "afterSecondDownload": true,
+    "vibrationExportReached": false
+  },
+  "laterWork": {
+    "vibration": "not started",
+    "symmetry": "not started",
+    "standaloneExport": "not started",
+    "release0100": "not started"
+  },
+  "reportEvidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339",
+  "policy": "No test/golden/identity/failing-set relaxation. No bare retry. The frozen first run remains failed. Instrument comparands before any future diagnostic; diagnostic results cannot supply merge acceptance."
+}

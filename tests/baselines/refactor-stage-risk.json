@@ -1921,7 +1921,7 @@
       "risk": "high feature coupling, second to Stage 3 element-cache consolidation for manual verification",
       "scope": "Trajectory, symmetry and vibration state/wiring, one feature per PR",
       "verification": "Audit dependency seams, exercise all moved controls and cancellation paths, playback/video/session preservation, and use the affected panel manual matrix. Preserve per-feature beta soak.",
-      "status": "Design accepted; no implementation released",
+      "status": "Direct human release after Stage4, but5a first CI is blocked at33/4/37.5b/5c and release not started.",
       "design": "docs/stage5-seam-design.md",
       "moduleLets": 17,
       "trueTrajectoryMirrors": 2,
@@ -1946,6 +1946,24 @@
         "status": "refuted",
         "productDefectRemainsOpen": true,
         "reason": "Vibration has no mirror; trajectory export reads authoritative state; exporter owns idle mode and never calls getPlaybackState"
+      },
+      "firstAttemptStop": {
+        "pr": 26,
+        "head": "41363b608592991afcaf6c7a501efd86885040f2",
+        "runId": 39086927339,
+        "attempt": 1,
+        "counts": [
+          33,
+          4,
+          37
+        ],
+        "extraFailure": "edit_tool320px assertion tracked by#21; numeric comparands absent",
+        "candidateLet": 260,
+        "acceptedIntegrationLet": 262,
+        "constructionOrder": "passed",
+        "mergeAllowed": false,
+        "rerunPerformed": false,
+        "evidence": "tests/baselines/trajectory-playback-hold.json"
       }
     }
   ],
@@ -2686,5 +2704,23 @@
         "reason": "Looks failed in legacy reference migration before either required material-family path"
       }
     }
-  ]
+  ],
+  "stage5RejectedFirstAttempt": {
+    "pr": 26,
+    "head": "41363b608592991afcaf6c7a501efd86885040f2",
+    "runId": 39086927339,
+    "attempt": 1,
+    "counts": [
+      33,
+      4,
+      37
+    ],
+    "extraFailure": "edit_tool320px assertion tracked by#21; numeric comparands absent",
+    "candidateLet": 260,
+    "acceptedIntegrationLet": 262,
+    "constructionOrder": "passed",
+    "mergeAllowed": false,
+    "rerunPerformed": false,
+    "evidence": "tests/baselines/trajectory-playback-hold.json"
+  }
 }
