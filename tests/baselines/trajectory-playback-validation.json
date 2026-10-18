@@ -309,5 +309,20 @@
     }
   },
   "ci": "Not run yet; own first automatic ordinary conjunction still required",
-  "collectorDiagnostics": "Preserved failed collector setup: CJS module variable name, map(Array.from) callback arity, portable session missing master playing/timestamp fields, and ordinary file picker append semantics. No shipped assertion, expected value, wait or production bug was changed to pass a test."
+  "collectorDiagnostics": "Preserved failed collector setup: CJS module variable name, map(Array.from) callback arity, portable session missing master playing/timestamp fields, and ordinary file picker append semantics. No shipped assertion, expected value, wait or production bug was changed to pass a test.",
+  "completion": {
+    "status": "merged and pushed",
+    "integration": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+    "humanCorrectedGate": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37
+    },
+    "runId": 39086927339,
+    "attempt": 1,
+    "evidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate",
+    "originalGithubAggregateStillFailed": true,
+    "noRetry": true,
+    "trackedLetAfter": 260
+  }
 }

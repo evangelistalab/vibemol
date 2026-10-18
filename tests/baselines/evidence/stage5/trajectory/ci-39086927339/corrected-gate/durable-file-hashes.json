@@ -1,0 +1,13 @@
+{
+  "browser_policy.py": "0466799932f179a7b05a46e14591ae85b7cc4aa55834f23dcc36e464537ce594",
+  "identity-firing-counts.json": "acb011f9132fbc813d934d983d0b0fc4a04478b88086cf435bf2d41fc519063b",
+  "candidate-verification.json": "0f8c3536ec2d53d3a682c2af3c6d3ae515d7e0dfc585b7d501a5c51c825fbac2",
+  "browser-suite.json": "5d338b2624cef830a0518e461cd64bce4920035aef3da3abf8100b5cc885c790",
+  "prepare-corrected-gate.py": "8ab59d70a6aee7f106d335442d8e8bbaba81364e59ad08f7c868ac015edc2ec0",
+  "README.md": "a43b6793136aea626f319a59ca62ac80db7684e6b2c5c66fe7f8652362e5b584",
+  "premerge.py": "73fcb3892115571377692a99dd65de0ea50803f819817bbf228c5ea270e7d32e",
+  "verify-corrected-gate.py": "352c06720a266cc26b463d82077860017f2c2ff1b31708e9787c94f9174673db",
+  "browser-results.json": "4ad1d67b8f712785e329f0172bac0764bc04211b9b1c582971a4503b02f107f2",
+  "pre-merge-verification.json": "b0f531600ca2995367f8f18bbcd23c4b9d78c2a244f5474d134721072d6019ff",
+  "independent-verification.log": "40b6db256557371928a716ce36b30409943420265f90a8ee06c74ed1d09fb52d"
+}

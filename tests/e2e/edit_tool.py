@@ -128,7 +128,13 @@ def run(page, url):
         page.set_viewport_size({'width':width,'height':1000});page.locator('#editTransformToolBtn').focus()
         page.keyboard.press('ArrowRight');tool(page,'build')
         page.wait_for_timeout(100)
-        assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width
+        tool_widths = page.locator('.wb-tools').evaluate('el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth})')
+        print('[edit-tool-layout] '+json.dumps({
+            'viewportWidth': width, 'actual': tool_widths,
+            'expected': {'maximumScrollWidth': tool_widths['clientWidth'] + 1},
+            'passed': tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1,
+        }, sort_keys=True), flush=True)
+        assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width
         assert page.locator('#editToolStrip').evaluate('''el=>[...el.querySelectorAll('button')].every(b=>{
           const r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''),width
         page.keyboard.press('ArrowLeft');tool(page,'transform')

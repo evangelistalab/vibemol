@@ -1,0 +1,38 @@
+name: Warm shared Playwright cache
+
+on:
+  push:
+    branches: [main, 'codex/**']
+    paths:
+      - api/requirements.txt
+      - .github/workflows/ci.yml
+      - .github/workflows/playwright-cache.yml
+
+# PR-created caches belong to refs/pull/N/merge and cannot be shared with the
+# next PR. A push creates a cache on the branch itself; integration caches are
+# visible to every PR targeting it. The first feature push can also warm its
+# own branch before the PR's single acceptance run starts.
+jobs:
+  browsers:
+    name: Cache Playwright (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Python dependencies
+        run: python -m pip install --upgrade pip && pip install -r api/requirements.txt
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-${{ matrix.browser }}
+      - name: Install browser binaries and system dependencies
+        run: python -m playwright install --with-deps "${{ matrix.browser }}"

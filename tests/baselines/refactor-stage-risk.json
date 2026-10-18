@@ -10,12 +10,12 @@
     1
   ],
   "currentBrowserBaseline": {
-    "passed": 34,
-    "failed": 3,
+    "passed": 33,
+    "failed": 4,
     "total": 37,
     "environment": "CI",
-    "evidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/artifacts/browser-results/browser-results.json",
-    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "evidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate/browser-results.json",
+    "comparison": "local35/2/37 historical; currentCI33/4/37;34/3 is over-performance and stops",
     "historicalLocalResult": {
       "passed": 35,
       "failed": 2,
@@ -23,10 +23,10 @@
       "environment": "local",
       "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
     },
-    "provenance": "Corrected PubChem PR24 own first ordinary run independently verified and merged. Original failed run39057387687 and diagnostics remain separate, rejected as merge evidence.",
+    "provenance": "Direct human corrected the previously inconsistent accepted set to include carried#21. PR26 original attempt1 was independently recomputed under that policy, with no retry. Original GitHub aggregate remains failed under superseded34/3; all other gates pass.",
     "gate": {
-      "passed": 34,
-      "failed": 3,
+      "passed": 33,
+      "failed": 4,
       "total": 37,
       "environment": "CI",
       "satisfied": true
@@ -35,12 +35,16 @@
       {
         "suite": "axis_gizmo.py",
         "workflow": "escape-canvas-focus",
-        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
       },
       {
         "suite": "mode_consistency.py",
         "workflow": "coordinates-delete-selection-card",
-        "defect": "Selection card covers Coordinates Delete"
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
       },
       {
         "suite": "smoke.py",
@@ -49,12 +53,22 @@
           "trajectory",
           "vibration"
         ],
-        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      },
+      {
+        "suite": "edit_tool.py",
+        "workflow": "issue-21-edit-toolbar-layout-collapse-320",
+        "exceptionType": "AssertionError",
+        "defect": "Issue #21: .wb-tools layout collapse at 320px",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/21",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
       }
     ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
-    "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39086927339",
+    "sourceAppSha256": "f3c5e0759afd86c2bcc73821ef1b0c13cd8aec8883513fc0aafd94b9448ac9d2",
     "issue11Workflow": {
       "id": "issue-11-stop-after-second-download",
       "site": "trajectory"
@@ -78,7 +92,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element caches, completed Build/adaptive plus Element Colors, Atoms menu, Selection and Symmetry/shared launcher.",
-      "reason": "Stage 3 needs the heaviest manual verification: lazy panel bindings can miss event paths and retain detached nodes that DOM captures do not detect. The CI 34/3/37 gate accepts only Escape preventing canvas focus, selection card covering Coordinates Delete, and issue #11 at trajectory or vibration idle wait after the second download. Completed run 38141289409 matches these workflows without a rerun. Production defects remain outside the refactor. The Appearance material-preset intermittent stays open.",
+      "reason": "Historical Stage3 cache conversion is complete. Lazy panels require manual event/identity checks. The current ordinary gate is33/4/37 with the four exact manifest workflows, including320pxEdit layout collapse#21. Production fixes remain outside the refactor; the material-preset intermittent stays open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Selection then Symmetry/shared launcher, each cut from pushed integration, own exact-candidate CI gate and sequential merge without intermediate review. Only the three canonical conversion blockers apply; identical tagged manual failures are findings.",
       "panelPrPlan": [
@@ -452,7 +466,7 @@
           }
         ],
         "evidence": "tests/baselines/evidence/stage3/adaptive/ci-38177282064/browser-results.json",
-        "provenance": "Complete CI 34/3/37 on the approved Build/adaptive stack; next groups require their own artifact and 52 identities.",
+        "provenance": "Historical approved Build/adaptive CI34/3/37; every new group requires its own33/4/37 artifact and52 composed slots/eight contexts/minima.",
         "ciEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json",
         "ciGateSatisfied": true,
         "latestCiResult": {
@@ -1235,7 +1249,7 @@
                 }
               ]
             },
-            "ciStatus": "Not started; no merge until own first-pass complete34/3/37 conjunction. Local evidence is not CI acceptance.",
+            "ciStatus": "Historical Colors local checkpoint; its completed own ordinary run39039061120 is recorded separately. Current candidates require33/4/37 and exact four workflows.",
             "carriedDefects": "tests/baselines/carried-defects.json",
             "materialPresetIntermittent": "Open; local captures are not the two Looks material-family paths."
           },
@@ -1985,10 +1999,11 @@
     "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception.",
     "modeConsistency": "Selection card overlays Coordinates Delete in legacy mode; preserve the failing assertion. Separate 0.9.x defect batch.",
     "videoCrop": "#11 https://github.com/evangelistalab/vibemol/issues/11: click-time Save/Stop branch reopens crop selection after trajectory/vibration completion. Do not fix in the refactor; schedule after 0.10.0 or in parallel on 0.9.x. Figure path gets one probe only.",
-    "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor."
+    "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor.",
+    "editTool320": "Carried issue#21: .wb-tools layout collapse at320px; historical integration and Symmetry measuredscroll442/client12. The exact width workflow is now the fourth accepted CI failure; preserve its assertion and comparand logging. No production layout fix in the refactor."
   },
   "stage1BlockedByTheseFollowups": false,
-  "baselineCountScope": "All 37 make test-e2e browser entry points executed independently on the repair branch, including the Appearance alias and periodic_table.py. Focused repaired-suite runs plus all remaining entry points; no downstream outcomes inferred from fail-fast make. The two-run 102-capture characterization is an additional gate. Baseline comparison: local 35/2/37 (historical), CI 34/3/37. The gate is the CI number.",
+  "baselineCountScope": "Every current candidate executes all37 browser entry points once, with exactly33pass/4fail and the manifest exact failing workflow set.102 goldens twice/exact repeat and52slots/eight contexts/all minima remain additional gates. Earlier34/3 candidate results are immutable historical observations, never the current acceptance policy.",
   "beforeElementCachePrerequisite": {
     "work": "Repair the browser suite in a separate PR before any Stage 3 element-cache consolidation PR opens",
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
@@ -2094,7 +2109,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "CI 34 passing / 3 failing / 37. Accepted by (suite, workflow): Escape prevents canvas focus; selection card covers Coordinates Delete; issue #11 at trajectory or vibration wait_for_video_idle after the second download. Completed run 38141289409 matches; record the fired #11 site on every run. All other failures stop the sequence. Traceback lines are diagnostic only.",
+    "browserCiGate": "CI requires exactly 33 passing / 4 failing / 37 with the exact four (suite, workflow) keys. Accepted: axis Escape/canvas focus; Coordinates Delete intercepted by selection card; #11 trajectory OR vibration idle wait after the second download; #21 .wb-tools layout collapse at 320px. Traceback lines and hashes are diagnostic, never acceptance keys. Any missing carried failure (including 34/3 over-performance), extra failure, or different workflow stops. The Stage5a/5b exporter-shape comparison and all golden/identity/construction/source gates remain required.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -2179,7 +2194,7 @@
     "renderer": "Both CI suites use software SwiftShader",
     "helperCorrection": "Synchronous actual-state predicate after separate presentation boundary; false readiness negative control passed on CI",
     "gateMet": true,
-    "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37",
+    "completeBaselineComparison": "local35/2/37 historical; currentCI33/4/37;34/3 is over-performance and stops",
     "latestCompleteCiRun": "https://github.com/evangelistalab/vibemol/actions/runs/38141289409",
     "gateEvidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/browser-results-reevaluated.json"
   },
@@ -2305,12 +2320,16 @@
       {
         "suite": "axis_gizmo.py",
         "workflow": "escape-canvas-focus",
-        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
       },
       {
         "suite": "mode_consistency.py",
         "workflow": "coordinates-delete-selection-card",
-        "defect": "Selection card covers Coordinates Delete"
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
       },
       {
         "suite": "smoke.py",
@@ -2319,17 +2338,35 @@
           "trajectory",
           "vibration"
         ],
-        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      },
+      {
+        "suite": "edit_tool.py",
+        "workflow": "issue-21-edit-toolbar-layout-collapse-320",
+        "exceptionType": "AssertionError",
+        "defect": "Issue #21: .wb-tools layout collapse at 320px",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/21",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-39086927339/edit_tool.log"
       }
-    ]
+    ],
+    "expected": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37
+    },
+    "overPerformance": "34/3/37 is a stop: a carried failure is missing",
+    "authority": "Direct human correction in this chat; unchanged PR26 first attempt independently re-evaluated without rerun"
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
-    "cacheGroups": "Each cache group gets one CI run on its rebased merge candidate, carrying both all 37 suite results and the 43-node identity sweep with per-reason minima.",
+    "cacheGroups": "Each new group gets one CI run on its exact merge candidate, carrying all37 suite outcomes, current33/4/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order for extractions.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
-    "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack."
+    "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack.",
+    "pr26HumanGateCorrection": "Original attempt39086927339 is independently accepted at33/4/37 under the direct human correction, including#21. Original old-policy failed aggregate/reports/archive remain untouched; separate corrected-gate record and exact tree/push proof are durable."
   },
   "carriedDefectInventory": "tests/baselines/carried-defects.json",
   "conversionBlockingRule": {
@@ -2339,13 +2376,20 @@
       "CI count/failing-workflow identity, golden or identity-sweep gate miss",
       "non-neutral conversion: non-line-neutral production diff or edits beyond let-to-els and call-site rewrites"
     ],
-    "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here."
+    "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here.",
+    "currentBrowserGate": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37
+    },
+    "humanCorrection": "Direct human explicitly adds#21 and requires missing carried failures to stop; no diagnostic supplies merge evidence.",
+    "cacheOnlyRestrictionScope": "The let-to-els/line-neutral limitation applies to historical Stage3 cache conversions. The direct human separately authorizes Stage4 and Stage5 real controller extractions under their accepted seams, with preserved behavior and construction-order gate."
   },
   "editTool320Diagnostic": {
     "issue": 21,
     "evidence": "tests/baselines/evidence/stage3/symmetry/instrumented-edit-tool-ci-39034319620/independent-verification.json",
     "usableAsMergeGate": false,
-    "acceptedCiFailure": false,
+    "acceptedCiFailure": true,
     "humanOutcomeBranch": "both integration and Symmetry overflow",
     "sourceChanges": false,
     "testChanges": false,
@@ -2356,7 +2400,8 @@
       "head": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
       "editToolPassedSeconds": 85.45,
       "diagnosticUsedAsGate": false
-    }
+    },
+    "mergePolicy": "Diagnostic remains diagnostic. The direct human separately corrected the ordinary failing set to include#21, requiring own first-pass33/4/37 conjunction."
   },
   "historicalCompleteCiGates": [
     {
@@ -2717,5 +2762,91 @@
         "reason": "Looks failed in legacy reference migration before either required material-family path"
       }
     }
-  ]
+  ],
+  "historicalBrowserBaselineBeforeHumanCorrection": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/artifacts/browser-results/browser-results.json",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "historicalLocalResult": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "environment": "local",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    },
+    "provenance": "Corrected PubChem PR24 own first ordinary run independently verified and merged. Original failed run39057387687 and diagnostics remain separate, rejected as merge evidence.",
+    "gate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": true
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "defect": "Escape interception prevents canvas focus; preserve the 0.9.2/0.9.3 capture-phase ladder"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "defect": "Selection card covers Coordinates Delete"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "defect": "#11: delayed Stop after export opens a new crop selection after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11"
+      }
+    ],
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+    "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationExportReached": false
+  },
+  "stage5Progress": {
+    "trajectory": {
+      "pr": 26,
+      "head": "41363b608592991afcaf6c7a501efd86885040f2",
+      "runId": 39086927339,
+      "gate": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "humanCorrection": true,
+      "integration": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+      "trackedLetBefore": 262,
+      "trackedLetAfter": 260,
+      "dependencies": 8,
+      "constructionAppBindings": 29,
+      "constructionModuleBindings": 129,
+      "looksSeconds": 1794.63,
+      "bothMaterialPathsCompleted": true,
+      "issue11Site": "trajectory"
+    },
+    "vibration": {
+      "status": "local verification in progress",
+      "dependencies": 13,
+      "trackedLetBefore": 260,
+      "trackedLetAfter": 256,
+      "constructionAppBindings": 16,
+      "constructionModuleBindings": 161
+    },
+    "symmetry": {
+      "status": "released after vibration merge",
+      "projectedDependencies": 11
+    }
+  }
 }

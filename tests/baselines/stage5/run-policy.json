@@ -1,10 +1,15 @@
 {
-  "group": "5a trajectory playback core",
-  "baselineRun": 39071994182,
-  "baselineHead": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "group": "5b vibration runtime/panel",
+  "baselineRun": 39086927339,
+  "baselineHead": "41363b608592991afcaf6c7a501efd86885040f2",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Direct human instruction: any change in #11 behavior during 5a or 5b is a stop, even if the older ordinary join accepts either exporter site. This policy narrows acceptance and never changes shipped suite assertions."
+  "reason": "Current human-corrected ordinary gate is33/4/37. The separately required Stage5a/5b unchanged-exporter check still compares the actual trajectory second-download failure with the prior accepted attempt; no silent signature changes.",
+  "ordinaryExpected": {
+    "passed": 33,
+    "failed": 4,
+    "total": 37
+  }
 }

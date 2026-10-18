@@ -50,6 +50,28 @@ def failure_workflow(suite, log, source):
         intercepted = re.search(r'<[^\n]*id="editSelection(?:Position|TranslateCue)"[^\n]*intercepts pointer events', log)
         if len(failed) == 1 and same_statement(failed[0], expected[0]) and intercepted:
             return {'id': 'coordinates-delete-selection-card'}
+    elif pathlib.Path(suite).name == 'edit_tool.py':
+        # #21 is this width assertion at 320px, never a later hit test or a
+        # different viewport. Old tracebacks remain readable as provenance.
+        old = parsed_statement("assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width")
+        measured = parsed_statement("assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width")
+        if len(failed) == 1 and re.search(r'^AssertionError: 320\s*$', log, re.M):
+            if same_statement(failed[0], old[0]):
+                return {'id': 'issue-21-edit-toolbar-layout-collapse-320'}
+            if same_statement(failed[0], measured[0]):
+                measurements = re.findall(r'^\[edit-tool-layout\] (.+)$', log, re.M)
+                try:
+                    value = json.loads(measurements[-1])
+                except (IndexError, ValueError):
+                    return None
+                actual = value.get('actual', {})
+                if (value.get('viewportWidth') == 320
+                        and type(actual.get('scrollWidth')) is int
+                        and type(actual.get('clientWidth')) is int
+                        and 0 <= actual['clientWidth'] < actual['scrollWidth'] - 1
+                        and value.get('expected') == {'maximumScrollWidth': actual['clientWidth'] + 1}
+                        and value.get('passed') is False):
+                    return {'id': 'issue-21-edit-toolbar-layout-collapse-320'}
     elif pathlib.Path(suite).name == 'smoke.py':
         # Both Stop-after-export paths are issue #11. The second-download wait
         # and Stop action distinguish them from every other video workflow.
@@ -116,9 +138,13 @@ def finish_report(report, manifest, aggregate=True):
                   failed=len(failures), total=len(report['suites']))
     unexpected = [e['test'] for e in failures if not e['knownDefect']]
     actual = {key: report[key] for key in ('passed', 'failed', 'total')}
-    gate = not unexpected and actual == manifest['expected']
+    actual_keys = {(e['test'], (e.get('failureWorkflow') or {}).get('id')) for e in failures}
+    expected_keys = {(test, value['workflow']) for test, value in manifest['knownDefects'].items()}
+    gate = not unexpected and actual == manifest['expected'] and actual_keys == expected_keys
     report.update(unexpectedFailures=unexpected, matchesAcceptedBaseline=gate if aggregate else None,
-                  aggregationRequired=not aggregate)
+                  aggregationRequired=not aggregate,
+                  actualFailingWorkflows=[list(k) for k in sorted(actual_keys)],
+                  expectedFailingWorkflows=[list(k) for k in sorted(expected_keys)])
     smoke = next((e for e in report['suites'] if e['test'] == 'tests/e2e/smoke.py'), None)
     report['issue11Workflow'] = ({'status': 'not in this shard'} if smoke is None else
         smoke['failureWorkflow'] if smoke['knownDefect'] else
@@ -129,7 +155,7 @@ def finish_report(report, manifest, aggregate=True):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--allow-known-defects', action='store_true',
-                        help='Accept only the three filed workflows; still report them as failing.')
+                        help='Require exactly the four filed workflows; still report them as failing.')
     parser.add_argument('--shard', help='Collect one planned shard; the join, not this worker, asserts the full gate.')
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())

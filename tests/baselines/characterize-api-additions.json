@@ -40,6 +40,22 @@
       "keys": [
         "createTrajectoryPlaybackController"
       ]
+    },
+    {
+      "stage": "5b",
+      "script": "assets/app/js/vibration.js",
+      "global": "VibeMolVibration",
+      "keys": [
+        "CM_INV_HTML",
+        "CM_INV_TEXT",
+        "VIBRATION_DEFAULT_AMPLITUDE",
+        "VIBRATION_DEFAULT_SPEED",
+        "VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1",
+        "VIBRATION_IR_DEFAULT_SIGMA_CM1",
+        "VIBRATION_IR_MIN_FREQ_CM1",
+        "VIBRATION_KIND",
+        "createVibrationController"
+      ]
     }
   ]
 }

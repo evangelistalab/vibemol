@@ -71,6 +71,7 @@ JS_CHECK_FILES = \
 	assets/app/js/file-loader.js \
 	assets/app/js/trajectory-clock.js \
 	assets/app/js/trajectory-playback.js \
+	assets/app/js/vibration.js \
 	assets/app/js/trajectory-ui.js \
 	assets/app/js/app.js
 

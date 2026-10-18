@@ -40,6 +40,30 @@ class WorkflowGateTests(unittest.TestCase):
             source = '\n' * 123 + (ROOT / 'tests/e2e' / suite).read_text()
             self.assertTrue(self.accepted(suite, shifted, source))
 
+    def test_edit_layout_failure_is_only_the_320px_width_workflow(self):
+        old = (EVIDENCE / 'ci-39086927339/edit_tool.log').read_text()
+        self.assertTrue(self.accepted('edit_tool.py', old))
+        self.assertTrue(self.accepted('edit_tool.py', re.sub(r'line \d+', 'line 9999', old)))
+        self.assertFalse(self.accepted('edit_tool.py', old.replace('AssertionError: 320', 'AssertionError: 390')))
+        measurement = dict(viewportWidth=320, actual=dict(scrollWidth=442, clientWidth=12),
+                           expected=dict(maximumScrollWidth=13), passed=False)
+        trace = ('Traceback (most recent call last):\n'
+                 '  File "/repo/tests/e2e/edit_tool.py", line 9999, in run\n'
+                 "    assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width\n"
+                 'AssertionError: 320\n')
+        def log(value):
+            return '[edit-tool-layout] '+json.dumps(value)+'\n'+trace
+        self.assertTrue(self.accepted('edit_tool.py', log(measurement)))
+        self.assertFalse(self.accepted('edit_tool.py', trace))
+        for changes in [dict(viewportWidth=390), dict(passed=True),
+                        dict(expected=dict(maximumScrollWidth=14)),
+                        dict(actual=dict(scrollWidth=442, clientWidth=442))]:
+            with self.subTest(changes=changes):
+                self.assertFalse(self.accepted('edit_tool.py', log({**measurement, **changes})))
+        self.assertFalse(self.accepted('edit_tool.py', log(measurement).replace(
+            "assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width",
+            "assert page.locator('#editToolStrip').is_visible(), width")))
+
     def test_smoke_other_workflow_or_download_count_is_rejected(self):
         log = (EVIDENCE / 'ci-38141289409/smoke.log').read_text()
         self.assertFalse(self.accepted('smoke.py', log.replace("wait_for_video_idle(page, 'trajectory')", "page.locator('#trajectorySaveVideoBtn').click()")))
