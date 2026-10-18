@@ -1,0 +1,521 @@
+{
+  "label": "stage2",
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "passed": true,
+  "events": [
+    {
+      "navigation": "http://127.0.0.1:65293/?workspaceLab=0"
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialRoughness",
+      "value": 0.333,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialShininess",
+      "value": 145,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceSpecularColor",
+      "value": "#ffffff",
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialEmission",
+      "value": 0.06,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialEmissionScale",
+      "value": 0.02,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone0",
+      "value": 12,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone1",
+      "value": 64,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone2",
+      "value": 142,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone3",
+      "value": 255,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialEmission",
+      "value": 0.56,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialEmissionScale",
+      "value": 0.26,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialEmissionMix",
+      "value": 0.06,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone1",
+      "value": 91,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone1",
+      "value": 64,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone1",
+      "value": 91,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceToonTone1",
+      "value": 92,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "selector": "#appearanceMaterialShininess",
+      "value": 80,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "navigation": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1"
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialRoughness",
+      "value": 0.333,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialShininess",
+      "value": 145,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceSpecularColor",
+      "value": "#ffffff",
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialEmission",
+      "value": 0.06,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialEmissionScale",
+      "value": 0.02,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone0",
+      "value": 12,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone1",
+      "value": 64,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone2",
+      "value": 142,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone3",
+      "value": 255,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialEmission",
+      "value": 0.56,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialEmissionScale",
+      "value": 0.26,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialEmissionMix",
+      "value": 0.06,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone1",
+      "value": 91,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone1",
+      "value": 64,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone1",
+      "value": 91,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceToonTone1",
+      "value": 92,
+      "recipeCount": 1,
+      "familyCount": 1
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "selector": "#appearanceMaterialShininess",
+      "value": 80,
+      "recipeCount": 1,
+      "familyCount": 1
+    }
+  ],
+  "beforeClose": [
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+      "recipeCount": 1,
+      "familyCount": 1,
+      "state": {
+        "styleRef": {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        "colorsRef": {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        "styleModified": true,
+        "colorsModified": false,
+        "label": "Toon style \u00b7 Basic colors",
+        "settings": {
+          "molecule.style": "toon",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {},
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "emory",
+          "surface.posColor": "#ffba04",
+          "surface.negColor": "#153fc7",
+          "appearance.rendering": {
+            "version": 3,
+            "geometry": {
+              "connector": "cylinder",
+              "atomScaleMain": 1.16,
+              "atomScaleTransitionMetal": 1.22,
+              "sphereWidthSegments": 36,
+              "sphereHeightSegments": 24,
+              "bondRadius": 0.095,
+              "bondRadialSegments": 20,
+              "bondHeightSegments": 1,
+              "kitCollarRadius": 0.114,
+              "curvedMultipleBonds": false,
+              "atomRadii": {}
+            },
+            "lighting": {
+              "hemiColor": "#f8fbff",
+              "hemiGroundColor": "#0f1826",
+              "hemiIntensity": 1.28,
+              "dirColor": "#ffffff",
+              "dirIntensity": 2.25,
+              "dirPos": [
+                1.25,
+                1.2,
+                1.1
+              ],
+              "ambColor": "#9aa6ba",
+              "ambIntensity": 0.16,
+              "rimColor": "#9fb8ff",
+              "rimIntensity": 1.18,
+              "rimPos": [
+                -1.4,
+                1,
+                -0.8
+              ],
+              "exposure": 1,
+              "toneMapping": "linear",
+              "followTheme": true
+            },
+            "coloring": {
+              "palette": "basic",
+              "elementBonds": true,
+              "bondColor": "#eaecf0"
+            },
+            "effects": {
+              "outlineWidth": 0,
+              "atomOutlineFraction": 0.08,
+              "bondOutlineFraction": 0.18,
+              "highlights": true
+            },
+            "material": {
+              "model": "phong",
+              "roughness": 0.682,
+              "metalness": 0,
+              "clearcoat": 0,
+              "clearcoatRoughness": 0.22,
+              "reflectivity": 0.5,
+              "specularIntensity": 1,
+              "shininess": 80,
+              "specularColor": "#777777",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 0,
+              "iridescence": 0,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null
+          }
+        },
+        "saved": []
+      },
+      "domTrace": [
+        {
+          "time": 8.599999994039536,
+          "count": 0,
+          "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+          "selected": null
+        },
+        {
+          "time": 1667.3999999910593,
+          "count": 1,
+          "url": "http://127.0.0.1:65293/?workspaceLab=1&appearanceStudy=1",
+          "selected": "physical"
+        }
+      ]
+    },
+    {
+      "url": "http://127.0.0.1:65293/?workspaceLab=0",
+      "recipeCount": 1,
+      "familyCount": 1,
+      "state": {
+        "styleRef": {
+          "kind": "builtin",
+          "id": "toon"
+        },
+        "colorsRef": {
+          "kind": "builtin",
+          "id": "basic"
+        },
+        "styleModified": true,
+        "colorsModified": false,
+        "label": "Toon style \u00b7 Basic colors",
+        "settings": {
+          "molecule.style": "toon",
+          "molecule.atomRadiusScale": 1,
+          "molecule.bondRadiusScale": 1,
+          "molecule.feature.shadows": true,
+          "molecule.feature.fog": false,
+          "molecule.feature.fog.depth": 14,
+          "global.backgroundColor": "#ffffff",
+          "global.elementColors": true,
+          "global.elementColorOverrides": {},
+          "surface.materialPreset": "emissive",
+          "surface.opacity": 1,
+          "surface.colorScheme": "emory",
+          "surface.posColor": "#ffba04",
+          "surface.negColor": "#153fc7",
+          "appearance.rendering": {
+            "version": 3,
+            "geometry": {
+              "connector": "cylinder",
+              "atomScaleMain": 1.16,
+              "atomScaleTransitionMetal": 1.22,
+              "sphereWidthSegments": 36,
+              "sphereHeightSegments": 24,
+              "bondRadius": 0.095,
+              "bondRadialSegments": 20,
+              "bondHeightSegments": 1,
+              "kitCollarRadius": 0.114,
+              "curvedMultipleBonds": false,
+              "atomRadii": {}
+            },
+            "lighting": {
+              "hemiColor": "#f8fbff",
+              "hemiGroundColor": "#0f1826",
+              "hemiIntensity": 1.28,
+              "dirColor": "#ffffff",
+              "dirIntensity": 2.25,
+              "dirPos": [
+                1.25,
+                1.2,
+                1.1
+              ],
+              "ambColor": "#9aa6ba",
+              "ambIntensity": 0.16,
+              "rimColor": "#9fb8ff",
+              "rimIntensity": 1.18,
+              "rimPos": [
+                -1.4,
+                1,
+                -0.8
+              ],
+              "exposure": 1,
+              "toneMapping": "linear",
+              "followTheme": true
+            },
+            "coloring": {
+              "palette": "basic",
+              "elementBonds": true,
+              "bondColor": "#eaecf0"
+            },
+            "effects": {
+              "outlineWidth": 0,
+              "atomOutlineFraction": 0.08,
+              "bondOutlineFraction": 0.18,
+              "highlights": true
+            },
+            "material": {
+              "model": "phong",
+              "roughness": 0.682,
+              "metalness": 0,
+              "clearcoat": 0,
+              "clearcoatRoughness": 0.22,
+              "reflectivity": 0.5,
+              "specularIntensity": 1,
+              "shininess": 80,
+              "specularColor": "#777777",
+              "tint": "#ffffff",
+              "emissiveColor": "#ffffff",
+              "emissiveUsesColor": true,
+              "emissiveIntensity": 0,
+              "emissiveScale": 1,
+              "emissiveMix": 0,
+              "envMapIntensity": 0,
+              "iridescence": 0,
+              "vertexEmissiveColor": null,
+              "vertexEmissiveIntensity": null,
+              "toonSteps": [
+                70,
+                150,
+                210,
+                255
+              ],
+              "iridescenceThicknessRange": [
+                130,
+                380
+              ],
+              "byElement": {}
+            },
+            "surfaceMaterial": null
+          }
+        },
+        "saved": []
+      },
+      "domTrace": [
+        {
+          "time": 34.19999998807907,
+          "count": 0,
+          "url": "http://127.0.0.1:65293/?workspaceLab=0",
+          "selected": null
+        },
+        {
+          "time": 2953.8999999910593,
+          "count": 1,
+          "url": "http://127.0.0.1:65293/?workspaceLab=0",
+          "selected": "physical"
+        }
+      ]
+    }
+  ],
+  "pageErrors": [],
+  "consoleErrors": []
+}

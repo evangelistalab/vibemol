@@ -1,0 +1,285 @@
+{
+  "os": "Darwin",
+  "architecture": "arm64",
+  "browserName": "chromium",
+  "browserVersion": "145.0.7632.6",
+  "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M1 Max, Unspecified Version)",
+  "pointerHeldOnCompletedAction": {
+    "label": "Export figure",
+    "disabled": false
+  },
+  "nativeDownloads": 2,
+  "observations": {
+    "events": [
+      {
+        "event": "pointerdown",
+        "at": 2768.5,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Preview \u00b7 export uses the requested print resolution.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "pointerup",
+        "at": 2769,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Preview \u00b7 export uses the requested print resolution.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2769.699999988079,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing figure\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2772.399999976158,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "click",
+        "at": 2772.5,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2814.0999999940395,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Rendering panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2885.699999988079,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Figure downloaded.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "pointerdown",
+        "at": 2916.0999999940395,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Figure downloaded.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "pointerup",
+        "at": 2918.699999988079,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Figure downloaded.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2919.5,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing figure\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2922.399999976158,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "click",
+        "at": 2922.5999999940395,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Preparing panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 2960.699999988079,
+        "disabled": true,
+        "label": "Export figure",
+        "status": "Rendering panel 1 of 1\u2026",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      },
+      {
+        "event": "export-ui-change",
+        "at": 3026.899999976158,
+        "disabled": false,
+        "label": "Export figure",
+        "status": "Figure downloaded.",
+        "cropOverlays": [
+          {
+            "id": "trajectoryVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          },
+          {
+            "id": "vibrationVideoCropOverlay",
+            "hidden": "true",
+            "state": "idle"
+          }
+        ]
+      }
+    ],
+    "clicks": 2
+  },
+  "sourceConclusion": "No Save/Stop/crop state dispatch. onclick always calls download(); pending guards concurrent export and disables the button. Completion clears pending and enables the same Export action.",
+  "scope": "One PNG public-UI probe, two activations. SVG shares the identical download() dispatch; no production fix."
+}

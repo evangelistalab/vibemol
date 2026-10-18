@@ -1,0 +1,10 @@
+{
+  "integrationAfterBuildMerge": "224f32b50415a62dfec60e675cc46233d3dba119",
+  "treeIdenticalToMergedBuild": true,
+  "letAfterBuild": 302,
+  "adaptiveProductionDiff": [
+    "assets/app/js/app.js"
+  ],
+  "appNumstat": "85\t85\tassets/app/js/app.js",
+  "harnessUntouched": true
+}

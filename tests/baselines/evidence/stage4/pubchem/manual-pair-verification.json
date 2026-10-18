@@ -1,0 +1,398 @@
+{
+  "status": "passed",
+  "taggedCases": 72,
+  "proposedCases": 72,
+  "scenarioCount": 18,
+  "contextsPerSource": 4,
+  "semanticReadbacksExact": true,
+  "fetchFailureMalformedResponseAbortCovered": true,
+  "sourceAppSha256": {
+    "tagged": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "proposed": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4"
+  },
+  "browserVersion": "145.0.7632.6",
+  "scenarioNames": [
+    "abort_cid",
+    "abort_sdf",
+    "autocomplete_abort",
+    "autocomplete_failure",
+    "autocomplete_filter_cache",
+    "autocomplete_stale_token",
+    "busy_reentry",
+    "empty_results",
+    "http_failure",
+    "malformed_json",
+    "malformed_response",
+    "malformed_sdf",
+    "metadata_failure",
+    "metadata_malformed",
+    "no_3d",
+    "success_button",
+    "success_enter",
+    "transport_failure"
+  ],
+  "comparison": "User-visible metadata/geometry, preserved prior scenes, busy behavior, dialogs, native input/load paths, PubChem failed requests and recorded request paths/counts. Parallel autocomplete request order is a multiset; every raw order is retained. Unrelated Analytics failures with client IDs/timestamps, source-dependent console stack locations and elapsed time remain preserved but are outside the PubChem semantic comparison. The original over-broad comparison failure and diagnosis are retained separately.",
+  "abortScope": "Browser transport abort at CID/SDF/autocomplete; no cancellation UI or AbortController was added.",
+  "cases": [
+    {
+      "case": "workbench-light-success_button",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-success_enter",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-empty_results",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-http_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-transport_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-malformed_json",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-malformed_response",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-malformed_sdf",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-no_3d",
+      "equal": true,
+      "requests": 2
+    },
+    {
+      "case": "workbench-light-metadata_failure",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-metadata_malformed",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-abort_cid",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-abort_sdf",
+      "equal": true,
+      "requests": 3
+    },
+    {
+      "case": "workbench-light-busy_reentry",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-light-autocomplete_filter_cache",
+      "equal": true,
+      "requests": 5
+    },
+    {
+      "case": "workbench-light-autocomplete_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-autocomplete_abort",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-light-autocomplete_stale_token",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-success_button",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-success_enter",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-empty_results",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-http_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-transport_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-malformed_json",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-malformed_response",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-malformed_sdf",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-no_3d",
+      "equal": true,
+      "requests": 2
+    },
+    {
+      "case": "workbench-dark-metadata_failure",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-metadata_malformed",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-abort_cid",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-abort_sdf",
+      "equal": true,
+      "requests": 3
+    },
+    {
+      "case": "workbench-dark-busy_reentry",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "workbench-dark-autocomplete_filter_cache",
+      "equal": true,
+      "requests": 5
+    },
+    {
+      "case": "workbench-dark-autocomplete_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-autocomplete_abort",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "workbench-dark-autocomplete_stale_token",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-success_button",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-success_enter",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-empty_results",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-http_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-transport_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-malformed_json",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-malformed_response",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-malformed_sdf",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-no_3d",
+      "equal": true,
+      "requests": 2
+    },
+    {
+      "case": "legacy-light-metadata_failure",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-metadata_malformed",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-abort_cid",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-abort_sdf",
+      "equal": true,
+      "requests": 3
+    },
+    {
+      "case": "legacy-light-busy_reentry",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-light-autocomplete_filter_cache",
+      "equal": true,
+      "requests": 5
+    },
+    {
+      "case": "legacy-light-autocomplete_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-autocomplete_abort",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-light-autocomplete_stale_token",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-success_button",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-success_enter",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-empty_results",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-http_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-transport_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-malformed_json",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-malformed_response",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-malformed_sdf",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-no_3d",
+      "equal": true,
+      "requests": 2
+    },
+    {
+      "case": "legacy-dark-metadata_failure",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-metadata_malformed",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-abort_cid",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-abort_sdf",
+      "equal": true,
+      "requests": 3
+    },
+    {
+      "case": "legacy-dark-busy_reentry",
+      "equal": true,
+      "requests": 4
+    },
+    {
+      "case": "legacy-dark-autocomplete_filter_cache",
+      "equal": true,
+      "requests": 5
+    },
+    {
+      "case": "legacy-dark-autocomplete_failure",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-autocomplete_abort",
+      "equal": true,
+      "requests": 1
+    },
+    {
+      "case": "legacy-dark-autocomplete_stale_token",
+      "equal": true,
+      "requests": 4
+    }
+  ]
+}

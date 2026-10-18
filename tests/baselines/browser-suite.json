@@ -1,0 +1,83 @@
+{
+  "expected": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "suites": [
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/accessibility.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/looks.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_bar.py"
+  ],
+  "knownDefects": {
+    "tests/e2e/axis_gizmo.py": {
+      "workflow": "escape-canvas-focus",
+      "exceptionType": "AssertionError",
+      "defect": "Escape interception prevents canvas focus",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+    },
+    "tests/e2e/mode_consistency.py": {
+      "workflow": "coordinates-delete-selection-card",
+      "exceptionType": "TimeoutError",
+      "defect": "Selection card covers Coordinates Delete",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+    },
+    "tests/e2e/smoke.py": {
+      "workflow": "issue-11-stop-after-second-download",
+      "sites": [
+        "trajectory",
+        "vibration"
+      ],
+      "exceptionType": "TimeoutError",
+      "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+      "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+    }
+  },
+  "policy": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
+  "gateEnvironment": "CI",
+  "baselineComparison": "Current restored CI34/3/37. Historical33/4/37 gates and original failed attempts retain their observed values.",
+  "synchronizationCorrection": {
+    "issue": 21,
+    "classification": "closed test-synchronization defect",
+    "diagnostic": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+    "evidence": "tests/baselines/evidence/browser-sync-21/diagnostic-39129507791/readbacks.json",
+    "changedExpectation": "The bar must first reach compact=true and a presentation boundary at320px; elapsed100ms alone does not establish readiness.",
+    "assertionToleranceUnchanged": true,
+    "noProductionChange": true
+  }
+}

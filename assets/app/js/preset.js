@@ -440,6 +440,7 @@
         listSchema: () => listSchema(),
         export: (options = {}) => exportEnvelope(options),
         import: (preset, options = {}) => importEnvelope(preset, options),
+        download: () => saveCurrentPresetToFile(),
       });
     }
 

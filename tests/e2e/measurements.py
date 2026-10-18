@@ -4,10 +4,24 @@ import json
 import math
 import os
 import premerge as p
+from helpers import wait_for_presented_state
 
 
 def settle(page):
-    page.wait_for_timeout(250)
+    # Issue #4: observe the app after presentation instead of a fixed 250 ms.
+    # Saved-layout readiness is checked separately against its actual record.
+    wait_for_presented_state(page, '()=>!!window.VibeMolTesting')
+
+
+def wait_for_saved_layout(page):
+    # Issue #4 / Stage 0: presentation does not complete the 180 ms save
+    # debounce. Before reload, require the persisted record to match live state.
+    page.wait_for_function('''()=>{
+      const saved=JSON.parse(localStorage.getItem("vibemol.workbench.lab.v1"))?.last;
+      // The public snapshot adds these transient fields; persist() saves layout.
+      const {focus,compact,draggingId,...layout}=VibeMolWorkbench.snapshot();
+      return !!saved && JSON.stringify(saved)===JSON.stringify(layout);
+    }''')
 
 
 def snapshot(page):
@@ -149,7 +163,7 @@ def recovery(page,url):
     assert page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.length')==3
     page.evaluate('()=>{VibeMolWorkbench.open("coordsPanel");VibeMolWorkbench.open("inspector");}')
     assert 'visible.xyz' in page.locator('#coordsPanel').inner_text()
-    settle(page);before_layout=page.evaluate('()=>VibeMolWorkbench.snapshot()')
+    wait_for_saved_layout(page);before_layout=page.evaluate('()=>VibeMolWorkbench.snapshot()')
     page.evaluate('()=>VibeMolRecovery.flush({force:true})');settle(page)
     # Existing IndexedDB snapshots retain both the old graph context and stale name.
     saved['name']='hidden.xyz'
@@ -177,7 +191,7 @@ def recovery_live_panels(page,url):
     page.goto(url);page.wait_for_function('()=>window.VibeMolRecovery?.getState().ready')
     assert p.load(page,[{'name':'recoverable.xyz','text':'O 0 0 0\nH 1 0 0\nH 0 1 0'}])['ok']
     page.evaluate('()=>VibeMolWorkbench.applyLayout({open:["coordsPanel","inspector"],activeBottom:"coordsPanel",activeRight:"inspector"})')
-    page.wait_for_function('()=>JSON.parse(localStorage.getItem("vibemol.workbench.lab.v1")).last.open.includes("coordsPanel")')
+    wait_for_saved_layout(page)
     assert page.evaluate('()=>VibeMolRecovery.flush({force:true})')
     original=page.evaluate('async()=> (await VibeMolSessionRecovery.createRecoveryStore().read()).latest')
     page.reload();page.wait_for_selector('#sessionRecoveryPrompt',state='visible');settle(page)

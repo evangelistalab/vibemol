@@ -1,0 +1,13 @@
+{
+  "suite": "workbench_bar.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/tagged-base",
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "testSha256": "dbcdda7fe51e2c8b7aeab0450536650e5a0ba51958fc9b923ef963652ae14872",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 33.94
+}

@@ -1,0 +1,16 @@
+{
+  "group": "0.10.0 release",
+  "baselineRun": 39135895060,
+  "baselineHead": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+  "issue11Workflow": {
+    "id": "issue-11-stop-after-second-download",
+    "site": "trajectory"
+  },
+  "reason": "Release metadata, URLs and notes leave exporter sources byte-identical. Use exactly34/3/37 and the ordinary second-download trajectory-or-vibration key; disappearance or any different workflow stops.",
+  "ordinaryExpected": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "preserveExporterSignature": false
+}

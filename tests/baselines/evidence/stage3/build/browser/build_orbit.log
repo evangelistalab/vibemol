@@ -1,0 +1,4 @@
+[build orbit] atom: retained payload, inert right click, right-drag and Shift-right-drag over atoms/bonds/void passed
+[build orbit] fragment: retained payload, inert right click, right-drag and Shift-right-drag over atoms/bonds/void passed
+[build orbit] molecule: retained payload, inert right click, right-drag and Shift-right-drag over atoms/bonds/void passed
+[build orbit] camera gestures preserve the active molecule preview; Escape still cancels it

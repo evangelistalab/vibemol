@@ -1,0 +1,10 @@
+{
+  "sharedDriverBase": "6c58355",
+  "sameInstrumentedSuiteForAllTrees": true,
+  "originalTargetWaitAndExpectedValuesPreserved": true,
+  "bothComparandsLoggedBeforeEitherAssertion": true,
+  "resolvedAppearanceLookAndStoredLegacyInputLogged": true,
+  "sourceTestSha256": "9f454e5f0ddc42aea0a8cf18272876d33ceccfa0ff690336762a24ee117d45a8",
+  "instrumentedSha256": "2a1c894c25894779414bb7ca439d5b93fb6feab3a9436760fb76c1a2b340ec87",
+  "noBrowserRunBeforeInstrumentation": true
+}

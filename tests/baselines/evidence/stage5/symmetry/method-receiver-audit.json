@@ -1,0 +1,25 @@
+{
+  "status": "passed",
+  "reason": "Changing a bare imported function call to the same frozen module member cannot change an observed receiver: all three actual implementations contain zero this expressions, including nested functions.",
+  "sourceSha256": "3f188fca38329f2b07900126904e1c9cd4e9dc189e61ac9991f2344a5bfead49",
+  "comparands": [
+    {
+      "name": "describeSymmetryElements",
+      "line": 1413,
+      "actualThisExpressions": 0,
+      "expectedThisExpressions": 0
+    },
+    {
+      "name": "analyzePointGroup",
+      "line": 1476,
+      "actualThisExpressions": 0,
+      "expectedThisExpressions": 0
+    },
+    {
+      "name": "createEditSymmetryController",
+      "line": 1571,
+      "actualThisExpressions": 0,
+      "expectedThisExpressions": 0
+    }
+  ]
+}

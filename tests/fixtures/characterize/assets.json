@@ -1,0 +1,92 @@
+[
+  {
+    "path": "sample.cube.gz",
+    "source": "assets/data/sample.cube",
+    "sha256": "18c999dd67d76358149e0b8786f7d5b5d5ae1c5ee5b5f83e19449063027e6c29"
+  },
+  {
+    "path": "methane/canonical_1.cube.gz",
+    "source": "assets/data/methane/canonical_1.cube",
+    "sha256": "9a64d881ea9dfe750f6c1d9d4822a931edd284f261c73cdfbcc14006a01b9134"
+  },
+  {
+    "path": "methane/canonical_2.cube.gz",
+    "source": "assets/data/methane/canonical_2.cube",
+    "sha256": "f9ca467389d08ef7066cfb232d9432c6a1d2db8d67799df07e2ce62024034918"
+  },
+  {
+    "path": "methane/canonical_3.cube.gz",
+    "source": "assets/data/methane/canonical_3.cube",
+    "sha256": "9042eec0b66dab3d21ccc51b6c87423d5b8c3818f0b2245914a5549eda983b17"
+  },
+  {
+    "path": "methane/canonical_4.cube.gz",
+    "source": "assets/data/methane/canonical_4.cube",
+    "sha256": "e87942ed10a10c41767aa212072cbf2694cfad623cce02eab92a9e244b904d6a"
+  },
+  {
+    "path": "methane/localized_1.cube.gz",
+    "source": "assets/data/methane/localized_1.cube",
+    "sha256": "1e267727dc958cbe30ee34b9486c67f3e5ab4f2de282f16f0519b341b72106a9"
+  },
+  {
+    "path": "methane/localized_2.cube.gz",
+    "source": "assets/data/methane/localized_2.cube",
+    "sha256": "b95dea3596138333f09e4a0f41a5a61ab83145759e7df874bf3e48e4997f86d0"
+  },
+  {
+    "path": "methane/localized_3.cube.gz",
+    "source": "assets/data/methane/localized_3.cube",
+    "sha256": "0f9644ab893112aff1f30ab0bd7460ef1bac34879026c68ab8379657b2591a3c"
+  },
+  {
+    "path": "methane/localized_4.cube.gz",
+    "source": "assets/data/methane/localized_4.cube",
+    "sha256": "d1cf957b5c224b21d8007f4bb1683506cfee0885b5f1d26aa6b4eacd4c711f76"
+  },
+  {
+    "path": "2ccubes/orbital_0.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_0.2ccube",
+    "sha256": "3d7b1c440a8761a85ae1947b1433c4e2485772fdb75f523c23001d4112bb3350"
+  },
+  {
+    "path": "2ccubes/orbital_1.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_1.2ccube",
+    "sha256": "058c9dc40d381e67baeb0eac454d902edba8d1640bfb28391681e59cd2c30779"
+  },
+  {
+    "path": "2ccubes/orbital_2.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_2.2ccube",
+    "sha256": "ab40328da4a82710d8f2c0acb4a85d09afe763bfbbca113ecce86775cba8125e"
+  },
+  {
+    "path": "2ccubes/orbital_3.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_3.2ccube",
+    "sha256": "d4b04e9e8f81f72eefee5e2ef9e693dab45f6cb12f2c16f85dfa209708ca7671"
+  },
+  {
+    "path": "2ccubes/orbital_4.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_4.2ccube",
+    "sha256": "f4865fa0d8430f33899c0a2b1b524a166fb529cc724891b794e5d5ef573511fb"
+  },
+  {
+    "path": "2ccubes/orbital_5.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_5.2ccube",
+    "sha256": "2c5d46f52a65faa7a139325ff30c40c773bd64c42f125b44dbeedacaa80ad196"
+  },
+  {
+    "path": "2ccubes/orbital_6.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_6.2ccube",
+    "sha256": "84d170ad2a3e86dc93ab43904143bc19024d9495dbca12cca9c1d0450b2fbf7a"
+  },
+  {
+    "path": "2ccubes/orbital_7.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_7.2ccube",
+    "sha256": "69e017e8d3086cdf60d1365f11c4de3213ea5460f5f4987539c8680e8c0a04c4"
+  },
+  {
+    "path": "2ccubes/orbital_8.2ccube.gz",
+    "source": "assets/data/2ccubes/orbital_8.2ccube",
+    "sha256": "beb95d2133755827f12c8875503fa2749f3ede1af795456bb46e6415004944c9"
+  }
+]

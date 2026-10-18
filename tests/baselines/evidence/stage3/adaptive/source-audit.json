@@ -1,0 +1,300 @@
+{
+  "group": "editAdaptive*",
+  "baseCommit": "4db82178ee662735059717c006e10aff70592044",
+  "inventory": [
+    {
+      "name": "editAdaptiveAddAtomBtn",
+      "declarationLine": 1197,
+      "assignmentLine": 8089,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveAddAtomBtn",
+      "queryLine": 8089,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8077,
+      "registrationLine": 8089,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveSymmetryBtn",
+      "declarationLine": 1200,
+      "assignmentLine": 8090,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveSymmetryBtn",
+      "queryLine": 8090,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8078,
+      "registrationLine": 8090,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveSymmetryMetaEl",
+      "declarationLine": 1201,
+      "assignmentLine": 8091,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveSymmetryMeta",
+      "queryLine": 8091,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8079,
+      "registrationLine": 8091,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveCleanStructureBtn",
+      "declarationLine": 1202,
+      "assignmentLine": 8092,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveCleanStructureBtn",
+      "queryLine": 8092,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8080,
+      "registrationLine": 8092,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveCleanStructureMetaEl",
+      "declarationLine": 1203,
+      "assignmentLine": 8093,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveCleanStructureMeta",
+      "queryLine": 8093,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8081,
+      "registrationLine": 8093,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveShiftComBtn",
+      "declarationLine": 1204,
+      "assignmentLine": 8094,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveShiftComBtn",
+      "queryLine": 8094,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8082,
+      "registrationLine": 8094,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveShiftComMetaEl",
+      "declarationLine": 1205,
+      "assignmentLine": 8095,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveShiftComMeta",
+      "queryLine": 8095,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8083,
+      "registrationLine": 8095,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveAlignPrincipalBtn",
+      "declarationLine": 1206,
+      "assignmentLine": 8096,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveAlignPrincipalBtn",
+      "queryLine": 8096,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8084,
+      "registrationLine": 8096,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveAlignPrincipalMetaEl",
+      "declarationLine": 1207,
+      "assignmentLine": 8097,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveAlignPrincipalMeta",
+      "queryLine": 8097,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Adaptive chip wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8085,
+      "registrationLine": 8097,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveAddAtomPopoverEl",
+      "declarationLine": 1208,
+      "assignmentLine": 8223,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveAddAtomPopover",
+      "queryLine": 8223,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8211,
+      "registrationLine": 8223,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editAdaptiveSymmetryPopoverEl",
+      "declarationLine": 1209,
+      "assignmentLine": 8224,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editAdaptive*",
+      "kind": "DOM cache",
+      "id": "editAdaptiveSymmetryPopover",
+      "queryLine": 8224,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Build/Symmetry wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 8212,
+      "registrationLine": 8224,
+      "registeredAtOriginalQueryPoint": true
+    }
+  ],
+  "functionsWhoseBodiesReferenceTheConvertedCache": [
+    {
+      "name": "resize",
+      "beforeLine": 1248,
+      "afterLine": 1248
+    },
+    {
+      "name": "syncBuildSearchNavigationUi",
+      "beforeLine": 16637,
+      "afterLine": 16637
+    },
+    {
+      "name": "buildEditAddControls",
+      "beforeLine": 17174,
+      "afterLine": 17174
+    },
+    {
+      "name": "positionBuildPopover",
+      "beforeLine": 18376,
+      "afterLine": 18376
+    },
+    {
+      "name": "renderBuildPopover",
+      "beforeLine": 18396,
+      "afterLine": 18396
+    },
+    {
+      "name": "isBuildPopoverOpen",
+      "beforeLine": 18426,
+      "afterLine": 18426
+    },
+    {
+      "name": "hideBuildPopover",
+      "beforeLine": 18430,
+      "afterLine": 18430
+    },
+    {
+      "name": "showBuildPopover",
+      "beforeLine": 18441,
+      "afterLine": 18441
+    },
+    {
+      "name": "positionSymmetryPopover",
+      "beforeLine": 18463,
+      "afterLine": 18463
+    },
+    {
+      "name": "isSymmetryPopoverOpen",
+      "beforeLine": 18477,
+      "afterLine": 18477
+    },
+    {
+      "name": "clearSymmetryPreview",
+      "beforeLine": 18573,
+      "afterLine": 18573
+    },
+    {
+      "name": "renderSymmetryPopover",
+      "beforeLine": 18928,
+      "afterLine": 18928
+    },
+    {
+      "name": "hideSymmetryPopover",
+      "beforeLine": 18967,
+      "afterLine": 18967
+    },
+    {
+      "name": "showSymmetryPopover",
+      "beforeLine": 18984,
+      "afterLine": 18984
+    }
+  ],
+  "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+  "entireAppExactAfterApprovedConversions": true,
+  "lexicalReferenceSubstitutions": 75,
+  "auditedFunctionDeclarations": 1190,
+  "shadowedElsReferences": [],
+  "metrics": {
+    "before": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 302,
+      "constDeclarations": 590,
+      "sha256": "32bbc85fee87165f4e4505ddd3c84e539de3f40f2eb473978758dce5c96db944"
+    },
+    "after": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 291,
+      "constDeclarations": 590,
+      "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+    }
+  },
+  "controllerLetsRetained": true,
+  "focusStateLetRetained": true,
+  "queryRegistrationAtOriginalWiringSites": true
+}

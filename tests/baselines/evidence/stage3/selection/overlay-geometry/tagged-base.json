@@ -1,0 +1,489 @@
+{
+  "method": "Read-only geometry probe for two pre-existing Edit overlay collisions.\n\nFixture loading/selection use the existing public test API; all menu/window\nopening uses real UI events. No QA harness, event stubs, style changes or fixes.\n",
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "cases": [
+    {
+      "name": "metal-popover",
+      "layout": "workbench",
+      "viewport": {
+        "width": 1440,
+        "height": 1000
+      },
+      "geometry": {
+        "overlay": {
+          "id": "editSelectionMetalBondingCuePopover",
+          "rect": {
+            "x": 880,
+            "y": 12,
+            "width": 386,
+            "height": 503.1875,
+            "left": 880,
+            "right": 1266,
+            "top": 12,
+            "bottom": 515.1875
+          },
+          "display": "block",
+          "position": "fixed",
+          "zIndex": "60",
+          "pointerEvents": "auto",
+          "hidden": false,
+          "ariaHidden": "false"
+        },
+        "targets": [
+          {
+            "id": "editSelectionTranslateCueButton",
+            "rect": {
+              "x": 1178,
+              "y": 109,
+              "width": 42,
+              "height": 42,
+              "left": 1178,
+              "right": 1220,
+              "top": 109,
+              "bottom": 151
+            },
+            "display": "flex",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 42,
+              "height": 42,
+              "area": 1764
+            },
+            "center": {
+              "x": 1199,
+              "y": 130
+            },
+            "centerHit": {
+              "id": "",
+              "tag": "SPAN",
+              "className": "editCoordinationCueSubtext",
+              "metalChoice": "auto",
+              "inOverlay": true,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionRotateCueButton",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "left": 0,
+              "right": 0,
+              "top": 0,
+              "bottom": 0
+            },
+            "display": "none",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": true,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 0,
+              "area": 0
+            },
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "centerHit": {
+              "id": "toolbar",
+              "tag": "DIV",
+              "className": "",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionCoordinationCueButton",
+            "rect": {
+              "x": 1228,
+              "y": 109,
+              "width": 42,
+              "height": 42,
+              "left": 1228,
+              "right": 1270,
+              "top": 109,
+              "bottom": 151
+            },
+            "display": "flex",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 38,
+              "height": 42,
+              "area": 1596
+            },
+            "center": {
+              "x": 1249,
+              "y": 130
+            },
+            "centerHit": {
+              "id": "",
+              "tag": "BUTTON",
+              "className": "editCoordinationCueOption is-active",
+              "metalChoice": "auto",
+              "inOverlay": true,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionMetalBondingCueButton",
+            "rect": {
+              "x": 1278,
+              "y": 109,
+              "width": 42,
+              "height": 42,
+              "left": 1278,
+              "right": 1320,
+              "top": 109,
+              "bottom": 151
+            },
+            "display": "flex",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 42,
+              "area": 0
+            },
+            "center": {
+              "x": 1299,
+              "y": 130
+            },
+            "centerHit": {
+              "id": "",
+              "tag": "SPAN",
+              "className": "material-symbols-rounded",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": true
+            }
+          },
+          {
+            "id": "editSelectionBondOrbitCueButton",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "left": 0,
+              "right": 0,
+              "top": 0,
+              "bottom": 0
+            },
+            "display": "none",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": true,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 0,
+              "area": 0
+            },
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "centerHit": {
+              "id": "toolbar",
+              "tag": "DIV",
+              "className": "",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionBondDistanceCueButton",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "left": 0,
+              "right": 0,
+              "top": 0,
+              "bottom": 0
+            },
+            "display": "none",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": true,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 0,
+              "area": 0
+            },
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "centerHit": {
+              "id": "toolbar",
+              "tag": "DIV",
+              "className": "",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionBondOrderCueButton",
+            "rect": {
+              "x": 0,
+              "y": 0,
+              "width": 0,
+              "height": 0,
+              "left": 0,
+              "right": 0,
+              "top": 0,
+              "bottom": 0
+            },
+            "display": "none",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": true,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 0,
+              "area": 0
+            },
+            "center": {
+              "x": 0,
+              "y": 0
+            },
+            "centerHit": {
+              "id": "toolbar",
+              "tag": "DIV",
+              "className": "",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": false
+            }
+          },
+          {
+            "id": "editSelectionAddFragmentCueButton",
+            "rect": {
+              "x": 1328,
+              "y": 109,
+              "width": 42,
+              "height": 42,
+              "left": 1328,
+              "right": 1370,
+              "top": 109,
+              "bottom": 151
+            },
+            "display": "flex",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 42,
+              "area": 0
+            },
+            "center": {
+              "x": 1349,
+              "y": 130
+            },
+            "centerHit": {
+              "id": "",
+              "tag": "SPAN",
+              "className": "material-symbols-rounded",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": true
+            }
+          },
+          {
+            "id": "editSelectionDeleteCueButton",
+            "rect": {
+              "x": 1378,
+              "y": 109,
+              "width": 42,
+              "height": 42,
+              "left": 1378,
+              "right": 1420,
+              "top": 109,
+              "bottom": 151
+            },
+            "display": "flex",
+            "position": "relative",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 0,
+              "height": 42,
+              "area": 0
+            },
+            "center": {
+              "x": 1399,
+              "y": 130
+            },
+            "centerHit": {
+              "id": "",
+              "tag": "SPAN",
+              "className": "material-symbols-rounded",
+              "metalChoice": null,
+              "inOverlay": false,
+              "inTarget": true
+            }
+          }
+        ]
+      },
+      "pageErrors": []
+    },
+    {
+      "name": "coordinates-delete",
+      "layout": "legacy",
+      "viewport": {
+        "width": 1200,
+        "height": 900
+      },
+      "geometry": {
+        "overlay": {
+          "id": "editSelectionTranslateCue",
+          "rect": {
+            "x": 908,
+            "y": 73,
+            "width": 280,
+            "height": 154.78125,
+            "left": 908,
+            "right": 1188,
+            "top": 73,
+            "bottom": 227.78125
+          },
+          "display": "grid",
+          "position": "fixed",
+          "zIndex": "34",
+          "pointerEvents": "none",
+          "hidden": false,
+          "ariaHidden": "false"
+        },
+        "targets": [
+          {
+            "id": "",
+            "rect": {
+              "x": 1153,
+              "y": 207.890625,
+              "width": 28,
+              "height": 28,
+              "left": 1153,
+              "right": 1181,
+              "top": 207.890625,
+              "bottom": 235.890625
+            },
+            "display": "flex",
+            "position": "static",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null,
+            "overlap": {
+              "width": 28,
+              "height": 19.890625,
+              "area": 556.9375
+            },
+            "center": {
+              "x": 1167,
+              "y": 221.890625
+            },
+            "centerHit": {
+              "id": "editSelectionPosition",
+              "tag": "DIV",
+              "className": "vm-selection-card",
+              "metalChoice": null,
+              "inOverlay": true,
+              "inTarget": false
+            }
+          }
+        ],
+        "positionCard": {
+          "overlay": {
+            "id": "editSelectionPosition",
+            "rect": {
+              "x": 908,
+              "y": 135,
+              "width": 280,
+              "height": 92.78125,
+              "left": 908,
+              "right": 1188,
+              "top": 135,
+              "bottom": 227.78125
+            },
+            "display": "grid",
+            "position": "static",
+            "zIndex": "auto",
+            "pointerEvents": "auto",
+            "hidden": false,
+            "ariaHidden": null
+          },
+          "targets": [
+            {
+              "id": "",
+              "rect": {
+                "x": 1153,
+                "y": 207.890625,
+                "width": 28,
+                "height": 28,
+                "left": 1153,
+                "right": 1181,
+                "top": 207.890625,
+                "bottom": 235.890625
+              },
+              "display": "flex",
+              "position": "static",
+              "zIndex": "auto",
+              "pointerEvents": "auto",
+              "hidden": false,
+              "ariaHidden": null,
+              "overlap": {
+                "width": 28,
+                "height": 19.890625,
+                "area": 556.9375
+              },
+              "center": {
+                "x": 1167,
+                "y": 221.890625
+              },
+              "centerHit": {
+                "id": "editSelectionPosition",
+                "tag": "DIV",
+                "className": "vm-selection-card",
+                "metalChoice": null,
+                "inOverlay": true,
+                "inTarget": false
+              }
+            }
+          ]
+        }
+      },
+      "pageErrors": []
+    }
+  ]
+}

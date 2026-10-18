@@ -1,0 +1,74 @@
+{
+  "timings": "tests/baselines/browser-suite-timings.json",
+  "timingRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38763532071",
+  "allocation": "Smoke and Looks alone; remaining suites assigned longest-processing-time first to the least-loaded of three shards.",
+  "shards": [
+    {
+      "name": "smoke",
+      "suites": [
+        "tests/e2e/smoke.py"
+      ],
+      "estimatedWallTimeSeconds": 734.96
+    },
+    {
+      "name": "looks",
+      "suites": [
+        "tests/e2e/looks.py"
+      ],
+      "estimatedWallTimeSeconds": 1917.99
+    },
+    {
+      "name": "balanced-1",
+      "suites": [
+        "tests/e2e/calculations.py",
+        "tests/e2e/camera_depth.py",
+        "tests/e2e/workbench_bar.py",
+        "tests/e2e/style_studio.py",
+        "tests/e2e/measurements.py",
+        "tests/e2e/appearance_controls.py",
+        "tests/e2e/surface_shadows.py",
+        "tests/e2e/transform_selection.py",
+        "tests/e2e/surface_schemes.py",
+        "tests/e2e/style_lab.py",
+        "tests/e2e/properties_disclosures.py"
+      ],
+      "estimatedWallTimeSeconds": 1867.74
+    },
+    {
+      "name": "balanced-2",
+      "suites": [
+        "tests/e2e/premerge.py",
+        "tests/e2e/look_tiles.py",
+        "tests/e2e/floating_panels.py",
+        "tests/e2e/edit_tool.py",
+        "tests/e2e/accessibility.py",
+        "tests/e2e/workbench.py",
+        "tests/e2e/periodic_table.py",
+        "tests/e2e/mode_consistency.py",
+        "tests/e2e/build_orbit.py",
+        "tests/e2e/build_bonds.py",
+        "tests/e2e/workbench_release.py",
+        "tests/e2e/build_panel.py"
+      ],
+      "estimatedWallTimeSeconds": 1874.67
+    },
+    {
+      "name": "balanced-3",
+      "suites": [
+        "tests/e2e/look_references.py",
+        "tests/e2e/edit_picking.py",
+        "tests/e2e/sessions.py",
+        "tests/e2e/appearance_scopes.py",
+        "tests/e2e/ux_review.py",
+        "tests/e2e/figure.py",
+        "tests/e2e/workbench_consistency.py",
+        "tests/e2e/properties_inspector.py",
+        "tests/e2e/axis_gizmo.py",
+        "tests/e2e/symmetry_panel.py",
+        "tests/e2e/asset_cache.py",
+        "tests/e2e/hydrogen_contacts.py"
+      ],
+      "estimatedWallTimeSeconds": 1874.5
+    }
+  ]
+}

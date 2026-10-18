@@ -1,0 +1,15 @@
+{
+  "committedEvidence": "tests/baselines/evidence/stage1",
+  "rawArtifactRoot": "out/test-artifacts/stage1",
+  "rawArtifactsIgnored": true,
+  "characterization": "out/test-artifacts/stage1/characterize",
+  "browserLogsAndScreenshots": "out/test-artifacts/stage1/browser",
+  "supplementaryWorkflowArtifacts": "out/test-artifacts/stage1/manual",
+  "verificationScripts": [
+    "out/test-artifacts/stage1/run-browser-suites.py",
+    "out/test-artifacts/stage1/manual-semantic.py",
+    "out/test-artifacts/stage1/manual-floating.py",
+    "out/test-artifacts/stage1/collect-evidence.py"
+  ],
+  "note": "Structured goldens remain unchanged; raw captures and PNGs stay in the repo output directory. Committed evidence contains concise logs, exact baseline comparisons, metrics and scope/coverage limitations."
+}

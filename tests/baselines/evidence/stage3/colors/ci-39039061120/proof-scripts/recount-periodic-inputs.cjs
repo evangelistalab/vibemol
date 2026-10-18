@@ -1,0 +1,16 @@
+const fs=require('node:fs'),path=require('node:path'),assert=require('node:assert/strict'),crypto=require('node:crypto');
+const {parse}=require('/usr/local/lib/node_modules/gatsby-cli/node_modules/@babel/parser');
+const traverse=require('/usr/local/lib/node_modules/gatsby-cli/node_modules/@babel/traverse').default;
+const root=path.resolve(process.argv[2]),out=path.resolve(process.argv[3]);
+const app=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8'),mod=fs.readFileSync(path.join(root,'assets/app/js/periodic-table.js'),'utf8');
+const calls=[];let controller;
+traverse(parse(app),{CallExpression(p){if(p.node.callee.name==='createPeriodicTableController')calls.push(p.node.arguments[0].properties.map(x=>x.key.name));}});
+traverse(parse(mod),{FunctionDeclaration(p){if(p.node.id.name==='createPeriodicTableController')controller=p;}});
+assert.equal(calls.length,1);assert.equal(calls[0].length,11);assert.equal(calls[0].at(-1),'els');
+const binding=controller.scope.getBinding('els'),domFields=[];
+const entries=calls[0].slice(0,-1).map(name=>{const b=controller.scope.getBinding(name);assert.ok(b.referencePaths.length>0);return{name,references:b.referencePaths.map(p=>({line:p.node.loc.start.line,function:p.getFunctionParent()?.node.id?.name||'(anonymous)',statement:mod.slice(p.getStatementParent().node.start,p.getStatementParent().node.end)}))};});
+controller.traverse({MemberExpression(p){if(p.node.object.name==='els'){assert.equal(p.scope.getBinding('els'),binding);domFields.push(p.node.property.name);}}});
+assert.equal(new Set(domFields).size,8);assert.ok(!mod.includes('elementColorBtn'));
+const report={sourceAppSha256:crypto.createHash('sha256').update(app).digest('hex'),sourcePeriodicSha256:crypto.createHash('sha256').update(mod).digest('hex'),factoryInputs:calls[0],actualFactoryInputCount:11,nonDomInputs:entries,allTenNonDomInputsUsed:entries.length===10&&entries.every(e=>e.references.length>0),domFieldsReadFromEls:[...new Set(domFields)],factoryBefore:19,afterButtonExclusion:18,afterGrouping:11,arithmetic:'10 used non-DOM inputs + 1 shared els = 11. Excluding a field inside els does not remove the els argument. No extra helper/controller or hidden genuine input.'};
+fs.writeFileSync(out,JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({actualInputs:11,allTenNonDomInputsUsed:report.allTenNonDomInputsUsed,domFields:report.domFieldsReadFromEls,referenceCounts:Object.fromEntries(entries.map(e=>[e.name,e.references.length]))},null,2));

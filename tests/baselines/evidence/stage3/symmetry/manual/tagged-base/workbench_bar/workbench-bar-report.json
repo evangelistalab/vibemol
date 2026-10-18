@@ -1,0 +1,2838 @@
+{
+  "Display": {
+    "mode": "display",
+    "width": 1512,
+    "scrollWidth": 484,
+    "clientWidth": 484,
+    "occluded": [],
+    "pressed": 0,
+    "radios": [
+      {
+        "id": "modeDisplayBtn",
+        "checked": "true",
+        "tab": 0
+      },
+      {
+        "id": "modeMeasureBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeEditBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeCalculationsBtn",
+        "checked": "false",
+        "tab": -1
+      }
+    ],
+    "rows": [
+      {
+        "id": "measurementsPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "coordsPanel",
+        "checked": "true",
+        "detail": "\u00b7 Bottom"
+      },
+      {
+        "id": "inspector",
+        "checked": "true",
+        "detail": "\u00b7 Right"
+      },
+      {
+        "id": "viewPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "figurePanel",
+        "checked": "false",
+        "detail": ""
+      }
+    ]
+  },
+  "Measure": {
+    "mode": "measure",
+    "width": 1512,
+    "scrollWidth": 484,
+    "clientWidth": 484,
+    "occluded": [],
+    "pressed": 0,
+    "radios": [
+      {
+        "id": "modeDisplayBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeMeasureBtn",
+        "checked": "true",
+        "tab": 0
+      },
+      {
+        "id": "modeEditBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeCalculationsBtn",
+        "checked": "false",
+        "tab": -1
+      }
+    ],
+    "rows": [
+      {
+        "id": "measurementsPanel",
+        "checked": "true",
+        "detail": "\u00b7 Right"
+      },
+      {
+        "id": "coordsPanel",
+        "checked": "true",
+        "detail": "\u00b7 Bottom"
+      },
+      {
+        "id": "inspector",
+        "checked": "true",
+        "detail": "\u00b7 Right"
+      },
+      {
+        "id": "viewPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "figurePanel",
+        "checked": "false",
+        "detail": ""
+      }
+    ]
+  },
+  "Edit": {
+    "mode": "edit",
+    "width": 1512,
+    "scrollWidth": 566,
+    "clientWidth": 566,
+    "occluded": [],
+    "pressed": 0,
+    "radios": [
+      {
+        "id": "modeDisplayBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeMeasureBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeEditBtn",
+        "checked": "true",
+        "tab": 0
+      },
+      {
+        "id": "modeCalculationsBtn",
+        "checked": "false",
+        "tab": -1
+      }
+    ],
+    "rows": [
+      {
+        "id": "buildPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "symmetryPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "coordsPanel",
+        "checked": "true",
+        "detail": "\u00b7 Bottom"
+      },
+      {
+        "id": "inspector",
+        "checked": "true",
+        "detail": "\u00b7 Right"
+      },
+      {
+        "id": "viewPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "figurePanel",
+        "checked": "false",
+        "detail": ""
+      }
+    ]
+  },
+  "trajectoryEdit": {
+    "mode": "edit",
+    "width": 1512,
+    "scrollWidth": 566,
+    "clientWidth": 566,
+    "occluded": [],
+    "pressed": 0,
+    "radios": [
+      {
+        "id": "modeDisplayBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeMeasureBtn",
+        "checked": "false",
+        "tab": -1
+      },
+      {
+        "id": "modeEditBtn",
+        "checked": "true",
+        "tab": 0
+      },
+      {
+        "id": "modeCalculationsBtn",
+        "checked": "false",
+        "tab": -1
+      }
+    ],
+    "rows": [
+      {
+        "id": "buildPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "symmetryPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "coordsPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "inspector",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "viewPanel",
+        "checked": "false",
+        "detail": ""
+      },
+      {
+        "id": "figurePanel",
+        "checked": "false",
+        "detail": ""
+      }
+    ]
+  },
+  "responsive": [
+    {
+      "width": 1920,
+      "mode": "display",
+      "scrollWidth": 892,
+      "clientWidth": 892,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1920,
+      "mode": "measure",
+      "scrollWidth": 892,
+      "clientWidth": 892,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1920,
+      "mode": "edit",
+      "scrollWidth": 892,
+      "clientWidth": 892,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1512,
+      "mode": "display",
+      "scrollWidth": 484,
+      "clientWidth": 484,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1512,
+      "mode": "measure",
+      "scrollWidth": 484,
+      "clientWidth": 484,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1512,
+      "mode": "edit",
+      "scrollWidth": 566,
+      "clientWidth": 566,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "mode": "display",
+      "scrollWidth": 424,
+      "clientWidth": 424,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "mode": "measure",
+      "scrollWidth": 424,
+      "clientWidth": 424,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1440,
+      "mode": "edit",
+      "scrollWidth": 506,
+      "clientWidth": 506,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1180,
+      "mode": "display",
+      "scrollWidth": 216,
+      "clientWidth": 216,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1180,
+      "mode": "measure",
+      "scrollWidth": 216,
+      "clientWidth": 216,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1180,
+      "mode": "edit",
+      "scrollWidth": 298,
+      "clientWidth": 298,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1050,
+      "mode": "display",
+      "scrollWidth": 271,
+      "clientWidth": 271,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1050,
+      "mode": "measure",
+      "scrollWidth": 271,
+      "clientWidth": 271,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1050,
+      "mode": "edit",
+      "scrollWidth": 271,
+      "clientWidth": 271,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "mode": "display",
+      "scrollWidth": 246,
+      "clientWidth": 246,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "mode": "measure",
+      "scrollWidth": 246,
+      "clientWidth": 246,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 1024,
+      "mode": "edit",
+      "scrollWidth": 282,
+      "clientWidth": 282,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Right"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 900,
+      "mode": "display",
+      "scrollWidth": 664,
+      "clientWidth": 664,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 900,
+      "mode": "measure",
+      "scrollWidth": 664,
+      "clientWidth": 664,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 900,
+      "mode": "edit",
+      "scrollWidth": 664,
+      "clientWidth": 664,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 760,
+      "mode": "display",
+      "scrollWidth": 524,
+      "clientWidth": 524,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 760,
+      "mode": "measure",
+      "scrollWidth": 524,
+      "clientWidth": 524,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 760,
+      "mode": "edit",
+      "scrollWidth": 524,
+      "clientWidth": 524,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 650,
+      "mode": "display",
+      "scrollWidth": 634,
+      "clientWidth": 634,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 650,
+      "mode": "measure",
+      "scrollWidth": 634,
+      "clientWidth": 634,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 650,
+      "mode": "edit",
+      "scrollWidth": 634,
+      "clientWidth": 634,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "mode": "display",
+      "scrollWidth": 374,
+      "clientWidth": 374,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "mode": "measure",
+      "scrollWidth": 374,
+      "clientWidth": 374,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "mode": "edit",
+      "scrollWidth": 374,
+      "clientWidth": 374,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "mode": "display",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "mode": "measure",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "measurementsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    },
+    {
+      "width": 320,
+      "mode": "edit",
+      "scrollWidth": 304,
+      "clientWidth": 304,
+      "occluded": [],
+      "pressed": 0,
+      "radios": [
+        {
+          "id": "modeDisplayBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeMeasureBtn",
+          "checked": "false",
+          "tab": -1
+        },
+        {
+          "id": "modeEditBtn",
+          "checked": "true",
+          "tab": 0
+        },
+        {
+          "id": "modeCalculationsBtn",
+          "checked": "false",
+          "tab": -1
+        }
+      ],
+      "rows": [
+        {
+          "id": "buildPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "symmetryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "moldenInspector",
+          "checked": "true",
+          "detail": "\u00b7 Bottom"
+        },
+        {
+          "id": "coordsPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "inspector",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "viewPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "figurePanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "trajectoryPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "vibrationPanel",
+          "checked": "false",
+          "detail": ""
+        },
+        {
+          "id": "spinorInfo",
+          "checked": "false",
+          "detail": ""
+        }
+      ]
+    }
+  ]
+}

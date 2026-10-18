@@ -1,0 +1,21 @@
+{
+  "decision": "Own first-pass full ordinary conjunction independently passed; eligible for exact-head merge after final remote checks.",
+  "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
+  "base": "04e01adb68e100282d4a1d211197001a5a461f84",
+  "runId": 39039061120,
+  "attempt": 1,
+  "allRawFailingWorkflowsManuallyRead": true,
+  "bothLooksMaterialPathsManuallyRead": true,
+  "allNineOriginalZipDigestsMatched": true,
+  "unchangedGate": [
+    34,
+    3,
+    37
+  ],
+  "issue11Site": "trajectory",
+  "vibrationExportReached": false,
+  "appearanceMaterialPresetRecurred": false,
+  "actualFactoryInputs": 11,
+  "countCorrection": "Ten used non-DOM dependencies plus els equals11, not10. No new design or hidden input.",
+  "diagnosticUsedAsGate": false
+}

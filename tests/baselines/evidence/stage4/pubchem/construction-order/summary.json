@@ -1,0 +1,170 @@
+[
+  {
+    "stage": "Stage 1",
+    "binding": "getElementSymbol",
+    "constructionLine": 4,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 5113
+  },
+  {
+    "stage": "Stage 2",
+    "binding": "createPeriodicTableController",
+    "constructionLine": 335,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 336
+  },
+  {
+    "stage": "Stage 2",
+    "binding": "periodicTableController",
+    "constructionLine": 10801,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11888
+  },
+  {
+    "stage": "Stage 3 Build",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1291
+  },
+  {
+    "stage": "Stage 3 Build",
+    "binding": "cacheElement",
+    "constructionLine": 1152,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 8225
+  },
+  {
+    "stage": "Stage 3 adaptive",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1291
+  },
+  {
+    "stage": "Stage 3 adaptive",
+    "binding": "cacheElement",
+    "constructionLine": 1163,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 8089
+  },
+  {
+    "stage": "Stage 3 adaptive",
+    "binding": "periodicTableController",
+    "constructionLine": 10813,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11900
+  },
+  {
+    "stage": "Stage 3 Atoms",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1291
+  },
+  {
+    "stage": "Stage 3 Atoms",
+    "binding": "cacheElement",
+    "constructionLine": 1166,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 7891
+  },
+  {
+    "stage": "Stage 3 Atoms",
+    "binding": "periodicTableController",
+    "constructionLine": 10813,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11900
+  },
+  {
+    "stage": "Stage 3 Selection",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1291
+  },
+  {
+    "stage": "Stage 3 Selection",
+    "binding": "cacheElement",
+    "constructionLine": 1179,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 7891
+  },
+  {
+    "stage": "Stage 3 Selection",
+    "binding": "periodicTableController",
+    "constructionLine": 10813,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11900
+  },
+  {
+    "stage": "Stage 3 Symmetry",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1291
+  },
+  {
+    "stage": "Stage 3 Symmetry",
+    "binding": "cacheElement",
+    "constructionLine": 1189,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 7891
+  },
+  {
+    "stage": "Stage 3 Symmetry",
+    "binding": "periodicTableController",
+    "constructionLine": 10813,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11900
+  },
+  {
+    "stage": "Stage 3 Colors",
+    "binding": "els",
+    "constructionLine": 1146,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1299
+  },
+  {
+    "stage": "Stage 3 Colors",
+    "binding": "cacheElement",
+    "constructionLine": 1197,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 7899
+  },
+  {
+    "stage": "Stage 3 Colors",
+    "binding": "periodicTableController",
+    "constructionLine": 10821,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 11900
+  },
+  {
+    "stage": "Stage 4 original (negative control)",
+    "binding": "createPubChemController",
+    "constructionLine": 336,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 337
+  },
+  {
+    "stage": "Stage 4 original (negative control)",
+    "binding": "pubchemController",
+    "constructionLine": 30630,
+    "status": "review-required",
+    "earliestPossibleCallingOrEscapingSiteLine": 5142
+  },
+  {
+    "stage": "Stage 4 corrected",
+    "binding": "createPubChemController",
+    "constructionLine": 336,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 337
+  },
+  {
+    "stage": "Stage 4 corrected",
+    "binding": "pubchemController",
+    "constructionLine": 1203,
+    "status": "passed",
+    "earliestPossibleCallingOrEscapingSiteLine": 1217
+  }
+]

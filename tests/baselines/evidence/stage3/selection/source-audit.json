@@ -1,0 +1,351 @@
+{
+  "group": "editSelection*",
+  "baseCommit": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+  "inventory": [
+    {
+      "name": "editSelectionTranslateCueEl",
+      "declarationLine": 1188,
+      "assignmentLine": 7894,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionTranslateCue",
+      "queryLine": 7894,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7882,
+      "registrationLine": 7894,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionTranslateCueButtonEl",
+      "declarationLine": 1190,
+      "assignmentLine": 7900,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionTranslateCueButton",
+      "queryLine": 7900,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7888,
+      "registrationLine": 7900,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionRotateCueButtonEl",
+      "declarationLine": 1191,
+      "assignmentLine": 7901,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionRotateCueButton",
+      "queryLine": 7901,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7889,
+      "registrationLine": 7901,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionCoordinationCueButtonEl",
+      "declarationLine": 1192,
+      "assignmentLine": 7902,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionCoordinationCueButton",
+      "queryLine": 7902,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7890,
+      "registrationLine": 7902,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionMetalBondingCueButtonEl",
+      "declarationLine": 1193,
+      "assignmentLine": 7903,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionMetalBondingCueButton",
+      "queryLine": 7903,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7891,
+      "registrationLine": 7903,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionBondOrbitCueButtonEl",
+      "declarationLine": 1194,
+      "assignmentLine": 7904,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionBondOrbitCueButton",
+      "queryLine": 7904,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7892,
+      "registrationLine": 7904,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionBondDistanceCueButtonEl",
+      "declarationLine": 1195,
+      "assignmentLine": 7905,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionBondDistanceCueButton",
+      "queryLine": 7905,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7893,
+      "registrationLine": 7905,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionBondOrderCueButtonEl",
+      "declarationLine": 1196,
+      "assignmentLine": 7906,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionBondOrderCueButton",
+      "queryLine": 7906,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7894,
+      "registrationLine": 7906,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionAddFragmentCueButtonEl",
+      "declarationLine": 1197,
+      "assignmentLine": 7907,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionAddFragmentCueButton",
+      "queryLine": 7907,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7895,
+      "registrationLine": 7907,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionDeleteCueButtonEl",
+      "declarationLine": 1198,
+      "assignmentLine": 7908,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionDeleteCueButton",
+      "queryLine": 7908,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7896,
+      "registrationLine": 7908,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionFragmentCuePopoverEl",
+      "declarationLine": 1199,
+      "assignmentLine": 7909,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionFragmentCuePopover",
+      "queryLine": 7909,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": false,
+      "creation": "No matching ID in index.html or any production JS creation site; currently absent",
+      "preStageAuditQueryLine": 7897,
+      "registrationLine": 7909,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionCoordinationCuePopoverEl",
+      "declarationLine": 1200,
+      "assignmentLine": 7910,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionCoordinationCuePopover",
+      "queryLine": 7910,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7898,
+      "registrationLine": 7910,
+      "registeredAtOriginalQueryPoint": true
+    },
+    {
+      "name": "editSelectionMetalBondingCuePopoverEl",
+      "declarationLine": 1201,
+      "assignmentLine": 7911,
+      "function": "app IIFE (anonymous, line 1)",
+      "conditionalAncestors": [],
+      "group": "editSelection*",
+      "kind": "DOM cache",
+      "id": "editSelectionMetalBondingCuePopover",
+      "queryLine": 7911,
+      "directGetElementByIdCount": 1,
+      "wiringSite": "Selection/old Atoms menu wiring",
+      "presentInStaticShell": true,
+      "creation": "index.html static shell",
+      "preStageAuditQueryLine": 7899,
+      "registrationLine": 7911,
+      "registeredAtOriginalQueryPoint": true
+    }
+  ],
+  "functionsWhoseBodiesReferenceTheConvertedCache": [
+    {
+      "name": "resize",
+      "beforeLine": 1248,
+      "afterLine": 1248
+    },
+    {
+      "name": "hideEditSelectionTranslateCue",
+      "beforeLine": 18319,
+      "afterLine": 18319
+    },
+    {
+      "name": "hideSelectionFragmentCuePopover",
+      "beforeLine": 19094,
+      "afterLine": 19094
+    },
+    {
+      "name": "showSelectionFragmentCuePopover",
+      "beforeLine": 19121,
+      "afterLine": 19121
+    },
+    {
+      "name": "positionSelectionFragmentCuePopover",
+      "beforeLine": 19145,
+      "afterLine": 19145
+    },
+    {
+      "name": "renderSelectionCoordinationCuePreviewCanvases",
+      "beforeLine": 19384,
+      "afterLine": 19384
+    },
+    {
+      "name": "hideSelectionCoordinationCuePopover",
+      "beforeLine": 19480,
+      "afterLine": 19480
+    },
+    {
+      "name": "positionSelectionCoordinationCuePopover",
+      "beforeLine": 19487,
+      "afterLine": 19487
+    },
+    {
+      "name": "renderSelectionCoordinationCuePopover",
+      "beforeLine": 19512,
+      "afterLine": 19512
+    },
+    {
+      "name": "showSelectionCoordinationCuePopover",
+      "beforeLine": 19556,
+      "afterLine": 19556
+    },
+    {
+      "name": "toggleSelectionCoordinationCuePopover",
+      "beforeLine": 19566,
+      "afterLine": 19566
+    },
+    {
+      "name": "hideSelectionMetalBondingCuePopover",
+      "beforeLine": 19604,
+      "afterLine": 19604
+    },
+    {
+      "name": "positionSelectionMetalBondingCuePopover",
+      "beforeLine": 19610,
+      "afterLine": 19610
+    },
+    {
+      "name": "renderSelectionMetalBondingCuePopover",
+      "beforeLine": 19635,
+      "afterLine": 19635
+    },
+    {
+      "name": "showSelectionMetalBondingCuePopover",
+      "beforeLine": 19676,
+      "afterLine": 19676
+    },
+    {
+      "name": "toggleSelectionMetalBondingCuePopover",
+      "beforeLine": 19687,
+      "afterLine": 19687
+    },
+    {
+      "name": "renderEditSelectionTranslateCue",
+      "beforeLine": 19893,
+      "afterLine": 19893
+    }
+  ],
+  "allExistingFunctionDeclarationsExactAfterLexicalReferenceSubstitution": true,
+  "entireAppExactAfterApprovedConversions": true,
+  "lexicalReferenceSubstitutions": 174,
+  "auditedFunctionDeclarations": 1190,
+  "shadowedElsReferences": [],
+  "metrics": {
+    "before": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 288,
+      "constDeclarations": 590,
+      "sha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a"
+    },
+    "after": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 275,
+      "constDeclarations": 590,
+      "sha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45"
+    }
+  },
+  "controllerLetsRetained": true,
+  "focusStateLetRetained": true,
+  "queryRegistrationAtOriginalWiringSites": true
+}

@@ -1,0 +1,3 @@
+[scopes] shared palettes, bond colors, element colors, shadows/fog, radius/fog drags and Undo: passed
+[scopes] focus/blur Undo, every preset, legacy look API/drop imports and fresh-session camera restoration: passed
+[scopes] global surface defaults, explicit overrides, existing/future layers, reset/Undo, saved looks, legacy sessions and deferred groups: passed

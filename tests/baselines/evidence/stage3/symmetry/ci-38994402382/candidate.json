@@ -1,0 +1,23 @@
+{
+  "branch": "codex/element-cache-symmetry",
+  "head": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+  "base": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "tree": "65706809c7c337ee42a11a531e34eb2bb09c2000",
+  "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "pr": 20,
+  "baseBranch": "codex/app-js-decomposition",
+  "artifactDir": "out/test-artifacts/stage3/symmetry/ci-38994402382",
+  "runId": 38994402382,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+  "attempt": 1,
+  "letBefore": 275,
+  "letAfter": 265,
+  "inventoryBindings": 10,
+  "inventoryPlusHelper": 11,
+  "newControllers": 0,
+  "controllerInterfaceCount": "N/A - no new controller",
+  "auditGroup": "symmetry/shared launcher",
+  "ciFormat": "sharded-with-independent-joins",
+  "periodicIntegratedInputs": 19
+}

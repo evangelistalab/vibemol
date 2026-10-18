@@ -1,0 +1,809 @@
+{
+  "status": "read-only inventory; release has not started",
+  "measured": [
+    {
+      "ref": "v0.9.5-pre-refactor",
+      "scriptTags": 84,
+      "externalScripts": 81,
+      "inlineBlocks": 3,
+      "moduleScripts": 0,
+      "entries": [
+        {
+          "src": "assets/app/js/asset-urls.js?v=0.9.5"
+        },
+        {},
+        {
+          "async": null,
+          "src": "https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"
+        },
+        {},
+        {},
+        {
+          "src": "./assets/vendor/js/three.min.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/orbit-controls.global.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/isosurface.bundle.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/atomic-data.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/parsers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/interaction.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/view-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/axis-gizmo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-model.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/minao-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-panel.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-picker.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-commands.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-state.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/io-utils.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/fragments.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-2c.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/hydrogen-bonds.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/auto-hydrogen.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/autoiso.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/cloud-rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-editing.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/floating-panels.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tool-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/display-windows.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-looks.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-editor.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/looks-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/style-studio.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/properties-inspector.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-placement.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tools.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gizmos.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-transform.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gestures.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/coordination.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/geometry-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff-adapter.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-halo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/preset.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure-transport.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-graph.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-sources.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-export.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-composer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-outliner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-grid.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-runner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-layers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/grid-store.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-format.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-recovery.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/file-loader.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/symmetry.js?v=0.9.5"
+        },
+        {
+          "src": "./src/prefs.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmListPopover.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmTooltip.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-clock.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-video.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/app.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench.js?v=0.9.5"
+        }
+      ]
+    },
+    {
+      "ref": "892922addc10463e21a5bfe3f15aeb52ecc840e7",
+      "scriptTags": 90,
+      "externalScripts": 86,
+      "inlineBlocks": 4,
+      "moduleScripts": 0,
+      "entries": [
+        {
+          "src": "assets/app/js/asset-urls.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/element-utils.js?v=0.9.5"
+        },
+        {},
+        {
+          "async": null,
+          "src": "https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"
+        },
+        {},
+        {},
+        {
+          "src": "./assets/vendor/js/three.min.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/orbit-controls.global.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/isosurface.bundle.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/atomic-data.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/parsers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/interaction.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/view-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/axis-gizmo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-model.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/minao-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-panel.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-picker.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-commands.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-state.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/io-utils.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/fragments.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-2c.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/hydrogen-bonds.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/auto-hydrogen.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/autoiso.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/cloud-rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-editing.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/floating-panels.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tool-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/display-windows.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-looks.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-editor.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/looks-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/style-studio.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/properties-inspector.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-placement.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tools.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gizmos.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-transform.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gestures.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/coordination.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/geometry-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff-adapter.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-halo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/preset.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure-transport.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-graph.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-sources.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-export.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-composer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-outliner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-grid.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-runner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-layers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/grid-store.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-format.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-recovery.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/file-loader.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/symmetry.js?v=0.9.5"
+        },
+        {
+          "src": "./src/prefs.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmListPopover.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmTooltip.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-clock.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/vibration.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-playback.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-video.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/pubchem.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/periodic-table.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/app.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench.js?v=0.9.5"
+        },
+        {}
+      ]
+    },
+    {
+      "ref": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+      "scriptTags": 91,
+      "externalScripts": 87,
+      "inlineBlocks": 4,
+      "moduleScripts": 0,
+      "entries": [
+        {
+          "src": "assets/app/js/asset-urls.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/element-utils.js?v=0.9.5"
+        },
+        {},
+        {
+          "async": null,
+          "src": "https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E"
+        },
+        {},
+        {},
+        {
+          "src": "./assets/vendor/js/three.min.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/orbit-controls.global.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/isosurface.bundle.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/vendor/js/atomic-data.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/parsers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/interaction.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/view-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/measurements-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/axis-gizmo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-utils.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-model.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/minao-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-panel.js?v=0.9.5"
+        },
+        {
+          "src": "assets/app/js/calculations-picker.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-commands.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-state.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/io-utils.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/fragments.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/volume-2c.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-geometry.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/hydrogen-bonds.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/auto-hydrogen.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/autoiso.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/cloud-rendering.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/bond-editing.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/floating-panels.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tool-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/display-windows.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-looks.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/appearance-editor.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/looks-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/style-studio.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/properties-inspector.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-placement.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-tools.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gizmos.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-transform.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-gestures.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/coordination.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/geometry-inference.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/uff-adapter.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/edit-halo.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/preset.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/structure-transport.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-graph.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-sources.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-export.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-composer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-renderer.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/figure-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/scene-outliner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-grid.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-runner.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/arithmetic-layers.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/grid-store.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-format.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/session-recovery.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/file-loader.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/symmetry.js?v=0.9.5"
+        },
+        {
+          "src": "./src/prefs.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmListPopover.js?v=0.9.5"
+        },
+        {
+          "src": "./src/components/VmTooltip.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-clock.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/symmetry-panel.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/vibration.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-playback.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-ui.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/trajectory-video.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/pubchem.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/periodic-table.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/app.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench-model.js?v=0.9.5"
+        },
+        {
+          "src": "./assets/app/js/workbench.js?v=0.9.5"
+        },
+        {}
+      ]
+    }
+  ],
+  "interpretation": "Use the measured87 external script entries and4 inline blocks for5c/release, not older prose counts; classic-script order and no-build rule remain unchanged."
+}

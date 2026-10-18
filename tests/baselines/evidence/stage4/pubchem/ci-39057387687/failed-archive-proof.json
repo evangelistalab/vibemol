@@ -1,0 +1,16 @@
+{
+  "createdAt": "2026-10-17T18:54:01.831625+00:00",
+  "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "tree": "74d76ee4e986a592ba2fbf0c137e3a91c86cfb05",
+  "runId": 39057387687,
+  "attempt": 1,
+  "archive": "/Users/fevange/Source/vibemol/out/test-artifacts/stage4/pubchem/ci-39057387687/immutable-failed-evidence.tar.gz",
+  "sha256": "9910f60fb05e579bd6a226385af008d346922c328d4bae36fa2abec604b62cf5",
+  "bytes": 62886113,
+  "entries": 356,
+  "allEntriesReadbackExact": true,
+  "gateFailed": true,
+  "canMerge": false,
+  "scope": "Complete captured evidence of a failed first-pass ordinary gate. No retry, merge, source edit or acceptance exception."
+}

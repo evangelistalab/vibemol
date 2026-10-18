@@ -1,0 +1,8 @@
+{
+  "productionDefect": false,
+  "proposedOnlyFailure": false,
+  "rootCause": "The unchanged fixture builder returns a vibemol.structure JSON envelope; the new native collector incorrectly wrote it to methane.xyz, so the app correctly rejected it as XYZ.",
+  "correction": "Use methane.structure.json with the exact unchanged payload and same five-atom readiness/UI assertions. Returning false before exportActive is ready prevents premature predicate errors.",
+  "shippedSourceOrAssertionsChanged": false,
+  "invalidFixtureProbePreserved": true
+}

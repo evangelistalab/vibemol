@@ -1,0 +1,202 @@
+{
+  "branch": "codex/app-js-decomposition",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "productionAppUnchanged": true,
+  "staticChecks": "passed",
+  "unitTests": {
+    "passed": 422,
+    "failed": 0
+  },
+  "baselineCharacterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "apiGlobals": 86,
+    "deterministic": true
+  },
+  "installedLoader": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "matchesGolden": true,
+    "deterministic": true,
+    "pixelDiagnosticChanges": [],
+    "ordinaryLaunchLoadsHarness": false,
+    "qaAssetVersion": "0.9.5"
+  },
+  "existingBrowserSuites": [
+    {
+      "test": "tests/e2e/asset_cache.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/edit_tool.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/build_bonds.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/build_orbit.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/transform_selection.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/figure.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/calculations.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/ux_review.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/accessibility.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/measurements.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/build_panel.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/symmetry_panel.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/hydrogen_contacts.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/workbench_release.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/smoke.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/premerge.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/sessions.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/looks.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/camera_depth.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/edit_picking.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/mode_consistency.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/style_studio.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/appearance_scopes.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/properties_inspector.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/properties_disclosures.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/floating_panels.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/workbench.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/workbench_consistency.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/workbench_bar.py",
+      "exitCode": 0
+    }
+  ],
+  "baselineFailureReproduction": {
+    "figure": "full suite on original base; camera near/far restoration assertion",
+    "measurements": "full suite on original base; missing saved layout",
+    "build_panel": "full suite on original base; initial docking assertion",
+    "hydrogen_contacts": "full suite on original base; hidden Hydrogen bonds control",
+    "axis_gizmo": "full suite on original base; Escape focus assertion",
+    "smoke": "full suite on original base; hidden Translate cue",
+    "looks": "focused hydrogen_bond_restrictions on original base; hint assertion",
+    "edit_picking": "focused occlusion on original base; hidden metal-dative cue (full run failed metal-strong)",
+    "mode_consistency": "full suite on original base; selection cue intercepts row deletion",
+    "style_studio": "full suite on original base; camera restoration assertion",
+    "properties_inspector": "full suite on original base; layout preservation assertion",
+    "properties_disclosures": "full suite on original base; wheel-scroll timeout",
+    "floating_panels": "full suite on original base; selection cue intercepts drag handle"
+  },
+  "pixelDiagnostic": {
+    "initialMismatch": "session/light/Display",
+    "focusedRepeats": 3,
+    "identicalPngBytes": true,
+    "identicalCameraSnapshots": true
+  },
+  "consoleExceptions": {
+    "vendorWarning": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+    "browserReadbackDiagnostic": "^\\[\\.WebGL-0x[0-9a-f]+\\]GL Driver Message \\(OpenGL, Performance, GL_CLOSE_PATH_NV, High\\): GPU stall due to ReadPixels(?: \\(this message will no longer repeat\\))?$"
+  },
+  "stage1Finding": "getElementSymbol copies differ in fallback, whitespace handling and numeric coercion",
+  "existingBrowserSuitesSummary": {
+    "passed": 17,
+    "failed": 13,
+    "allFailuresReproducedOnBase": true
+  },
+  "workingChangesCommitted": false,
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
+  },
+  "historicalCountsNotice": "This retained original run covered 30 entry points (17/13); with Style Lab it was 31 (18/13). Both are superseded by the local 35/2/37 browser-repair evidence; CI remains 33/4/37 and the CI 34/3/37 gate is not met. Historical outcomes are retained as evidence, not current counts."
+}

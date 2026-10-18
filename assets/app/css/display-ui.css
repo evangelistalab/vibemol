@@ -50,8 +50,8 @@
   left: 50%;
   transform: translateX(-50%);
   font-family: var(--vm-font-sans);
-  font-size: 15px;
-  font-weight: 400;
+  font-size: var(--vm-type-panel-title-size);
+  font-weight: var(--vm-type-body-weight);
   line-height: 1;
   color: var(--vm-color-text-secondary);
   text-shadow: 0 1px 2px color-mix(in srgb, var(--vm-color-surface-base) 92%, transparent);
@@ -78,16 +78,16 @@
 
 .vm-popover__header h2 {
   margin: 0;
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-strong);
-  line-height: 1.2;
+  font-size: var(--vm-type-panel-title-size);
+  font-weight: var(--vm-type-panel-title-weight);
+  line-height: var(--vm-leading-tight);
   color: var(--vm-color-text-primary);
 }
 
 .vm-popover__subtitle {
   margin-top: 2px;
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-emphasis);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
   color: var(--vm-color-text-muted);
 }
 
@@ -110,8 +110,8 @@
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-primary);
   font-family: var(--vm-font-sans);
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-emphasis);
+  font-size: var(--vm-type-control-size);
+  font-weight: var(--vm-type-control-weight);
   line-height: 1;
   cursor: pointer;
   transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease;
@@ -152,8 +152,8 @@
 .vm-btn--sm {
   min-height: 28px;
   padding: 6px 8px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
 }
 
 .vm-btn--danger {
@@ -220,8 +220,8 @@
   border-color: transparent;
   color: var(--vm-color-text-secondary);
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
 }
 
 #toolbar .vm-clear-files {
@@ -258,8 +258,8 @@ kbd,
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-primary);
   font-family: var(--vm-font-mono);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-badge-size);
+  font-weight: var(--vm-type-badge-weight);
   font-variant-ligatures: none;
   line-height: 1;
   letter-spacing: 0.02em;
@@ -447,8 +447,8 @@ kbd,
   background: rgba(15, 20, 30, 0.85);
   color: #ffffff;
   font-family: var(--vm-font-sans);
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--vm-type-badge-size);
+  font-weight: var(--vm-type-badge-weight);
   line-height: 1.2;
   white-space: nowrap;
   pointer-events: none;
@@ -543,15 +543,16 @@ kbd,
 
 .vm-helpDescription {
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
-  line-height: 1.4;
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
+  line-height: var(--vm-leading-body);
 }
 
 .vm-helpPreferenceLabel {
   color: var(--vm-color-text-primary);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-emphasis);
-  line-height: 1.4;
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
+  line-height: var(--vm-leading-body);
 }
 
 @media (max-width: 720px) {
@@ -636,8 +637,8 @@ kbd,
 .vm-stat-label {
   margin: 0;
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
   color: var(--vm-color-text-secondary);
   text-align: left;
   line-height: 1.3;
@@ -667,8 +668,8 @@ kbd,
 
 .vm-stat-value {
   font-family: var(--vm-font-mono);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-emphasis);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-label-weight);
   color: var(--vm-color-text-secondary);
 }
 
@@ -687,8 +688,8 @@ kbd,
   color: var(--vm-color-text-primary);
   box-sizing: border-box;
   font-family: var(--vm-font-mono);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-emphasis);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-label-weight);
   font-variant-numeric: tabular-nums;
   cursor: ew-resize;
   user-select: none;
@@ -714,8 +715,8 @@ kbd,
   text-align: center;
   color: var(--vm-color-text-label);
   font-family: var(--vm-font-sans);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
   line-height: 1;
 }
 
@@ -813,8 +814,8 @@ kbd,
   background: transparent;
   color: var(--vm-color-text-primary);
   font-family: var(--vm-font-mono);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-label-weight);
   font-variant-numeric: tabular-nums;
   text-align: right;
   box-sizing: border-box;
@@ -935,8 +936,8 @@ kbd,
   background: transparent;
   color: var(--vm-color-text-secondary);
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   line-height: 1.3;
   white-space: nowrap;
   text-align: center;
@@ -1057,8 +1058,8 @@ kbd,
 
 .floatingAuxInspectorFields .inspectorTitle {
   color: var(--tb-text-color-emphasis);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-section-size);
+  font-weight: var(--vm-type-section-weight);
   margin-bottom: 8px;
 }
 
@@ -1229,8 +1230,8 @@ kbd,
   background-size: 12px 12px;
   padding-right: 28px !important;
   font-family: var(--vm-font-sans);
-  font-size: var(--vm-text-base);
-  font-weight: var(--vm-font-weight-emphasis);
+  font-size: var(--vm-type-control-size);
+  font-weight: var(--vm-type-control-weight);
   color: var(--vm-color-text-primary);
   transition: border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
@@ -1258,9 +1259,9 @@ kbd,
 .floatingAuxInspectorSpinor .spinorInfoPanelTitle {
   margin: 0;
   color: var(--vm-color-text-primary);
-  font-size: var(--vm-text-md);
-  font-weight: var(--vm-font-weight-heading);
-  line-height: 1.2;
+  font-size: var(--vm-type-panel-title-size);
+  font-weight: var(--vm-type-panel-title-weight);
+  line-height: var(--vm-leading-tight);
 }
 
 .floatingAuxInspectorSpinor .spinorInfoPanelClose {
@@ -1280,8 +1281,9 @@ kbd,
 .floatingAuxInspectorSpinor .spinorInfoPanelBody p {
   margin: 0;
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
-  line-height: 1.45;
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
+  line-height: var(--vm-leading-body);
 }
 
 .floatingAuxInspectorSpinor .spinorInfoPhaseWheel {
@@ -1355,6 +1357,8 @@ kbd,
   cursor: pointer;
   user-select: none;
   padding: 2px 0 8px 0;
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
 }
 
 :is(#displayInspector, #styleStudio, #inspector, #subspacePanel, #calculationOrbitalsPopup, #appearancePresetSection, #appearanceCameraSection) .inspectorAccordionSummary::-webkit-details-marker,
@@ -1438,8 +1442,8 @@ kbd,
   background: transparent;
   color: var(--vm-color-text-secondary);
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   box-shadow: none;
 }
 
@@ -1467,8 +1471,8 @@ kbd,
   border: 0;
   border-radius: 4px;
   font-family: var(--vm-font-sans);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--vm-type-compact-control-size);
+  font-weight: var(--vm-type-compact-control-weight);
   line-height: 1.3;
   color: var(--vm-color-text-secondary);
   text-align: center !important;

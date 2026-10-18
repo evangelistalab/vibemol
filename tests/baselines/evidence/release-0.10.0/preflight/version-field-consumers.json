@@ -1,0 +1,128 @@
+{
+  "status": "no behavior branches on session.appVersion or session.preset.appVersion",
+  "runtimeConsumers": [
+    {
+      "path": "assets/app/js/preset.js",
+      "behavior": "Export writes deps.appVersion; top-level known-key allowlist recognizes metadata but import does not read its value. Compatibility reads presetVersion."
+    },
+    {
+      "path": "assets/app/js/session.js",
+      "behavior": "Capture passes appVersion into serialized envelope; hydration passes preset to import which ignores its appVersion value."
+    },
+    {
+      "path": "assets/app/js/session-format.js",
+      "behavior": "Validation/codec compatibility checks sessionVersion and preset.presetVersion. No appVersion read."
+    },
+    {
+      "path": "assets/app/js/app.js",
+      "behavior": "Writes APP_VERSION into preset-controller export metadata and captured session input."
+    },
+    {
+      "path": "assets/app/js/structure-transport.js",
+      "behavior": "Separate structure export writes getAppVersion metadata; no session/preset migration use."
+    },
+    {
+      "path": "api/vibemol_client.py",
+      "behavior": "Reads displayed app version to write exported preset metadata, not a saved-field compatibility branch."
+    }
+  ],
+  "readsOfSavedAppVersionAffectBehavior": false,
+  "inventory": [
+    {
+      "path": "assets/app/js/app.js",
+      "sha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+      "mentions": [
+        {
+          "line": 25745,
+          "text": "appVersion: APP_VERSION,"
+        },
+        {
+          "line": 31187,
+          "text": "preset: exportPresetEnvelope(), view: captureSessionView(), appVersion: APP_VERSION };"
+        }
+      ]
+    },
+    {
+      "path": "assets/app/js/preset.js",
+      "sha256": "02e2868291da52f71887b54a968181d29bc4d175f09c9bf0f8eb25d0e71d9908",
+      "mentions": [
+        {
+          "line": 15,
+          "text": "'appVersion',"
+        },
+        {
+          "line": 306,
+          "text": "appVersion: deps.appVersion,"
+        }
+      ]
+    },
+    {
+      "path": "assets/app/js/session.js",
+      "sha256": "003d9a875f5297337d5569cb79ba2849a32526af8d3619e74da781cb7e5a11bb",
+      "mentions": [
+        {
+          "line": 79,
+          "text": "function capture({ graph, sources, records, activeRecord, preset, view, appVersion }) {"
+        },
+        {
+          "line": 108,
+          "text": "kind: FORMAT.KIND, sessionVersion: FORMAT.VERSION, appVersion,"
+        }
+      ]
+    },
+    {
+      "path": "assets/app/js/session-format.js",
+      "sha256": "0c61f35058778d322218957565c4685f6ec73d60a11af53fd2c1dc94fc149647",
+      "mentions": []
+    },
+    {
+      "path": "assets/app/js/structure-transport.js",
+      "sha256": "8995f93acfa27c5eb7512eb67444bb09f3f9ca825903c39e24102986a44e140c",
+      "mentions": [
+        {
+          "line": 30,
+          "text": "appVersion: deps.getAppVersion(),"
+        }
+      ]
+    },
+    {
+      "path": "api/vibemol_client.py",
+      "sha256": "d40733471d5b731317dcbaa38ca0761517a1d7a0640c9a360c1d09b207fbc6f9",
+      "mentions": [
+        {
+          "line": 578,
+          "text": "const appVersionText = (get('versionText')?.textContent || '').trim();"
+        },
+        {
+          "line": 579,
+          "text": "const appVersion = appVersionText.startsWith('v') ? appVersionText.slice(1) : appVersionText;"
+        },
+        {
+          "line": 581,
+          "text": "appVersion,"
+        },
+        {
+          "line": 634,
+          "text": "app_version = values.get(\"appVersion\")"
+        },
+        {
+          "line": 636,
+          "text": "preset[\"appVersion\"] = app_version.strip()"
+        }
+      ]
+    }
+  ],
+  "releaseMappingAuthorization": {
+    "fullPaths": [
+      "session.appVersion",
+      "session.preset.appVersion"
+    ],
+    "fromValue": "0.9.5",
+    "toValue": "0.10.0",
+    "mappedLeaves": 204,
+    "residualDifferenceMustBeZero": true,
+    "scope": "single release commit",
+    "expires": "after ship, explicit0.10.0 CI re-record and mapping removal",
+    "notAppliedToStage5": true
+  }
+}

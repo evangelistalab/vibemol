@@ -1,0 +1,16 @@
+[element cache] workbench/light: {"DOM replacement": 5319, "mode switch": 408, "panel transition": 1058, "presented checkpoint": 39, "session restore": 1}
+[element cache] workbench/dark: {"DOM replacement": 5430, "mode switch": 408, "panel transition": 1052, "presented checkpoint": 39, "session restore": 1}
+[element cache] legacy/light: {"DOM replacement": 2964, "mode switch": 9, "panel transition": 669, "presented checkpoint": 32, "session restore": 1}
+[element cache] legacy/dark: {"DOM replacement": 3082, "mode switch": 9, "panel transition": 681, "presented checkpoint": 32, "session restore": 1}
+[characterize] sample/light: API, session, geometry, DOM and console captured
+[characterize] sample/dark: API, session, geometry, DOM and console captured
+[characterize] methane/light: API, session, geometry, DOM and console captured
+[characterize] methane/dark: API, session, geometry, DOM and console captured
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/characterize.py", line 531, in <module>
+    raise SystemExit(main())
+  File "/Users/fevange/Source/vibemol/tests/e2e/characterize.py", line 492, in main
+    captures, pixels, console = run_once(browser, url, args.inject_harness)
+  File "/Users/fevange/Source/vibemol/tests/e2e/characterize.py", line 304, in run_once
+    assert not errors and not unexpected_console(console), (key, errors, console)
+AssertionError: ('two-component/light', [], [{'type': 'warning', 'text': 'Scripts "build/three.js" and "build/three.min.js" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation'}, {'type': 'error', 'text': 'Failed to load resource: net::ERR_NAME_NOT_RESOLVED'}])

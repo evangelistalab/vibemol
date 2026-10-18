@@ -1,0 +1,30 @@
+{
+  "status": "stopped; no gate retry or remaining-group PR created",
+  "branch": "codex/element-cache-colors",
+  "integrationHead": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "controllerDependencies": {
+    "before": 19,
+    "proposed": 11,
+    "merged": 19
+  },
+  "letOnIntegration": 291,
+  "letOnProposedBranch": 291,
+  "identityInventoryProposed": 52,
+  "failingNode": "elementColorBtn",
+  "failingContext": "initial Workbench/light QA bootstrap",
+  "failure": "Cached detached BUTTON differs from document.getElementById(elementColorBtn), which is null; QA initialization throws and characterization subsequently times out.",
+  "preExistingProven": true,
+  "preGroupProbe": "Observational private export of the nine original const references on an immutable archive of the unchanged integration tree; same detached elementColorBtn. No state, handler, query or DOM changes.",
+  "causeCode": "properties-inspector.js removes the old Appearance wrapper at line 57; legacy keeps it.",
+  "ordinaryDedicatedSuite": "36 captures across four launch/theme cases exactly match the tagged base; the entrypoint uses the public API, so this result does not establish cached button identity.",
+  "unitTests": {
+    "javascriptPassed": 429,
+    "pythonPassed": 16
+  },
+  "characterization": "failed before captures/identity sweep completed; no two-run match claimed",
+  "ci": "not started",
+  "remainingGroupsStarted": false,
+  "targetLet": 265,
+  "targetReached": false,
+  "sourceRepairApplied": false
+}

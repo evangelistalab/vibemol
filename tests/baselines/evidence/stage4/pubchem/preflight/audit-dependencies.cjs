@@ -1,0 +1,43 @@
+const fs = require('fs');
+const cp = require('child_process');
+const crypto = require('crypto');
+const babel = '/usr/local/lib/node_modules/gatsby-cli/node_modules/@babel/';
+const parser = require(babel + 'parser');
+const traverse = require(babel + 'traverse').default;
+const root = '/Users/fevange/Source/vibemol';
+const head = '6c583556bcc84bff9442602a7dd8aed056b4a660';
+const source = cp.execFileSync('git', ['-C',root,'show',head+':assets/app/js/app.js'],{encoding:'utf8',maxBuffer:10000000});
+const ast = parser.parse(source,{sourceType:'script'});
+const names = new Set(['updatePubChemMetadataPanel','sdfToXYZText']);
+let app;
+traverse(ast,{FunctionDeclaration(p){if (/PubChem/.test(p.node.id.name))names.add(p.node.id.name);},VariableDeclarator(p){if(p.node.id.name==='pubchemBusy')app=p.scope;}});
+const owned = new Set([...names,'PUBCHEM_AUTOCOMPLETE_LIMIT','PUBCHEM_SEARCH_ICON_SVG','pubchemBusy','pubchemSuggestTimer','pubchemSuggestToken','pubchemHas3DByNameCache','pubchemHas3DByCidCache']);
+const functions = [], external = new Map(), globals = new Map();
+traverse(ast,{FunctionDeclaration(p){
+  if (!names.has(p.node.id.name))return;
+  const local = new Set();
+  p.traverse({ReferencedIdentifier(q){
+    const binding=q.scope.getBinding(q.node.name);
+    if(binding && binding.scope!==app)return;
+    if(owned.has(q.node.name))return;
+    local.add(q.node.name);
+    const map=binding?external:globals;
+    if(!map.has(q.node.name))map.set(q.node.name,[]);
+    map.get(q.node.name).push({function:p.node.id.name,line:q.node.loc.start.line});
+  },AssignmentExpression(q){
+    if(q.node.left.type!=='Identifier')return;
+    const name=q.node.left.name,b=q.scope.getBinding(name);
+    if(!b||b.scope!==app||owned.has(name))return;
+    local.add(name);if(!external.has(name))external.set(name,[]);
+    external.get(name).push({function:p.node.id.name,line:q.node.loc.start.line,write:true});
+  }});
+  functions.push({name:p.node.id.name,start:p.node.loc.start.line,end:p.node.loc.end.line,external:[...local].sort()});
+}});
+const projected=['els','escapeHtml','setTooltipText','setHintMessage','parseXYZ','handleSceneDropRecords','setVolumes','setCurrentIndex','clearSceneMeshes','clearEditHistory','appendParsedVolumeRecord','finalizeLoadedVolumes','setNavigationHint'];
+const dom=['pubchemMetaWrap','pubchemMetaContent','pubchemQueryInput','pubchemLoadBtn','pubchemSuggestionsEl'];
+const expected=new Set([...dom,...projected.filter(x=>!['els','setVolumes','setCurrentIndex'].includes(x)),'volumes','currentIndex']);
+if(JSON.stringify([...external.keys()].sort())!==JSON.stringify([...expected].sort()))throw new Error('Unexpected dependency census: '+[...external.keys()]);
+if(projected.length>=15)throw new Error('Pre-code dependency stop');
+const report={base:head,appSha256:crypto.createHash('sha256').update(source).digest('hex'),functionCount:functions.length,functions,ownedBindings:[...owned].sort(),appOwnedExternalBindings:Object.fromEntries(external),browserAndEcmaGlobals:Object.fromEntries(globals),projectedExplicitDeps:projected,projectedCount:projected.length,domFieldsGroupedAsExistingEls:dom,appStateWrites:{volumes:'setVolumes: value => { volumes = value; }',currentIndex:'setCurrentIndex: value => { currentIndex = value; }'},policy:'Genuine 13-field controller interface, including both explicit app-state writers. No app facade or hidden input. Browser/ECMAScript globals remain ambient as in existing classic-script modules. No production code written during this audit.'};
+fs.writeFileSync(root+'/out/test-artifacts/stage4/pubchem/preflight/dependency-audit.json',JSON.stringify(report,null,2)+'\n');
+console.log(JSON.stringify({base:head,functions:functions.length,explicitDeps:projected,count:projected.length,externalBindings:[...external.keys()],ambientGlobals:[...globals.keys()]}));

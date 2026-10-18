@@ -1,0 +1,20 @@
+{
+  "testedHead": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+  "base": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+  "tree": "65706809c7c337ee42a11a531e34eb2bb09c2000",
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38994402382",
+  "attempt": 1,
+  "gatePassed": false,
+  "blockingCondition": 2,
+  "unexpectedWorkflow": "edit_tool Workbench tools overflow at 320 CSS px",
+  "classification": "Unclassified; no tagged/proposed rerun and no accepted-workflow expansion.",
+  "evidenceBranch": "codex/symmetry-ci-stop-evidence",
+  "candidateBranch": "codex/element-cache-symmetry",
+  "testedCandidateMutated": false,
+  "integrationMerged": false,
+  "ciRetryPerformed": false,
+  "rawArchiveIgnoredLocation": "out/test-artifacts/stage3/symmetry/ci-38994402382/immutable-evidence.tar.gz",
+  "fullArchiveSha256": "4a5a85393f6c14b6663d1d51a2861014aff43d92a09a90c1e04a29dec638ca83",
+  "scope": "Documentation-only stop evidence. Raw CI logs, all worker/join reports, structured captures, identities and source/run provenance; screenshot and raw HTML for the additional failure. Full image set remains in the verified ignored archive.",
+  "workerGreenMeaning": "Evidence collected, not accepted. Browser join remains failed."
+}

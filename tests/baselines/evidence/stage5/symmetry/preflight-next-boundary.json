@@ -1,0 +1,223 @@
+{
+  "status": "passed",
+  "predecessorAppSha256": "e166225c74221f7a012345c5205adc31b8f0e8c9da7d92b89f50661a48d4ac1d",
+  "functions": [
+    "isSymmetryPopoverOpen",
+    "getSymmetryTargetKey",
+    "invalidateSymmetryPopoverAnalysisCache",
+    "buildSymmetryAnalysisCacheKey",
+    "getSymmetryPopoverAnalysis",
+    "clearSymmetryPreview",
+    "snapSymmetryTolerance",
+    "syncSymmetryToleranceUi",
+    "findInternalSymmetryCandidate",
+    "getSymmetryPopoverCandidateList",
+    "getSymmetryPopoverSelectedGroupId",
+    "getSymmetryPopoverSelectedCandidate",
+    "getSymmetryElementDisplayAnalysis",
+    "clearSymmetryCurrentGroupHighlight",
+    "updateSymmetryCurrentGroupUi",
+    "buildSymmetryElementOptionHtml",
+    "renderSymmetryElementOptions",
+    "formatSymmetryResidual",
+    "renderSymmetryCandidates",
+    "renderSymmetryPopover",
+    "hideSymmetryPopover",
+    "setSymmetryTolerance",
+    "previewSymmetryCandidate",
+    "cancelSymmetryPreview"
+  ],
+  "dependencies": [
+    "els",
+    "Symmetry",
+    "resolveEditSymmetryTarget",
+    "resolveVolumeAtomId",
+    "workspaceEnabled",
+    "isEditMode",
+    "clearSymmetryElementGuide",
+    "renderSymmetryElementGuide",
+    "positionSymmetryPopover",
+    "updateEditAdaptiveMenuUi",
+    "setHintMessage"
+  ],
+  "dependencyCount": 11,
+  "states": [
+    "symmetryController",
+    "symmetryPreviewState",
+    "symmetryPopoverAnalysisCache",
+    "symmetryPopoverCurrentGroupLabel",
+    "symmetryPopoverResultHighlightTimer",
+    "symmetryPopoverElementsRenderKey",
+    "symmetryPopoverSelectedElementId"
+  ],
+  "constants": [
+    "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+    "EXACT_SYMMETRY_TOLERANCE_ANG",
+    "MAX_SYMMETRY_TOLERANCE_ANG",
+    "SYMMETRY_TOLERANCE_OPTIONS_ANG"
+  ],
+  "freeReferencesByFunction": {
+    "isSymmetryPopoverOpen": [
+      "els"
+    ],
+    "getSymmetryTargetKey": [
+      "resolveVolumeAtomId"
+    ],
+    "invalidateSymmetryPopoverAnalysisCache": [
+      "els"
+    ],
+    "buildSymmetryAnalysisCacheKey": [
+      "Array",
+      "Number",
+      "String",
+      "getSymmetryTargetKey"
+    ],
+    "getSymmetryPopoverAnalysis": [
+      "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+      "analyzePointGroup",
+      "buildSymmetryAnalysisCacheKey",
+      "symmetryController",
+      "symmetryPopoverAnalysisCache"
+    ],
+    "clearSymmetryPreview": [
+      "clearSymmetryElementGuide",
+      "els",
+      "invalidateSymmetryPopoverAnalysisCache",
+      "symmetryController",
+      "updateEditAdaptiveMenuUi",
+      "workspaceEnabled"
+    ],
+    "snapSymmetryTolerance": [
+      "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+      "EXACT_SYMMETRY_TOLERANCE_ANG",
+      "MAX_SYMMETRY_TOLERANCE_ANG",
+      "Math",
+      "Number",
+      "SYMMETRY_TOLERANCE_OPTIONS_ANG"
+    ],
+    "syncSymmetryToleranceUi": [
+      "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+      "document",
+      "els",
+      "snapSymmetryTolerance",
+      "symmetryController"
+    ],
+    "findInternalSymmetryCandidate": [
+      "Array"
+    ],
+    "getSymmetryPopoverCandidateList": [
+      "Array",
+      "Boolean"
+    ],
+    "getSymmetryPopoverSelectedGroupId": [
+      "String",
+      "symmetryPreviewState"
+    ],
+    "getSymmetryPopoverSelectedCandidate": [
+      "findInternalSymmetryCandidate",
+      "getSymmetryPopoverSelectedGroupId"
+    ],
+    "getSymmetryElementDisplayAnalysis": [
+      "getSymmetryPopoverSelectedCandidate"
+    ],
+    "clearSymmetryCurrentGroupHighlight": [
+      "clearTimeout",
+      "els",
+      "symmetryPopoverResultHighlightTimer"
+    ],
+    "updateSymmetryCurrentGroupUi": [
+      "String",
+      "clearSymmetryCurrentGroupHighlight",
+      "els",
+      "symmetryPopoverCurrentGroupLabel",
+      "window"
+    ],
+    "buildSymmetryElementOptionHtml": [
+      "String"
+    ],
+    "renderSymmetryElementOptions": [
+      "String",
+      "buildSymmetryElementOptionHtml",
+      "describeSymmetryElements",
+      "els",
+      "getSymmetryElementDisplayAnalysis",
+      "symmetryPopoverElementsRenderKey",
+      "symmetryPopoverSelectedElementId"
+    ],
+    "formatSymmetryResidual": [
+      "Number"
+    ],
+    "renderSymmetryCandidates": [
+      "Number",
+      "String",
+      "els",
+      "formatSymmetryResidual",
+      "getSymmetryPopoverCandidateList",
+      "getSymmetryPopoverSelectedGroupId"
+    ],
+    "renderSymmetryPopover": [
+      "MODES",
+      "clearSymmetryElementGuide",
+      "currentMode",
+      "els",
+      "getSymmetryPopoverAnalysis",
+      "getSymmetryPopoverCandidateList",
+      "getSymmetryPopoverSelectedCandidate",
+      "getSymmetryPopoverSelectedGroupId",
+      "positionSymmetryPopover",
+      "renderSymmetryCandidates",
+      "renderSymmetryElementGuide",
+      "renderSymmetryElementOptions",
+      "resolveEditSymmetryTarget",
+      "symmetryPreviewState",
+      "syncSymmetryToleranceUi",
+      "updateSymmetryCurrentGroupUi"
+    ],
+    "hideSymmetryPopover": [
+      "clearSymmetryCurrentGroupHighlight",
+      "clearSymmetryElementGuide",
+      "clearSymmetryPreview",
+      "els",
+      "updateEditAdaptiveMenuUi"
+    ],
+    "setSymmetryTolerance": [
+      "clearSymmetryPreview",
+      "invalidateSymmetryPopoverAnalysisCache",
+      "renderSymmetryPopover",
+      "snapSymmetryTolerance",
+      "symmetryController",
+      "syncSymmetryToleranceUi"
+    ],
+    "previewSymmetryCandidate": [
+      "findInternalSymmetryCandidate",
+      "getSymmetryPopoverAnalysis",
+      "getSymmetryTargetKey",
+      "renderSymmetryPopover",
+      "resolveEditSymmetryTarget",
+      "setHintMessage",
+      "symmetryController"
+    ],
+    "cancelSymmetryPreview": [
+      "clearSymmetryPreview",
+      "renderSymmetryPopover",
+      "setHintMessage",
+      "symmetryPreviewState"
+    ]
+  },
+  "platformFacilities": [
+    "Array",
+    "Boolean",
+    "Math",
+    "Number",
+    "Object",
+    "String",
+    "window",
+    "document",
+    "clearTimeout"
+  ],
+  "constructionPlan": "Create the panel inertly with literal private state, then explicitly initialize its existing analysis controller at the original createEditSymmetryController assignment point. This retains eager child-construction timing while the new holder is fully initialized before any incoming callback can read it.",
+  "hostBoundary": "Show/focus/sibling-close, positioning, THREE guide and apply/auto snapshot/Undo stay host-owned. Guide receives selectedElementId explicitly. Host transactions access the sole private preview/analysis owner through explicit methods; no mirror or service bag.",
+  "noImplementationWritten": true,
+  "requiresFreshPushedVibrationBaseBeforeImplementation": true,
+  "constructionPlacement": "The new inert panel holder must precede vibration/trajectory/PubChem construction immediately after els: their captured host callbacks can read Symmetry wrappers. Keep analysis-child initialization at its original later assignment via explicit initializeAnalysisController; do not move that eager child construction earlier."
+}

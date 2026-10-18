@@ -1,0 +1,9 @@
+{
+  "file": "out/test-artifacts/stage3/symmetry/edit-tool-320-instrumented-human/immutable-evidence.tar.gz",
+  "bytes": 1935201,
+  "sha256": "02db0cce4c7c9e896fa2b658113d6c595a77643399b18a58553bfedbeed6a808",
+  "entriesVerified": 32,
+  "ciRun": 39034319620,
+  "attempt": 1,
+  "issue": 21
+}

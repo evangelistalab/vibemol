@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateInContext, loadGlobalModule } from './load-global-module.mjs';
+import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function createThreeStub() {
   class Vector3 {
@@ -76,7 +76,7 @@ function createThreeStub() {
 }
 
 function loadBondInference() {
-  return loadGlobalModule('assets/app/js/bond-inference.js', {
+  return loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/bond-inference.js'], {
     globals: {
       THREE: createThreeStub(),
       ATOM_Z_TO_DATA: {

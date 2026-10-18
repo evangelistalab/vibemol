@@ -13,7 +13,9 @@
 }
 
 .vm-list-popover__title {
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-panel-title-size);
+  font-weight: var(--vm-type-panel-title-weight);
+  line-height: var(--vm-leading-tight);
 }
 
 .vm-list-popover__actions {
@@ -37,7 +39,8 @@
 .vm-list-popover__subheader {
   padding: 8px 12px 0;
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
 }
 
 .vm-list-popover__controls {
@@ -66,7 +69,9 @@
   padding: 8px 12px 10px;
   border-top: 1px solid var(--vm-color-border-strong);
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
+  line-height: var(--vm-leading-body);
 }
 
 .vm-list-popover__table {
@@ -87,15 +92,16 @@
   z-index: 1;
   background: var(--vm-color-surface-chip);
   color: var(--vm-color-text-label);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-heading);
+  font-size: var(--vm-type-section-size);
+  font-weight: var(--vm-type-section-weight);
   letter-spacing: 0.04em;
   text-align: left;
 }
 
 .vm-list-popover__cell {
   color: var(--vm-color-text-primary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-weight);
   vertical-align: middle;
 }
 
@@ -139,8 +145,8 @@
   padding: 8px 8px 6px;
   border-bottom: 1px solid var(--vm-color-border-strong);
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-xs);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-section-size);
+  font-weight: var(--vm-type-section-weight);
   text-transform: uppercase;
   letter-spacing: 0.06em;
   background: color-mix(in srgb, var(--vm-color-text-primary) 3%, transparent);
@@ -167,7 +173,8 @@
 .vm-list-popover__empty {
   padding: 14px 12px;
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-helper-size);
+  font-weight: var(--vm-type-helper-weight);
 }
 
 .vm-list-popover__spinner {
@@ -199,14 +206,16 @@
   background: transparent;
   color: var(--vm-color-text-primary);
   font-family: var(--vm-font-mono);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-weight);
   outline: none;
 }
 
 .vm-list-popover__filter-prefix,
 .vm-list-popover__filter-suffix {
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
   padding: 0 8px;
   white-space: nowrap;
 }
@@ -226,7 +235,8 @@
   gap: 6px;
   min-height: 28px;
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-label-size);
+  font-weight: var(--vm-type-label-weight);
 }
 
 .vm-list-popover__toolbar-control > input[type="number"] {
@@ -238,14 +248,16 @@
   background: var(--vm-color-surface-panel);
   color: var(--vm-color-text-primary);
   font-family: var(--vm-font-mono);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-weight);
   box-sizing: border-box;
 }
 
 .vm-list-popover__toolbar-status {
   margin-left: auto;
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-sm);
+  font-size: var(--vm-type-status-size);
+  font-weight: var(--vm-type-status-weight);
   font-family: var(--vm-font-mono);
   font-variant-numeric: tabular-nums;
   text-align: right;

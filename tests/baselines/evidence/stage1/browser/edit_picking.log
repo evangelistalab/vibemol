@@ -1,0 +1,12 @@
+[picking] single-atom XYZ arrows: hover, constrained pointer drags, unselected-atom isolation and undo/redo: passed
+[picking] editable atom/COM positions: rigid translation, units, undo, input validation, stale focus, Tab and compact layout: passed
+[picking] 2,000 atoms/5,400 bonds: no full atom records, shared idle hits, view invalidation and lazy Coordinates: passed
+[picking] double/triple Basic, Classic and Kit hit regions and live coordinate invalidation: passed
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/edit_picking.py", line 470, in <module>
+    main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/edit_picking.py", line 460, in main
+    occlusion(page)
+  File "/Users/fevange/Source/vibemol/tests/e2e/edit_picking.py", line 381, in occlusion
+    assert cue['visible'] and cue['style'] == bond_style, (style, projection, cue)
+AssertionError: ('basic', 'orthographic', {'visible': False, 'order': 1, 'style': 'metal-strong', 'metalPair': True})

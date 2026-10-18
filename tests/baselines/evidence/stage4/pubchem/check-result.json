@@ -1,0 +1,4 @@
+{
+  "check": "make check",
+  "exitCode": 0
+}

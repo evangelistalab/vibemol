@@ -1,0 +1,607 @@
+{
+  "sourceCommit": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "scope": "Read-only recount while the Symmetry first-pass gate is pending; no Colors source edit or fresh native proof yet.",
+  "call": {
+    "line": 10813,
+    "inputs": [
+      "THREE",
+      "ATOM_Z_TO_DATA",
+      "ATOM_SYMBOL_TO_Z",
+      "UI_PALETTE",
+      "getActiveElementHexColor",
+      "getElementSymbol",
+      "getElementName",
+      "editAppearanceSettings",
+      "exportElementColorOverrides",
+      "normalizeHexColor",
+      "elementColorBtn",
+      "elementColorOverlay",
+      "elementColorClose",
+      "periodicTableViewport",
+      "periodicTableCanvas",
+      "elementColorName",
+      "elementColorPicker",
+      "elementColorResetOne",
+      "elementColorResetAll"
+    ]
+  },
+  "entries": [
+    {
+      "name": "THREE",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 46,
+          "function": "createPeriodicTableController",
+          "statement": "const periodicRaycaster = new THREE.Raycaster();"
+        },
+        {
+          "line": 47,
+          "function": "createPeriodicTableController",
+          "statement": "const periodicPointer = new THREE.Vector2();"
+        },
+        {
+          "line": 75,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const tex = new THREE.CanvasTexture(c);"
+        },
+        {
+          "line": 76,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "tex.minFilter = THREE.LinearFilter;"
+        },
+        {
+          "line": 77,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "tex.magFilter = THREE.LinearFilter;"
+        },
+        {
+          "line": 79,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });"
+        },
+        {
+          "line": 80,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "const spr = new THREE.Sprite(mat);"
+        },
+        {
+          "line": 99,
+          "function": "getPeriodicTablePosition",
+          "statement": "return new THREE.Vector3(x, y, z);"
+        },
+        {
+          "line": 201,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableRenderer = new THREE.WebGLRenderer({\n        canvas: periodicTableCanvas,\n        antialias: true,\n        alpha: true,\n      });"
+        },
+        {
+          "line": 206,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableScene = new THREE.Scene();"
+        },
+        {
+          "line": 207,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);"
+        },
+        {
+          "line": 212,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableScene.add(\n        new THREE.AmbientLight(0xffffff, 0.85)\n      );"
+        },
+        {
+          "line": 214,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const d1 = new THREE.DirectionalLight(0xffffff, 0.95);"
+        },
+        {
+          "line": 218,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.45);"
+        },
+        {
+          "line": 222,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableRoot = new THREE.Group();"
+        },
+        {
+          "line": 227,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const sphereGeom = new THREE.SphereGeometry(PERIODIC_TABLE_SPHERE_RADIUS, 24, 18);"
+        },
+        {
+          "line": 239,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 240,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 243,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mat = new THREE.MeshPhongMaterial({\n            color: new THREE.Color(colorHex),\n            specular: 0xffffff,\n            shininess: 120,\n            emissive: new THREE.Color(0x08111c),\n            emissiveIntensity: 0.06,\n          });"
+        },
+        {
+          "line": 246,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const mesh = new THREE.Mesh(sphereGeom, mat);"
+        },
+        {
+          "line": 251,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outlineMat = new THREE.MeshBasicMaterial({\n            color: 0x0c1624,\n            side: THREE.BackSide,\n            transparent: true,\n            opacity: 0.62,\n          });"
+        },
+        {
+          "line": 253,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outlineMat = new THREE.MeshBasicMaterial({\n            color: 0x0c1624,\n            side: THREE.BackSide,\n            transparent: true,\n            opacity: 0.62,\n          });"
+        },
+        {
+          "line": 257,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const outline = new THREE.Mesh(sphereGeom, outlineMat);"
+        }
+      ]
+    },
+    {
+      "name": "ATOM_Z_TO_DATA",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 116,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 116,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 236,
+          "function": "ensurePeriodicTableScene",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        },
+        {
+          "line": 236,
+          "function": "ensurePeriodicTableScene",
+          "statement": "if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;"
+        }
+      ]
+    },
+    {
+      "name": "ATOM_SYMBOL_TO_Z",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 115,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 115,
+          "function": "getPeriodicTableHalfExtents",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 235,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        },
+        {
+          "line": 235,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];"
+        }
+      ]
+    },
+    {
+      "name": "UI_PALETTE",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 70,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "ctx.fillStyle = UI_PALETTE.periodicSymbolFill;"
+        },
+        {
+          "line": 71,
+          "function": "makePeriodicSymbolSprite",
+          "statement": "ctx.strokeStyle = UI_PALETTE.periodicSymbolStroke;"
+        }
+      ]
+    },
+    {
+      "name": "getActiveElementHexColor",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 238,
+          "function": "ensurePeriodicTableScene",
+          "statement": "const colorHex = getActiveElementHexColor(z);"
+        },
+        {
+          "line": 300,
+          "function": "refreshPeriodicCell",
+          "statement": "const hex = getActiveElementHexColor(z);"
+        },
+        {
+          "line": 325,
+          "function": "selectElementForColorEditor",
+          "statement": "elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 380,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 400,
+          "function": "getPendingColor",
+          "statement": "const active = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 406,
+          "function": "syncColorPicker",
+          "statement": "if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "getElementSymbol",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 328,
+          "function": "selectElementForColorEditor",
+          "statement": "const symbol = getElementSymbol(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "getElementName",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 329,
+          "function": "selectElementForColorEditor",
+          "statement": "const name = getElementName(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "editAppearanceSettings",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 379,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 392,
+          "function": "(factory)",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': colors });"
+        },
+        {
+          "line": 395,
+          "function": "(factory)",
+          "statement": "if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });"
+        }
+      ]
+    },
+    {
+      "name": "exportElementColorOverrides",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 380,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 390,
+          "function": "(factory)",
+          "statement": "const colors = exportElementColorOverrides();"
+        }
+      ]
+    },
+    {
+      "name": "normalizeHexColor",
+      "kind": "non-DOM input",
+      "references": [
+        {
+          "line": 380,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 401,
+          "function": "getPendingColor",
+          "statement": "const pending = normalizeHexColor(elementColorPicker.value, active);"
+        }
+      ]
+    },
+    {
+      "name": "elementColorBtn",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 367,
+          "function": "bindControls",
+          "statement": "if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);"
+        },
+        {
+          "line": 367,
+          "function": "bindControls",
+          "statement": "if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);"
+        }
+      ]
+    },
+    {
+      "name": "elementColorOverlay",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 170,
+          "function": "periodicTableLoop",
+          "statement": "if (!elementColorOverlay || elementColorOverlay.style.display !== 'flex') {\n        periodicTableRaf = 0;\n        return;\n      }"
+        },
+        {
+          "line": 170,
+          "function": "periodicTableLoop",
+          "statement": "if (!elementColorOverlay || elementColorOverlay.style.display !== 'flex') {\n        periodicTableRaf = 0;\n        return;\n      }"
+        },
+        {
+          "line": 351,
+          "function": "setElementColorOverlayOpen",
+          "statement": "if (!elementColorOverlay) return;"
+        },
+        {
+          "line": 353,
+          "function": "setElementColorOverlayOpen",
+          "statement": "elementColorOverlay.style.display = isOpen ? 'flex' : 'none';"
+        },
+        {
+          "line": 354,
+          "function": "setElementColorOverlayOpen",
+          "statement": "elementColorOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');"
+        },
+        {
+          "line": 369,
+          "function": "bindControls",
+          "statement": "if (elementColorOverlay) {\n        elementColorOverlay.addEventListener('click', (e) => {\n          if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);\n        });\n      }"
+        },
+        {
+          "line": 370,
+          "function": "bindControls",
+          "statement": "elementColorOverlay.addEventListener('click', (e) => {\n          if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);\n        });"
+        },
+        {
+          "line": 371,
+          "function": "(factory)",
+          "statement": "if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);"
+        },
+        {
+          "line": 411,
+          "function": "(factory)",
+          "statement": "return Object.freeze({\n      setOpen: setElementColorOverlayOpen,\n      isOpen: () => !!(elementColorOverlay && elementColorOverlay.getAttribute('aria-hidden') === 'false'),\n      isVisible: () => !!(elementColorOverlay && elementColorOverlay.style.display === 'flex'),\n      refreshCells: refreshPeriodicCells,\n      syncColorPicker,\n      getPendingColor,\n      bindControls,\n    });"
+        },
+        {
+          "line": 411,
+          "function": "(factory)",
+          "statement": "return Object.freeze({\n      setOpen: setElementColorOverlayOpen,\n      isOpen: () => !!(elementColorOverlay && elementColorOverlay.getAttribute('aria-hidden') === 'false'),\n      isVisible: () => !!(elementColorOverlay && elementColorOverlay.style.display === 'flex'),\n      refreshCells: refreshPeriodicCells,\n      syncColorPicker,\n      getPendingColor,\n      bindControls,\n    });"
+        },
+        {
+          "line": 412,
+          "function": "(factory)",
+          "statement": "return Object.freeze({\n      setOpen: setElementColorOverlayOpen,\n      isOpen: () => !!(elementColorOverlay && elementColorOverlay.getAttribute('aria-hidden') === 'false'),\n      isVisible: () => !!(elementColorOverlay && elementColorOverlay.style.display === 'flex'),\n      refreshCells: refreshPeriodicCells,\n      syncColorPicker,\n      getPendingColor,\n      bindControls,\n    });"
+        },
+        {
+          "line": 412,
+          "function": "(factory)",
+          "statement": "return Object.freeze({\n      setOpen: setElementColorOverlayOpen,\n      isOpen: () => !!(elementColorOverlay && elementColorOverlay.getAttribute('aria-hidden') === 'false'),\n      isVisible: () => !!(elementColorOverlay && elementColorOverlay.style.display === 'flex'),\n      refreshCells: refreshPeriodicCells,\n      syncColorPicker,\n      getPendingColor,\n      bindControls,\n    });"
+        }
+      ]
+    },
+    {
+      "name": "elementColorClose",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 368,
+          "function": "bindControls",
+          "statement": "if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);"
+        },
+        {
+          "line": 368,
+          "function": "bindControls",
+          "statement": "if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);"
+        }
+      ]
+    },
+    {
+      "name": "periodicTableViewport",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 137,
+          "function": "resizePeriodicTableScene",
+          "statement": "if (!periodicTableRenderer || !periodicTableCamera || !periodicTableViewport) return;"
+        },
+        {
+          "line": 138,
+          "function": "resizePeriodicTableScene",
+          "statement": "const w = Math.max(10, periodicTableViewport.clientWidth | 0);"
+        },
+        {
+          "line": 139,
+          "function": "resizePeriodicTableScene",
+          "statement": "const h = Math.max(10, periodicTableViewport.clientHeight | 0);"
+        }
+      ]
+    },
+    {
+      "name": "periodicTableCanvas",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 199,
+          "function": "ensurePeriodicTableScene",
+          "statement": "if (periodicTableScene || !periodicTableCanvas) return;"
+        },
+        {
+          "line": 202,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableRenderer = new THREE.WebGLRenderer({\n        canvas: periodicTableCanvas,\n        antialias: true,\n        alpha: true,\n      });"
+        },
+        {
+          "line": 274,
+          "function": "ensurePeriodicTableScene",
+          "statement": "periodicTableCanvas.addEventListener('pointerdown', (e) => {\n        if (!periodicTableCamera || !periodicPickTargets.length) return;\n        const rect = periodicTableCanvas.getBoundingClientRect();\n        if (!rect.width || !rect.height) return;\n        periodicPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;\n        periodicPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;\n        periodicRaycaster.setFromCamera(periodicPointer, periodicTableCamera);\n        const hits = periodicRaycaster.intersectObjects(periodicPickTargets, false);\n        if (!hits.length) return;\n        const hit = hits[0].object;\n        const z = hit && hit.userData ? hit.userData.periodicZ : null;\n        if (!Number.isInteger(z)) return;\n        selectElementForColorEditor(z);\n        renderPeriodicTableFrame();\n      });"
+        },
+        {
+          "line": 276,
+          "function": "(factory)",
+          "statement": "const rect = periodicTableCanvas.getBoundingClientRect();"
+        }
+      ]
+    },
+    {
+      "name": "elementColorName",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 327,
+          "function": "selectElementForColorEditor",
+          "statement": "if (elementColorName) {\n        const symbol = getElementSymbol(selectedElementForEditor);\n        const name = getElementName(selectedElementForEditor);\n        elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;\n      }"
+        },
+        {
+          "line": 330,
+          "function": "selectElementForColorEditor",
+          "statement": "elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;"
+        }
+      ]
+    },
+    {
+      "name": "elementColorPicker",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 324,
+          "function": "selectElementForColorEditor",
+          "statement": "if (elementColorPicker) {\n        elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);\n      }"
+        },
+        {
+          "line": 325,
+          "function": "selectElementForColorEditor",
+          "statement": "elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 378,
+          "function": "applyElementColorPickerValue",
+          "statement": "if (!elementColorPicker) return;"
+        },
+        {
+          "line": 380,
+          "function": "applyElementColorPickerValue",
+          "statement": "editAppearanceSettings({ 'global.elementColorOverrides': {\n          ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),\n        } }, event?.type);"
+        },
+        {
+          "line": 383,
+          "function": "bindControls",
+          "statement": "if (elementColorPicker) {\n        // Some browsers commit `<input type=\"color\">` on `change` only.\n        elementColorPicker.oninput = applyElementColorPickerValue;\n        elementColorPicker.onchange = applyElementColorPickerValue;\n      }"
+        },
+        {
+          "line": 385,
+          "function": "bindControls",
+          "statement": "elementColorPicker.oninput = applyElementColorPickerValue;"
+        },
+        {
+          "line": 386,
+          "function": "bindControls",
+          "statement": "elementColorPicker.onchange = applyElementColorPickerValue;"
+        },
+        {
+          "line": 399,
+          "function": "getPendingColor",
+          "statement": "if (!elementColorPicker) return null;"
+        },
+        {
+          "line": 401,
+          "function": "getPendingColor",
+          "statement": "const pending = normalizeHexColor(elementColorPicker.value, active);"
+        },
+        {
+          "line": 406,
+          "function": "syncColorPicker",
+          "statement": "if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        },
+        {
+          "line": 406,
+          "function": "syncColorPicker",
+          "statement": "if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);"
+        }
+      ]
+    },
+    {
+      "name": "elementColorResetOne",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 388,
+          "function": "bindControls",
+          "statement": "if (elementColorResetOne) {\n        elementColorResetOne.onclick = () => {\n          const colors = exportElementColorOverrides();\n          delete colors[selectedElementForEditor];\n          editAppearanceSettings({ 'global.elementColorOverrides': colors });\n        };\n      }"
+        },
+        {
+          "line": 389,
+          "function": "bindControls",
+          "statement": "elementColorResetOne.onclick = () => {\n          const colors = exportElementColorOverrides();\n          delete colors[selectedElementForEditor];\n          editAppearanceSettings({ 'global.elementColorOverrides': colors });\n        };"
+        }
+      ]
+    },
+    {
+      "name": "elementColorResetAll",
+      "kind": "individual DOM node",
+      "references": [
+        {
+          "line": 395,
+          "function": "bindControls",
+          "statement": "if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });"
+        },
+        {
+          "line": 395,
+          "function": "bindControls",
+          "statement": "if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });"
+        }
+      ]
+    }
+  ],
+  "currentInputs": 19,
+  "individualDomInputs": 9,
+  "nonDomInputs": 10,
+  "allNonDomInputsUsed": true,
+  "afterExcludingOnlyElementColorBtn": 18,
+  "afterGroupingEightDomFieldsAsEls": 11,
+  "requiredForTen": "Remove an additional genuinely unused non-DOM input or change the interface design; none is unused. Do not hide a used input or claim 10.",
+  "legacyButtonWiring": {
+    "name": "elementColorBtn",
+    "kind": "individual DOM node",
+    "references": [
+      {
+        "line": 367,
+        "function": "bindControls",
+        "statement": "if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);"
+      },
+      {
+        "line": 367,
+        "function": "bindControls",
+        "statement": "if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);"
+      }
+    ]
+  }
+}

@@ -1,0 +1,47 @@
+Traceback (most recent call last):
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/floating_panels.py", line 233, in <module>
+    if __name__=='__main__': main()
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/floating_panels.py", line 224, in main
+    run(page)
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/floating_panels.py", line 135, in live_workflows
+    drag(page,operator)
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/floating_panels.py", line 11, in drag
+    handle.hover()
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/sync_api/_generated.py", line 18910, in hover
+    self._sync(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_sync_base.py", line 115, in _sync
+    return task.result()
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_locator.py", line 477, in hover
+    return await self._frame.hover(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_frame.py", line 746, in hover
+    await self._channel.send("hover", self._timeout, locals_to_params(locals()))
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 69, in send
+    return await self._connection.wrap_api_call(
+  File "/Users/fevange/Library/Python/3.9/lib/python/site-packages/playwright/_impl/_connection.py", line 559, in wrap_api_call
+    raise rewrite_error(error, f"{parsed_st['apiName']}: {error}") from None
+playwright._impl._errors.TimeoutError: Locator.hover: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator("#editAddAtomOperatorPanel").locator("[data-vm-drag-handle]").first
+    - locator resolved to <button type="button" aria-expanded="false" data-vm-drag-handle="" id="editAddAtomOperatorHeader" aria-label="Move Atom placement" data-tooltip="Drag to move. Alt + arrow keys move; Alt + Home restores the default position.">…</button>
+  - attempting hover action
+    2 × waiting for element to be visible and stable
+      - element is visible and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <input type="text" autocomplete="off" spellcheck="false" inputmode="decimal" data-selection-axis="y" aria-label="Y position (Å)" class="editAddAtomOperatorCoord"/> from <div aria-hidden="false" data-vm-floating-moved="true" id="editSelectionTranslateCue" data-vm-floating-panel="Selection tools">…</div> subtree intercepts pointer events
+    - retrying hover action
+    - waiting 20ms
+    2 × waiting for element to be visible and stable
+      - element is visible and stable
+      - scrolling into view if needed
+      - done scrolling
+      - <input type="text" autocomplete="off" spellcheck="false" inputmode="decimal" data-selection-axis="y" aria-label="Y position (Å)" class="editAddAtomOperatorCoord"/> from <div aria-hidden="false" data-vm-floating-moved="true" id="editSelectionTranslateCue" data-vm-floating-panel="Selection tools">…</div> subtree intercepts pointer events
+    - retrying hover action
+      - waiting 100ms
+    45 × waiting for element to be visible and stable
+       - element is visible and stable
+       - scrolling into view if needed
+       - done scrolling
+       - <input type="text" autocomplete="off" spellcheck="false" inputmode="decimal" data-selection-axis="y" aria-label="Y position (Å)" class="editAddAtomOperatorCoord"/> from <div aria-hidden="false" data-vm-floating-moved="true" id="editSelectionTranslateCue" data-vm-floating-panel="Selection tools">…</div> subtree intercepts pointer events
+     - retrying hover action
+       - waiting 500ms

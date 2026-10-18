@@ -1,0 +1,80 @@
+{
+  "expected": {
+    "passed": 33,
+    "failed": 4,
+    "total": 37
+  },
+  "suites": [
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/accessibility.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/looks.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_bar.py"
+  ],
+  "knownDefects": {
+    "tests/e2e/axis_gizmo.py": {
+      "workflow": "escape-canvas-focus",
+      "exceptionType": "AssertionError",
+      "defect": "Escape interception prevents canvas focus",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+    },
+    "tests/e2e/mode_consistency.py": {
+      "workflow": "coordinates-delete-selection-card",
+      "exceptionType": "TimeoutError",
+      "defect": "Selection card covers Coordinates Delete",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+    },
+    "tests/e2e/smoke.py": {
+      "workflow": "issue-11-stop-after-second-download",
+      "sites": [
+        "trajectory",
+        "vibration"
+      ],
+      "exceptionType": "TimeoutError",
+      "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+      "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+    },
+    "tests/e2e/edit_tool.py": {
+      "workflow": "issue-21-edit-toolbar-layout-collapse-320",
+      "exceptionType": "AssertionError",
+      "defect": "Issue #21: .wb-tools layout collapse at 320px",
+      "issue": "https://github.com/evangelistalab/vibemol/issues/21"
+    }
+  },
+  "policy": "Direct human correction: exactly 33 passing / 4 failing / 37; the exact four (suite, workflow) keys are required. 34/3 is over-performance and stops. Smoke accepts trajectory or vibration only after its second download. All other characterization, identity, construction and behavior gates remain unchanged.",
+  "gateEnvironment": "CI",
+  "baselineComparison": "Current CI 33/4/37; earlier 34/3/37 results remain historical."
+}

@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGlobalModule } from './load-global-module.mjs';
+import { loadGlobalModules } from './load-global-module.mjs';
 
 function plain(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function loadCoordination() {
-  const context = loadGlobalModule('assets/app/js/coordination.js', {
+  const context = loadGlobalModules(['assets/app/js/element-utils.js', 'assets/app/js/coordination.js'], {
     globals: {
       ATOM_Z_TO_DATA: {
         6: { symbol: 'C', name: 'Carbon' },

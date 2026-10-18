@@ -179,6 +179,35 @@ def reference_migration(page, context, url):
         try:
             other.add_init_script('localStorage.setItem("vibemol.autosavePreset",'+json.dumps(json.dumps(saved['preset']))+');')
             other.goto(url);other.wait_for_function('()=>window.VibeMolAppearanceLooks')
-            assert ids(other)==[style,colors] and flags(other)==[False,False]
+            # Capture both comparands and the resolved setting in one JS task,
+            # before either assertion; retain the original readiness condition.
+            observed = other.evaluate('''() => {
+                const snapshot = VibeMolAppearanceLooks.snapshot();
+                const settings = VibeMolPreset.export().settings;
+                const stored = JSON.parse(localStorage.getItem('vibemol.autosavePreset') || 'null');
+                return {
+                    ids: ['styleRef', 'colorsRef'].map(key => snapshot[key] ? snapshot[key].id : null),
+                    flags: [snapshot.styleModified, snapshot.colorsModified],
+                    appearanceLookPresent: Object.prototype.hasOwnProperty.call(settings, 'appearance.look'),
+                    appearanceLook: settings['appearance.look'] ?? null,
+                    appearanceReferences: settings['appearance.references'] ?? null,
+                    storedAppearanceLook: stored?.settings?.['appearance.look'] ?? null,
+                    resolvedAppearanceSettings: snapshot.settings,
+                    label: snapshot.label, observedAtMs: performance.now(), readyState: document.readyState,
+                };
+            }''')
+            comparands = {'expectedIds': [style, colors], 'expectedFlags': [False, False],
+                          'actual': observed, 'inputAppearanceLook': saved['preset']['settings']['appearance.look'],
+                          'browserVersion': other.context.browser.version}
+            print('[look refs migration comparands] ' + json.dumps(comparands, sort_keys=True), flush=True)
+            with (p.ARTIFACTS / 'look-reference-migration-comparands.jsonl').open('a') as evidence:
+                evidence.write(json.dumps(comparands, sort_keys=True) + '\n')
+            assert observed['ids'] == [style, colors], comparands
+            assert observed['flags'] == [False, False], comparands
         finally:fresh.close()
     print('[look refs] legacy composites, settings-only presets, strict/relaxed imports and old last-appearance migration: passed',flush=True)
+
+
+if __name__ == '__main__':
+    from helpers import run_appearance_scenarios
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration])

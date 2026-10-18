@@ -1,0 +1,14 @@
+{
+  "legacyFunctionsVerifiedAgainstTag": 14,
+  "tag": "v0.9.5-pre-refactor",
+  "goldenByteIdenticalToStage0": true,
+  "goldenGzipSha256": "6d80d00a0ecadff2d481536153fb18754021c7a911d27bea300f2fb99e02890d",
+  "existingUnitAssertionsUnchanged": true,
+  "consumerChanges": "Dependency aliases and deletion of the 14 utility copies only. Other production function bodies and call sites are unchanged.",
+  "htmlEntryPoints": [
+    "index.html",
+    "docs/experiments/style-lab/index.html"
+  ],
+  "runtimeVersion": "0.9.5",
+  "sessionFormatVersion": 1
+}

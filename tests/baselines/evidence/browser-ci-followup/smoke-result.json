@@ -1,0 +1,39 @@
+{
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+  "jobUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233/job/114382033571",
+  "testedHead": "2f9cb3e0b2c5fe6fdba273b5ef0e1a8213c4f143",
+  "sourceAppSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+  "result": "failed; stopped and filed separate 0.9.x defect",
+  "unboundedWaitTimeout": 0,
+  "predicateIsSynchronous": true,
+  "falseStateRejectedOnCi": true,
+  "failure": "Terminal new crop selection after export completion and delayed Stop action; no wait timeout or retry",
+  "defect": "https://github.com/evangelistalab/vibemol/issues/11",
+  "originalRequestedFailure": {
+    "line": 4525,
+    "workflow": "vibration Stop: after second download, crop overlay must be hidden"
+  },
+  "originalEarlierFailure": {
+    "line": 2948,
+    "workflow": "selection translation cue, repaired by PR #7"
+  },
+  "observedThisProbe": {
+    "workflow": "earlier analogous trajectory Stop",
+    "originalLine": 4389,
+    "beforeStopActionMs": 700890.5,
+    "pointerDownMs": 701671.9,
+    "clickMs": 701672.4,
+    "afterClickMs": 701674.4,
+    "beforeMode": "recording",
+    "pointerDownMode": "idle",
+    "afterMode": "selecting",
+    "downloads": 2
+  },
+  "vibrationReachedThisProbe": false,
+  "vibrationReproducedThroughNormalUi": true,
+  "nativeAndCiTimingDistinction": "CI pointer-down arrives after completion; native reproduction starts pointer-down while recording and releases after completion. Same click-time branch, different timings. Native reproduction establishes the normal UI defect.",
+  "rendererClass": "software",
+  "existingAssertionsChanged": false,
+  "productionJsChanged": false,
+  "all37SuiteGateClaimed": false
+}

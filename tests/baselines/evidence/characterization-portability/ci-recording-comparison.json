@@ -1,0 +1,57 @@
+{
+  "independentCiJobs": 2,
+  "runsPerJob": 2,
+  "capturesPerRun": 102,
+  "exactlyIdentical": true,
+  "toleranceUsedForCiRepeatComparison": false,
+  "provenancePerJob": [
+    {
+      "os": "Linux",
+      "osRelease": "6.17.0-1022-azure",
+      "architecture": "x86_64",
+      "browserName": "chromium",
+      "browserVersion": "153.0.8010.12",
+      "ci": {
+        "provider": "GitHub Actions",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+        "runAttempt": "1",
+        "runnerImage": "ubuntu24"
+      }
+    },
+    {
+      "os": "Linux",
+      "osRelease": "6.17.0-1022-azure",
+      "architecture": "x86_64",
+      "browserName": "chromium",
+      "browserVersion": "153.0.8010.12",
+      "ci": {
+        "provider": "GitHub Actions",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+        "runAttempt": "1",
+        "runnerImage": "ubuntu24"
+      }
+    }
+  ],
+  "captures": [
+    {
+      "job": 1,
+      "run": 1,
+      "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+    },
+    {
+      "job": 1,
+      "run": 2,
+      "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+    },
+    {
+      "job": 2,
+      "run": 1,
+      "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+    },
+    {
+      "job": 2,
+      "run": 2,
+      "captureSha256": "4fcade5bf136b2ff1d7d4ef7e1cb1d93aaaba7a434b7c07a4e8aee3f57c6cc60"
+    }
+  ]
+}

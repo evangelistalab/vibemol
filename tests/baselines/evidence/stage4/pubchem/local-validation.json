@@ -1,0 +1,859 @@
+{
+  "stage": 4,
+  "group": "PubChem search/import/metadata",
+  "status": "Local verification complete; own first-pass exact-candidate ordinary CI required before merge",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "productionCommit": "7cc55a2d1d182d1397d96280aa36788bc83696e6",
+  "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+  "pubchemSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "genuineControllerInputs": [
+    "els",
+    "escapeHtml",
+    "setTooltipText",
+    "setHintMessage",
+    "parseXYZ",
+    "handleSceneDropRecords",
+    "setVolumes",
+    "setCurrentIndex",
+    "clearSceneMeshes",
+    "clearEditHistory",
+    "appendParsedVolumeRecord",
+    "finalizeLoadedVolumes",
+    "setNavigationHint"
+  ],
+  "genuineControllerDependencyCount": 13,
+  "dependencyExclusiveLimit": 15,
+  "trackedLetBefore": 265,
+  "trackedLetAfter": 262,
+  "appLines": 32666,
+  "appDirectFunctionDeclarations": 1163,
+  "moduleLines": 480,
+  "moduleFunctionDeclarations": 21,
+  "sourceAudit": {
+    "status": "passed",
+    "findings": [],
+    "scope": "Independent read-only source audit; no browsers, network, production edits, shipped test edits, git changes or issue edits.",
+    "baseline": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+    "sha256": {
+      "baselineAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+      "proposedAppSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "proposedModuleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+      "auditScriptSha256": "0dea1893af296b54540540322aa2811cd9f3b5c9731afef7ffdf52aeb6030cc7"
+    },
+    "conclusions": {
+      "allBaselineDeclarationsAccounted": 1190,
+      "movedOriginalDeclarationsExactAfterInverseLexicalChanges": 19,
+      "unchangedOtherAppDeclarationsByteExact": 1171,
+      "metadataDelegator": "Only existing app declaration with a changed body; exact wrapper checked. Its original implementation is preserved in pubchem.js.",
+      "wholeAppExactAfterIndependentAllowedEdits": true,
+      "wholeModuleExactFromOriginalFragments": true,
+      "completeAuditCheckCount": 1227,
+      "newFunctionDeclarations": [
+        "createPubChemController",
+        "bindControls",
+        "metadata app delegator coexists with moved original name"
+      ],
+      "originalOutsideAppInputs": 17,
+      "actualDeps": 13,
+      "depsUnder15": true,
+      "allDepsUsed": true,
+      "noHiddenAppFreeBindings": true,
+      "domQueryTiming": "Five existing const query initializers become plain canonical els fields in the same statement positions; no accessor, re-query or refresh.",
+      "factoryTiming": "Constructed once at original six-state declaration block; no eager dependency calls, listeners or networking in constructor.",
+      "listenerTiming": "bindControls is called once at original two listener guards; exact original guards/callbacks checked after DOM lexical substitution.",
+      "appOwnedWrites": "Two original expression-statement assignments become explicit setVolumes([])/setCurrentIndex(-1) calls to exact app assignment callbacks, in original order.",
+      "startupHoisting": "The sole named pre-constructor metadata path is setMode(MODES.DISPLAY); unchanged initial MODES.DISPLAY guard returns before rebuild/metadata. This source check does not replace runtime startup validation.",
+      "untouched": "Shared escapeHtml/hints/file-loader code, other runtime modules, shipped tests/assertions/waits, workflows and goldens are unchanged.",
+      "integration": "One versioned script before periodic-table/app, exact Makefile syntax-check addition, exact additive API manifest entry."
+    },
+    "dependencies": [
+      {
+        "name": "els",
+        "actualReferences": 26
+      },
+      {
+        "name": "escapeHtml",
+        "actualReferences": 2
+      },
+      {
+        "name": "setTooltipText",
+        "actualReferences": 1
+      },
+      {
+        "name": "setHintMessage",
+        "actualReferences": 2
+      },
+      {
+        "name": "parseXYZ",
+        "actualReferences": 1
+      },
+      {
+        "name": "handleSceneDropRecords",
+        "actualReferences": 1
+      },
+      {
+        "name": "setVolumes",
+        "actualReferences": 1
+      },
+      {
+        "name": "setCurrentIndex",
+        "actualReferences": 1
+      },
+      {
+        "name": "clearSceneMeshes",
+        "actualReferences": 1
+      },
+      {
+        "name": "clearEditHistory",
+        "actualReferences": 1
+      },
+      {
+        "name": "appendParsedVolumeRecord",
+        "actualReferences": 1
+      },
+      {
+        "name": "finalizeLoadedVolumes",
+        "actualReferences": 1
+      },
+      {
+        "name": "setNavigationHint",
+        "actualReferences": 1
+      }
+    ],
+    "metrics": {
+      "baselineApp": {
+        "lines": 33070,
+        "allFunctionDeclarations": 1190,
+        "directIifeFunctionDeclarations": 1181,
+        "trackedTwoSpaceLetDeclarationLines": 265,
+        "directIifeLetDeclarationNodes": 267,
+        "directIifeLetDeclarators": 276
+      },
+      "proposedApp": {
+        "lines": 32666,
+        "allFunctionDeclarations": 1172,
+        "directIifeFunctionDeclarations": 1163,
+        "trackedTwoSpaceLetDeclarationLines": 262,
+        "directIifeLetDeclarationNodes": 264,
+        "directIifeLetDeclarators": 273
+      },
+      "proposedModule": {
+        "lines": 480,
+        "allFunctionDeclarations": 21,
+        "directIifeFunctionDeclarations": 1,
+        "trackedTwoSpaceLetDeclarationLines": 0,
+        "directIifeLetDeclarationNodes": 0,
+        "directIifeLetDeclarators": 0
+      },
+      "existingMovedFunctions": 19,
+      "originalFunctionsAccounted": 1190,
+      "unchangedAppFunctions": 1171,
+      "genuineFactoryInputs": 13
+    },
+    "artifacts": [
+      "audit-pubchem.cjs",
+      "source-audit.json",
+      "function-proof.json",
+      "audit-readback.json"
+    ],
+    "limitations": [
+      "This establishes neutral source movement, bindings and ordering. It does not supply manual network/error/abort results or the CI gate.",
+      "Direct IIFE let declarators are reported separately from the historical tracked /^  let / declaration-line metric; 265\u2192262 is the latter."
+    ],
+    "createdUtc": "2026-10-17T17:48:40.814154+00:00",
+    "formattingReaudit": {
+      "onlyProductionDifference": "Six module blank lines trimmed from two spaces to empty; every nonblank byte and app hash unchanged.",
+      "lines": [
+        186,
+        198,
+        248,
+        334,
+        337,
+        356
+      ],
+      "beforeModuleSha256": "c593f113120edb20cab6ac5a9182c5e22c566cff84e709c6020b36826f86848d",
+      "afterModuleSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+      "oldModuleReconstructedByRestoringOnlyThose12SpacesMatchesArchivedSha": true,
+      "bodyComparisons": "All19 inverse declaration texts match baseline exactly after the original two-column nonblank indentation reversal; no nonblank-source normalization was added.",
+      "completeModuleComparison": "Expected module moves baseline fragments exactly and indents only nonempty lines.",
+      "harnessCorrection": "The now-staged new module is included in the two-file protected-path allowlist alongside app.js; exact full-file reconstruction and all other path protections remain. The prior filter failure is preserved in harness-development/.",
+      "auditChecks": 1227,
+      "passed": 1227
+    },
+    "updatedUtc": "2026-10-17T17:53:13.727837+00:00"
+  },
+  "manualMatrix": {
+    "status": "passed",
+    "taggedCases": 72,
+    "proposedCases": 72,
+    "scenarioCount": 18,
+    "contextsPerSource": 4,
+    "semanticReadbacksExact": true,
+    "fetchFailureMalformedResponseAbortCovered": true,
+    "sourceAppSha256": {
+      "tagged": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "proposed": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4"
+    },
+    "browserVersion": "145.0.7632.6",
+    "scenarioNames": [
+      "abort_cid",
+      "abort_sdf",
+      "autocomplete_abort",
+      "autocomplete_failure",
+      "autocomplete_filter_cache",
+      "autocomplete_stale_token",
+      "busy_reentry",
+      "empty_results",
+      "http_failure",
+      "malformed_json",
+      "malformed_response",
+      "malformed_sdf",
+      "metadata_failure",
+      "metadata_malformed",
+      "no_3d",
+      "success_button",
+      "success_enter",
+      "transport_failure"
+    ],
+    "comparison": "User-visible metadata/geometry, preserved prior scenes, busy behavior, dialogs, native input/load paths, PubChem failed requests and recorded request paths/counts. Parallel autocomplete request order is a multiset; every raw order is retained. Unrelated Analytics failures with client IDs/timestamps, source-dependent console stack locations and elapsed time remain preserved but are outside the PubChem semantic comparison. The original over-broad comparison failure and diagnosis are retained separately.",
+    "abortScope": "Browser transport abort at CID/SDF/autocomplete; no cancellation UI or AbortController was added.",
+    "cases": [
+      {
+        "case": "workbench-light-success_button",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-success_enter",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-empty_results",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-http_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-transport_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-malformed_json",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-malformed_response",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-malformed_sdf",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-no_3d",
+        "equal": true,
+        "requests": 2
+      },
+      {
+        "case": "workbench-light-metadata_failure",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-metadata_malformed",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-abort_cid",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-abort_sdf",
+        "equal": true,
+        "requests": 3
+      },
+      {
+        "case": "workbench-light-busy_reentry",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-light-autocomplete_filter_cache",
+        "equal": true,
+        "requests": 5
+      },
+      {
+        "case": "workbench-light-autocomplete_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-autocomplete_abort",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-light-autocomplete_stale_token",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-success_button",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-success_enter",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-empty_results",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-http_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-transport_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-malformed_json",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-malformed_response",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-malformed_sdf",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-no_3d",
+        "equal": true,
+        "requests": 2
+      },
+      {
+        "case": "workbench-dark-metadata_failure",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-metadata_malformed",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-abort_cid",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-abort_sdf",
+        "equal": true,
+        "requests": 3
+      },
+      {
+        "case": "workbench-dark-busy_reentry",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "workbench-dark-autocomplete_filter_cache",
+        "equal": true,
+        "requests": 5
+      },
+      {
+        "case": "workbench-dark-autocomplete_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-autocomplete_abort",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "workbench-dark-autocomplete_stale_token",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-success_button",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-success_enter",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-empty_results",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-http_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-transport_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-malformed_json",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-malformed_response",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-malformed_sdf",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-no_3d",
+        "equal": true,
+        "requests": 2
+      },
+      {
+        "case": "legacy-light-metadata_failure",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-metadata_malformed",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-abort_cid",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-abort_sdf",
+        "equal": true,
+        "requests": 3
+      },
+      {
+        "case": "legacy-light-busy_reentry",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-light-autocomplete_filter_cache",
+        "equal": true,
+        "requests": 5
+      },
+      {
+        "case": "legacy-light-autocomplete_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-autocomplete_abort",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-light-autocomplete_stale_token",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-success_button",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-success_enter",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-empty_results",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-http_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-transport_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-malformed_json",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-malformed_response",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-malformed_sdf",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-no_3d",
+        "equal": true,
+        "requests": 2
+      },
+      {
+        "case": "legacy-dark-metadata_failure",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-metadata_malformed",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-abort_cid",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-abort_sdf",
+        "equal": true,
+        "requests": 3
+      },
+      {
+        "case": "legacy-dark-busy_reentry",
+        "equal": true,
+        "requests": 4
+      },
+      {
+        "case": "legacy-dark-autocomplete_filter_cache",
+        "equal": true,
+        "requests": 5
+      },
+      {
+        "case": "legacy-dark-autocomplete_failure",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-autocomplete_abort",
+        "equal": true,
+        "requests": 1
+      },
+      {
+        "case": "legacy-dark-autocomplete_stale_token",
+        "equal": true,
+        "requests": 4
+      }
+    ]
+  },
+  "checksAndUnit": {
+    "makeCheckExitCode": 0,
+    "makeTestUnitExitCode": 0,
+    "jsTests": 433,
+    "pythonTests": 29,
+    "formattingNote": "Both completed before trimming six blank-line-only additions in the module; the independent re-audit proves every other byte exact. The candidate CI will exercise final bytes."
+  },
+  "characterization": {
+    "captures": 102,
+    "runs": 2,
+    "unchangedGoldens": true,
+    "plannedNamespaceAddition": "VibeMolPubChem.createPubChemController exactly, via existing characterize-api-additions contract",
+    "exactSerializedRepeat": true,
+    "diagnosticPixelChanges": [],
+    "wallTimeSeconds": 1018.67,
+    "browserVersion": "145.0.7632.6",
+    "provenance": {
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tag": "v0.9.5-pre-refactor",
+      "appSha256": "dc4106c3f22ac851aa4fcbcd1340f8e1990aea0469d97fd645e65251c1e0c0d4",
+      "viewport": {
+        "width": 1512,
+        "height": 1000
+      },
+      "captureTimestampFields": [
+        "savedAt",
+        "preset.meta.createdAt",
+        "preset.meta.updatedAt"
+      ],
+      "pinnedCamera": [
+        30,
+        0,
+        0
+      ],
+      "metrics": {
+        "lines": 32666,
+        "functionDeclarations": 1163,
+        "letDeclarations": 262,
+        "constDeclarations": 574
+      },
+      "captureProvenance": {
+        "os": "Darwin",
+        "osRelease": "25.6.0",
+        "architecture": "arm64",
+        "browserName": "chromium",
+        "browserVersion": "145.0.7632.6"
+      }
+    },
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5320,
+          "session restore": 1,
+          "panel transition": 1055
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5431,
+          "session restore": 1,
+          "panel transition": 1067
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2970,
+          "session restore": 1,
+          "panel transition": 669
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3082,
+          "session restore": 1,
+          "panel transition": 684
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5318,
+          "session restore": 1,
+          "panel transition": 1055
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5430,
+          "session restore": 1,
+          "panel transition": 1058
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2965,
+          "session restore": 1,
+          "panel transition": 672
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3077,
+          "session restore": 1,
+          "panel transition": 678
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ]
+  },
+  "ordinaryCiGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "acceptedFailingSetChanged": false,
+    "pending": true
+  },
+  "issue21": {
+    "classification": "Intermittent Edit toolbar layout collapse at320px: clientWidth12 vs scrollWidth442; unusable in measured state",
+    "relativePriority": "Ahead of#17 in0.9.x batch",
+    "acceptedCiFailure": false,
+    "productionFixed": false
+  },
+  "stage5": "Design-only independent audit; no implementation, shared-clock change or defect fix included.",
+  "collectorDiagnostics": "Initial async browser-launch path, identical-file native-input setup and unrelated Analytics URLs in readback comparison were collector/reader issues. Exact failures and corrections are retained separately; no shipped test/assertion/golden or gate changed, and completed browser cases were not replayed."
+}

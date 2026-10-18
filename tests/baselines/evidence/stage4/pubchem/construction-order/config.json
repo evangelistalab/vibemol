@@ -1,0 +1,109 @@
+{
+  "stages": [
+    {
+      "label": "Stage 1",
+      "before": "79c3f04ffc21f345a18226714450c3498db1315e",
+      "after": "f3f1fd66db78dac691ceddbac90bb4c92645e1d9",
+      "modules": [
+        "assets/app/js/element-utils.js"
+      ],
+      "consumers": [
+        "assets/app/js/auto-hydrogen.js",
+        "assets/app/js/bond-inference.js",
+        "assets/app/js/coordination.js",
+        "assets/app/js/edit-halo.js",
+        "assets/app/js/geometry-inference.js",
+        "assets/app/js/symmetry.js",
+        "assets/app/js/volume-geometry.js"
+      ]
+    },
+    {
+      "label": "Stage 2",
+      "before": "9b4fa793d7dc86e68b00984f435e7001fca66e92",
+      "after": "684b3b05360c5f6a8933da8b34dc609bdd20ea2a",
+      "modules": [
+        "assets/app/js/periodic-table.js"
+      ]
+    },
+    {
+      "label": "Stage 3 Build",
+      "before": "e427e075bef8f8295aa5284d378322bdb1e471ed",
+      "after": "10203c699a31f17dbc4d381dd6b39e38391bb1b8",
+      "modules": []
+    },
+    {
+      "label": "Stage 3 adaptive",
+      "before": "4db82178ee662735059717c006e10aff70592044",
+      "after": "1750dbf55858db66cd57f6d14b411584b9ef6abb",
+      "modules": [],
+      "recheck": [
+        "els",
+        "cacheElement",
+        "periodicTableController"
+      ]
+    },
+    {
+      "label": "Stage 3 Atoms",
+      "before": "b8baed5236cb675fe3361b630e304de24dc01fea",
+      "after": "6bfd947cbe701073289efe3a5b047be52d2d6a8b",
+      "modules": [],
+      "recheck": [
+        "els",
+        "cacheElement",
+        "periodicTableController"
+      ]
+    },
+    {
+      "label": "Stage 3 Selection",
+      "before": "b517116b6d808a325d6e7348ef8eb7a266f51e9a",
+      "after": "518762ffc12d5d174c21f25de12ec80d3fd0b950",
+      "modules": [],
+      "recheck": [
+        "els",
+        "cacheElement",
+        "periodicTableController"
+      ]
+    },
+    {
+      "label": "Stage 3 Symmetry",
+      "before": "e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d",
+      "after": "537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f",
+      "modules": [],
+      "recheck": [
+        "els",
+        "cacheElement",
+        "periodicTableController"
+      ]
+    },
+    {
+      "label": "Stage 3 Colors",
+      "before": "04e01adb68e100282d4a1d211197001a5a461f84",
+      "after": "ebcd299e8f41374a49325670ddca9d2587ec82c3",
+      "modules": [
+        "assets/app/js/periodic-table.js"
+      ],
+      "recheck": [
+        "els",
+        "cacheElement",
+        "periodicTableController"
+      ]
+    },
+    {
+      "label": "Stage 4 original (negative control)",
+      "before": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "after": "25fd30a6e273fa289f17ec999b8528e82c061631",
+      "modules": [
+        "assets/app/js/pubchem.js"
+      ],
+      "expectedStatus": "review-required"
+    },
+    {
+      "label": "Stage 4 corrected",
+      "before": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/pubchem.js"
+      ]
+    }
+  ]
+}

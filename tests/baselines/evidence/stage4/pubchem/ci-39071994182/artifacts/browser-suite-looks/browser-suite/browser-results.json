@@ -1,0 +1,49 @@
+{
+  "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+  "expected": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "suites": [
+    {
+      "test": "tests/e2e/looks.py",
+      "exitCode": 0,
+      "seconds": 1892.07,
+      "wallTimeSeconds": 1892.07,
+      "testSha256": "90d47c468e898c6c4a89cb6a7b76151f48a2b765dd85bed9e4cd821379bfc7ec",
+      "rawLog": "out/test-artifacts/browser-suite/looks/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    }
+  ],
+  "method": "Each assigned entry point runs once, sequentially within this shard; the join asserts the aggregate gate.",
+  "timingMethod": "time.monotonic wall time around each suite subprocess; includes browser/server startup",
+  "artifactIdentity": {
+    "commit": "4e79f5125a1483eae52b905274bd0d6afec1c796",
+    "tree": "f9ae773665a4f359d5c53387b30e664b25e11204",
+    "appSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+    "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+    "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+    "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+    "ciRunAttempt": "1"
+  },
+  "shard": "looks",
+  "shardPlanSha256": "2a4ff210d359a5d85726a6ec16d2f242f744a6a7d8ad839f5bd8cd6d251d98c9",
+  "executionComplete": true,
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+  "passed": 1,
+  "failed": 0,
+  "total": 1,
+  "unexpectedFailures": [],
+  "matchesAcceptedBaseline": null,
+  "aggregationRequired": true,
+  "issue11Workflow": {
+    "status": "not in this shard"
+  },
+  "wallTimeSeconds": 1892.07
+}

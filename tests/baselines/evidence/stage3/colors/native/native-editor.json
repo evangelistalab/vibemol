@@ -1,0 +1,50 @@
+{
+  "head": "ebcd299e8f41374a49325670ddca9d2587ec82c3",
+  "tree": "4bd0d27ecd6d20e527fe7ef7d09b78d44b9f5da3",
+  "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+  "method": "Native file picker, keyboard theme preference, pointer menus/buttons; no QA/private control API, source rewrite, handler replacement or sleeps.",
+  "cases": [
+    {
+      "launch": "workbench",
+      "theme": "light",
+      "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+      "handler": "()=>deps.openElementColors()",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "workbench",
+      "theme": "dark",
+      "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+      "handler": "()=>deps.openElementColors()",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+      "handler": "() => periodicTableController.setOpen(true)",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+      "handler": "() => periodicTableController.setOpen(true)",
+      "opened": true,
+      "closed": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "pageErrors": []
+    }
+  ],
+  "browserVersion": "145.0.7632.6",
+  "passed": true
+}

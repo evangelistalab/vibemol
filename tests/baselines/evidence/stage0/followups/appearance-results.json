@@ -1,0 +1,104 @@
+{
+  "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "suites": [
+    {
+      "test": "tests/e2e/appearance_controls.py",
+      "exitCode": 1,
+      "seconds": 25.37,
+      "log": "out/test-artifacts/stage0/followups/appearance_controls/run.log",
+      "rawLog": "out/test-artifacts/stage0/followups/appearance_controls/run.log",
+      "evidence": "tests/baselines/evidence/stage0/followups/appearance_controls.log",
+      "result": "failed",
+      "appJsCoverage": [
+        "propertiesInspector construction",
+        "setMode",
+        "getPropertyObjects",
+        "editMoleculeDisplay",
+        "applyLookSettings"
+      ],
+      "classification": "environment",
+      "delegatesTo": "tests/e2e/properties_inspector.py:main",
+      "failingLine": 173,
+      "reason": "Same obsolete whole-layout equality assertion as properties_inspector.py: first Measure entry intentionally opens Measurements. This is an additional failing entry point for an already-recorded workflow, not a new defect.",
+      "manualVerification": "Verify Object/Look tab and placement across modes independently of the intentional Measurements introduction, as listed in the properties_inspector failure mapping."
+    },
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "seconds": 99.21,
+      "log": "out/test-artifacts/stage0/followups/look_references/run.log",
+      "rawLog": "out/test-artifacts/stage0/followups/look_references/run.log",
+      "evidence": "tests/baselines/evidence/stage0/followups/look_references.log",
+      "result": "passed",
+      "appJsCoverage": [
+        "captureLookSettings",
+        "applyLookSettings",
+        "finishLookChange",
+        "applyNamedLook",
+        "applySessionState"
+      ],
+      "entryPointAdded": true,
+      "priorCoverage": "Existing scenarios were already imported/called by looks.py before its hydrogen_bond_restrictions failure; this run gives an independent suite result."
+    },
+    {
+      "test": "tests/e2e/look_tiles.py",
+      "exitCode": 0,
+      "seconds": 45.13,
+      "log": "out/test-artifacts/stage0/followups/look_tiles/run.log",
+      "rawLog": "out/test-artifacts/stage0/followups/look_tiles/run.log",
+      "evidence": "tests/baselines/evidence/stage0/followups/look_tiles.log",
+      "result": "passed",
+      "appJsCoverage": [
+        "applyNamedLook",
+        "applyLookSettings",
+        "finishLookChange",
+        "applyInheritedSurfaceSettings",
+        "updateOpacityAndColors"
+      ],
+      "entryPointAdded": true,
+      "priorCoverage": "Existing scenarios were already imported/called by looks.py before its hydrogen_bond_restrictions failure; this run gives an independent suite result."
+    },
+    {
+      "test": "tests/e2e/surface_schemes.py",
+      "exitCode": 0,
+      "seconds": 17.54,
+      "log": "out/test-artifacts/stage0/followups/surface_schemes/run.log",
+      "rawLog": "out/test-artifacts/stage0/followups/surface_schemes/run.log",
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_schemes.log",
+      "result": "passed",
+      "appJsCoverage": [
+        "applyInheritedSurfaceSettings",
+        "applyLookSettings",
+        "updateOpacityAndColors",
+        "createSurfaceMaterial",
+        "applySessionState"
+      ]
+    },
+    {
+      "test": "tests/e2e/surface_shadows.py",
+      "exitCode": 0,
+      "seconds": 31.63,
+      "log": "out/test-artifacts/stage0/followups/surface_shadows/run.log",
+      "rawLog": "out/test-artifacts/stage0/followups/surface_shadows/run.log",
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_shadows.log",
+      "result": "passed",
+      "appJsCoverage": [
+        "updateSceneShadowBounds",
+        "createSurfaceMaterial",
+        "render",
+        "updateOpacityAndColors",
+        "applySessionState"
+      ],
+      "entryPointAdded": true,
+      "priorCoverage": "Existing scenarios were already imported/called by looks.py before its hydrogen_bond_restrictions failure; this run gives an independent suite result."
+    }
+  ],
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "productionAppUnchanged": true,
+  "environment": "tests/baselines/evidence/stage0/environment.json",
+  "allFiveIncludedInMakeTestE2e": true,
+  "passed": 4,
+  "failed": 1,
+  "ordinaryMakeStillFailFast": true
+}

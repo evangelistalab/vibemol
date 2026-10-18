@@ -1,0 +1,53 @@
+{
+  "source": "dea1a9b745d7c6ca4c69f579927f5365d70a1a74",
+  "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "method": "Native clicks and file picker; no QA, private control API, response rewriting or sleeps in native cases.",
+  "results": [
+    {
+      "case": "workbench-light",
+      "launch": "workbench",
+      "theme": "light",
+      "path": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026 via openElementColors",
+      "clickHandler": "()=>deps.openElementColors()",
+      "editorOpen": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "oldButtonConnected": false,
+      "pageErrors": []
+    },
+    {
+      "case": "workbench-dark",
+      "launch": "workbench",
+      "theme": "dark",
+      "path": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026 via openElementColors",
+      "clickHandler": "()=>deps.openElementColors()",
+      "editorOpen": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "oldButtonConnected": false,
+      "pageErrors": []
+    },
+    {
+      "case": "legacy-light",
+      "launch": "legacy",
+      "theme": "light",
+      "path": "Appearance \u2192 Element colors \u2192 Edit\u2026 (supported legacy button)",
+      "clickHandler": "() => setElementColorOverlayOpen(true)",
+      "editorOpen": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "oldButtonConnected": true,
+      "pageErrors": []
+    },
+    {
+      "case": "legacy-dark",
+      "launch": "legacy",
+      "theme": "dark",
+      "path": "Appearance \u2192 Element colors \u2192 Edit\u2026 (supported legacy button)",
+      "clickHandler": "() => setElementColorOverlayOpen(true)",
+      "editorOpen": true,
+      "title": "C \u2014 Carbon (Z=6)",
+      "oldButtonConnected": true,
+      "themeAction": "native checkbox focus/Space after unrevealed-label collector mistake",
+      "pageErrors": []
+    }
+  ],
+  "complete": true
+}

@@ -1,0 +1,8 @@
+{
+  "originalManifest": "original-layout-hash-manifest.json",
+  "gzipFiles": {
+    "source-audit.json": "source-audit.json.gz",
+    "function-proof.json": "function-proof.json.gz"
+  },
+  "note": "The original manifest hashes decompressed bytes. The outer file-hashes.json hashes this preserved layout."
+}

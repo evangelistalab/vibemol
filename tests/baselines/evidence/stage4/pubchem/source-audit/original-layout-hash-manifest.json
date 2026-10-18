@@ -1,0 +1,25 @@
+{
+  "files": {
+    "audit-pubchem.cjs": {
+      "sha256": "0dea1893af296b54540540322aa2811cd9f3b5c9731afef7ffdf52aeb6030cc7",
+      "bytes": 24714
+    },
+    "source-audit.json": {
+      "sha256": "8a4ce7a2d103e11abeece129dc348d34f81fc46bf899f21bbd9acb3188f5015b",
+      "bytes": 157287
+    },
+    "function-proof.json": {
+      "sha256": "a7709239f0504be8b471afbc1762e794ba6f3e6d0c1f1a4a53f3b6014cdc56f4",
+      "bytes": 445608
+    },
+    "audit-readback.json": {
+      "sha256": "2e631dd8be267054e7ff20beb8178b430b718a1e181090dadbddd3215b5baf61",
+      "bytes": 1435
+    },
+    "audit-report.json": {
+      "sha256": "319b3177e84656c5131ee6652bcd82c7f403dad079ec5c1749d28f8053516304",
+      "bytes": 6211
+    }
+  },
+  "excluded": "harness-development/ retains independent audit harness correction provenance, separate from the final passed bundle."
+}

@@ -1,0 +1,65 @@
+{
+  "sourceCommit": "f3f1fd6",
+  "baseTag": "v0.9.5-pre-refactor",
+  "nonIntegerAtomicNumbers": {
+    "cubeParser": 6.9,
+    "twoComponentCubeParser": 6.9,
+    "schemaBeforeInference": 6,
+    "normalizedStructure": 6,
+    "conclusion": "Fractional Z is possible in parser intermediates and direct low-level API calls, but supported live-app load/edit/session paths normalize or reject it before the three symbol callers. Fractional lookup divergences are unreachable in ordinary live structures, not universally unreachable API branches.",
+    "liveAppGuards": [
+      "file-loader.js appendParsedVolumeRecord calls app ensureVolumeSchema before storing a volume",
+      "structure.js ensureVolumeSchema normalizes every atom before invoking inferBonds; normalizeVolumeAtom uses Number(atom.Z)|0",
+      "app.js buildBondAtomRecords again uses a.Z|0",
+      "XYZ resolves symbols against the bundled integer table; Molden uses parseInt; editor/Coordinates use integer selection or Math.trunc",
+      "structure-envelope import invokes ensureVolumeSchema; session-format validates safe integer Z in [1,118] before hydration"
+    ]
+  },
+  "workedExamples": {
+    "unknown119": {
+      "app": "Z119",
+      "coordinationAndGeometry": "Z119",
+      "bondInference": ""
+    },
+    "fractional6_9": {
+      "app": "Z6",
+      "coordinationAndGeometry": "C",
+      "bondInference": ""
+    },
+    "spacedSymbol": {
+      "app": "C",
+      "coordinationAndGeometry": " C ",
+      "bondInference": " C "
+    },
+    "numericSymbol": {
+      "app": "Z6",
+      "coordinationAndGeometry": "123",
+      "bondInference": 123
+    },
+    "nanClamp": {
+      "clamp": "NaN",
+      "clampOrZero": 0,
+      "clampWithUpperPriority": "NaN"
+    },
+    "reversedClamp": {
+      "clamp": 1,
+      "clampOrZero": 1,
+      "clampWithUpperPriority": -1
+    }
+  },
+  "reachableUnknownElement": {
+    "cubeZ119AfterNormalization": 119,
+    "metalClassification": false,
+    "covalentRadiusAngstrom": 0.7,
+    "mainGroupMaxCoordination": 0,
+    "metalRadiusAngstrom": 1.6,
+    "note": "Covalent radii read metadata by Z; metal classification/radii/coordination caps use symbol-keyed tables. A placeholder alone would still choose generic chemistry defaults; validation/error propagation is required."
+  },
+  "knownOutOfScopeClamp": {
+    "file": "assets/app/js/workbench-model.js",
+    "line": 21,
+    "arity": 4,
+    "source": "Math.min(max, Math.max(min, Number.isFinite(Number(value)) ? Number(value) : fallback))",
+    "note": "Known separate finite-number/fallback contract; deliberately excluded from Stage 1 and future Stage 4/5 duplicate rediscovery."
+  }
+}

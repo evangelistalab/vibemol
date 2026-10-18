@@ -8,6 +8,7 @@ function plain(value) {
 
 function loadInference() {
   const context = loadGlobalModules([
+    'assets/app/js/element-utils.js',
     'assets/app/js/bond-inference.js',
     'assets/app/js/coordination.js',
     'assets/app/js/geometry-inference.js',

@@ -1,6 +1,8 @@
 (function (global) {
   'use strict';
 
+  const { clamp } = global.VibeMolElementUtils;
+
   const BOHR_TO_ANG = 0.529177210903;
   const ANG_TO_BOHR = 1.0 / BOHR_TO_ANG;
   const DEFAULT_VERTEX_WELD_TOLERANCE = 1e-4;
@@ -258,10 +260,6 @@
     if (!geometry) return null;
     if (typeof geometry.getAttribute === 'function') return geometry.getAttribute(name);
     return geometry.attributes ? geometry.attributes[name] || null : null;
-  }
-
-  function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
   }
 
   /**

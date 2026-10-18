@@ -1,0 +1,15 @@
+{
+  "README.md": "cfe1f60fb67dc83edeb78ed63d036bc409b87965af41ff7550682b3cc05b8e05",
+  "candidate-original.png": "2273445e7e9e42e991156b35cdf192fa13e9b560b7efa721a77896809e1b0223",
+  "injection.txt": "b29046a73dc567e6f95bd4709f867d906373dd760f555d6fe8bfeeeb249e4cc8",
+  "input-preset.json": "86ebdca3819fe13d0330454b2209a1d5f1d76101c8d343ad664af141fb2ed6d4",
+  "issue-body.md": "e3821e2b4e95b9f0dd6e31e2f5b782524bf5b9d63a2c2c069e730ccd90e40fd8",
+  "issue.json": "229f872b9c3b9b88f6c59f233a23236176633f06b93fec5d0c85aa39efae9674",
+  "probe.log": "87b8cedfe14ae9ba78c4b4233b8ed7ba97b29be92e737445ae13acae48d7eaa3",
+  "probe.py": "eead1002b0c35322cf45fa0ac5b0d5f3cffb757cc982d225aad1c5a127c5b0de",
+  "result.json": "132d6a97b16d28f4e45a9b711fa710cf0708c1f8b9729f3906d253ecd09d8b7e",
+  "source-trace.json": "5d90871abe8f93f62494a79ab0463db0972226cb7102a3607f91197b6e34fe98",
+  "summary.json": "9224c457d60e32a7263ef8369b612ca0bb2d2c48a08aad7b771916d331e0b5d8",
+  "tagged-control.png": "2273445e7e9e42e991156b35cdf192fa13e9b560b7efa721a77896809e1b0223",
+  "tagged-induced-failure.png": "2273445e7e9e42e991156b35cdf192fa13e9b560b7efa721a77896809e1b0223"
+}

@@ -1,6 +1,7 @@
 (function () {
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
+  const getElementSymbol = z => window.VibeMolElementUtils.getElementSymbol(z, ATOM_Z_TO_DATA);
   // Shared by UI/export metadata and every bundled asset URL.
   const APP_VERSION = window.VibeMolAssets.version;
   const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
@@ -9,14 +10,7 @@
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
   const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
   const HINT_START = '';
-  const VIBRATION_KIND = 'vibemol.vibrations';
-  const VIBRATION_DEFAULT_AMPLITUDE = 0.5;
-  const VIBRATION_DEFAULT_SPEED = 0.75;
-  const VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1 = 5.0;
-  const VIBRATION_IR_MIN_FREQ_CM1 = 20;
-  const VIBRATION_IR_DEFAULT_SIGMA_CM1 = 28;
-  const CM_INV_TEXT = 'cm⁻¹';
-  const CM_INV_HTML = 'cm<sup>−1</sup>';
+  const { VIBRATION_KIND, VIBRATION_DEFAULT_AMPLITUDE, VIBRATION_DEFAULT_SPEED, VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1, VIBRATION_IR_MIN_FREQ_CM1, VIBRATION_IR_DEFAULT_SIGMA_CM1, CM_INV_TEXT, CM_INV_HTML } = window.VibeMolVibration;
   const AUTO_ISO_TARGET_FRACTION = 0.85;
   const AUTO_ISO_HISTOGRAM_BINS = 512;
   const AUTO_ISO_MAX_SAMPLES = 650000;
@@ -331,6 +325,27 @@
     throw new Error('VibeMolDisplayWindows is not loaded. Ensure assets/app/js/display-windows.js is included before assets/app/js/app.js.');
   }
 
+  const { createSymmetryPanelController } = window.VibeMolSymmetryPanel || {};
+  if (typeof createSymmetryPanelController !== 'function') {
+    throw new Error('VibeMolSymmetryPanel is not loaded. Ensure assets/app/js/symmetry-panel.js is included before assets/app/js/app.js.');
+  }
+  const { createVibrationController } = window.VibeMolVibration || {};
+  if (typeof createVibrationController !== 'function') {
+    throw new Error('VibeMolVibration is not loaded. Ensure assets/app/js/vibration.js is included before assets/app/js/app.js.');
+  }
+  const { createTrajectoryPlaybackController } = window.VibeMolTrajectoryPlayback || {};
+  if (typeof createTrajectoryPlaybackController !== 'function') {
+    throw new Error('VibeMolTrajectoryPlayback is not loaded. Ensure assets/app/js/trajectory-playback.js is included before assets/app/js/app.js.');
+  }
+  const { createPeriodicTableController } = window.VibeMolPeriodicTable || {};
+  const { createPubChemController } = window.VibeMolPubChem || {};
+  if (typeof createPubChemController !== 'function') {
+    throw new Error('VibeMolPubChem is not loaded. Ensure assets/app/js/pubchem.js is included before assets/app/js/app.js.');
+  }
+  if (typeof createPeriodicTableController !== 'function') {
+    throw new Error('VibeMolPeriodicTable is not loaded. Ensure assets/app/js/periodic-table.js is included before assets/app/js/app.js.');
+  }
+
   const { createAppearanceInspectorController } = window.VibeMolAppearanceUi || {};
   if (![createAppearanceInspectorController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolAppearanceUi is not loaded. Ensure assets/app/js/appearance-ui.js is included before assets/app/js/app.js.');
@@ -413,10 +428,7 @@
   if (![analyzePointGroup, buildSymmetryPreview, applySymmetryPreview, describeSymmetryElements, createEditSymmetryController].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolSymmetry is not loaded. Ensure assets/app/js/symmetry.js is included before assets/app/js/app.js.');
   }
-  const DEFAULT_SYMMETRY_TOLERANCE_ANG = 0.05;
-  const EXACT_SYMMETRY_TOLERANCE_ANG = 1e-3;
-  const MAX_SYMMETRY_TOLERANCE_ANG = 1.0;
-  const SYMMETRY_TOLERANCE_OPTIONS_ANG = Object.freeze([0.05, 0.1, 0.25, 0.5, 1.0]);
+  const { DEFAULT_SYMMETRY_TOLERANCE_ANG, EXACT_SYMMETRY_TOLERANCE_ANG, MAX_SYMMETRY_TOLERANCE_ANG, SYMMETRY_TOLERANCE_OPTIONS_ANG } = window.VibeMolSymmetryPanel;
 
   const { createCylinder: createBondCylinderGeometry, componentOffsets: getBondComponentOffsets, fitBond: fitBondToAtoms } = window.VibeMolBondGeometry || {};
   if (![createBondCylinderGeometry, getBondComponentOffsets, fitBondToAtoms].every(fn => typeof fn === 'function')) throw new Error('VibeMolBondGeometry is not loaded.');
@@ -1135,7 +1147,128 @@
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement', CALCULATIONS: 'calculations' });
   let currentMode = MODES.DISPLAY;
-  let canvasAdaptiveMenuEl = null;
+  // DOM cache registration stays at each original wiring point. Missing nodes
+  // are queried lazily again; a cached node is never silently replaced.
+  const els = {
+    elementColorOverlay: null,
+    elementColorClose: null,
+    periodicTableViewport: null,
+    periodicTableCanvas: null,
+    elementColorName: null,
+    elementColorPicker: null,
+    elementColorResetOne: null,
+    elementColorResetAll: null,
+    displayWindowAdaptiveMenuEl: null,
+    editSymmetryTargetSummaryEl: null,
+    editSymmetryExactResultCardEl: null,
+    editSymmetryExactResultEl: null,
+    editSymmetryToleranceSelectEl: null,
+    editSymmetryElementSelectEl: null,
+    editSymmetryCandidatesEl: null,
+    editSymmetryApplyBtnEl: null,
+    editSymmetryCancelBtnEl: null,
+    editSymmetryAutoBtnEl: null,
+    editSelectionTranslateCueEl: null,
+    editSelectionTranslateCueButtonEl: null,
+    editSelectionRotateCueButtonEl: null,
+    editSelectionCoordinationCueButtonEl: null,
+    editSelectionMetalBondingCueButtonEl: null,
+    editSelectionBondOrbitCueButtonEl: null,
+    editSelectionBondDistanceCueButtonEl: null,
+    editSelectionBondOrderCueButtonEl: null,
+    editSelectionAddFragmentCueButtonEl: null,
+    editSelectionDeleteCueButtonEl: null,
+    editSelectionFragmentCuePopoverEl: null,
+    editSelectionCoordinationCuePopoverEl: null,
+    editSelectionMetalBondingCuePopoverEl: null,
+    editAtomsMenuEl: null,
+    editAtomsMenuBodyEl: null,
+    editAtomsMenuCurrentEl: null,
+    editAdaptiveAddAtomBtn: null,
+    editAdaptiveSymmetryBtn: null,
+    editAdaptiveSymmetryMetaEl: null,
+    editAdaptiveCleanStructureBtn: null,
+    editAdaptiveCleanStructureMetaEl: null,
+    editAdaptiveShiftComBtn: null,
+    editAdaptiveShiftComMetaEl: null,
+    editAdaptiveAlignPrincipalBtn: null,
+    editAdaptiveAlignPrincipalMetaEl: null,
+    editAdaptiveAddAtomPopoverEl: null,
+    editAdaptiveSymmetryPopoverEl: null,
+    editBuildSearchEl: null,
+    editBuildAtomsHostEl: null,
+    editBuildFragmentsHostEl: null,
+    editBuildMoleculesHostEl: null,
+  };
+  // Capture presentation inputs before callbacks can read the holder. The
+  // existing analysis child is initialized at its original later point.
+  const symmetryPanelController = createSymmetryPanelController({
+    els,
+    Symmetry: window.VibeMolSymmetry,
+    resolveEditSymmetryTarget,
+    resolveVolumeAtomId,
+    workspaceEnabled,
+    isEditMode: () => currentMode === MODES.EDIT,
+    clearSymmetryElementGuide,
+    renderSymmetryElementGuide,
+    positionSymmetryPopover,
+    updateEditAdaptiveMenuUi,
+    setHintMessage,
+  });
+  // Runtime state is private; construction only captures inputs. DOM fields
+  // are assigned at their original query sites, before any panel operation.
+  const vibrationRuntimeController = createVibrationController({
+    els,
+    getActiveRecord: () => (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null,
+    snapshotAtomCoordinates,
+    applyAtomCoordinateFrame,
+    markSessionChanged,
+    isEditMode: () => currentMode === MODES.EDIT,
+    UI_PALETTE,
+    escapeHtml,
+    getVideoController: () => vibrationVideoController,
+    setTooltipText,
+    setMotionPanelButtonGlyph,
+    setVibrationPanelOpen,
+    updateDisplayWindowAdaptiveMenuUi,
+  });
+  // Inert construction precedes startup callbacks. Live getters defer reading
+  // scene, selection, mode and export owners until their original call sites.
+  const trajectoryPlaybackController = createTrajectoryPlaybackController({
+    getSceneGraphController: () => sceneGraphController,
+    getActiveRecord: () => (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null,
+    TrajectoryClock: window.VibeMolTrajectoryClock,
+    applyAtomCoordinateFrame,
+    markSessionChanged,
+    isEditMode: () => currentMode === MODES.EDIT,
+    syncTrajectoryControls,
+    getVideoController: () => trajectoryVideoController,
+  });
+  // Construction has no DOM/network effects; metadata rendering is used during
+  // startup preset restoration, before the late control-listener wiring.
+  const pubchemController = createPubChemController({
+    els,
+    escapeHtml,
+    setTooltipText,
+    setHintMessage,
+    parseXYZ,
+    handleSceneDropRecords,
+    setVolumes: value => { volumes = value; },
+    setCurrentIndex: value => { currentIndex = value; },
+    clearSceneMeshes,
+    clearEditHistory,
+    appendParsedVolumeRecord,
+    finalizeLoadedVolumes,
+    setNavigationHint,
+  });
+  const cacheElement = (name, id) => {
+    const cache = { node: null };
+    Object.defineProperty(els, name, {
+      enumerable: true,
+      get: () => cache.node || (cache.node = document.getElementById(id)),
+    });
+    return els[name];
+  };
   let displayWindowsController = null;
   const measurements = window.VibeMolMeasurements;
   let measurementsPanel = null;
@@ -1149,69 +1282,22 @@
   const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
   let appearanceInspectorController = null;
-  let editAtomsMenuEl = null;
-  let editAtomsMenuBodyEl = null;
-  let editAtomsMenuCurrentEl = null;
-  let editSelectionTranslateCueEl = null;
   let editSelectionPositionUi = null;
-  let editSelectionTranslateCueButtonEl = null;
-  let editSelectionRotateCueButtonEl = null;
-  let editSelectionCoordinationCueButtonEl = null;
-  let editSelectionMetalBondingCueButtonEl = null;
-  let editSelectionBondOrbitCueButtonEl = null;
-  let editSelectionBondDistanceCueButtonEl = null;
-  let editSelectionBondOrderCueButtonEl = null;
-  let editSelectionAddFragmentCueButtonEl = null;
-  let editSelectionDeleteCueButtonEl = null;
-  let editSelectionFragmentCuePopoverEl = null;
-  let editSelectionCoordinationCuePopoverEl = null;
-  let editSelectionMetalBondingCuePopoverEl = null;
   let selectionCoordinationCuePointerHandled = false;
   let selectionCoordinationCuePopoverRenderKey = '';
   let selectionCoordinationCuePreviewRenderers = [];
   let selectionMetalBondingCuePointerHandled = false;
   let selectionMetalBondingCuePopoverRenderKey = '';
   let editHaloController = null;
-  let editAdaptiveAddAtomBtn = null;
   let editToolUi = null;
   let lastHintMessage = '';
-  let editAdaptiveSymmetryBtn = null;
-  let editAdaptiveSymmetryMetaEl = null;
-  let editAdaptiveCleanStructureBtn = null;
-  let editAdaptiveCleanStructureMetaEl = null;
-  let editAdaptiveShiftComBtn = null;
-  let editAdaptiveShiftComMetaEl = null;
-  let editAdaptiveAlignPrincipalBtn = null;
-  let editAdaptiveAlignPrincipalMetaEl = null;
-  let editAdaptiveAddAtomPopoverEl = null;
-  let editAdaptiveSymmetryPopoverEl = null;
-  let editBuildSearchEl = null;
-  let editBuildAtomsHostEl = null;
-  let editBuildFragmentsHostEl = null;
-  let editBuildMoleculesHostEl = null;
-  let editSymmetryTargetSummaryEl = null;
-  let editSymmetryExactResultCardEl = null;
-  let editSymmetryExactResultEl = null;
-  let editSymmetryToleranceSelectEl = null;
-  let editSymmetryElementSelectEl = null;
-  let editSymmetryCandidatesEl = null;
-  let editSymmetryApplyBtnEl = null;
-  let editSymmetryCancelBtnEl = null;
-  let editSymmetryAutoBtnEl = null;
   let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
   const bondCenterClickDirectionByKey = new Map();
   let buildSearchKeyboardSelectionKey = '';
   let buildPaletteFilterQuery = '';
-  let symmetryController = null;
-  let symmetryPreviewState = null;
-  let symmetryPopoverAnalysisCache = null;
-  let symmetryPopoverCurrentGroupLabel = '';
-  let symmetryPopoverResultHighlightTimer = 0;
-  let symmetryPopoverElementsRenderKey = '';
-  let symmetryPopoverSelectedElementId = '';
-  symmetryController = createEditSymmetryController({ toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
+  symmetryPanelController.initializeAnalysisController();
 
   /**
    * Synchronize edit-mode construction helpers with the active tool and camera.
@@ -1242,10 +1328,10 @@
       scheduleVibrationPanelLayoutSync(1);
     }
     updateDisplayWindowAdaptiveMenuUi();
-    if (editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editAdaptiveAddAtomPopoverEl && els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionBuildPopover();
     }
-    if (editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editAdaptiveSymmetryPopoverEl && els.editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSymmetryPopover();
     }
     const addAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
@@ -1256,10 +1342,10 @@
     if (addMoleculeOperatorPanelEl && addMoleculeOperatorPanelEl.getAttribute('aria-hidden') === 'false') {
       positionAddMoleculeOperatorPanel();
     }
-    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionCoordinationCuePopover();
     }
-    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       positionSelectionMetalBondingCuePopover();
     }
     const currentBondOrderPopupEl = document.getElementById('bondOrderPopup');
@@ -2532,17 +2618,6 @@
     if (/^#[0-9a-f]{6}$/.test(s)) return s;
     if (/^#[0-9a-f]{3}$/.test(s)) return `#${s[1]}${s[1]}${s[2]}${s[2]}${s[3]}${s[3]}`;
     return fallback;
-  }
-
-  /**
-   * Resolve an element symbol from atomic metadata.
-   * @param {number} z
-   * @returns {string}
-   */
-  function getElementSymbol(z) {
-    const info = ATOM_Z_TO_DATA && ATOM_Z_TO_DATA[z];
-    if (info && typeof info.symbol === 'string' && info.symbol.trim()) return info.symbol.trim();
-    return `Z${z | 0}`;
   }
 
   /**
@@ -5280,13 +5355,6 @@
   }
   function setInputValueIfIdle(...args) { return getTrajectoryUi().setInputValueIfIdle(...args); }
 
-  let trajectoryPlaying = false; // Legacy video-export compatibility mirror for the focused trajectory.
-  let trajectoryLastStepMs = 0;
-
-  let vibrationPlaying = false;
-  let vibrationLastStepMs = 0;
-  let vibrationHideSmallFrequencies = true;
-  let vibrationPanelLayoutRaf = 0;
   /**
    * Snapshot atom coordinates from one volume into a flat native-units array.
    * @param {*} vol
@@ -5343,75 +5411,23 @@
       updateEditSelectionVisuals();
     } else measurementsPanel?.sync();
   }
-  function getTrajectorySyncMaster() {
-    const state = sceneGraphController && sceneGraphController.getState ? sceneGraphController.getState() : null;
-    if (!state) return { playing: false, frame: 0, fps: 12, lastStepMs: 0 };
-    if (!state.syncMaster) state.syncMaster = {};
-    const master = state.syncMaster;
-    master.playing = !!master.playing;
-    master.frame = Math.max(0, Math.floor(Number(master.frame) || 0));
-    master.fps = Math.max(1, Math.min(120, Math.round(Number(master.fps) || 12)));
-    master.lastStepMs = Math.max(0, Number(master.lastStepMs) || 0);
-    return master;
-  }
+  function getTrajectorySyncMaster(...args) { return trajectoryPlaybackController.getTrajectorySyncMaster(...args); }
 
-  function normalizeTrajectoryClock(traj, frameCount) {
-    return traj ? Object.assign(traj, window.VibeMolTrajectoryClock.normalize(traj, frameCount)) : null;
-  }
+  function normalizeTrajectoryClock(...args) { return trajectoryPlaybackController.normalizeTrajectoryClock(...args); }
 
-  function getTrajectoryInfoForRecord(record, scene = null) {
-    const vol = record && record.vol;
-    const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
-    const traj = vol && vol.trajectory;
-    if (!traj || !Array.isArray(traj.frames) || traj.frames.length <= 1 || atomCount <= 0) {
-      return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
-    }
-    const frameSize = atomCount * 3;
-    const valid = traj.frames.every((frame) => frame && frame.length === frameSize);
-    if (!valid) return { enabled: false, scene, record, vol, traj: null, atomCount, frameCount: 0 };
-    normalizeTrajectoryClock(traj, traj.frames.length);
-    if (scene && scene.kind === 'trajectory') {
-      scene.trajectory = traj;
-      scene.meta = Object.assign({}, scene.meta || {}, { frameCount: traj.frames.length });
-    }
-    return { enabled: true, scene, record, vol, traj, atomCount, frameCount: traj.frames.length };
-  }
+  function getTrajectoryInfoForRecord(...args) { return trajectoryPlaybackController.getTrajectoryInfoForRecord(...args); }
 
-  function getTrajectoryRecordForScene(scene) {
-    if (!scene) return null;
-    const layers = sceneGraphController.listLayers(scene);
-    const trajectoryLayer = layers.find((layer) => layer && layer.record && getActiveTrajectoryInfoForRecord(layer.record).enabled);
-    if (trajectoryLayer) return trajectoryLayer.record;
-    if (scene.moleculeRecord && getActiveTrajectoryInfoForRecord(scene.moleculeRecord).enabled) return scene.moleculeRecord;
-    return null;
-  }
+  function getTrajectoryRecordForScene(...args) { return trajectoryPlaybackController.getTrajectoryRecordForScene(...args); }
 
-  function getTrajectoryInfoForScene(scene) {
-    return getTrajectoryInfoForRecord(getTrajectoryRecordForScene(scene), scene);
-  }
+  function getTrajectoryInfoForScene(...args) { return trajectoryPlaybackController.getTrajectoryInfoForScene(...args); }
 
-  function getAllTrajectoryInfos() {
-    const out = [];
-    for (const scene of sceneGraphController.getScenes()) {
-      const info = getTrajectoryInfoForScene(scene);
-      if (info.enabled) out.push(info);
-    }
-    return out;
-  }
+  function getAllTrajectoryInfos(...args) { return trajectoryPlaybackController.getAllTrajectoryInfos(...args); }
 
   /**
    * Resolve trajectory metadata for the focused trajectory scene.
    * @returns {{enabled:boolean,scene:*,record:*,vol:*,traj:*,atomCount:number,frameCount:number}}
    */
-  function getActiveTrajectoryInfo() {
-    const focused = sceneGraphController.getFocusedScene ? sceneGraphController.getFocusedScene() : null;
-    const focusedInfo = focused ? getTrajectoryInfoForScene(focused) : null;
-    if (focusedInfo && focusedInfo.enabled) return focusedInfo;
-    const activeRecord = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const activeInfo = getTrajectoryInfoForRecord(activeRecord, null);
-    if (activeInfo.enabled) return activeInfo;
-    return getAllTrajectoryInfos()[0] || { enabled: false, scene: focused || null, record: activeRecord, vol: activeRecord && activeRecord.vol, traj: null, atomCount: 0, frameCount: 0 };
-  }
+  function getActiveTrajectoryInfo(...args) { return trajectoryPlaybackController.getActiveTrajectoryInfo(...args); }
 
   /**
    * Return true when bond rendering should be re-perceived from the active trajectory frame.
@@ -5419,10 +5435,7 @@
    * @param {*} vol
    * @returns {boolean}
    */
-  function shouldUseDynamicTrajectoryBondsForVolume(vol) {
-    if (currentMode === MODES.EDIT) return false;
-    return isTrajectoryVolumeRecord(vol);
-  }
+  function shouldUseDynamicTrajectoryBondsForVolume(...args) { return trajectoryPlaybackController.shouldUseDynamicTrajectoryBondsForVolume(...args); }
 
   /**
    * Update one floating-panel icon button glyph while preserving its element structure.
@@ -5447,22 +5460,11 @@
     el.textContent = value;
   }
 
-  function getTrajectoryInfoBySceneId(sceneId) {
-    const id = String(sceneId || '');
-    return getAllTrajectoryInfos().find((info) => String(info && info.scene && info.scene.id || '') === id) || null;
-  }
+  function getTrajectoryInfoBySceneId(...args) { return trajectoryPlaybackController.getTrajectoryInfoBySceneId(...args); }
 
-  function getTrajectoryMasterMaxFrames(infos = getAllTrajectoryInfos()) {
-    const synced = (Array.isArray(infos) ? infos : []).filter((info) => info && info.traj && info.traj.syncEnabled);
-    return Math.max(1, ...synced.map((info) => Math.max(1, Number(info.frameCount) | 0)));
-  }
+  function getTrajectoryMasterMaxFrames(...args) { return trajectoryPlaybackController.getTrajectoryMasterMaxFrames(...args); }
 
-  function normalizeTrajectoryMasterFrame(infos = getAllTrajectoryInfos()) {
-    const master = getTrajectorySyncMaster();
-    const maxFrames = getTrajectoryMasterMaxFrames(infos);
-    master.frame = maxFrames > 0 ? (Math.max(0, Math.floor(Number(master.frame) || 0)) % maxFrames) : 0;
-    return master.frame;
-  }
+  function normalizeTrajectoryMasterFrame(...args) { return trajectoryPlaybackController.normalizeTrajectoryMasterFrame(...args); }
 
   function focusTrajectoryInfoScene(info) {
     if (info && info.scene) {
@@ -5471,16 +5473,7 @@
     }
   }
 
-  function applyMasterFrameToSyncedTrajectories(infos = getAllTrajectoryInfos(), options = {}) {
-    const master = getTrajectorySyncMaster();
-    normalizeTrajectoryMasterFrame(infos);
-    for (const info of infos) {
-      if (info && info.traj && info.traj.syncEnabled) {
-        applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
-      }
-    }
-    if (options.syncUi !== false) syncTrajectoryControls();
-  }
+  function applyMasterFrameToSyncedTrajectories(...args) { return trajectoryPlaybackController.applyMasterFrameToSyncedTrajectories(...args); }
 
   /**
    * Update trajectory controls visibility and values for the active file.
@@ -5540,8 +5533,7 @@
     const master = getTrajectorySyncMaster();
     normalizeTrajectoryMasterFrame(infos);
     const anyPlaying = isAnyTrajectoryPlaybackActive();
-    trajectoryPlaying = !!(info.enabled && traj && (traj.syncEnabled ? master.playing : traj.playing));
-    trajectoryLastStepMs = traj ? Number(traj._lastStepMs) || 0 : 0;
+    trajectoryPlaybackController.observePlaybackOwner(info, master);
     setMotionPanelButtonGlyph(trajectoryPlayBtn, anyPlaying ? 'pause' : 'play_arrow');
     if (trajectoryPlayBtn) {
       trajectoryPlayBtn.disabled = !hasAnyTrajectory;
@@ -5565,30 +5557,7 @@
    * Resolve vibrational-mode metadata for the active volume.
    * @returns {{enabled:boolean,record:*,vol:*,vib:*,atomCount:number,modeCount:number,mode:*}}
    */
-  function getActiveVibrationInfo() {
-    const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-    const vol = record && record.vol;
-    const atomCount = (vol && Array.isArray(vol.atoms)) ? vol.atoms.length : 0;
-    const vib = vol && vol.vibration;
-    if (!vib || !Array.isArray(vib.modes) || vib.modes.length === 0 || atomCount <= 0) {
-      return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-    }
-    const frameSize = atomCount * 3;
-    const validModes = vib.modes.every((m) => m && m.displacements && m.displacements.length === frameSize);
-    if (!validModes) return { enabled: false, record, vol, vib: null, atomCount, modeCount: 0, mode: null };
-    if (!vib.equilibrium || vib.equilibrium.length !== frameSize) {
-      vib.equilibrium = snapshotAtomCoordinates(vol, atomCount);
-    }
-    if (!vib.frameBuffer || vib.frameBuffer.length !== frameSize) {
-      vib.frameBuffer = new Float32Array(frameSize);
-    }
-    const modeCount = vib.modes.length;
-    vib.modeIndex = Math.max(0, Math.min(modeCount - 1, Number(vib.modeIndex) | 0));
-    vib.amplitude = Math.max(0, Math.min(8, Number.isFinite(Number(vib.amplitude)) ? Number(vib.amplitude) : VIBRATION_DEFAULT_AMPLITUDE));
-    vib.speed = Math.max(0.1, Math.min(30, Number.isFinite(Number(vib.speed)) ? Number(vib.speed) : VIBRATION_DEFAULT_SPEED));
-    const mode = vib.modes[vib.modeIndex] || vib.modes[0];
-    return { enabled: true, record, vol, vib, atomCount, modeCount, mode };
-  }
+  function getActiveVibrationInfo(...args) { return vibrationRuntimeController.getActiveVibrationInfo(...args); }
 
   /**
    * Format one mode frequency for the vibration table.
@@ -5596,23 +5565,14 @@
    * @param {*} value
    * @returns {string}
    */
-  function formatVibrationFrequencyCell(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return '--';
-    const mag = Math.abs(n).toFixed(1);
-    return n < 0 ? `${mag}i` : mag;
-  }
+  function formatVibrationFrequencyCell(...args) { return vibrationRuntimeController.formatVibrationFrequencyCell(...args); }
 
   /**
    * Format one mode IR intensity cell.
    * @param {*} value
    * @returns {string}
    */
-  function formatVibrationIntensityCell(value) {
-    const n = Number(value);
-    if (!Number.isFinite(n)) return '--';
-    return n.toFixed(1);
-  }
+  function formatVibrationIntensityCell(...args) { return vibrationRuntimeController.formatVibrationIntensityCell(...args); }
 
   /**
    * Resolve one mode IR intensity in km/mol when available.
@@ -5620,13 +5580,7 @@
    * @param {*} mode
    * @returns {number}
    */
-  function getVibrationModeIrIntensity(mode) {
-    const n = Number(
-      mode && (mode.irIntensityKmMol ?? mode.irIntensity ?? mode.intensityKmMol ?? mode.intensity)
-    );
-    if (!Number.isFinite(n)) return NaN;
-    return Math.max(0, n);
-  }
+  function getVibrationModeIrIntensity(...args) { return vibrationRuntimeController.getVibrationModeIrIntensity(...args); }
 
   /**
    * Build one list of spectrum peaks from the currently visible modes.
@@ -5634,43 +5588,7 @@
    * @param {number[]} visibleIndices
    * @returns {{peaks:Array<{modeIndex:number,freqCm1:number,intensity:number}>,hasExplicitIntensities:boolean}}
    */
-  function collectVisibleVibrationSpectrumPeaks(vib, visibleIndices) {
-    const peaks = [];
-    let hasExplicitIntensities = false;
-    const indices = Array.isArray(visibleIndices) ? visibleIndices : [];
-    for (const idx of indices) {
-      const mode = vib && vib.modes ? vib.modes[idx] : null;
-      const rawFreq = Number(mode && mode.frequencyCm1);
-      if (!Number.isFinite(rawFreq)) continue;
-      const freqCm1 = Math.abs(rawFreq);
-      if (!(freqCm1 >= VIBRATION_IR_MIN_FREQ_CM1)) continue;
-      const parsedIntensity = getVibrationModeIrIntensity(mode);
-      let intensity = parsedIntensity;
-      if (Number.isFinite(parsedIntensity)) {
-        hasExplicitIntensities = true;
-      }
-      peaks.push({
-        modeIndex: idx,
-        freqCm1,
-        intensity,
-      });
-    }
-    if (hasExplicitIntensities) {
-      for (const p of peaks) {
-        if (!Number.isFinite(p.intensity)) p.intensity = 0;
-      }
-    } else {
-      for (const p of peaks) p.intensity = 1;
-    }
-    if (hasExplicitIntensities) {
-      const maxExplicit = peaks.reduce((m, p) => Number.isFinite(p.intensity) ? Math.max(m, p.intensity) : m, 0);
-      if (!(maxExplicit > 0)) {
-        for (const p of peaks) p.intensity = 1;
-        hasExplicitIntensities = false;
-      }
-    }
-    return { peaks, hasExplicitIntensities };
-  }
+  function collectVisibleVibrationSpectrumPeaks(...args) { return vibrationRuntimeController.collectVisibleVibrationSpectrumPeaks(...args); }
 
   /**
    * Draw the IR spectrum preview for the active vibrational payload.
@@ -5679,694 +5597,94 @@
    * @param {{enabled:boolean,vib?:*}} info
    * @param {{visibleIndices:number[]}=} tableState
    */
-  function renderVibrationSpectrum(info, tableState = null) {
-    if (!vibrationSpectrumWrap || !vibrationSpectrumCanvas) return;
-    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
-      vibrationSpectrumWrap.style.display = 'none';
-      if (vibrationSpectrumMeta) vibrationSpectrumMeta.textContent = 'IR spectrum preview';
-      return;
-    }
-    const vib = info.vib;
-    const visibleIndices = (tableState && Array.isArray(tableState.visibleIndices))
-      ? tableState.visibleIndices
-      : getVisibleVibrationModeIndices(vib);
-    const peakData = collectVisibleVibrationSpectrumPeaks(vib, visibleIndices);
-    const peaks = peakData.peaks;
-    const hasExplicitIntensities = peakData.hasExplicitIntensities;
-
-    vibrationSpectrumWrap.style.display = 'block';
-    if (vibrationSpectrumMeta) {
-      vibrationSpectrumMeta.textContent = hasExplicitIntensities
-        ? `IR spectrum (${CM_INV_TEXT}, using parsed intensities)`
-        : `IR spectrum (${CM_INV_TEXT}, relative intensities)`;
-    }
-
-    const ctx = vibrationSpectrumCanvas.getContext('2d');
-    if (!ctx) return;
-    const cssW = Math.max(220, Math.round(vibrationSpectrumCanvas.clientWidth || 0));
-    const cssH = Math.max(88, Math.round(vibrationSpectrumCanvas.clientHeight || 128));
-    const dpr = Math.max(1, Math.min(2, Number(window.devicePixelRatio) || 1));
-    const pxW = Math.max(1, Math.round(cssW * dpr));
-    const pxH = Math.max(1, Math.round(cssH * dpr));
-    if (vibrationSpectrumCanvas.width !== pxW || vibrationSpectrumCanvas.height !== pxH) {
-      vibrationSpectrumCanvas.width = pxW;
-      vibrationSpectrumCanvas.height = pxH;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, cssW, cssH);
-
-    const padL = 36;
-    const padR = 10;
-    const padT = 8;
-    const padB = 20;
-    const innerW = Math.max(1, cssW - padL - padR);
-    const innerH = Math.max(1, cssH - padT - padB);
-
-    ctx.strokeStyle = UI_PALETTE.irAxisStroke;
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(padL, padT + innerH + 0.5);
-    ctx.lineTo(padL + innerW, padT + innerH + 0.5);
-    ctx.stroke();
-
-    if (peaks.length === 0) {
-      ctx.fillStyle = UI_PALETTE.irTextMuted;
-      ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('No visible IR-active frequencies', padL + innerW * 0.5, padT + innerH * 0.58);
-      if (vibrationSpectrumMeta) {
-        vibrationSpectrumMeta.textContent = `IR spectrum (${CM_INV_TEXT}) unavailable for current visible modes`;
-      }
-      return;
-    }
-
-    let minFreq = peaks[0].freqCm1;
-    let maxFreq = peaks[0].freqCm1;
-    for (let i = 1; i < peaks.length; i++) {
-      const f = peaks[i].freqCm1;
-      if (f < minFreq) minFreq = f;
-      if (f > maxFreq) maxFreq = f;
-    }
-    const spanRaw = Math.max(1, maxFreq - minFreq);
-    const minSpan = 420;
-    const span = Math.max(minSpan, spanRaw * 1.18);
-    const centerFreq = 0.5 * (minFreq + maxFreq);
-    const xMin = Math.max(0, centerFreq - span * 0.5);
-    const xMax = xMin + span;
-    const sigma = Math.max(12, Math.min(48, Math.max(VIBRATION_IR_DEFAULT_SIGMA_CM1, span * 0.04)));
-
-    let maxIntensity = 0;
-    for (const p of peaks) maxIntensity = Math.max(maxIntensity, Number(p.intensity) || 0);
-    maxIntensity = Math.max(1e-8, maxIntensity);
-    const normalized = peaks.map((p) => ({
-      modeIndex: p.modeIndex,
-      freqCm1: p.freqCm1,
-      amp: Math.max(0, (Number(p.intensity) || 0) / maxIntensity),
-    }));
-
-    /**
-     * Evaluate broadened intensity at one frequency coordinate.
-     * @param {number} xFreq
-     * @returns {number}
-     */
-    function spectrumAt(xFreq) {
-      let y = 0;
-      for (const p of normalized) {
-        const z = (xFreq - p.freqCm1) / sigma;
-        y += p.amp * Math.exp(-0.5 * z * z);
-      }
-      return y;
-    }
-
-    const ySamples = new Float32Array(innerW + 1);
-    let yMax = 0;
-    for (let i = 0; i <= innerW; i++) {
-      const xFreq = xMin + (i / innerW) * (xMax - xMin);
-      const y = spectrumAt(xFreq);
-      ySamples[i] = y;
-      if (y > yMax) yMax = y;
-    }
-    yMax = Math.max(1e-8, yMax);
-
-    ctx.strokeStyle = UI_PALETTE.irCurve;
-    ctx.lineWidth = 1.6;
-    ctx.beginPath();
-    for (let i = 0; i <= innerW; i++) {
-      const x = padL + i;
-      const y = padT + innerH - (ySamples[i] / yMax) * innerH;
-      if (i === 0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
-    }
-    ctx.stroke();
-
-    const selected = normalized.find((p) => p.modeIndex === (vib.modeIndex | 0));
-    if (selected && Number.isFinite(selected.freqCm1)) {
-      const xSel = padL + ((selected.freqCm1 - xMin) / (xMax - xMin)) * innerW;
-      if (xSel >= padL - 2 && xSel <= padL + innerW + 2) {
-        const ySel = spectrumAt(selected.freqCm1);
-        const yPx = padT + innerH - (ySel / yMax) * innerH;
-        ctx.strokeStyle = UI_PALETTE.irSelectedLine;
-        ctx.fillStyle = UI_PALETTE.irSelectedBand;
-        ctx.lineWidth = 1.6;
-        ctx.beginPath();
-        ctx.moveTo(xSel, padT + innerH);
-        ctx.lineTo(xSel, yPx);
-        ctx.stroke();
-
-        const bandHalfFreq = Math.max(14, sigma * 0.9);
-        const leftFreq = Math.max(xMin, selected.freqCm1 - bandHalfFreq);
-        const rightFreq = Math.min(xMax, selected.freqCm1 + bandHalfFreq);
-        const leftIdx = Math.max(0, Math.min(innerW, Math.floor(((leftFreq - xMin) / (xMax - xMin)) * innerW)));
-        const rightIdx = Math.max(0, Math.min(innerW, Math.ceil(((rightFreq - xMin) / (xMax - xMin)) * innerW)));
-        if (rightIdx > leftIdx) {
-          ctx.beginPath();
-          ctx.moveTo(padL + leftIdx, padT + innerH);
-          for (let i = leftIdx; i <= rightIdx; i++) {
-            const x = padL + i;
-            const y = padT + innerH - (ySamples[i] / yMax) * innerH;
-            ctx.lineTo(x, y);
-          }
-          ctx.lineTo(padL + rightIdx, padT + innerH);
-          ctx.closePath();
-          ctx.fill();
-        }
-
-        ctx.fillStyle = UI_PALETTE.irSelectedText;
-        ctx.font = '11px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-        ctx.textAlign = 'left';
-        const selectedLabel = `${selected.freqCm1.toFixed(1)} ${CM_INV_TEXT}`;
-        const textX = Math.min(padL + innerW - 92, Math.max(padL + 2, xSel + 5));
-        const textY = Math.max(padT + 12, yPx - 6);
-        ctx.fillText(selectedLabel, textX, textY);
-      }
-    }
-
-    ctx.fillStyle = UI_PALETTE.irAxisText;
-    ctx.font = '10px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${Math.round(xMin)}`, padL, cssH - 6);
-    ctx.textAlign = 'center';
-    ctx.fillText(`${Math.round((xMin + xMax) * 0.5)}`, padL + innerW * 0.5, cssH - 6);
-    ctx.textAlign = 'right';
-    ctx.fillText(`${Math.round(xMax)} ${CM_INV_TEXT}`, padL + innerW, cssH - 6);
-  }
+  function renderVibrationSpectrum(...args) { return vibrationRuntimeController.renderVibrationSpectrum(...args); }
 
   /**
    * Return true when a mode should be hidden by the low-frequency filter.
    * @param {*} mode
    * @returns {boolean}
    */
-  function shouldHideVibrationMode(mode) {
-    if (!vibrationHideSmallFrequencies) return false;
-    const freq = Number(mode && mode.frequencyCm1);
-    if (!Number.isFinite(freq)) return false;
-    return Math.abs(freq) < VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1;
-  }
+  function shouldHideVibrationMode(...args) { return vibrationRuntimeController.shouldHideVibrationMode(...args); }
 
   /**
    * Build a list of visible mode indices for the current vibration payload.
    * @param {*} vib
    * @returns {number[]}
    */
-  function getVisibleVibrationModeIndices(vib) {
-    if (!vib || !Array.isArray(vib.modes)) return [];
-    const out = [];
-    for (let i = 0; i < vib.modes.length; i++) {
-      if (!shouldHideVibrationMode(vib.modes[i])) out.push(i);
-    }
-    return out;
-  }
+  function getVisibleVibrationModeIndices(...args) { return vibrationRuntimeController.getVisibleVibrationModeIndices(...args); }
 
   /**
    * Render the clickable vibration frequency table.
    * @param {{enabled:boolean,vib?:*,modeCount?:number}=} info
    * @returns {{visibleIndices:number[],visibleCount:number,modeCount:number}}
    */
-  function renderVibrationModeTable(info) {
-    const emptyState = { visibleIndices: [], visibleCount: 0, modeCount: 0 };
-    if (!vibrationModeTableWrap || !vibrationModeTable || !vibrationModeTableBody || !vibrationModeEmpty) return emptyState;
-    if (!(info && info.enabled && info.vib && Array.isArray(info.vib.modes) && info.vib.modes.length > 0)) {
-      vibrationModeTableWrap.style.display = 'none';
-      vibrationModeEmpty.style.display = 'none';
-      vibrationModeTableBody.innerHTML = '';
-      vibrationModeTable.setAttribute('data-has-intensity', 'false');
-      return emptyState;
-    }
-    const vib = info.vib;
-    const modeCount = Math.max(0, info.modeCount | 0);
-    const visibleIndices = getVisibleVibrationModeIndices(vib);
-    const hasAnyIntensity = visibleIndices.some((i) => {
-      const mode = vib.modes[i] || null;
-      return Number.isFinite(getVibrationModeIrIntensity(mode));
-    });
-    vibrationModeTable.setAttribute('data-has-intensity', hasAnyIntensity ? 'true' : 'false');
-    const rows = [];
-    for (const i of visibleIndices) {
-      const mode = vib.modes[i] || {};
-      const rawLabel = (typeof mode.label === 'string' && mode.label.trim()) ? mode.label.trim() : `Mode ${i + 1}`;
-      const activeClass = (i === (vib.modeIndex | 0)) ? ' active' : '';
-      const freqCell = formatVibrationFrequencyCell(mode.frequencyCm1);
-      const intensity = getVibrationModeIrIntensity(mode);
-      const intensityCell = hasAnyIntensity ? formatVibrationIntensityCell(intensity) : '--';
-      rows.push(
-        `<tr class="mode-row${activeClass}" data-mode-index="${i}" data-tooltip="Select ${escapeHtml(rawLabel)}">`
-        + `<td><button class="vibrationPlayCell" data-action="play" data-mode-index="${i}" data-tooltip="Play ${escapeHtml(rawLabel)}">${(i === (vib.modeIndex | 0) && vibrationPlaying) ? 'pause' : 'play_arrow'}</button></td>`
-        + `<td>${i + 1}</td>`
-        + `<td>${escapeHtml(rawLabel)}</td>`
-        + `<td>${escapeHtml(freqCell)}</td>`
-        + `<td class="vibrationIntensityCol">${escapeHtml(intensityCell)}</td>`
-        + '</tr>'
-      );
-    }
-    vibrationModeTableBody.innerHTML = rows.join('');
-    const visibleCount = visibleIndices.length;
-    vibrationModeTableWrap.style.display = visibleCount > 0 ? 'block' : 'none';
-    vibrationModeEmpty.style.display = modeCount > 0 && visibleCount === 0 ? 'block' : 'none';
-    if (modeCount > 0 && visibleCount === 0 && vibrationHideSmallFrequencies) {
-      vibrationModeEmpty.textContent = `No visible modes: |freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} are hidden.`;
-    } else {
-      vibrationModeEmpty.textContent = 'No vibrational modes available for the active file.';
-    }
-    return { visibleIndices, visibleCount, modeCount };
-  }
+  function renderVibrationModeTable(...args) { return vibrationRuntimeController.renderVibrationModeTable(...args); }
 
   /**
    * Update vibrational-mode controls for the active record.
    */
-  function syncVibrationControls() {
-    const info = getActiveVibrationInfo();
-    if (
-      vibrationVideoController
-      && vibrationVideoController.isActive()
-      && vibrationVideoController.getTargetRecord()
-      && info.enabled
-      && info.record !== vibrationVideoController.getTargetRecord()
-    ) {
-      vibrationVideoController.discardForTargetRecordChange();
-    }
-    if (vibrationPanelBtn) {
-      setTooltipText(vibrationPanelBtn, info.enabled
-        ? 'Vibrational mode controls (F)'
-        : 'No vibrational mode data in active file');
-    }
-    if (vibrationRow) vibrationRow.style.display = info.enabled ? 'grid' : 'none';
-    if (vibrationRow2) vibrationRow2.style.display = info.enabled ? 'grid' : 'none';
-    if (vibrationSpectrumWrap) vibrationSpectrumWrap.style.display = info.enabled ? 'block' : 'none';
-    if (!info.enabled) {
-      renderVibrationModeTable(info);
-      renderVibrationSpectrum(info);
-      setVibrationPanelOpen(false, {
-        syncUi: false,
-        restoreVibrationVideoState: false,
-        vibrationVideoReason: 'Vibration video export discarded because vibrational data is unavailable',
-      });
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-      if (vibrationNowPlaying) vibrationNowPlaying.textContent = 'No mode selected';
-      if (vibrationVideoController) vibrationVideoController.syncUi(info);
-      updateDisplayWindowAdaptiveMenuUi();
-      return;
-    }
-    const vib = info.vib;
-    const visibleIndices = getVisibleVibrationModeIndices(vib);
-    const currentModeIndex = vib.modeIndex | 0;
-    const hasCurrentVisible = visibleIndices.includes(currentModeIndex);
-    let activeModeChanged = false;
-    if (!hasCurrentVisible && visibleIndices.length > 0) {
-      vib.modeIndex = visibleIndices[0];
-      vib.phase = 0;
-      activeModeChanged = true;
-    }
-
-    const tableState = renderVibrationModeTable(info);
-    if (tableState.visibleCount <= 0) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-      vib.phase = 0;
-      applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
-      if (vibrationModeLabel) vibrationModeLabel.textContent = 'No visible mode';
-      if (vibrationNowPlaying) {
-        vibrationNowPlaying.textContent = vibrationHideSmallFrequencies
-          ? `No visible mode (|freq| < ${VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1.toFixed(1)} ${CM_INV_TEXT} hidden)`
-          : 'No mode selected';
-      }
-      setMotionPanelButtonGlyph(vibrationPlayBtn, 'play_arrow');
-      if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = `-- ${CM_INV_HTML}`;
-      renderVibrationSpectrum(info, tableState);
-      if (vibrationVideoController) vibrationVideoController.syncUi(info);
-      updateDisplayWindowAdaptiveMenuUi();
-      return;
-    }
-
-    if (activeModeChanged) {
-      if (vibrationPlaying) vibrationLastStepMs = 0;
-      else applyActiveVibrationPhase(0, { syncUi: false });
-    }
-    const mode = vib.modes[vib.modeIndex] || info.mode;
-    const labelSuffix = (mode && typeof mode.label === 'string' && mode.label.trim())
-      ? ` ${mode.label.trim()}`
-      : '';
-    const freq = Number(mode && mode.frequencyCm1);
-    const freqText = Number.isFinite(freq) ? `${freq.toFixed(1)} ${CM_INV_TEXT}` : `-- ${CM_INV_TEXT}`;
-    if (vibrationModeLabel) vibrationModeLabel.textContent = `${vib.modeIndex + 1}/${info.modeCount}${labelSuffix}`;
-    if (vibrationNowPlaying) vibrationNowPlaying.textContent = `Selected: ${vib.modeIndex + 1}/${info.modeCount}${labelSuffix} • ${freqText}`;
-    setMotionPanelButtonGlyph(vibrationPlayBtn, vibrationPlaying ? 'pause' : 'play_arrow');
-    if (vibrationAmplitudeEl && document.activeElement !== vibrationAmplitudeEl) {
-      vibrationAmplitudeEl.value = Number(vib.amplitude).toFixed(2);
-    }
-    if (vibrationSpeedEl && document.activeElement !== vibrationSpeedEl) {
-      vibrationSpeedEl.value = Number(vib.speed).toFixed(2);
-    }
-    if (vibrationFreqLabel) vibrationFreqLabel.innerHTML = Number.isFinite(freq)
-      ? `${freq.toFixed(1)} ${CM_INV_HTML}`
-      : `-- ${CM_INV_HTML}`;
-    renderVibrationSpectrum(info, tableState);
-    if (vibrationVideoController) vibrationVideoController.syncUi(info);
-    updateDisplayWindowAdaptiveMenuUi();
-  }
+  function syncVibrationControls(...args) { return vibrationRuntimeController.syncVibrationControls(...args); }
 
   /**
    * Redraw vibration UI after the floating panel has entered layout.
    * This avoids first-open canvas stretch when initial render happens while hidden.
    * @param {number=} rafFrames
    */
-  function scheduleVibrationPanelLayoutSync(rafFrames = 2) {
-    const frames = Math.max(1, Math.round(Number(rafFrames) || 1));
-    if (vibrationPanelLayoutRaf) {
-      cancelAnimationFrame(vibrationPanelLayoutRaf);
-      vibrationPanelLayoutRaf = 0;
-    }
-    /**
-     * @param {number} remaining
-     */
-    const tick = (remaining) => {
-      vibrationPanelLayoutRaf = requestAnimationFrame(() => {
-        if (remaining > 1) {
-          tick(remaining - 1);
-          return;
-        }
-        vibrationPanelLayoutRaf = 0;
-        if (!vibrationPanel || !vibrationPanel.classList.contains('open')) return;
-        syncVibrationControls();
-      });
-    };
-    tick(frames);
-  }
+  function scheduleVibrationPanelLayoutSync(...args) { return vibrationRuntimeController.scheduleVibrationPanelLayoutSync(...args); }
   /**
    * Restore active vibrational displacement to equilibrium geometry.
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function restoreActiveVibrationEquilibrium(options = {}) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) return false;
-    const syncUi = options.syncUi !== false;
-    const vib = info.vib;
-    vib.phase = 0;
-    applyAtomCoordinateFrame(info.vol, vib.equilibrium, info.atomCount, { record: info.record });
-    if (syncUi) syncVibrationControls();
-    return true;
-  }
+  function restoreActiveVibrationEquilibrium(...args) { return vibrationRuntimeController.restoreActiveVibrationEquilibrium(...args); }
   /**
    * Apply the selected vibrational mode at one phase angle.
    * @param {number} phase
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function applyActiveVibrationPhase(phase, options = {}) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) return false;
-    const syncUi = options.syncUi !== false;
-    const vib = info.vib;
-    const mode = info.mode;
-    const wave = Math.sin(Number(phase) || 0);
-    const amp = Number(vib.amplitude) || 0;
-    const eq = vib.equilibrium;
-    const disp = mode.displacements;
-    const frame = vib.frameBuffer;
-    for (let i = 0; i < frame.length; i++) {
-      frame[i] = eq[i] + (amp * disp[i] * wave);
-    }
-    vib.phase = Number(phase) || 0;
-    applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
-    if (syncUi) syncVibrationControls();
-    return true;
-  }
+  function applyActiveVibrationPhase(...args) { return vibrationRuntimeController.applyActiveVibrationPhase(...args); }
   /**
    * Advance active vibrational playback from wall-clock time.
    * @param {number} nowMs
    */
-  function updateVibrationPlayback(nowMs) {
-    const info = getActiveVibrationInfo();
-    if (!info.enabled) {
-      if (vibrationPlaying) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
-        syncVibrationControls();
-      }
-      return;
-    }
-    if (!vibrationPlaying) return;
-    if (currentMode === MODES.EDIT) return;
-
-    const vib = info.vib;
-    const speed = Math.max(0.1, Math.min(30, Number(vib.speed) || VIBRATION_DEFAULT_SPEED));
-    vib.speed = speed;
-    if (vibrationLastStepMs <= 0) {
-      vibrationLastStepMs = nowMs;
-      return;
-    }
-    const dtSec = Math.max(0, Math.min(0.2, (nowMs - vibrationLastStepMs) / 1000));
-    vibrationLastStepMs = nowMs;
-    let nextPhase = (Number(vib.phase) || 0) + dtSec * speed * Math.PI * 2;
-    const exportAdvance = vibrationVideoController
-      ? vibrationVideoController.resolveAdvance(nextPhase, Math.PI * 2)
-      : null;
-    if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'phase')) {
-      nextPhase = Number(exportAdvance.phase) || 0;
-    }
-    if (exportAdvance && exportAdvance.stopPlayback) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
-    }
-    applyActiveVibrationPhase(nextPhase, { syncUi: false });
-    markSessionChanged();
-  }
+  function updateVibrationPlayback(...args) { return vibrationRuntimeController.updateVibrationPlayback(...args); }
   /**
    * Apply one trajectory frame to active atom positions and refresh geometry transforms.
    * @param {number} frameIndex
    * @param {{syncUi?:boolean}=} options
    * @returns {boolean}
    */
-  function applyTrajectoryFrameForInfo(info, frameIndex, options = {}) {
-    if (!info.enabled) return false;
-    const syncUi = options.syncUi !== false;
-    const traj = info.traj;
-    const frame = traj.frames[Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0))];
-    if (!frame) return false;
-    const nextIndex = Math.max(0, Math.min(info.frameCount - 1, Number(frameIndex) | 0));
-    traj.frameIndex = nextIndex;
-    traj.currentFrame = nextIndex;
-    applyAtomCoordinateFrame(info.vol, frame, info.atomCount, { record: info.record });
-    markSessionChanged();
-    if (syncUi) syncTrajectoryControls();
-    return true;
-  }
+  function applyTrajectoryFrameForInfo(...args) { return trajectoryPlaybackController.applyTrajectoryFrameForInfo(...args); }
 
-  function applyTrajectoryFrame(frameIndex, options = {}) {
-    return applyTrajectoryFrameForInfo(getActiveTrajectoryInfo(), frameIndex, options);
-  }
+  function applyTrajectoryFrame(...args) { return trajectoryPlaybackController.applyTrajectoryFrame(...args); }
 
-  function mapMasterFrameToTrajectory(info, masterFrame = getTrajectorySyncMaster().frame) {
-    return info && info.enabled
-      ? window.VibeMolTrajectoryClock.mapFrame(masterFrame, info.frameCount, info.traj && info.traj.loop !== false)
-      : 0;
-  }
+  function mapMasterFrameToTrajectory(...args) { return trajectoryPlaybackController.mapMasterFrameToTrajectory(...args); }
 
-  function anyTrajectorySyncEnabled(infos = getAllTrajectoryInfos()) {
-    return infos.some((info) => info && info.enabled && info.traj && info.traj.syncEnabled);
-  }
+  function anyTrajectorySyncEnabled(...args) { return trajectoryPlaybackController.anyTrajectorySyncEnabled(...args); }
 
-  function stopAllTrajectoryPlayback(options = {}) {
-    for (const info of getAllTrajectoryInfos()) {
-      if (info.traj) {
-        info.traj.playing = false;
-        info.traj._lastStepMs = 0;
-      }
-    }
-    const master = getTrajectorySyncMaster();
-    master.playing = false;
-    master.lastStepMs = 0;
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
-    if (options.syncUi !== false) syncTrajectoryControls();
-  }
+  function stopAllTrajectoryPlayback(...args) { return trajectoryPlaybackController.stopAllTrajectoryPlayback(...args); }
 
-  function setAllTrajectoryPlayback(playing, options = {}) {
-    const infos = getAllTrajectoryInfos();
-    const nextPlaying = !!playing;
-    const master = getTrajectorySyncMaster();
-    let hasSynced = false;
-    for (const info of infos) {
-      if (!(info && info.traj)) continue;
-      if (info.traj.syncEnabled) {
-        hasSynced = true;
-        info.traj.playing = false;
-      } else {
-        info.traj.playing = nextPlaying;
-        info.traj._lastStepMs = 0;
-      }
-    }
-    master.playing = hasSynced ? nextPlaying : false;
-    master.lastStepMs = 0;
-    const active = getActiveTrajectoryInfo();
-    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? master.playing : active.traj.playing));
-    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
-    if (options.syncUi !== false) syncTrajectoryControls();
-  }
+  function setAllTrajectoryPlayback(...args) { return trajectoryPlaybackController.setAllTrajectoryPlayback(...args); }
 
-  function resetAllTrajectoryFrames(options = {}) {
-    const infos = getAllTrajectoryInfos();
-    const master = getTrajectorySyncMaster();
-    master.frame = 0;
-    master.lastStepMs = 0;
-    for (const info of infos) {
-      if (!(info && info.traj)) continue;
-      info.traj._lastStepMs = 0;
-      applyTrajectoryFrameForInfo(info, 0, { syncUi: false });
-    }
-    if (options.syncUi !== false) syncTrajectoryControls();
-  }
+  function resetAllTrajectoryFrames(...args) { return trajectoryPlaybackController.resetAllTrajectoryFrames(...args); }
 
-  function isAnyTrajectoryPlaybackActive() {
-    if (getTrajectorySyncMaster().playing && anyTrajectorySyncEnabled()) return true;
-    return getAllTrajectoryInfos().some((info) => !!(info && info.traj && info.traj.playing));
-  }
+  function isAnyTrajectoryPlaybackActive(...args) { return trajectoryPlaybackController.isAnyTrajectoryPlaybackActive(...args); }
 
-  function setTrajectorySyncEnabled(info, enabled) {
-    if (!(info && info.enabled && info.traj)) return false;
-    const infos = getAllTrajectoryInfos();
-    const master = getTrajectorySyncMaster();
-    const wasFirstSync = !infos.some((item) => item !== info && item.traj && item.traj.syncEnabled);
-    const nextEnabled = !!enabled;
-    if (nextEnabled) {
-      if (!info.traj.syncEnabled && wasFirstSync) {
-        master.frame = Math.max(0, Number(info.traj.frameIndex) | 0);
-        master.fps = Math.max(1, Math.min(120, Math.round(Number(info.traj.fps) || master.fps || 12)));
-        master.lastStepMs = 0;
-      }
-      info.traj._preSyncPlaying = !!info.traj.playing;
-      info.traj.playing = false;
-      info.traj._lastStepMs = 0;
-      info.traj.syncEnabled = true;
-      applyTrajectoryFrameForInfo(info, mapMasterFrameToTrajectory(info, master.frame), { syncUi: false });
-    } else {
-      const mapped = mapMasterFrameToTrajectory(info, master.frame);
-      info.traj.syncEnabled = false;
-      info.traj.playing = false;
-      info.traj._lastStepMs = 0;
-      applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
-      if (!anyTrajectorySyncEnabled()) {
-        master.playing = false;
-        master.lastStepMs = 0;
-      }
-    }
-    normalizeTrajectoryMasterFrame(getAllTrajectoryInfos());
-    syncTrajectoryControls();
-    return true;
-  }
+  function setTrajectorySyncEnabled(...args) { return trajectoryPlaybackController.setTrajectorySyncEnabled(...args); }
   /**
    * Advance trajectory playback based on elapsed wall clock time.
    * @param {number} nowMs
    */
-  function updateTrajectoryPlayback(nowMs) {
-    const infos = getAllTrajectoryInfos();
-    if (!infos.length) {
-      if (trajectoryPlaying || getTrajectorySyncMaster().playing) stopAllTrajectoryPlayback({ syncUi: true });
-      return;
-    }
-    if (currentMode === MODES.EDIT) return;
+  function updateTrajectoryPlayback(...args) { return trajectoryPlaybackController.updateTrajectoryPlayback(...args); }
 
-    let advanced = false;
-    const master = getTrajectorySyncMaster();
-    const masterTick = window.VibeMolTrajectoryClock.advance({
-      frame: master.frame, playing: master.playing && anyTrajectorySyncEnabled(infos),
-      fps: master.fps, loop: true, lastStepMs: master.lastStepMs,
-    }, getTrajectoryMasterMaxFrames(infos), nowMs);
-    master.frame = masterTick.frame;
-    master.lastStepMs = masterTick.lastStepMs;
-    advanced = masterTick.advanced;
-
-    for (const info of infos) {
-      const traj = info.traj;
-      if (!traj) continue;
-      if (traj.syncEnabled) {
-        const mapped = mapMasterFrameToTrajectory(info, master.frame);
-        const lastFrameIndex = info.frameCount - 1;
-        const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
-          ? trajectoryVideoController.resolveAdvance(mapped, lastFrameIndex)
-          : null;
-        if (exportAdvance && exportAdvance.stopPlayback) {
-          master.playing = false;
-          master.lastStepMs = 0;
-        }
-        if ((traj.frameIndex | 0) !== mapped || advanced) {
-          applyTrajectoryFrameForInfo(info, mapped, { syncUi: false });
-          advanced = true;
-        }
-        continue;
-      }
-      const tick = window.VibeMolTrajectoryClock.advance({
-        frame: traj.frameIndex, playing: traj.playing, fps: traj.fps,
-        loop: traj.loop, lastStepMs: traj._lastStepMs,
-      }, info.frameCount, nowMs);
-      traj._lastStepMs = tick.lastStepMs;
-      if (!tick.advanced) continue;
-      let next = tick.rawFrame;
-      const lastFrameIndex = info.frameCount - 1;
-      const exportAdvance = (trajectoryVideoController && trajectoryVideoController.getTargetRecord && trajectoryVideoController.getTargetRecord() === info.record)
-        ? trajectoryVideoController.resolveAdvance(next, lastFrameIndex)
-        : null;
-      if (exportAdvance && Object.prototype.hasOwnProperty.call(exportAdvance, 'nextFrameIndex')) {
-        next = Number(exportAdvance.nextFrameIndex) | 0;
-      }
-      if (exportAdvance && exportAdvance.stopPlayback) {
-        traj.playing = false;
-        traj._lastStepMs = 0;
-      } else if (next >= info.frameCount) {
-        if (traj.loop) next = next % info.frameCount;
-        else {
-          next = lastFrameIndex;
-          traj.playing = false;
-          traj._lastStepMs = 0;
-        }
-      }
-      applyTrajectoryFrameForInfo(info, next, { syncUi: false });
-      advanced = true;
-    }
-    const active = getActiveTrajectoryInfo();
-    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? master.playing : active.traj.playing));
-    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
-    if (advanced) syncTrajectoryControls();
-  }
-
-  function setTrajectoryPlayingForInfo(info, playing) {
-    if (!(info && info.enabled && info.traj)) return false;
-    if (info.traj.syncEnabled) {
-      const master = getTrajectorySyncMaster();
-      master.playing = !!playing;
-      master.lastStepMs = 0;
-    } else {
-      info.traj.playing = !!playing;
-      info.traj._lastStepMs = 0;
-    }
-    const active = getActiveTrajectoryInfo();
-    trajectoryPlaying = !!(active.enabled && active.traj && (active.traj.syncEnabled ? getTrajectorySyncMaster().playing : active.traj.playing));
-    trajectoryLastStepMs = active.traj ? Number(active.traj._lastStepMs) || 0 : 0;
-    syncTrajectoryControls();
-    return true;
-  }
+  function setTrajectoryPlayingForInfo(...args) { return trajectoryPlaybackController.setTrajectoryPlayingForInfo(...args); }
 
   /**
    * Stop trajectory playback and optionally refresh trajectory controls.
    * @param {{syncUi?:boolean}=} options
    */
-  function stopTrajectoryPlayback(options = {}) {
-    const info = getActiveTrajectoryInfo();
-    if (info.enabled && info.traj) {
-      if (info.traj.syncEnabled) {
-        const master = getTrajectorySyncMaster();
-        master.playing = false;
-        master.lastStepMs = 0;
-      } else {
-        info.traj.playing = false;
-        info.traj._lastStepMs = 0;
-      }
-    }
-    trajectoryPlaying = false;
-    trajectoryLastStepMs = 0;
-    if (options.syncUi !== false) syncTrajectoryControls();
-  }
+  function stopTrajectoryPlayback(...args) { return trajectoryPlaybackController.stopTrajectoryPlayback(...args); }
 
   /**
    * Toggle active trajectory playback, keeping vibration playback mutually exclusive.
@@ -6378,8 +5696,8 @@
     const currentPlaying = info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing;
     const nextPlaying = !currentPlaying;
     if (nextPlaying) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
     }
     setTrajectoryPlayingForInfo(info, nextPlaying);
@@ -6398,8 +5716,8 @@
     const current = Math.max(0, Math.min(info.frameCount - 1, Number(info.traj.frameIndex) | 0));
     const step = Number(delta) || 0;
     const next = Math.max(0, Math.min(info.frameCount - 1, current + step));
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     restoreActiveVibrationEquilibrium({ syncUi: false });
     if (info.traj.syncEnabled) {
       const master = getTrajectorySyncMaster();
@@ -6924,27 +6242,26 @@
   const elementColors = document.getElementById('elementColors');
   const visibilityElementColorsToggleEl = document.getElementById('visibilityElementColorsToggle');
   const elementColorBtn = document.getElementById('elementColorBtn');
-  const elementColorOverlay = document.getElementById('elementColorOverlay');
-  const elementColorClose = document.getElementById('elementColorClose');
-  const periodicTableViewport = document.getElementById('periodicTableViewport');
-  const periodicTableCanvas = document.getElementById('periodicTableCanvas');
-  const elementColorName = document.getElementById('elementColorName');
-  const elementColorPicker = document.getElementById('elementColorPicker');
-  const elementColorResetOne = document.getElementById('elementColorResetOne');
-  const elementColorResetAll = document.getElementById('elementColorResetAll');
+  els.elementColorOverlay = document.getElementById('elementColorOverlay');
+  els.elementColorClose = document.getElementById('elementColorClose');
+  els.periodicTableViewport = document.getElementById('periodicTableViewport');
+  els.periodicTableCanvas = document.getElementById('periodicTableCanvas');
+  els.elementColorName = document.getElementById('elementColorName');
+  els.elementColorPicker = document.getElementById('elementColorPicker');
+  els.elementColorResetOne = document.getElementById('elementColorResetOne');
+  els.elementColorResetAll = document.getElementById('elementColorResetAll');
   const toggleBox = document.getElementById('showBox');
   let showSimulationBoxes = !!toggleBox.checked;
   const toggleAxes = document.getElementById('showAxes');
   const saveBtn = document.getElementById('saveBtn');
   const batchBtn = document.getElementById('batchBtn');
-  const savePresetBtn = document.getElementById('savePresetBtn');
   const saveStructureBtn = document.getElementById('saveStructureBtn');
   const surfBtn = document.getElementById('surfBtn');
   const clearBtn = document.getElementById('clearBtn');
   const helpBtn = document.getElementById('helpBtn');
   // Side panel controls
-  const displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
-  canvasAdaptiveMenuEl = displayWindowAdaptiveMenuEl;
+  els.displayWindowAdaptiveMenuEl = document.getElementById('displayWindowAdaptiveMenu');
+  // canvasAdaptiveMenuEl shares the canonical displayWindowAdaptiveMenuEl cache.
   const viewInspectorBtn = document.getElementById('viewInspectorBtn');
   const viewInspector = document.getElementById('viewInspector');
   const spinorInfoBtn = document.getElementById('spinorInfoBtn');
@@ -6980,7 +6297,7 @@
   const moldenInspectorBtn = document.getElementById('moldenInspectorBtn');
   const moldenInspector = document.getElementById('moldenInspector');
   const trajectoryPanelBtn = document.getElementById('trajectoryPanelBtn');
-  const vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
+  const vibrationPanelBtn = els.vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
   const coordsPanel = document.getElementById('coordsPanel');
@@ -6991,7 +6308,7 @@
   const trajectoryResetBtn = document.getElementById('trajectoryResetBtn');
   const trajectorySaveVideoBtn = document.getElementById('trajectorySaveVideoBtn');
   const trajectoryPanelClose = document.getElementById('trajectoryPanelClose');
-  const vibrationPanel = document.getElementById('vibrationPanel');
+  const vibrationPanel = els.vibrationPanel = document.getElementById('vibrationPanel');
   const vibrationResetBtn = document.getElementById('vibrationResetBtn');
   const vibrationSaveVideoBtn = document.getElementById('vibrationSaveVideoBtn');
   const vibrationPanelClose = document.getElementById('vibrationPanelClose');
@@ -7019,8 +6336,8 @@
   const coordsSubheader = document.getElementById('coordsSubheader');
   const coordsControls = document.getElementById('coordsControls');
   const coordsFooter = document.getElementById('coordsFooter');
-  const pubchemMetaWrap = document.getElementById('pubchemMetaWrap');
-  const pubchemMetaContent = document.getElementById('pubchemMetaContent');
+  els.pubchemMetaWrap = document.getElementById('pubchemMetaWrap');
+  els.pubchemMetaContent = document.getElementById('pubchemMetaContent');
   const copyXYZBtn = document.getElementById('copyXYZ');
   const downloadXYZBtn = document.getElementById('downloadXYZ');
   // View controls
@@ -7071,22 +6388,22 @@
   const vibrationVideoCropActions = document.getElementById('vibrationVideoCropActions');
   const vibrationVideoCropStartBtn = document.getElementById('vibrationVideoCropStartBtn');
   const vibrationVideoCropCancelBtn = document.getElementById('vibrationVideoCropCancelBtn');
-  const vibrationRow = document.getElementById('vibrationRow');
-  const vibrationRow2 = document.getElementById('vibrationRow2');
+  const vibrationRow = els.vibrationRow = document.getElementById('vibrationRow');
+  const vibrationRow2 = els.vibrationRow2 = document.getElementById('vibrationRow2');
   const vibrationHideLowFreqEl = document.getElementById('vibrationHideLowFreq');
-  const vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
-  const vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
-  const vibrationModeLabel = document.getElementById('vibrationModeLabel');
-  const vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
-  const vibrationSpeedEl = document.getElementById('vibrationSpeed');
-  const vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
-  const vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
-  const vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
-  const vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
-  const vibrationModeTable = document.getElementById('vibrationModeTable');
-  const vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
-  const vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
-  const vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
+  const vibrationPlayBtn = els.vibrationPlayBtn = document.getElementById('vibrationPlayBtn');
+  const vibrationNowPlaying = els.vibrationNowPlaying = document.getElementById('vibrationNowPlaying');
+  const vibrationModeLabel = els.vibrationModeLabel = document.getElementById('vibrationModeLabel');
+  const vibrationAmplitudeEl = els.vibrationAmplitudeEl = document.getElementById('vibrationAmplitude');
+  const vibrationSpeedEl = els.vibrationSpeedEl = document.getElementById('vibrationSpeed');
+  const vibrationFreqLabel = els.vibrationFreqLabel = document.getElementById('vibrationFreqLabel');
+  const vibrationSpectrumWrap = els.vibrationSpectrumWrap = document.getElementById('vibrationSpectrumWrap');
+  const vibrationSpectrumCanvas = els.vibrationSpectrumCanvas = document.getElementById('vibrationSpectrumCanvas');
+  const vibrationSpectrumMeta = els.vibrationSpectrumMeta = document.getElementById('vibrationSpectrumMeta');
+  const vibrationModeTable = els.vibrationModeTable = document.getElementById('vibrationModeTable');
+  const vibrationModeTableWrap = els.vibrationModeTableWrap = document.getElementById('vibrationModeTableWrap');
+  const vibrationModeTableBody = els.vibrationModeTableBody = document.getElementById('vibrationModeTableBody');
+  const vibrationModeEmpty = els.vibrationModeEmpty = document.getElementById('vibrationModeEmpty');
 
   const getCanvasExportOverlayBounds = () => {
     const size = readViewportCssSize();
@@ -7148,8 +6465,7 @@
         if (syncEnabled) master.lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
         else if (info && info.enabled && info.traj) info.traj._lastStepMs = Math.max(0, Number(nextState.lastStepMs) || 0);
       }
-      trajectoryPlaying = !!(info && info.enabled && info.traj && (info.traj.syncEnabled ? master.playing : info.traj.playing));
-      trajectoryLastStepMs = info && info.traj ? Math.max(0, Number(info.traj._lastStepMs) || 0) : 0;
+      trajectoryPlaybackController.observePlaybackOwner(info, master);
     },
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
@@ -7160,8 +6476,8 @@
       return next;
     },
     prepareSceneForRecording: () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
     },
     captureSessionState: (info) => ({
@@ -7194,8 +6510,7 @@
         info.traj.playing = currentMode !== MODES.EDIT && !!snapshot.wasPlaying;
         info.traj._lastStepMs = 0;
       }
-      trajectoryPlaying = !!(info.traj.syncEnabled ? getTrajectorySyncMaster().playing : info.traj.playing);
-      trajectoryLastStepMs = 0;
+      trajectoryPlaybackController.observePlaybackOwner(info);
     },
     startRecordingSequence: (info) => {
       info.traj.syncEnabled = false;
@@ -7203,8 +6518,7 @@
       info.traj.playing = true;
       info.traj._lastStepMs = 0;
       applyTrajectoryFrameForInfo(info, 0, { syncUi: false });
-      trajectoryPlaying = true;
-      trajectoryLastStepMs = 0;
+      trajectoryPlaybackController.observePlaybackOwner(info);
     },
     resolveRecordingAdvance: (nextFrameIndex, lastFrameIndex) => {
       const next = Number(nextFrameIndex) | 0;
@@ -7250,12 +6564,12 @@
     syncPrimaryControls: syncVibrationControls,
     syncSecondaryControls: syncTrajectoryControls,
     getPlaybackState: () => ({
-      playing: vibrationPlaying,
-      lastStepMs: vibrationLastStepMs,
+      playing: vibrationRuntimeController.getPlaybackState().playing,
+      lastStepMs: vibrationRuntimeController.getPlaybackState().lastStepMs,
     }),
     setPlaybackState: (nextState = {}) => {
-      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) vibrationPlaying = !!nextState.playing;
-      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) vibrationLastStepMs = Number(nextState.lastStepMs) || 0;
+      if (Object.prototype.hasOwnProperty.call(nextState, 'playing')) vibrationRuntimeController.setPlaybackState({ playing: !!nextState.playing });
+      if (Object.prototype.hasOwnProperty.call(nextState, 'lastStepMs')) vibrationRuntimeController.setPlaybackState({ lastStepMs: Number(nextState.lastStepMs) || 0 });
     },
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
@@ -7270,7 +6584,7 @@
       targetRecord: info && info.record ? info.record : null,
       modeIndex: info && info.vib ? (info.vib.modeIndex | 0) : 0,
       phase: info && info.vib ? (Number(info.vib.phase) || 0) : 0,
-      wasPlaying: !!vibrationPlaying,
+      wasPlaying: !!vibrationRuntimeController.getPlaybackState().playing,
     }),
     restoreSessionState: (snapshot) => {
       if (!(snapshot && snapshot.targetRecord)) return;
@@ -7279,18 +6593,18 @@
       info.vib.modeIndex = Math.max(0, Math.min(info.modeCount - 1, Number(snapshot.modeIndex) | 0));
       applyActiveVibrationPhase(snapshot.phase, { syncUi: false });
       if (currentMode !== MODES.EDIT && snapshot.wasPlaying) {
-        vibrationPlaying = true;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: true });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       } else {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       }
     },
     startRecordingSequence: (info) => {
       info.vib.phase = 0;
       applyActiveVibrationPhase(0, { syncUi: false });
-      vibrationPlaying = true;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: true });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     },
     resolveRecordingAdvance: (nextPhase, cycleEndPhase) => {
       const next = Number(nextPhase) || 0;
@@ -7355,7 +6669,6 @@
   const viewSliderRegistry = new WeakMap();
   const VIEW_COPY_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="5" y="3" width="8" height="8" rx="1.5"></rect><path d="M3 6.5V12a1 1 0 0 0 1 1h5.5"></path></svg>';
   const VIEW_CHECK_ICON_SVG = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 8.25L6.5 11.25L12.5 5.25"></path></svg>';
-  const PUBCHEM_SEARCH_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
 
   /**
    * Parse a finite step value from an input or fallback.
@@ -7882,27 +7195,27 @@
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
-  editAtomsMenuEl = document.getElementById('editAtomsMenu');
-  editAtomsMenuBodyEl = document.getElementById('editAtomsMenuBody');
-  editAtomsMenuCurrentEl = document.getElementById('editAtomsMenuCurrent');
-  editSelectionTranslateCueEl = document.getElementById('editSelectionTranslateCue');
+  cacheElement('editAtomsMenuEl', 'editAtomsMenu');
+  cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
+  cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
+  cacheElement('editSelectionTranslateCueEl', 'editSelectionTranslateCue');
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
     getSnapshot: getSelectionPositionSnapshot,
     onCommit: (axis, value) => editTransformController?.setSelectionPosition(axis, value),
   });
-  editSelectionTranslateCueButtonEl = document.getElementById('editSelectionTranslateCueButton');
-  editSelectionRotateCueButtonEl = document.getElementById('editSelectionRotateCueButton');
-  editSelectionCoordinationCueButtonEl = document.getElementById('editSelectionCoordinationCueButton');
-  editSelectionMetalBondingCueButtonEl = document.getElementById('editSelectionMetalBondingCueButton');
-  editSelectionBondOrbitCueButtonEl = document.getElementById('editSelectionBondOrbitCueButton');
-  editSelectionBondDistanceCueButtonEl = document.getElementById('editSelectionBondDistanceCueButton');
-  editSelectionBondOrderCueButtonEl = document.getElementById('editSelectionBondOrderCueButton');
-  editSelectionAddFragmentCueButtonEl = document.getElementById('editSelectionAddFragmentCueButton');
-  editSelectionDeleteCueButtonEl = document.getElementById('editSelectionDeleteCueButton');
-  editSelectionFragmentCuePopoverEl = document.getElementById('editSelectionFragmentCuePopover');
-  editSelectionCoordinationCuePopoverEl = document.getElementById('editSelectionCoordinationCuePopover');
-  editSelectionMetalBondingCuePopoverEl = document.getElementById('editSelectionMetalBondingCuePopover');
+  cacheElement('editSelectionTranslateCueButtonEl', 'editSelectionTranslateCueButton');
+  cacheElement('editSelectionRotateCueButtonEl', 'editSelectionRotateCueButton');
+  cacheElement('editSelectionCoordinationCueButtonEl', 'editSelectionCoordinationCueButton');
+  cacheElement('editSelectionMetalBondingCueButtonEl', 'editSelectionMetalBondingCueButton');
+  cacheElement('editSelectionBondOrbitCueButtonEl', 'editSelectionBondOrbitCueButton');
+  cacheElement('editSelectionBondDistanceCueButtonEl', 'editSelectionBondDistanceCueButton');
+  cacheElement('editSelectionBondOrderCueButtonEl', 'editSelectionBondOrderCueButton');
+  cacheElement('editSelectionAddFragmentCueButtonEl', 'editSelectionAddFragmentCueButton');
+  cacheElement('editSelectionDeleteCueButtonEl', 'editSelectionDeleteCueButton');
+  cacheElement('editSelectionFragmentCuePopoverEl', 'editSelectionFragmentCuePopover');
+  cacheElement('editSelectionCoordinationCuePopoverEl', 'editSelectionCoordinationCuePopover');
+  cacheElement('editSelectionMetalBondingCuePopoverEl', 'editSelectionMetalBondingCuePopover');
 
   const bindSelectionCueButton = (buttonEl, action, clickAction = null) => {
     if (!buttonEl) return;
@@ -7932,38 +7245,38 @@
       if (typeof clickAction === 'function') clickAction();
     });
   };
-  bindSelectionCueButton(editSelectionTranslateCueButtonEl, 'translate', () => {
+  bindSelectionCueButton(els.editSelectionTranslateCueButtonEl, 'translate', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditSelectionDragMode('translate');
   });
-  bindSelectionCueButton(editSelectionRotateCueButtonEl, 'rotate', () => {
+  bindSelectionCueButton(els.editSelectionRotateCueButtonEl, 'rotate', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     if (getCurrentTransformSelectionContext()) setEditBondSideCueMode('axis');
     else setEditSelectionDragMode('rotate');
   });
-  bindSelectionCueButton(editSelectionBondOrbitCueButtonEl, 'bondQuaternion', () => {
+  bindSelectionCueButton(els.editSelectionBondOrbitCueButtonEl, 'bondQuaternion', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('orbit');
   });
-  bindSelectionCueButton(editSelectionBondDistanceCueButtonEl, 'bondDistance', () => {
+  bindSelectionCueButton(els.editSelectionBondDistanceCueButtonEl, 'bondDistance', () => {
     setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, syncSearch: false, preserveSelection: true });
     setEditBondSideCueMode('distance');
   });
-  bindSelectionCueButton(editSelectionBondOrderCueButtonEl, 'bondOrder', () => {
+  bindSelectionCueButton(els.editSelectionBondOrderCueButtonEl, 'bondOrder', () => {
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     const resolved = getBondCenterSelectionResolved(vol);
     if (!resolved || !resolved.carrier || !bondEditing) return;
     bondEditing.showPopupForCarrier(resolved.carrier, { markClickHandled: true });
   });
-  if (editSelectionCoordinationCueButtonEl) {
-    editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionCoordinationCueButtonEl) {
+    els.editSelectionCoordinationCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       selectionCoordinationCuePointerHandled = true;
       toggleSelectionCoordinationCuePopover();
     });
-    editSelectionCoordinationCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionCoordinationCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       if (selectionCoordinationCuePointerHandled) {
@@ -7973,14 +7286,14 @@
       toggleSelectionCoordinationCuePopover();
     });
   }
-  if (editSelectionMetalBondingCueButtonEl) {
-    editSelectionMetalBondingCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionMetalBondingCueButtonEl) {
+    els.editSelectionMetalBondingCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       selectionMetalBondingCuePointerHandled = true;
       toggleSelectionMetalBondingCuePopover();
     });
-    editSelectionMetalBondingCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionMetalBondingCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       if (selectionMetalBondingCuePointerHandled) {
@@ -7990,12 +7303,12 @@
       toggleSelectionMetalBondingCuePopover();
     });
   }
-  if (editSelectionAddFragmentCueButtonEl) {
-    editSelectionAddFragmentCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionAddFragmentCueButtonEl) {
+    els.editSelectionAddFragmentCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionAddFragmentCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionAddFragmentCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
@@ -8003,12 +7316,12 @@
       setSelectionBuildCueActive(!isSelectionBuildCueActive(), { announce: true, syncSearch: false, preserveSelection: true });
     });
   }
-  if (editSelectionDeleteCueButtonEl) {
-    editSelectionDeleteCueButtonEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionDeleteCueButtonEl) {
+    els.editSelectionDeleteCueButtonEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionDeleteCueButtonEl.addEventListener('click', (e) => {
+    els.editSelectionDeleteCueButtonEl.addEventListener('click', (e) => {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
@@ -8024,16 +7337,16 @@
       }
     });
   }
-  if (editSelectionFragmentCuePopoverEl) {
-    editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
+  if (els.editSelectionFragmentCuePopoverEl) {
+    els.editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
       hideSelectionFragmentCuePopover(120);
     });
   }
-  if (editSelectionCoordinationCuePopoverEl) {
-    editSelectionCoordinationCuePopoverEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionCoordinationCuePopoverEl) {
+    els.editSelectionCoordinationCuePopoverEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionCoordinationCuePopoverEl.addEventListener('click', (e) => {
+    els.editSelectionCoordinationCuePopoverEl.addEventListener('click', (e) => {
       const target = e && e.target ? e.target.closest('[data-coordination-choice]') : null;
       if (!target) return;
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8046,11 +7359,11 @@
       }
     });
   }
-  if (editSelectionMetalBondingCuePopoverEl) {
-    editSelectionMetalBondingCuePopoverEl.addEventListener('pointerdown', (e) => {
+  if (els.editSelectionMetalBondingCuePopoverEl) {
+    els.editSelectionMetalBondingCuePopoverEl.addEventListener('pointerdown', (e) => {
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
     });
-    editSelectionMetalBondingCuePopoverEl.addEventListener('click', (e) => {
+    els.editSelectionMetalBondingCuePopoverEl.addEventListener('click', (e) => {
       const target = e && e.target ? e.target.closest('[data-metal-bonding-choice]') : null;
       if (!target) return;
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -8066,33 +7379,33 @@
   document.addEventListener('pointerdown', (evt) => {
     const target = evt && evt.target;
     if (
-      editSelectionCoordinationCuePopoverEl
-      && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false'
-      && !(editSelectionCoordinationCuePopoverEl.contains(target) || (editSelectionCoordinationCueButtonEl && editSelectionCoordinationCueButtonEl.contains(target)))
+      els.editSelectionCoordinationCuePopoverEl
+      && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(els.editSelectionCoordinationCuePopoverEl.contains(target) || (els.editSelectionCoordinationCueButtonEl && els.editSelectionCoordinationCueButtonEl.contains(target)))
     ) {
       hideSelectionCoordinationCuePopover();
     }
     if (
-      editSelectionMetalBondingCuePopoverEl
-      && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false'
-      && !(editSelectionMetalBondingCuePopoverEl.contains(target) || (editSelectionMetalBondingCueButtonEl && editSelectionMetalBondingCueButtonEl.contains(target)))
+      els.editSelectionMetalBondingCuePopoverEl
+      && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false'
+      && !(els.editSelectionMetalBondingCuePopoverEl.contains(target) || (els.editSelectionMetalBondingCueButtonEl && els.editSelectionMetalBondingCueButtonEl.contains(target)))
     ) {
       hideSelectionMetalBondingCuePopover();
     }
   });
-  editAdaptiveAddAtomBtn = document.getElementById('editAdaptiveAddAtomBtn');
-  editAdaptiveSymmetryBtn = document.getElementById('editAdaptiveSymmetryBtn');
-  editAdaptiveSymmetryMetaEl = document.getElementById('editAdaptiveSymmetryMeta');
-  editAdaptiveCleanStructureBtn = document.getElementById('editAdaptiveCleanStructureBtn');
-  editAdaptiveCleanStructureMetaEl = document.getElementById('editAdaptiveCleanStructureMeta');
-  editAdaptiveShiftComBtn = document.getElementById('editAdaptiveShiftComBtn');
-  editAdaptiveShiftComMetaEl = document.getElementById('editAdaptiveShiftComMeta');
-  editAdaptiveAlignPrincipalBtn = document.getElementById('editAdaptiveAlignPrincipalBtn');
-  editAdaptiveAlignPrincipalMetaEl = document.getElementById('editAdaptiveAlignPrincipalMeta');
+  cacheElement('editAdaptiveAddAtomBtn', 'editAdaptiveAddAtomBtn');
+  cacheElement('editAdaptiveSymmetryBtn', 'editAdaptiveSymmetryBtn');
+  cacheElement('editAdaptiveSymmetryMetaEl', 'editAdaptiveSymmetryMeta');
+  cacheElement('editAdaptiveCleanStructureBtn', 'editAdaptiveCleanStructureBtn');
+  cacheElement('editAdaptiveCleanStructureMetaEl', 'editAdaptiveCleanStructureMeta');
+  cacheElement('editAdaptiveShiftComBtn', 'editAdaptiveShiftComBtn');
+  cacheElement('editAdaptiveShiftComMetaEl', 'editAdaptiveShiftComMeta');
+  cacheElement('editAdaptiveAlignPrincipalBtn', 'editAdaptiveAlignPrincipalBtn');
+  cacheElement('editAdaptiveAlignPrincipalMetaEl', 'editAdaptiveAlignPrincipalMeta');
   const EDIT_ADAPTIVE_CHIP_DEFS = Object.freeze([
     {
       id: 'build',
-      getButtonEl: () => editAdaptiveAddAtomBtn,
+      getButtonEl: () => els.editAdaptiveAddAtomBtn,
       getMetaEl: () => null,
       getState(context) {
         return {
@@ -8111,8 +7424,8 @@
     },
     {
       id: 'symmetry',
-      getButtonEl: () => editAdaptiveSymmetryBtn,
-      getMetaEl: () => editAdaptiveSymmetryMetaEl,
+      getButtonEl: () => els.editAdaptiveSymmetryBtn,
+      getMetaEl: () => els.editAdaptiveSymmetryMetaEl,
       getState(context) {
         if (context.buildModeActive && !workspaceEnabled) {
           return {
@@ -8144,8 +7457,8 @@
     },
     {
       id: 'optimize',
-      getButtonEl: () => editAdaptiveCleanStructureBtn,
-      getMetaEl: () => editAdaptiveCleanStructureMetaEl,
+      getButtonEl: () => els.editAdaptiveCleanStructureBtn,
+      getMetaEl: () => els.editAdaptiveCleanStructureMetaEl,
       getState(context) {
         if (context.buildModeActive && !workspaceEnabled) {
           return {
@@ -8177,8 +7490,8 @@
     },
     {
       id: 'center-mass',
-      getButtonEl: () => editAdaptiveShiftComBtn,
-      getMetaEl: () => editAdaptiveShiftComMetaEl,
+      getButtonEl: () => els.editAdaptiveShiftComBtn,
+      getMetaEl: () => els.editAdaptiveShiftComMetaEl,
       getState(context) {
         return {
           visible: context.hasEditableAtoms && !context.buildModeActive,
@@ -8196,8 +7509,8 @@
     },
     {
       id: 'align',
-      getButtonEl: () => editAdaptiveAlignPrincipalBtn,
-      getMetaEl: () => editAdaptiveAlignPrincipalMetaEl,
+      getButtonEl: () => els.editAdaptiveAlignPrincipalBtn,
+      getMetaEl: () => els.editAdaptiveAlignPrincipalMetaEl,
       getState(context) {
         return {
           visible: context.hasEditableAtoms && !context.buildModeActive,
@@ -8214,21 +7527,21 @@
       },
     },
   ]);
-  editAdaptiveAddAtomPopoverEl = document.getElementById('editAdaptiveAddAtomPopover');
-  editAdaptiveSymmetryPopoverEl = document.getElementById('editAdaptiveSymmetryPopover');
-  editBuildSearchEl = document.getElementById('editBuildSearch');
-  editBuildAtomsHostEl = document.getElementById('editBuildAtomsHost');
-  editBuildFragmentsHostEl = document.getElementById('editBuildFragmentsHost');
-  editBuildMoleculesHostEl = document.getElementById('editBuildMoleculesHost');
-  editSymmetryTargetSummaryEl = document.getElementById('editSymmetryTargetSummary');
-  editSymmetryExactResultCardEl = document.getElementById('editSymmetryExactResultCard');
-  editSymmetryExactResultEl = document.getElementById('editSymmetryExactResult');
-  editSymmetryToleranceSelectEl = document.getElementById('editSymmetryToleranceSelect');
-  editSymmetryElementSelectEl = document.getElementById('editSymmetryElementSelect');
-  editSymmetryCandidatesEl = document.getElementById('editSymmetryCandidates');
-  editSymmetryApplyBtnEl = document.getElementById('editSymmetryApplyBtn');
-  editSymmetryCancelBtnEl = document.getElementById('editSymmetryCancelBtn');
-  editSymmetryAutoBtnEl = document.getElementById('editSymmetryAutoBtn');
+  cacheElement('editAdaptiveAddAtomPopoverEl', 'editAdaptiveAddAtomPopover');
+  cacheElement('editAdaptiveSymmetryPopoverEl', 'editAdaptiveSymmetryPopover');
+  cacheElement('editBuildSearchEl', 'editBuildSearch');
+  cacheElement('editBuildAtomsHostEl', 'editBuildAtomsHost');
+  cacheElement('editBuildFragmentsHostEl', 'editBuildFragmentsHost');
+  cacheElement('editBuildMoleculesHostEl', 'editBuildMoleculesHost');
+  cacheElement('editSymmetryTargetSummaryEl', 'editSymmetryTargetSummary');
+  cacheElement('editSymmetryExactResultCardEl', 'editSymmetryExactResultCard');
+  cacheElement('editSymmetryExactResultEl', 'editSymmetryExactResult');
+  cacheElement('editSymmetryToleranceSelectEl', 'editSymmetryToleranceSelect');
+  cacheElement('editSymmetryElementSelectEl', 'editSymmetryElementSelect');
+  cacheElement('editSymmetryCandidatesEl', 'editSymmetryCandidates');
+  cacheElement('editSymmetryApplyBtnEl', 'editSymmetryApplyBtn');
+  cacheElement('editSymmetryCancelBtnEl', 'editSymmetryCancelBtn');
+  cacheElement('editSymmetryAutoBtnEl', 'editSymmetryAutoBtn');
   const editSelectionMarqueeEl = document.getElementById('editSelectionMarquee');
   const editAddAtomOperatorPanelEl = document.getElementById('editAddAtomOperatorPanel');
   const editAddAtomOperatorHeaderEl = document.getElementById('editAddAtomOperatorHeader');
@@ -8287,9 +7600,9 @@
   const emptyStateSampleBtn = document.getElementById('emptyStateSampleBtn');
   const emptyStateMethaneBtn = document.getElementById('emptyStateMethaneBtn');
   const emptyState2cBtn = document.getElementById('emptyState2cBtn');
-  const pubchemQueryInput = document.getElementById('pubchemQuery');
-  const pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
-  const pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
+  els.pubchemQueryInput = document.getElementById('pubchemQuery');
+  els.pubchemLoadBtn = document.getElementById('pubchemLoadBtn');
+  els.pubchemSuggestionsEl = document.getElementById('pubchemSuggestions');
   const toolbarEl = document.getElementById('toolbar');
   const toolbarCollapseBtn = document.getElementById('toolbarCollapseBtn');
   const toolbarShowBtn = document.getElementById('toolbarShowBtn');
@@ -9170,10 +8483,7 @@
     return out;
   }
 
-  function isTrajectoryVolumeRecord(vol) {
-    const frames = vol && vol.trajectory && vol.trajectory.frames;
-    return Array.isArray(frames) && frames.length > 1;
-  }
+  function isTrajectoryVolumeRecord(...args) { return trajectoryPlaybackController.isTrajectoryVolumeRecord(...args); }
 
   function getSurfaceDefaultsForNewLayer() {
     const scheme = surfaceColorSchemeDefault || 'emory';
@@ -9223,11 +8533,7 @@
     return String(primary && primary.name || 'Untitled scene');
   }
 
-  function getActiveTrajectoryInfoForRecord(record) {
-    if (!record || !record.vol) return { enabled: false };
-    const frames = record.vol.trajectory && record.vol.trajectory.frames;
-    return { enabled: Array.isArray(frames) && frames.length > 1, frameCount: Array.isArray(frames) ? frames.length : 0 };
-  }
+  function getActiveTrajectoryInfoForRecord(...args) { return trajectoryPlaybackController.getActiveTrajectoryInfoForRecord(...args); }
 
   function syncSceneGraphFromVolumes(options = {}) {
     ensureLegacyRecordSceneKeys();
@@ -10804,343 +10110,19 @@
     window.VibeMolTooltip.installGlobalTooltipDelegation();
   }
 
-  const PERIODIC_TABLE_LAYOUT = [
-    ['H', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', 'He'],
-    ['Li', 'Be', '', '', '', '', '', '', '', '', '', '', 'B', 'C', 'N', 'O', 'F', 'Ne'],
-    ['Na', 'Mg', '', '', '', '', '', '', '', '', '', '', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar'],
-    ['K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr'],
-    ['Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe'],
-    ['Cs', 'Ba', 'La', 'Hf', 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn'],
-    ['Fr', 'Ra', 'Ac', '', '', '', '', '', '', '', '', '', '', '', '', '', '', ''],
-    ['', '', '', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu', ''],
-    ['', '', '', 'Th', 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', '', '', '', ''],
-  ];
-  const periodicNodesByZ = new Map();
-  const periodicPickTargets = [];
-  let periodicTableRenderer = null;
-  let periodicTableScene = null;
-  let periodicTableCamera = null;
-  let periodicTableControls = null;
-  let periodicTableRoot = null;
-  let periodicTableRaf = 0;
-  const periodicRaycaster = new THREE.Raycaster();
-  const periodicPointer = new THREE.Vector2();
-  let selectedElementForEditor = 6;
-  const PERIODIC_TABLE_NODE_SCALE = 1.25;
-  const PERIODIC_TABLE_SELECTED_SCALE = 1.3;
-  const PERIODIC_TABLE_SPHERE_RADIUS = 0.34;
-  const PERIODIC_TABLE_OUTLINE_SCALE = 1.12;
-  const PERIODIC_TABLE_VIEW_MARGIN = 1.08;
-
-  /**
-   * Build a compact symbol sprite for one periodic table sphere.
-   * @param {string} symbol
-   * @returns {THREE.Sprite}
-   */
-  function makePeriodicSymbolSprite(symbol) {
-    const txt = (symbol || '?').trim().slice(0, 3);
-    const c = document.createElement('canvas');
-    c.width = 128;
-    c.height = 64;
-    const ctx = c.getContext('2d');
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.font = 'bold 54px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif';
-    ctx.fillStyle = UI_PALETTE.periodicSymbolFill;
-    ctx.strokeStyle = UI_PALETTE.periodicSymbolStroke;
-    ctx.lineWidth = 5;
-    ctx.strokeText(txt, c.width * 0.5, c.height * 0.52);
-    ctx.fillText(txt, c.width * 0.5, c.height * 0.52);
-    const tex = new THREE.CanvasTexture(c);
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.generateMipmaps = false;
-    const mat = new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false });
-    const spr = new THREE.Sprite(mat);
-    spr.scale.set(0.72, 0.36, 1);
-    spr.renderOrder = 22;
-    return spr;
-  }
-
-  /**
-   * Return the 3D position for a periodic table slot.
-   * @param {number} row
-   * @param {number} col
-   * @returns {THREE.Vector3}
-   */
-  function getPeriodicTablePosition(row, col) {
-    const sx = 1.28;
-    const sy = 1.12;
-    const x = (col - 8.5) * sx;
-    const y = (4 - row) * sy;
-    // Keep lanthanides/actinides on the same depth plane as the main table.
-    const z = 0;
-    return new THREE.Vector3(x, y, z);
-  }
-
-  /**
-   * Compute half-extents of visible periodic-table content in local scene space.
-   * Includes selected-node enlargement and outline shell padding.
-   * @returns {{halfW:number, halfH:number}}
-   */
-  function getPeriodicTableHalfExtents() {
-    let maxX = 0;
-    let maxY = 0;
-    for (let row = 0; row < PERIODIC_TABLE_LAYOUT.length; row++) {
-      const cols = PERIODIC_TABLE_LAYOUT[row];
-      for (let col = 0; col < cols.length; col++) {
-        const symbol = (cols[col] || '').trim();
-        if (!symbol) continue;
-        const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
-        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
-        const p = getPeriodicTablePosition(row, col);
-        maxX = Math.max(maxX, Math.abs(p.x));
-        maxY = Math.max(maxY, Math.abs(p.y));
-      }
-    }
-    const shellPad = PERIODIC_TABLE_SPHERE_RADIUS
-      * PERIODIC_TABLE_NODE_SCALE
-      * PERIODIC_TABLE_SELECTED_SCALE
-      * PERIODIC_TABLE_OUTLINE_SCALE
-      + 0.12;
-    return {
-      halfW: maxX + shellPad,
-      halfH: maxY + shellPad,
-    };
-  }
-
-  /**
-   * Resize the periodic-table renderer and camera to viewport size.
-   */
-  function resizePeriodicTableScene() {
-    if (!periodicTableRenderer || !periodicTableCamera || !periodicTableViewport) return;
-    const w = Math.max(10, periodicTableViewport.clientWidth | 0);
-    const h = Math.max(10, periodicTableViewport.clientHeight | 0);
-    periodicTableRenderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
-    periodicTableRenderer.setSize(w, h, false);
-    const aspect = w / h;
-    if (periodicTableCamera.isOrthographicCamera) {
-      const ext = getPeriodicTableHalfExtents();
-      const orthoHalfHeight = Math.max(ext.halfH, ext.halfW / Math.max(1e-6, aspect)) * PERIODIC_TABLE_VIEW_MARGIN;
-      periodicTableCamera.left = -orthoHalfHeight * aspect;
-      periodicTableCamera.right = orthoHalfHeight * aspect;
-      periodicTableCamera.top = orthoHalfHeight;
-      periodicTableCamera.bottom = -orthoHalfHeight;
-      periodicTableCamera.zoom = 1;
-    } else {
-      periodicTableCamera.aspect = aspect;
-    }
-    periodicTableCamera.updateProjectionMatrix();
-  }
-
-  /**
-   * Render one periodic-table frame.
-   */
-  function renderPeriodicTableFrame() {
-    if (!periodicTableRenderer || !periodicTableScene || !periodicTableCamera) return;
-    if (periodicTableControls) periodicTableControls.update();
-    periodicTableRenderer.render(periodicTableScene, periodicTableCamera);
-  }
-
-  /**
-   * Periodic-table animation loop while popup is open.
-   */
-  function periodicTableLoop() {
-    if (!elementColorOverlay || elementColorOverlay.style.display !== 'flex') {
-      periodicTableRaf = 0;
-      return;
-    }
-    renderPeriodicTableFrame();
-    periodicTableRaf = requestAnimationFrame(periodicTableLoop);
-  }
-
-  /**
-   * Start periodic-table rendering loop if not already active.
-   */
-  function startPeriodicTableLoop() {
-    if (periodicTableRaf) return;
-    periodicTableRaf = requestAnimationFrame(periodicTableLoop);
-  }
-
-  /**
-   * Stop periodic-table rendering loop.
-   */
-  function stopPeriodicTableLoop() {
-    if (!periodicTableRaf) return;
-    cancelAnimationFrame(periodicTableRaf);
-    periodicTableRaf = 0;
-  }
-
-  /**
-   * Ensure periodic-table scene resources are created.
-   */
-  function ensurePeriodicTableScene() {
-    if (periodicTableScene || !periodicTableCanvas) return;
-
-    periodicTableRenderer = new THREE.WebGLRenderer({
-      canvas: periodicTableCanvas,
-      antialias: true,
-      alpha: true,
-    });
-    periodicTableScene = new THREE.Scene();
-    periodicTableCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 300);
-    periodicTableCamera.position.set(0, 0, 32);
-    periodicTableCamera.lookAt(0, 0, 0);
-
-    periodicTableScene.add(
-      new THREE.AmbientLight(0xffffff, 0.85)
-    );
-    const d1 = new THREE.DirectionalLight(0xffffff, 0.95);
-    // Push the key highlight higher on a top-right diagonal.
-    d1.position.set(4.5, 5.0, 0.5);
-    periodicTableScene.add(d1);
-    const d2 = new THREE.DirectionalLight(0x9fc2ff, 0.45);
-    d2.position.set(-2.6, -1.4, -2.2);
-    periodicTableScene.add(d2);
-
-    periodicTableRoot = new THREE.Group();
-    periodicTableRoot.rotation.x = 0;
-    periodicTableRoot.rotation.y = 0;
-    periodicTableScene.add(periodicTableRoot);
-
-    const sphereGeom = new THREE.SphereGeometry(PERIODIC_TABLE_SPHERE_RADIUS, 24, 18);
-    periodicNodesByZ.clear();
-    periodicPickTargets.length = 0;
-    for (let row = 0; row < PERIODIC_TABLE_LAYOUT.length; row++) {
-      const cols = PERIODIC_TABLE_LAYOUT[row];
-      for (let col = 0; col < cols.length; col++) {
-        const symbol = (cols[col] || '').trim();
-        if (!symbol) continue;
-        const z = ATOM_SYMBOL_TO_Z && ATOM_SYMBOL_TO_Z[symbol.toUpperCase()];
-        if (!Number.isInteger(z) || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) continue;
-
-        const colorHex = getActiveElementHexColor(z);
-        const mat = new THREE.MeshPhongMaterial({
-          color: new THREE.Color(colorHex),
-          specular: 0xffffff,
-          shininess: 120,
-          emissive: new THREE.Color(0x08111c),
-          emissiveIntensity: 0.06,
-        });
-        const mesh = new THREE.Mesh(sphereGeom, mat);
-        mesh.position.copy(getPeriodicTablePosition(row, col));
-        mesh.userData = { periodicZ: z };
-        mesh.scale.setScalar(PERIODIC_TABLE_NODE_SCALE);
-
-        const outlineMat = new THREE.MeshBasicMaterial({
-          color: 0x0c1624,
-          side: THREE.BackSide,
-          transparent: true,
-          opacity: 0.62,
-        });
-        const outline = new THREE.Mesh(sphereGeom, outlineMat);
-        outline.scale.setScalar(PERIODIC_TABLE_OUTLINE_SCALE);
-        mesh.add(outline);
-
-        const label = makePeriodicSymbolSprite(symbol);
-        label.position.set(0, 0, 0.52);
-        mesh.add(label);
-
-        periodicTableRoot.add(mesh);
-        periodicNodesByZ.set(z, { mesh, outlineMat, label, symbol });
-        periodicPickTargets.push(mesh);
-      }
-    }
-
-    // Static preview: disable pan/zoom interactions in this panel.
-    periodicTableControls = null;
-
-    periodicTableCanvas.addEventListener('pointerdown', (e) => {
-      if (!periodicTableCamera || !periodicPickTargets.length) return;
-      const rect = periodicTableCanvas.getBoundingClientRect();
-      if (!rect.width || !rect.height) return;
-      periodicPointer.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-      periodicPointer.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-      periodicRaycaster.setFromCamera(periodicPointer, periodicTableCamera);
-      const hits = periodicRaycaster.intersectObjects(periodicPickTargets, false);
-      if (!hits.length) return;
-      const hit = hits[0].object;
-      const z = hit && hit.userData ? hit.userData.periodicZ : null;
-      if (!Number.isInteger(z)) return;
-      selectElementForColorEditor(z);
-      renderPeriodicTableFrame();
-    });
-
-    resizePeriodicTableScene();
-  }
-
-  /**
-   * Refresh one periodic-table node color/highlight from current state.
-   * @param {number} z
-   */
-  function refreshPeriodicCell(z) {
-    const node = periodicNodesByZ.get(z | 0);
-    if (!node || !node.mesh || !node.mesh.material) return;
-    const hex = getActiveElementHexColor(z);
-    node.mesh.material.color.set(hex);
-    const selected = (z | 0) === selectedElementForEditor;
-    node.mesh.scale.setScalar((selected ? PERIODIC_TABLE_SELECTED_SCALE : 1.0) * PERIODIC_TABLE_NODE_SCALE);
-    node.mesh.material.emissiveIntensity = selected ? 0.28 : 0.06;
-    if (node.outlineMat) node.outlineMat.opacity = selected ? 0.92 : 0.62;
-    if (node.label) node.label.material.opacity = selected ? 1.0 : 0.9;
-  }
-
-  /**
-   * Refresh all periodic table cell swatches.
-   */
-  function refreshPeriodicCells() {
-    for (const z of periodicNodesByZ.keys()) refreshPeriodicCell(z);
-  }
-
-  /**
-   * Mark one element as selected in the color editor.
-   * @param {number} z
-   */
-  function selectElementForColorEditor(z) {
-    const next = z | 0;
-    if (next < 0) return;
-    selectedElementForEditor = next;
-    if (elementColorPicker) {
-      elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
-    }
-    if (elementColorName) {
-      const symbol = getElementSymbol(selectedElementForEditor);
-      const name = getElementName(selectedElementForEditor);
-      elementColorName.textContent = `${symbol} — ${name} (Z=${selectedElementForEditor})`;
-    }
-    refreshPeriodicCells();
-  }
-
-  /**
-   * Build the periodic table editor scene once.
-   */
-  function buildPeriodicTableEditor() {
-    ensurePeriodicTableScene();
-    refreshPeriodicCells();
-    selectElementForColorEditor(selectedElementForEditor);
-    resizePeriodicTableScene();
-    renderPeriodicTableFrame();
-  }
-
-  /**
-   * Toggle periodic-table overlay visibility.
-   * @param {boolean} open
-   */
-  function setElementColorOverlayOpen(open) {
-    if (!elementColorOverlay) return;
-    const isOpen = !!open;
-    elementColorOverlay.style.display = isOpen ? 'flex' : 'none';
-    elementColorOverlay.setAttribute('aria-hidden', isOpen ? 'false' : 'true');
-    if (isOpen) {
-      buildPeriodicTableEditor();
-      refreshPeriodicCells();
-      selectElementForColorEditor(selectedElementForEditor);
-      startPeriodicTableLoop();
-    } else {
-      stopPeriodicTableLoop();
-    }
-  }
+  const periodicTableController = createPeriodicTableController({
+    THREE,
+    ATOM_Z_TO_DATA,
+    ATOM_SYMBOL_TO_Z,
+    UI_PALETTE,
+    getActiveElementHexColor,
+    getElementSymbol,
+    getElementName,
+    editAppearanceSettings,
+    exportElementColorOverrides,
+    normalizeHexColor,
+    els,
+  });
 
   /**
    * Reflect the active interaction mode in toolbar mode buttons.
@@ -11199,8 +10181,8 @@
     if (currentMode === MODES.EDIT || currentMode === MODES.CALCULATIONS) {
       const vibInfo = getActiveVibrationInfo();
       if (vibInfo.enabled) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
         restoreActiveVibrationEquilibrium({ syncUi: false });
         syncVibrationControls();
       }
@@ -11522,7 +10504,7 @@
    * Position the shared canvas adaptive menu against the sidebar edge.
    */
   function positionCanvasAdaptiveMenu() {
-    if (!canvasAdaptiveMenuEl) return;
+    if (!els.displayWindowAdaptiveMenuEl) return;
     const gap = 12;
     const inset = getCanvasAdaptiveMenuTopInset();
     let left = gap;
@@ -11537,11 +10519,11 @@
       }
     }
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const menuWidth = Math.max(0, Math.round(canvasAdaptiveMenuEl.getBoundingClientRect().width || canvasAdaptiveMenuEl.offsetWidth || 0));
+    const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));
     const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    canvasAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
-    canvasAdaptiveMenuEl.style.top = `${top}px`;
-    canvasAdaptiveMenuEl.style.right = 'auto';
+    els.displayWindowAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    els.displayWindowAdaptiveMenuEl.style.top = `${top}px`;
+    els.displayWindowAdaptiveMenuEl.style.right = 'auto';
   }
 
   let helpRestoreFocusEl = null;
@@ -11727,7 +10709,7 @@
   }
 
   function updateCanvasAdaptiveMenuUi() {
-    if (!canvasAdaptiveMenuEl) return;
+    if (!els.displayWindowAdaptiveMenuEl) return;
     if (currentMode === MODES.EDIT && !workspaceEnabled) closeExclusiveDisplayWindows(NON_EDIT_WINDOW_ID.COORDS_PANEL);
     let menuModel = currentMode === MODES.EDIT
       ? buildEditAdaptiveMenuModel()
@@ -11738,9 +10720,9 @@
         visibleItems: [...menuModel.visibleItems, ...shared.visibleItems],
         activeItems: [...menuModel.activeItems, ...shared.activeItems] };
     }
-    canvasAdaptiveMenuEl.dataset.mode = menuModel.mode;
+    els.displayWindowAdaptiveMenuEl.dataset.mode = menuModel.mode;
     updateAdaptiveMenuUiHelper({
-      menuEl: canvasAdaptiveMenuEl,
+      menuEl: els.displayWindowAdaptiveMenuEl,
       isVisible: !!menuModel.isVisible,
       positionMenu: positionCanvasAdaptiveMenu,
       onHideAllPopovers: menuModel.onHideAllPopovers,
@@ -11752,7 +10734,7 @@
       displayWindowsController.positionOpenButtonAnchoredPopovers();
     }
     if (displayAdaptiveMenuAutoHideController) {
-      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && canvasAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
+      displayAdaptiveMenuAutoHideController.setEnabled(!workspaceEnabled && els.displayWindowAdaptiveMenuEl.getAttribute('aria-hidden') === 'false');
     }
     syncTwoComponentOverlayLabelOffsets();
   }
@@ -11988,13 +10970,10 @@
           reason: String(options.vibrationVideoReason || 'Vibration video export discarded because the panel was closed'),
         });
       }
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
-      if (vibrationPanelLayoutRaf) {
-        cancelAnimationFrame(vibrationPanelLayoutRaf);
-        vibrationPanelLayoutRaf = 0;
-      }
+      vibrationRuntimeController.cancelPanelLayoutSync();
     }
     setFloatingPanelOpen(vibrationPanel, shouldOpen);
     if (shouldOpen) scheduleVibrationPanelLayoutSync(2);
@@ -12117,14 +11096,14 @@
         isOpen: () => !!propertiesInspector?.isOpen(),
         setOpen: open => propertiesInspector?.setOpen(open, { focus: false }),
       }, buildPanel: {
-        id: 'buildPanel', label: 'Build', buttonEl: editAdaptiveAddAtomBtn,
+        id: 'buildPanel', label: 'Build', buttonEl: els.editAdaptiveAddAtomBtn,
         isOpen: isBuildPopoverOpen,
         setOpen: open => {
           if (!open) hideBuildPopover();
           else if (!isBuildPopoverOpen()) showBuildPopover({ fromWorkbench: true, preserveFocus: true });
         },
       }, symmetryPanel: {
-        id: 'symmetryPanel', label: 'Symmetry', buttonEl: editAdaptiveSymmetryBtn,
+        id: 'symmetryPanel', label: 'Symmetry', buttonEl: els.editAdaptiveSymmetryBtn,
         isOpen: isSymmetryPopoverOpen,
         setOpen: open => {
           if (!open) hideSymmetryPopover();
@@ -12207,13 +11186,13 @@
       [NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY]: {
         id: NON_EDIT_WINDOW_ID.ELEMENT_COLOR_OVERLAY,
         label: 'Element colors overlay',
-        isOpen: () => isAriaPopupVisible(elementColorOverlay),
-        setOpen: (open) => setElementColorOverlayOpen(open),
+        isOpen: () => periodicTableController.isOpen(),
+        setOpen: (open) => periodicTableController.setOpen(open),
       },
     },
   });
   displayAdaptiveMenuAutoHideController = createAdaptiveMenuAutoHideController({
-    menuEl: canvasAdaptiveMenuEl,
+    menuEl: els.displayWindowAdaptiveMenuEl,
     delayMs: 5000,
     revealEdgeWidth: 64,
     revealSlack: 20,
@@ -12224,7 +11203,7 @@
     ),
     getRelatedElements: () => (
       currentMode === MODES.EDIT
-        ? [editAdaptiveAddAtomPopoverEl, editAdaptiveSymmetryPopoverEl]
+        ? [els.editAdaptiveAddAtomPopoverEl, els.editAdaptiveSymmetryPopoverEl]
         : [moldenInspector, spinorInfoPanel, viewInspector]
     ),
   });
@@ -13716,7 +12695,7 @@
       clearBondCenterSelection({ updateVisuals: false });
       if (autoHydrogenController) autoHydrogenController.clearPreview({ quiet: true });
       clearActiveVoidPlacementPreview();
-      if (symmetryPreviewState) {
+      if (symmetryPanelController.getPreviewState()) {
         clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
       }
       const selection = getEditAtomSelection();
@@ -16753,9 +15732,9 @@
 
     syncBuildPaletteQuickButtonStates(buildPayload);
     syncBuildSearchField();
-    if (editBuildSearchEl) {
+    if (els.editBuildSearchEl) {
       const activeQuery = getBuildPaletteFilterQuery()
-        || (document.activeElement === editBuildSearchEl ? String(editBuildSearchEl.value || '') : '');
+        || (document.activeElement === els.editBuildSearchEl ? String(els.editBuildSearchEl.value || '') : '');
       updateBuildPaletteFilter(activeQuery);
       syncBuildPaletteQuickButtonStates(buildPayload);
     }
@@ -16918,8 +15897,8 @@
 
   function setBuildPaletteFilterQuery(nextQuery, options = {}) {
     buildPaletteFilterQuery = String(nextQuery || '');
-    if (options.syncInput !== false && editBuildSearchEl) {
-      editBuildSearchEl.value = buildPaletteFilterQuery;
+    if (options.syncInput !== false && els.editBuildSearchEl) {
+      els.editBuildSearchEl.value = buildPaletteFilterQuery;
     }
   }
 
@@ -16940,13 +15919,13 @@
   }
 
   function isBuildSearchNavigationActive() {
-    if (!editBuildSearchEl) return false;
-    return document.activeElement === editBuildSearchEl && !!String(editBuildSearchEl.value || '').trim();
+    if (!els.editBuildSearchEl) return false;
+    return document.activeElement === els.editBuildSearchEl && !!String(els.editBuildSearchEl.value || '').trim();
   }
 
   function syncBuildSearchNavigationUi() {
-    if (!editAdaptiveAddAtomPopoverEl) return;
-    editAdaptiveAddAtomPopoverEl.classList.toggle('is-search-navigating', isBuildSearchNavigationActive());
+    if (!els.editAdaptiveAddAtomPopoverEl) return;
+    els.editAdaptiveAddAtomPopoverEl.classList.toggle('is-search-navigating', isBuildSearchNavigationActive());
   }
 
   function makeBuildPaletteSelectionKey(selection) {
@@ -17109,9 +16088,9 @@
   }
 
   function syncBuildSearchField() {
-    if (!editBuildSearchEl) return;
+    if (!els.editBuildSearchEl) return;
     const activeQuery = getBuildPaletteFilterQuery();
-    if (editBuildSearchEl.value !== activeQuery) editBuildSearchEl.value = activeQuery;
+    if (els.editBuildSearchEl.value !== activeQuery) els.editBuildSearchEl.value = activeQuery;
   }
 
   function updateBuildPaletteFilter(query = '') {
@@ -17534,9 +16513,9 @@
         updateEditToolboxUi({ syncSearch: false });
       });
     }
-    if (editBuildSearchEl) {
+    if (els.editBuildSearchEl) {
       const commit = () => {
-        const rawValue = String(editBuildSearchEl.value || '').trim();
+        const rawValue = String(els.editBuildSearchEl.value || '').trim();
         if (!rawValue) {
           setBuildPaletteFilterQuery('', { syncInput: false });
           clearBuildSearchKeyboardSelection();
@@ -17553,17 +16532,17 @@
           return;
         }
       };
-      editBuildSearchEl.addEventListener('focus', () => {
-        const query = String(editBuildSearchEl.value || '');
+      els.editBuildSearchEl.addEventListener('focus', () => {
+        const query = String(els.editBuildSearchEl.value || '');
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
-      editBuildSearchEl.addEventListener('blur', (e) => {
+      els.editBuildSearchEl.addEventListener('blur', (e) => {
         const nextTarget = e && e.relatedTarget;
         if (
           nextTarget
-          && editAdaptiveAddAtomPopoverEl
-          && editAdaptiveAddAtomPopoverEl.contains(nextTarget)
+          && els.editAdaptiveAddAtomPopoverEl
+          && els.editAdaptiveAddAtomPopoverEl.contains(nextTarget)
         ) {
           syncBuildSearchNavigationUi();
           return;
@@ -17571,15 +16550,15 @@
         clearBuildSearchKeyboardSelection();
         syncBuildSearchNavigationUi();
       });
-      editBuildSearchEl.addEventListener('input', () => {
-        const query = String(editBuildSearchEl.value || '');
+      els.editBuildSearchEl.addEventListener('input', () => {
+        const query = String(els.editBuildSearchEl.value || '');
         setBuildPaletteFilterQuery(query, { syncInput: false });
         renderBuildPopover({ preferPayloadSelection: false });
       });
       // Workbench search is a filter. Moving the panel or changing mode must
       // not select a payload and close it as a side effect of blurring the field.
-      if (!workspaceEnabled) editBuildSearchEl.addEventListener('change', commit);
-      editBuildSearchEl.addEventListener('keydown', (e) => {
+      if (!workspaceEnabled) els.editBuildSearchEl.addEventListener('change', commit);
+      els.editBuildSearchEl.addEventListener('keydown', (e) => {
         if (e.key === '/' && !e.ctrlKey && !e.metaKey && !e.altKey) {
           e.preventDefault();
           hideBuildPopover();
@@ -17679,66 +16658,66 @@
     if (editMoleculeAlignXBtn) editMoleculeAlignXBtn.onclick = () => { if (!alignMoleculePlacementToAxis('x')) setHintMessage('Place a template first, then align to X.'); };
     if (editMoleculeAlignYBtn) editMoleculeAlignYBtn.onclick = () => { if (!alignMoleculePlacementToAxis('y')) setHintMessage('Place a template first, then align to Y.'); };
     if (editMoleculeAlignZBtn) editMoleculeAlignZBtn.onclick = () => { if (!alignMoleculePlacementToAxis('z')) setHintMessage('Place a template first, then align to Z.'); };
-    if (editAdaptiveAddAtomBtn) {
-      editAdaptiveAddAtomBtn.onclick = () => {
+    if (els.editAdaptiveAddAtomBtn) {
+      els.editAdaptiveAddAtomBtn.onclick = () => {
         if (window.VibeMolWorkbench?.restoreIfHidden('buildPanel')) return;
         if (isBuildPopoverOpen()) hideBuildPopover();
         else showBuildPopover();
       };
     }
-    if (editAdaptiveAddAtomPopoverEl) {
-      editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
+    if (els.editAdaptiveAddAtomPopoverEl) {
+      els.editAdaptiveAddAtomPopoverEl.addEventListener('pointerdown', (e) => {
         const buttonEl = e && e.target ? e.target.closest('#editAddQuick button, #editFragmentQuick button, #editMoleculeQuick button') : null;
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
       });
-      editAdaptiveAddAtomPopoverEl.addEventListener('keydown', (e) => {
+      els.editAdaptiveAddAtomPopoverEl.addEventListener('keydown', (e) => {
         if (e.key !== '/' || e.ctrlKey || e.metaKey || e.altKey) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         hideBuildPopover();
       });
     }
-    if (editAdaptiveSymmetryBtn) {
-      editAdaptiveSymmetryBtn.onclick = () => {
-        if (editAdaptiveSymmetryBtn.dataset.static === 'true') return;
+    if (els.editAdaptiveSymmetryBtn) {
+      els.editAdaptiveSymmetryBtn.onclick = () => {
+        if (els.editAdaptiveSymmetryBtn.dataset.static === 'true') return;
         if (window.VibeMolWorkbench?.restoreIfHidden('symmetryPanel')) return;
         if (isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
         else showSymmetryPopover();
       };
     }
-    if (editAdaptiveSymmetryPopoverEl) {
-      editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
+    if (els.editAdaptiveSymmetryPopoverEl) {
+      els.editAdaptiveSymmetryPopoverEl.addEventListener('pointerdown', (e) => {
         if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       });
-      editAdaptiveSymmetryPopoverEl.addEventListener('keydown', (e) => {
+      els.editAdaptiveSymmetryPopoverEl.addEventListener('keydown', (e) => {
         const key = String(e && e.key || '').toLowerCase();
         if (key !== 's' || (e && (e.ctrlKey || e.metaKey || e.altKey))) return;
         if (e && typeof e.preventDefault === 'function') e.preventDefault();
         hideSymmetryPopover({ restore: true });
       });
     }
-    if (editSymmetryToleranceSelectEl) {
-      editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(editSymmetryToleranceSelectEl.value));
+    if (els.editSymmetryToleranceSelectEl) {
+      els.editSymmetryToleranceSelectEl.addEventListener('change', () => setSymmetryTolerance(els.editSymmetryToleranceSelectEl.value));
     }
-    if (editSymmetryElementSelectEl) {
-      editSymmetryElementSelectEl.addEventListener('change', () => {
-        symmetryPopoverSelectedElementId = String(editSymmetryElementSelectEl.value || '');
-        renderSymmetryElementGuide();
+    if (els.editSymmetryElementSelectEl) {
+      els.editSymmetryElementSelectEl.addEventListener('change', () => {
+        symmetryPanelController.setSelectedElementId(String(els.editSymmetryElementSelectEl.value || ''));
+        renderSymmetryElementGuide(null, null, symmetryPanelController.getSelectedElementId());
       });
     }
-    if (editSymmetryCandidatesEl) {
-      editSymmetryCandidatesEl.addEventListener('click', (e) => {
+    if (els.editSymmetryCandidatesEl) {
+      els.editSymmetryCandidatesEl.addEventListener('click', (e) => {
         const buttonEl = e && e.target ? e.target.closest('[data-symmetry-group-id]') : null;
         if (!buttonEl) return;
         if (typeof e.preventDefault === 'function') e.preventDefault();
         previewSymmetryCandidate(String(buttonEl.getAttribute('data-symmetry-group-id') || ''));
       });
     }
-    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
-    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
-    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
-    if (editAdaptiveCleanStructureBtn) {
-      editAdaptiveCleanStructureBtn.onclick = () => {
+    if (els.editSymmetryApplyBtnEl) els.editSymmetryApplyBtnEl.onclick = () => { applyActiveSymmetryPreview(); };
+    if (els.editSymmetryCancelBtnEl) els.editSymmetryCancelBtnEl.onclick = () => { cancelSymmetryPreview(); };
+    if (els.editSymmetryAutoBtnEl) els.editSymmetryAutoBtnEl.onclick = () => { autoApplyHighestSymmetry(); };
+    if (els.editAdaptiveCleanStructureBtn) {
+      els.editAdaptiveCleanStructureBtn.onclick = () => {
         if (isBuildPopoverOpen() && !workspaceEnabled) {
           if (autoHydrogenController) autoHydrogenController.handleShortcut();
           return;
@@ -17746,8 +16725,8 @@
         optimizeActiveStructureWithUff();
       };
     }
-    if (editAdaptiveShiftComBtn) editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
-    if (editAdaptiveAlignPrincipalBtn) editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
+    if (els.editAdaptiveShiftComBtn) els.editAdaptiveShiftComBtn.onclick = () => { centerActiveMoleculeMassAtOrigin(); };
+    if (els.editAdaptiveAlignPrincipalBtn) els.editAdaptiveAlignPrincipalBtn.onclick = () => { alignActiveMoleculePrincipalAxes(); };
     if (editAddAtomOperatorHeaderEl) {
       editAddAtomOperatorHeaderEl.onclick = () => {
         addAtomOperatorCollapsed = !addAtomOperatorCollapsed;
@@ -18312,13 +17291,13 @@
   }
 
   function positionEditAtomsMenu() {
-    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
   }
 
   function updateEditAtomsMenuUi() {
-    if (editAtomsMenuEl) editAtomsMenuEl.setAttribute('aria-hidden', 'true');
+    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
     if (!editAddAtomPaneEl) return;
-    if (editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === editAtomsMenuBodyEl) {
+    if (els.editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === els.editAtomsMenuBodyEl) {
       restorePaneHomeHelper({
         paneEl: editAddAtomPaneEl,
         homeParent: editAddAtomPaneHomeParent,
@@ -18631,10 +17610,10 @@
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    if (!editSelectionTranslateCueEl) return;
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
-    editSelectionTranslateCueEl.style.left = '0px';
-    editSelectionTranslateCueEl.style.top = '0px';
+    if (!els.editSelectionTranslateCueEl) return;
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
+    els.editSelectionTranslateCueEl.style.left = '0px';
+    els.editSelectionTranslateCueEl.style.top = '0px';
   }
 
   function focusElementDeferred(el) {
@@ -18648,21 +17627,21 @@
   }
 
   function restoreBuildPopoverPanes() {
-    if (editAddAtomPaneEl && editAddAtomPaneHomeParent && editAddAtomPaneEl.parentElement === editBuildAtomsHostEl) {
+    if (editAddAtomPaneEl && editAddAtomPaneHomeParent && editAddAtomPaneEl.parentElement === els.editBuildAtomsHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddAtomPaneEl,
         homeParent: editAddAtomPaneHomeParent,
         homeNextSibling: editAddAtomPaneHomeNextSibling,
       });
     }
-    if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === editBuildFragmentsHostEl) {
+    if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === els.editBuildFragmentsHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddFragmentPaneEl,
         homeParent: editAddFragmentPaneHomeParent,
         homeNextSibling: editAddFragmentPaneHomeNextSibling,
       });
     }
-    if (editAddMoleculePaneEl && editAddMoleculePaneHomeParent && editAddMoleculePaneEl.parentElement === editBuildMoleculesHostEl) {
+    if (editAddMoleculePaneEl && editAddMoleculePaneHomeParent && editAddMoleculePaneEl.parentElement === els.editBuildMoleculesHostEl) {
       restorePaneHomeHelper({
         paneEl: editAddMoleculePaneEl,
         homeParent: editAddMoleculePaneHomeParent,
@@ -18672,23 +17651,23 @@
   }
 
   function syncBuildPopoverPanes() {
-    if (editAddAtomPaneEl && editBuildAtomsHostEl && editAddAtomPaneEl.parentElement !== editBuildAtomsHostEl) {
-      editBuildAtomsHostEl.appendChild(editAddAtomPaneEl);
+    if (editAddAtomPaneEl && els.editBuildAtomsHostEl && editAddAtomPaneEl.parentElement !== els.editBuildAtomsHostEl) {
+      els.editBuildAtomsHostEl.appendChild(editAddAtomPaneEl);
     }
-    if (editAddFragmentPaneEl && editBuildFragmentsHostEl && editAddFragmentPaneEl.parentElement !== editBuildFragmentsHostEl) {
-      editBuildFragmentsHostEl.appendChild(editAddFragmentPaneEl);
+    if (editAddFragmentPaneEl && els.editBuildFragmentsHostEl && editAddFragmentPaneEl.parentElement !== els.editBuildFragmentsHostEl) {
+      els.editBuildFragmentsHostEl.appendChild(editAddFragmentPaneEl);
     }
-    if (editAddMoleculePaneEl && editBuildMoleculesHostEl && editAddMoleculePaneEl.parentElement !== editBuildMoleculesHostEl) {
-      editBuildMoleculesHostEl.appendChild(editAddMoleculePaneEl);
+    if (editAddMoleculePaneEl && els.editBuildMoleculesHostEl && editAddMoleculePaneEl.parentElement !== els.editBuildMoleculesHostEl) {
+      els.editBuildMoleculesHostEl.appendChild(editAddMoleculePaneEl);
     }
   }
 
   function positionBuildPopover() {
-    if (!editAdaptiveAddAtomPopoverEl || !editAdaptiveAddAtomBtn) return;
+    if (!els.editAdaptiveAddAtomPopoverEl || !els.editAdaptiveAddAtomBtn) return;
     if (window.VibeMolWorkbench?.isDocked('buildPanel')) return;
     positionFloatingPopoverUi({
-      popoverEl: editAdaptiveAddAtomPopoverEl,
-      triggerEl: editAdaptiveAddAtomBtn,
+      popoverEl: els.editAdaptiveAddAtomPopoverEl,
+      triggerEl: els.editAdaptiveAddAtomBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
       topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
@@ -18698,13 +17677,13 @@
   }
 
   function resetBuildSearchFieldOnHide() {
-    if (!editBuildSearchEl) return;
+    if (!els.editBuildSearchEl) return;
     setBuildPaletteFilterQuery('', { syncInput: true });
-    try { editBuildSearchEl.blur(); } catch { }
+    try { els.editBuildSearchEl.blur(); } catch { }
   }
 
   function renderBuildPopover(options = {}) {
-    if (!editAdaptiveAddAtomPopoverEl || editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
+    if (!els.editAdaptiveAddAtomPopoverEl || els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'true') return;
     syncBuildPopoverPanes();
     syncBuildSearchField();
     const activeQuery = getBuildPaletteFilterQuery();
@@ -18734,22 +17713,22 @@
   }
 
   function isBuildPopoverOpen() {
-    return !!(editAdaptiveAddAtomPopoverEl && editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false');
+    return !!(els.editAdaptiveAddAtomPopoverEl && els.editAdaptiveAddAtomPopoverEl.getAttribute('aria-hidden') === 'false');
   }
 
   function hideBuildPopover(options = {}) {
     const quiet = !!(options && options.quiet);
     clearBuildSearchKeyboardSelection();
     if (!workspaceEnabled) resetBuildSearchFieldOnHide();
-    else if (editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) editBuildSearchEl?.blur();
-    if (editAdaptiveAddAtomPopoverEl) editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
+    else if (els.editAdaptiveAddAtomPopoverEl?.contains(document.activeElement)) els.editBuildSearchEl?.blur();
+    if (els.editAdaptiveAddAtomPopoverEl) els.editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'true');
     restoreBuildPopoverPanes();
     syncBuildSearchNavigationUi();
     if (!quiet) updateEditAdaptiveMenuUi();
   }
 
   function showBuildPopover(options = {}) {
-    if (!editAdaptiveAddAtomPopoverEl) return;
+    if (!els.editAdaptiveAddAtomPopoverEl) return;
     if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     hideSelectionCoordinationCuePopover();
@@ -18760,22 +17739,22 @@
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
     }
     syncBuildPopoverPanes();
-    editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
+    els.editAdaptiveAddAtomPopoverEl.setAttribute('aria-hidden', 'false');
     renderBuildPopover({
       selectionKey: String(options.selectionKey || '').trim(),
       preferPayloadSelection: options.preferPayloadSelection !== false,
     });
     updateEditAdaptiveMenuUi();
     if (!options.fromWorkbench) window.VibeMolWorkbench?.open('buildPanel', false);
-    if (options.focusSearch) focusElementDeferred(editBuildSearchEl || null);
+    if (options.focusSearch) focusElementDeferred(els.editBuildSearchEl || null);
   }
 
   function positionSymmetryPopover() {
-    if (!editAdaptiveSymmetryPopoverEl || !editAdaptiveSymmetryBtn) return;
+    if (!els.editAdaptiveSymmetryPopoverEl || !els.editAdaptiveSymmetryBtn) return;
     if (window.VibeMolWorkbench?.isDocked('symmetryPanel')) return;
     positionFloatingPopoverUi({
-      popoverEl: editAdaptiveSymmetryPopoverEl,
-      triggerEl: editAdaptiveSymmetryBtn,
+      popoverEl: els.editAdaptiveSymmetryPopoverEl,
+      triggerEl: els.editAdaptiveSymmetryBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
       topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
       gap: 12,
@@ -18784,9 +17763,7 @@
     });
   }
 
-  function isSymmetryPopoverOpen() {
-    return !!(editAdaptiveSymmetryPopoverEl && editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'false');
-  }
+  function isSymmetryPopoverOpen(...args) { return symmetryPanelController.isSymmetryPopoverOpen(...args); }
 
   function resolveEditSymmetryTarget() {
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
@@ -18801,66 +17778,18 @@
     return { record, vol, indices, atoms, scopeLabel };
   }
 
-  function getSymmetryTargetKey(target) {
-    if (!target) return '';
-    return target.indices.map((index) => {
-      const atom = target.vol && target.vol.atoms && target.vol.atoms[index];
-      return resolveVolumeAtomId(target.vol, atom) || `idx:${index}`;
-    }).join('|');
-  }
+  function getSymmetryTargetKey(...args) { return symmetryPanelController.getSymmetryTargetKey(...args); }
 
   function getSymmetryTargetAtomsFromSnapshot(snapshot, target) {
     if (!snapshot || !Array.isArray(snapshot.atoms) || !target) return [];
     return target.indices.map((index) => normalizeVolumeAtom(snapshot.atoms[index]));
   }
 
-  function invalidateSymmetryPopoverAnalysisCache() {
-    symmetryPopoverAnalysisCache = null;
-    if (editSymmetryCandidatesEl && editSymmetryCandidatesEl.dataset) {
-      delete editSymmetryCandidatesEl.dataset.renderKey;
-    }
-    symmetryPopoverElementsRenderKey = '';
-  }
+  function invalidateSymmetryPopoverAnalysisCache(...args) { return symmetryPanelController.invalidateSymmetryPopoverAnalysisCache(...args); }
 
-  function buildSymmetryAnalysisCacheKey(target, toleranceAng) {
-    if (!target || !Array.isArray(target.atoms)) return '';
-    const parts = [
-      String(target.scopeLabel || ''),
-      String(getSymmetryTargetKey(target) || ''),
-      Number(toleranceAng || 0).toFixed(6),
-    ];
-    for (const atom of target.atoms) {
-      parts.push([
-        String(atom && atom.id || ''),
-        Number(atom && atom.Z) || 0,
-        (Number(atom && atom.x) || 0).toFixed(6),
-        (Number(atom && atom.y) || 0).toFixed(6),
-        (Number(atom && atom.z) || 0).toFixed(6),
-      ].join('|'));
-    }
-    return parts.join(';');
-  }
+  function buildSymmetryAnalysisCacheKey(...args) { return symmetryPanelController.buildSymmetryAnalysisCacheKey(...args); }
 
-  function getSymmetryPopoverAnalysis(target) {
-    if (!target) return null;
-    const toleranceAng = symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG;
-    const cacheKey = buildSymmetryAnalysisCacheKey(target, toleranceAng);
-    if (
-      symmetryPopoverAnalysisCache
-      && symmetryPopoverAnalysisCache.key === cacheKey
-      && symmetryPopoverAnalysisCache.analysis
-    ) {
-      return symmetryPopoverAnalysisCache.analysis;
-    }
-    const analysis = symmetryController
-      ? symmetryController.analyzeTarget(target.atoms, { toleranceAng })
-      : analyzePointGroup(target.atoms, { toleranceAng: DEFAULT_SYMMETRY_TOLERANCE_ANG });
-    symmetryPopoverAnalysisCache = {
-      key: cacheKey,
-      analysis,
-    };
-    return analysis;
-  }
+  function getSymmetryPopoverAnalysis(...args) { return symmetryPanelController.getSymmetryPopoverAnalysis(...args); }
 
   function applySymmetryPreviewToTarget(target, preview) {
     if (!target || !preview || !Array.isArray(preview.atoms)) return false;
@@ -18880,114 +17809,25 @@
     return true;
   }
 
-  function clearSymmetryPreview(options = {}) {
-    const keepPopover = !!options.keepPopover;
-    const quiet = !!options.quiet;
-    symmetryPreviewState = null;
-    if (symmetryController) symmetryController.clearPreview();
-    clearSymmetryElementGuide();
-    invalidateSymmetryPopoverAnalysisCache();
-    // Clearing a chemistry operation must not close a Workbench panel. Only
-    // hideSymmetryPopover handles an explicit close in that interface.
-    if (!workspaceEnabled && !keepPopover && editAdaptiveSymmetryPopoverEl) {
-      editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'true');
-    }
-    if (!quiet) updateEditAdaptiveMenuUi();
-  }
+  function clearSymmetryPreview(...args) { return symmetryPanelController.clearSymmetryPreview(...args); }
 
-  function snapSymmetryTolerance(value) {
-    const raw = Math.max(EXACT_SYMMETRY_TOLERANCE_ANG, Math.min(MAX_SYMMETRY_TOLERANCE_ANG, Number(value) || DEFAULT_SYMMETRY_TOLERANCE_ANG));
-    let best = SYMMETRY_TOLERANCE_OPTIONS_ANG[0];
-    let bestDelta = Math.abs(raw - best);
-    for (let i = 1; i < SYMMETRY_TOLERANCE_OPTIONS_ANG.length; i++) {
-      const candidate = SYMMETRY_TOLERANCE_OPTIONS_ANG[i];
-      const delta = Math.abs(raw - candidate);
-      if (delta + 1e-12 < bestDelta) {
-        best = candidate;
-        bestDelta = delta;
-      }
-    }
-    return best;
-  }
+  function snapSymmetryTolerance(...args) { return symmetryPanelController.snapSymmetryTolerance(...args); }
 
-  function syncSymmetryToleranceUi() {
-    const value = snapSymmetryTolerance(symmetryController ? symmetryController.getTolerance() : DEFAULT_SYMMETRY_TOLERANCE_ANG);
-    if (editSymmetryToleranceSelectEl && document.activeElement !== editSymmetryToleranceSelectEl) {
-      editSymmetryToleranceSelectEl.value = value.toFixed(3);
-    }
-  }
+  function syncSymmetryToleranceUi(...args) { return symmetryPanelController.syncSymmetryToleranceUi(...args); }
 
-  function findInternalSymmetryCandidate(analysis, groupId) {
-    const internal = analysis && analysis._internal;
-    const candidates = internal && Array.isArray(internal.approximateCandidates) ? internal.approximateCandidates : [];
-    return candidates.find((candidate) => candidate && candidate.groupId === groupId) || null;
-  }
+  function findInternalSymmetryCandidate(...args) { return symmetryPanelController.findInternalSymmetryCandidate(...args); }
 
-  function getSymmetryPopoverCandidateList(analysis) {
-    const internal = analysis && analysis._internal;
-    return internal && Array.isArray(internal.approximateCandidates)
-      ? internal.approximateCandidates.filter(Boolean)
-      : [];
-  }
+  function getSymmetryPopoverCandidateList(...args) { return symmetryPanelController.getSymmetryPopoverCandidateList(...args); }
 
-  function getSymmetryPopoverSelectedGroupId() {
-    return symmetryPreviewState && symmetryPreviewState.groupId
-      ? String(symmetryPreviewState.groupId || '')
-      : '';
-  }
+  function getSymmetryPopoverSelectedGroupId(...args) { return symmetryPanelController.getSymmetryPopoverSelectedGroupId(...args); }
 
-  function getSymmetryPopoverSelectedCandidate(analysis) {
-    const groupId = getSymmetryPopoverSelectedGroupId();
-    if (!groupId) return null;
-    return findInternalSymmetryCandidate(analysis, groupId);
-  }
+  function getSymmetryPopoverSelectedCandidate(...args) { return symmetryPanelController.getSymmetryPopoverSelectedCandidate(...args); }
 
-  function getSymmetryElementDisplayAnalysis(analysis) {
-    const selectedCandidate = getSymmetryPopoverSelectedCandidate(analysis);
-    const internal = analysis && analysis._internal;
-    if (!selectedCandidate || !internal || !internal.centeredState) return analysis;
-    return {
-      ...analysis,
-      exactGroupId: selectedCandidate.groupId,
-      exactGroupLabel: selectedCandidate.groupLabel,
-      exactCandidate: selectedCandidate,
-      _internal: {
-        ...internal,
-        exactCandidate: selectedCandidate,
-      },
-    };
-  }
+  function getSymmetryElementDisplayAnalysis(...args) { return symmetryPanelController.getSymmetryElementDisplayAnalysis(...args); }
 
-  function clearSymmetryCurrentGroupHighlight() {
-    if (symmetryPopoverResultHighlightTimer) {
-      clearTimeout(symmetryPopoverResultHighlightTimer);
-      symmetryPopoverResultHighlightTimer = 0;
-    }
-    if (editSymmetryExactResultCardEl) {
-      editSymmetryExactResultCardEl.classList.remove('is-updated');
-    }
-  }
+  function clearSymmetryCurrentGroupHighlight(...args) { return symmetryPanelController.clearSymmetryCurrentGroupHighlight(...args); }
 
-  function updateSymmetryCurrentGroupUi(groupLabel, options = {}) {
-    const label = String(groupLabel || 'C1').trim() || 'C1';
-    const allowHighlight = options.highlightChange !== false;
-    const previousLabel = String(symmetryPopoverCurrentGroupLabel || '').trim();
-    if (editSymmetryExactResultEl) {
-      editSymmetryExactResultEl.textContent = `Current point group: ${label}`;
-    }
-    const shouldHighlight = !!(allowHighlight && previousLabel && previousLabel !== label);
-    symmetryPopoverCurrentGroupLabel = label;
-    if (!editSymmetryExactResultCardEl) return;
-    clearSymmetryCurrentGroupHighlight();
-    if (!shouldHighlight) return;
-    editSymmetryExactResultCardEl.classList.add('is-updated');
-    symmetryPopoverResultHighlightTimer = window.setTimeout(() => {
-      symmetryPopoverResultHighlightTimer = 0;
-      if (editSymmetryExactResultCardEl) {
-        editSymmetryExactResultCardEl.classList.remove('is-updated');
-      }
-    }, 1400);
-  }
+  function updateSymmetryCurrentGroupUi(...args) { return symmetryPanelController.updateSymmetryCurrentGroupUi(...args); }
 
   function clearSymmetryElementGuide() {
     while (symmetryElementGuideGroup.children.length) {
@@ -19020,33 +17860,9 @@
     return { center, radius: Math.max(radius, 1.2) };
   }
 
-  function buildSymmetryElementOptionHtml(element) {
-    return `<option value="${String(element.id || '')}">${String(element.label || '')}</option>`;
-  }
+  function buildSymmetryElementOptionHtml(...args) { return symmetryPanelController.buildSymmetryElementOptionHtml(...args); }
 
-  function renderSymmetryElementOptions(analysis) {
-    if (!editSymmetryElementSelectEl) return [];
-    const displayAnalysis = getSymmetryElementDisplayAnalysis(analysis);
-    const elements = describeSymmetryElements(displayAnalysis) || [];
-    const renderKey = elements.map((element) => [
-      String(element.id || ''),
-      String(element.label || ''),
-      String(element.type || ''),
-    ].join('|')).join(';');
-    if (symmetryPopoverElementsRenderKey !== renderKey) {
-      editSymmetryElementSelectEl.innerHTML = [
-        '<option value="">None</option>',
-        ...elements.map(buildSymmetryElementOptionHtml),
-      ].join('');
-      symmetryPopoverElementsRenderKey = renderKey;
-    }
-    if (!elements.some((element) => String(element.id || '') === symmetryPopoverSelectedElementId)) {
-      symmetryPopoverSelectedElementId = '';
-    }
-    editSymmetryElementSelectEl.disabled = elements.length === 0;
-    editSymmetryElementSelectEl.value = symmetryPopoverSelectedElementId;
-    return elements;
-  }
+  function renderSymmetryElementOptions(...args) { return symmetryPanelController.renderSymmetryElementOptions(...args); }
 
   function renderSymmetryAxisElement(element, center, radius) {
     const axis = element && element.axis ? new THREE.Vector3(
@@ -19170,14 +17986,14 @@
     symmetryElementGuideGroup.add(group);
   }
 
-  function renderSymmetryElementGuide(analysis = null, target = null) {
+  function renderSymmetryElementGuide(analysis = null, target = null, selectedElementId = '') {
     clearSymmetryElementGuide();
     if (currentMode !== MODES.EDIT || !isSymmetryPopoverOpen()) return;
     const resolvedTarget = target || resolveEditSymmetryTarget();
     if (!resolvedTarget) return;
     const resolvedAnalysis = getSymmetryElementDisplayAnalysis(analysis || getSymmetryPopoverAnalysis(resolvedTarget));
     const elements = describeSymmetryElements(resolvedAnalysis) || [];
-    const selected = elements.find((element) => String(element.id || '') === symmetryPopoverSelectedElementId);
+    const selected = elements.find((element) => String(element.id || '') === selectedElementId);
     if (!selected) return;
     const guideScale = getSymmetryElementGuideScale(resolvedTarget);
     if (selected.type === 'axis') {
@@ -19189,177 +18005,53 @@
     }
   }
 
-  function formatSymmetryResidual(value) {
-    return `${(Number(value) || 0).toFixed(3)} Å`;
-  }
+  function formatSymmetryResidual(...args) { return symmetryPanelController.formatSymmetryResidual(...args); }
 
-  function renderSymmetryCandidates(analysis) {
-    if (!editSymmetryCandidatesEl) return;
-    const selectedGroupId = getSymmetryPopoverSelectedGroupId();
-    const currentGroupId = analysis ? String(analysis.exactGroupId || '') : '';
-    const candidates = getSymmetryPopoverCandidateList(analysis);
-    if (!candidates.length) {
-      const emptyKey = `empty:${selectedGroupId}`;
-      if (editSymmetryCandidatesEl.dataset.renderKey !== emptyKey) {
-        editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No approximate point groups within the current tolerance.</div>';
-        editSymmetryCandidatesEl.dataset.renderKey = emptyKey;
-      }
-      return;
-    }
-    const renderKey = [
-      currentGroupId,
-      selectedGroupId,
-      ...candidates.map((candidate) => [
-        String(candidate.groupId || ''),
-        Number(candidate.rmsDisplacementAng || 0).toFixed(6),
-      ].join('|')),
-    ].join(';');
-    if (editSymmetryCandidatesEl.dataset.renderKey === renderKey) return;
-    editSymmetryCandidatesEl.innerHTML = candidates.map((candidate) => {
-      const groupId = String(candidate.groupId || '');
-      const classNames = ['editSymmetryCandidateBtn'];
-      if (groupId === currentGroupId) classNames.push('is-current');
-      if (groupId === selectedGroupId) classNames.push('is-active');
-      return [
-        `<button class="${classNames.join(' ')}" type="button" data-symmetry-group-id="${groupId}">`,
-        '<span class="material-symbols-rounded editSymmetryCandidateIcon" aria-hidden="true">blur_circular</span>',
-        '<span class="editSymmetryCandidateBody">',
-        `<span class="editSymmetryCandidateLabel">${candidate.groupLabel}</span>`,
-        '<span class="editSymmetryCandidateMetrics">',
-        `<span class="editSymmetryCandidateMeta rms-value">rms ${formatSymmetryResidual(candidate.rmsDisplacementAng)}</span>`,
-        '</span>',
-        '</span>',
-        '</button>',
-      ].join('');
-    }).join('');
-    editSymmetryCandidatesEl.dataset.renderKey = renderKey;
-  }
+  function renderSymmetryCandidates(...args) { return symmetryPanelController.renderSymmetryCandidates(...args); }
 
-  function renderSymmetryPopover() {
-    if (currentMode !== MODES.EDIT) return;
-    if (!editAdaptiveSymmetryPopoverEl || editAdaptiveSymmetryPopoverEl.getAttribute('aria-hidden') === 'true') return;
-    const target = resolveEditSymmetryTarget();
-    syncSymmetryToleranceUi();
-    if (!target) {
-      if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
-      updateSymmetryCurrentGroupUi('C1', { highlightChange: false });
-      if (editSymmetryElementSelectEl) {
-        editSymmetryElementSelectEl.innerHTML = '<option value="">None</option>';
-        editSymmetryElementSelectEl.disabled = true;
-      }
-      symmetryPreviewState = null;
-      symmetryPopoverSelectedElementId = '';
-      if (editSymmetryCandidatesEl) editSymmetryCandidatesEl.innerHTML = '<div class="editSymmetryEmptyState">No editable atoms available.</div>';
-      if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = true;
-      if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
-      if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = true;
-      clearSymmetryElementGuide();
-      positionSymmetryPopover();
-      return;
-    }
-    const analysis = getSymmetryPopoverAnalysis(target);
-    if (symmetryPreviewState && !getSymmetryPopoverSelectedCandidate(analysis)) {
-      symmetryPreviewState = null;
-    }
-    if (editSymmetryTargetSummaryEl) editSymmetryTargetSummaryEl.textContent = target.scopeLabel;
-    updateSymmetryCurrentGroupUi(analysis.exactGroupLabel);
-    renderSymmetryElementOptions(analysis);
-    renderSymmetryCandidates(analysis);
-    const selectedCandidate = getSymmetryPopoverSelectedCandidate(analysis);
-    const autoCandidate = getSymmetryPopoverCandidateList(analysis)[0] || null;
-    if (editSymmetryApplyBtnEl) editSymmetryApplyBtnEl.disabled = !selectedCandidate;
-    if (editSymmetryCancelBtnEl) editSymmetryCancelBtnEl.disabled = !getSymmetryPopoverSelectedGroupId();
-    if (editSymmetryAutoBtnEl) editSymmetryAutoBtnEl.disabled = !(autoCandidate && autoCandidate.groupId && autoCandidate.groupId !== 'C1');
-    renderSymmetryElementGuide(analysis, target);
-    positionSymmetryPopover();
-  }
+  function renderSymmetryPopover(...args) { return symmetryPanelController.renderSymmetryPopover(...args); }
 
-  function hideSymmetryPopover(delayMs = 0, options = {}) {
-    if (typeof delayMs === 'object' && delayMs !== null) {
-      options = delayMs;
-      delayMs = 0;
-    }
-    const applyHide = () => {
-      clearSymmetryCurrentGroupHighlight();
-      symmetryPopoverCurrentGroupLabel = '';
-      symmetryPopoverSelectedElementId = '';
-      clearSymmetryElementGuide();
-      clearSymmetryPreview({ restore: options.restore !== false, keepPopover: false, quiet: true });
-      editAdaptiveSymmetryPopoverEl?.setAttribute('aria-hidden', 'true');
-      if (!options.quiet) updateEditAdaptiveMenuUi();
-    };
-    applyHide();
-  }
+  function hideSymmetryPopover(...args) { return symmetryPanelController.hideSymmetryPopover(...args); }
 
   function showSymmetryPopover(options = {}) {
-    if (!editAdaptiveSymmetryPopoverEl) return;
+    if (!els.editAdaptiveSymmetryPopoverEl) return;
     if (workspaceEnabled && currentMode !== MODES.EDIT) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     clearSymmetryCurrentGroupHighlight();
-    symmetryPopoverCurrentGroupLabel = '';
-    symmetryPopoverSelectedElementId = '';
+    symmetryPanelController.setCurrentGroupLabel('');
+    symmetryPanelController.setSelectedElementId('');
     clearSymmetryElementGuide();
     clearGestureVoidPreview();
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover();
     invalidateSymmetryPopoverAnalysisCache();
-    editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
+    els.editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
     if (editGestureController) editGestureController.refreshUi();
     renderSymmetryPopover();
     updateEditAdaptiveMenuUi();
     if (!options.fromWorkbench) window.VibeMolWorkbench?.open('symmetryPanel', false);
   }
 
-  function setSymmetryTolerance(nextValue) {
-    const value = snapSymmetryTolerance(nextValue);
-    if (symmetryController) symmetryController.setTolerance(value);
-    syncSymmetryToleranceUi();
-    invalidateSymmetryPopoverAnalysisCache();
-    clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
-    renderSymmetryPopover();
-    return value;
-  }
+  function setSymmetryTolerance(...args) { return symmetryPanelController.setSymmetryTolerance(...args); }
 
-  function previewSymmetryCandidate(groupId) {
-    const target = resolveEditSymmetryTarget();
-    if (!target) return false;
-    const analysis = getSymmetryPopoverAnalysis(target);
-    const candidate = findInternalSymmetryCandidate(analysis, groupId);
-    if (!candidate) return false;
-    symmetryPreviewState = {
-      record: target.record,
-      targetKey: getSymmetryTargetKey(target),
-      targetIndices: target.indices.slice(),
-      groupId: candidate.groupId,
-    };
-    if (symmetryController) symmetryController.clearPreview();
-    renderSymmetryPopover();
-    setHintMessage(`Selected symmetry ${candidate.groupLabel}. Click Apply or Auto to symmetrize.`);
-    return true;
-  }
+  function previewSymmetryCandidate(...args) { return symmetryPanelController.previewSymmetryCandidate(...args); }
 
-  function cancelSymmetryPreview() {
-    if (!symmetryPreviewState) return false;
-    clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
-    renderSymmetryPopover();
-    setHintMessage('Cleared symmetry selection.');
-    return true;
-  }
+  function cancelSymmetryPreview(...args) { return symmetryPanelController.cancelSymmetryPreview(...args); }
 
   function applyActiveSymmetryPreview() {
-    if (!symmetryPreviewState || !symmetryPreviewState.groupId) return false;
+    if (!symmetryPanelController.getPreviewState() || !symmetryPanelController.getPreviewState().groupId) return false;
     const target = resolveEditSymmetryTarget();
     if (!target || !target.record || !target.vol) return false;
     const targetKey = getSymmetryTargetKey(target);
-    if (symmetryPreviewState.record !== target.record || symmetryPreviewState.targetKey !== targetKey) {
+    if (symmetryPanelController.getPreviewState().record !== target.record || symmetryPanelController.getPreviewState().targetKey !== targetKey) {
       clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
       renderSymmetryPopover();
       setHintMessage('Symmetry target changed. Select a symmetry again.');
       return false;
     }
     const analysis = getSymmetryPopoverAnalysis(target);
-    const candidate = findInternalSymmetryCandidate(analysis, symmetryPreviewState.groupId);
+    const candidate = findInternalSymmetryCandidate(analysis, symmetryPanelController.getPreviewState().groupId);
     if (!candidate) {
       clearSymmetryPreview({ restore: true, keepPopover: true, quiet: true });
       renderSymmetryPopover();
@@ -19368,13 +18060,13 @@
     }
     const beforeSnapshot = cloneCoordinateSnapshot(target.vol);
     const sourceAtoms = getSymmetryTargetAtomsFromSnapshot(beforeSnapshot, target);
-    const preview = symmetryController
-      ? symmetryController.buildPreview(sourceAtoms, candidate.groupId, { candidate })
+    const preview = symmetryPanelController.getAnalysisController()
+      ? symmetryPanelController.getAnalysisController().buildPreview(sourceAtoms, candidate.groupId, { candidate })
       : buildSymmetryPreview(sourceAtoms, candidate.groupId, { candidate });
     if (!preview) return false;
     if (!applySymmetryPreviewToTarget(target, preview)) return false;
-    symmetryPreviewState = null;
-    if (symmetryController) symmetryController.clearPreview();
+    symmetryPanelController.setPreviewState(null);
+    if (symmetryPanelController.getAnalysisController()) symmetryPanelController.getAnalysisController().clearPreview();
     invalidateSymmetryPopoverAnalysisCache();
     finalizeCoordinateSnapshotEdit(target.record, target.vol, beforeSnapshot, `Symmetrize to ${preview.groupLabel}`);
     setHintMessage(`Symmetrized to ${preview.groupLabel}.`);
@@ -19392,12 +18084,12 @@
       renderSymmetryPopover();
       return false;
     }
-    symmetryPreviewState = {
+    symmetryPanelController.setPreviewState({
       record: target.record,
       targetKey: getSymmetryTargetKey(target),
       targetIndices: target.indices.slice(),
       groupId: candidate.groupId,
-    };
+    });
     return applyActiveSymmetryPreview();
   }
 
@@ -19407,10 +18099,10 @@
       selectionFragmentCuePopoverHideTimer = 0;
     }
     const applyHide = () => {
-      if (editSelectionFragmentCuePopoverEl) {
-        editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'true');
+      if (els.editSelectionFragmentCuePopoverEl) {
+        els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'true');
       }
-      if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === editSelectionFragmentCuePopoverEl) {
+      if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === els.editSelectionFragmentCuePopoverEl) {
         restorePaneHomeHelper({
           paneEl: editAddFragmentPaneEl,
           homeParent: editAddFragmentPaneHomeParent,
@@ -19429,12 +18121,12 @@
   }
 
   function showSelectionFragmentCuePopover(options = {}) {
-    if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
+    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
     if (workspaceEnabled) {
       // The legacy cue and Build share this pane. Keep one owner in Workbench.
       showBuildPopover({ query: '' });
       editAddFragmentPaneEl.scrollIntoView({ block: 'nearest' });
-      if (options.focusSearch) focusElementDeferred(editBuildSearchEl);
+      if (options.focusSearch) focusElementDeferred(els.editBuildSearchEl);
       return;
     }
     if (selectionFragmentCuePopoverHideTimer) {
@@ -19444,19 +18136,19 @@
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
     hideBuildPopover();
-    if (editAddFragmentPaneEl.parentElement !== editSelectionFragmentCuePopoverEl) {
-      editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
+    if (editAddFragmentPaneEl.parentElement !== els.editSelectionFragmentCuePopoverEl) {
+      els.editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
     }
-    editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
     positionSelectionFragmentCuePopover();
     if (options.focusSearch) focusElementDeferred(editFragmentSearchEl || null);
   }
 
   function positionSelectionFragmentCuePopover() {
-    if (!editSelectionAddFragmentCueButtonEl || !editSelectionFragmentCuePopoverEl) return;
+    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionFragmentCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionFragmentCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(
       1,
       Math.round(window.innerWidth || 0),
@@ -19467,8 +18159,8 @@
       Math.round(window.innerHeight || 0),
       Math.round((document.documentElement && document.documentElement.clientHeight) || 0)
     );
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionFragmentCuePopoverEl.offsetWidth || 280));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionFragmentCuePopoverEl.offsetHeight || 160));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionFragmentCuePopoverEl.offsetWidth || 280));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionFragmentCuePopoverEl.offsetHeight || 160));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19484,8 +18176,8 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
-    editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
   }
 
   function getOpenCoordinationGhostTheme(options = {}) {
@@ -19692,9 +18384,9 @@
   }
 
   function renderSelectionCoordinationCuePreviewCanvases(state) {
-    if (!editSelectionCoordinationCuePopoverEl || !state) return;
+    if (!els.editSelectionCoordinationCuePopoverEl || !state) return;
     disposeSelectionCoordinationCuePreviews();
-    const hosts = Array.from(editSelectionCoordinationCuePopoverEl.querySelectorAll('.editCoordinationCuePreview'));
+    const hosts = Array.from(els.editSelectionCoordinationCuePopoverEl.querySelectorAll('.editCoordinationCuePreview'));
     for (const host of hosts) {
       const geometryId = String(host.getAttribute('data-preview-geometry') || '').trim();
       if (!geometryId) continue;
@@ -19788,21 +18480,21 @@
   }
 
   function hideSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'true');
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    els.editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'true');
     selectionCoordinationCuePopoverRenderKey = '';
     disposeSelectionCoordinationCuePreviews();
   }
 
   function positionSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    if (!els.editSelectionCoordinationCueButtonEl || !els.editSelectionCoordinationCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionCoordinationCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionCoordinationCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionCoordinationCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionCoordinationCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionCoordinationCuePopoverEl.offsetWidth || 320));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionCoordinationCuePopoverEl.offsetHeight || 240));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionCoordinationCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionCoordinationCuePopoverEl.offsetHeight || 240));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19815,13 +18507,13 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionCoordinationCuePopoverEl.style.left = `${left}px`;
-    editSelectionCoordinationCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionCoordinationCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionCoordinationCuePopoverEl.style.top = `${top}px`;
   }
 
   function renderSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    if (els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) {
       hideSelectionCoordinationCuePopover();
@@ -19853,7 +18545,7 @@
       ].join('');
     }).join('');
     if (renderKey !== selectionCoordinationCuePopoverRenderKey) {
-      editSelectionCoordinationCuePopoverEl.innerHTML = [
+      els.editSelectionCoordinationCuePopoverEl.innerHTML = [
         '<div class="editCoordinationCueHeader">Coordination</div>',
         `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
       ].join('');
@@ -19864,18 +18556,18 @@
   }
 
   function showSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCueButtonEl || !editSelectionCoordinationCuePopoverEl) return;
+    if (!els.editSelectionCoordinationCueButtonEl || !els.editSelectionCoordinationCuePopoverEl) return;
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) return;
     hideSelectionMetalBondingCuePopover();
     hideSelectionFragmentCuePopover();
-    editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionCoordinationCuePopover();
   }
 
   function toggleSelectionCoordinationCuePopover() {
-    if (!editSelectionCoordinationCuePopoverEl) return;
-    if (editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (!els.editSelectionCoordinationCuePopoverEl) return;
+    if (els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       hideSelectionCoordinationCuePopover();
       return;
     }
@@ -19912,20 +18604,20 @@
   }
 
   function hideSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'true');
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    els.editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'true');
     selectionMetalBondingCuePopoverRenderKey = '';
   }
 
   function positionSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    if (!els.editSelectionMetalBondingCueButtonEl || !els.editSelectionMetalBondingCuePopoverEl) return;
     const gap = 12;
-    const triggerRect = editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
-    const popoverRect = editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
+    const triggerRect = els.editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
+    const popoverRect = els.editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
+    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
@@ -19938,13 +18630,13 @@
     }
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
     top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
-    editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
+    els.editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
+    els.editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
   }
 
   function renderSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    if (els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') !== 'false') return;
     const state = getSelectionMetalBondingCueState();
     if (!state || !state.choices.length) {
       hideSelectionMetalBondingCuePopover();
@@ -19973,7 +18665,7 @@
         '</span>',
         '</button>',
       ].join('')).join('');
-      editSelectionMetalBondingCuePopoverEl.innerHTML = [
+      els.editSelectionMetalBondingCuePopoverEl.innerHTML = [
         '<div class="editCoordinationCueHeader">Metal bond mode</div>',
         `<div class="editCoordinationCueHeaderSubtext">${escapeHtml(getElementName(state.atomZ | 0) || getElementSymbol(state.atomZ | 0) || 'Metal')}</div>`,
         `<div class="editCoordinationCueGrid">${optionsHtml}</div>`,
@@ -19984,19 +18676,19 @@
   }
 
   function showSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCueButtonEl || !editSelectionMetalBondingCuePopoverEl) return;
+    if (!els.editSelectionMetalBondingCueButtonEl || !els.editSelectionMetalBondingCuePopoverEl) return;
     const state = getSelectionMetalBondingCueState();
     if (!state || !state.choices.length) return;
     hideSelectionCoordinationCuePopover();
     hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover({ quiet: true });
-    editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionMetalBondingCuePopover();
   }
 
   function toggleSelectionMetalBondingCuePopover() {
-    if (!editSelectionMetalBondingCuePopoverEl) return;
-    if (editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (!els.editSelectionMetalBondingCuePopoverEl) return;
+    if (els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       hideSelectionMetalBondingCuePopover();
       return;
     }
@@ -20201,7 +18893,7 @@
   }
 
   function renderEditSelectionTranslateCue() {
-    if (!editSelectionTranslateCueEl) return;
+    if (!els.editSelectionTranslateCueEl) return;
     if (currentMode !== MODES.EDIT) {
       hideEditSelectionTranslateCue();
       return;
@@ -20239,32 +18931,32 @@
     const buildPayloadKind = String(buildPayload && buildPayload.kind || '').trim().toLowerCase();
     const buildCueSupported = buildPayloadKind === 'atom' || buildPayloadKind === 'fragment';
     const metalBondingCueState = getSelectionMetalBondingCueState();
-    if (editSelectionTranslateCueButtonEl) {
+    if (els.editSelectionTranslateCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
-      editSelectionTranslateCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
+      els.editSelectionTranslateCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
     }
-    if (editSelectionRotateCueButtonEl) {
-      editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
+    if (els.editSelectionRotateCueButtonEl) {
+      els.editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
       const rotateActive = isBondSideSelection
         ? (!buildCueActive && bondSideCueMode === 'axis')
         : (!buildCueActive && effectiveMode === 'rotate');
-      window.VibeMolEditUi.setCueState(editSelectionRotateCueButtonEl, rotateActive);
+      window.VibeMolEditUi.setCueState(els.editSelectionRotateCueButtonEl, rotateActive);
       const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
-      setTooltipText(editSelectionRotateCueButtonEl, rotateTooltip);
-      editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
+      setTooltipText(els.editSelectionRotateCueButtonEl, rotateTooltip);
+      els.editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
     }
-    if (editSelectionBondOrbitCueButtonEl) {
+    if (els.editSelectionBondOrbitCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
-      editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      window.VibeMolEditUi.setCueState(editSelectionBondOrbitCueButtonEl, active);
+      els.editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondOrbitCueButtonEl, active);
     }
-    if (editSelectionBondDistanceCueButtonEl) {
+    if (els.editSelectionBondDistanceCueButtonEl) {
       const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
-      editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
-      window.VibeMolEditUi.setCueState(editSelectionBondDistanceCueButtonEl, active);
+      els.editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondDistanceCueButtonEl, active);
     }
-    if (editSelectionBondOrderCueButtonEl) {
+    if (els.editSelectionBondOrderCueButtonEl) {
       const visible = !!isBondCenterSelection;
       const order = visible && !bondCenterSelection.metalPair ? (bondCenterSelection.order | 0) : '';
       const label = visible
@@ -20272,69 +18964,69 @@
           ? getMetalBondStyleLabel(bondCenterSelection.style)
           : `bond order (${order})`)
         : 'Adjust bond order';
-      editSelectionBondOrderCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionBondOrderCueButtonEl, visible);
-      editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
+      els.editSelectionBondOrderCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionBondOrderCueButtonEl, visible);
+      els.editSelectionBondOrderCueButtonEl.setAttribute('data-bond-order', visible ? String(order) : '');
       const bondOrderTooltip = visible ? `Adjust ${label}` : 'Adjust bond order';
-      setTooltipText(editSelectionBondOrderCueButtonEl, bondOrderTooltip);
-      editSelectionBondOrderCueButtonEl.setAttribute('aria-label', bondOrderTooltip);
+      setTooltipText(els.editSelectionBondOrderCueButtonEl, bondOrderTooltip);
+      els.editSelectionBondOrderCueButtonEl.setAttribute('aria-label', bondOrderTooltip);
     }
-    if (editSelectionMetalBondingCueButtonEl) {
+    if (els.editSelectionMetalBondingCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(metalBondingCueState && metalBondingCueState.choices.length);
-      const active = visible && editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
-      editSelectionMetalBondingCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionMetalBondingCueButtonEl, !!active);
+      const active = visible && els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      els.editSelectionMetalBondingCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionMetalBondingCueButtonEl, !!active);
       if (!visible) hideSelectionMetalBondingCuePopover();
     }
     const coordinationCueState = getSelectionCoordinationCueState();
-    if (editSelectionCoordinationCueButtonEl) {
+    if (els.editSelectionCoordinationCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
-      const active = visible && editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
-      editSelectionCoordinationCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionCoordinationCueButtonEl, !!active);
+      const active = visible && els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
+      els.editSelectionCoordinationCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionCoordinationCueButtonEl, !!active);
       if (!visible) hideSelectionCoordinationCuePopover();
     }
-    if (editSelectionAddFragmentCueButtonEl) {
+    if (els.editSelectionAddFragmentCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection;
       const cueLabel = buildCueSupported
         ? (buildPayloadKind === 'fragment'
           ? `Build ${buildPayload.name || 'fragment'} at open site`
           : `Build ${buildPayload.symbol || buildPayload.name || 'loaded element'} at open site`)
         : 'Choose an atom or fragment in Build first';
-      editSelectionAddFragmentCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
-      editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
-      editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
-      setTooltipText(editSelectionAddFragmentCueButtonEl, cueLabel);
+      els.editSelectionAddFragmentCueButtonEl.hidden = !visible;
+      window.VibeMolEditUi.setCueState(els.editSelectionAddFragmentCueButtonEl, visible && buildCueActive);
+      els.editSelectionAddFragmentCueButtonEl.classList.toggle('is-muted', visible && !buildCueActive);
+      els.editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
+      setTooltipText(els.editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
         hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
         hideSelectionMetalBondingCuePopover();
       }
     }
-    if (editSelectionDeleteCueButtonEl) {
-      editSelectionDeleteCueButtonEl.hidden = false;
-      window.VibeMolEditUi.setCueState(editSelectionDeleteCueButtonEl, false);
+    if (els.editSelectionDeleteCueButtonEl) {
+      els.editSelectionDeleteCueButtonEl.hidden = false;
+      window.VibeMolEditUi.setCueState(els.editSelectionDeleteCueButtonEl, false);
     }
     const positionSnapshot = getSelectionPositionSnapshot();
     editSelectionPositionUi?.sync(positionSnapshot);
     if (positionSnapshot) {
-      setTooltipText(editSelectionTranslateCueEl, '');
+      setTooltipText(els.editSelectionTranslateCueEl, '');
     } else if (isBondCenterSelection) {
-      setTooltipText(editSelectionTranslateCueEl, bondCenterSelection.metalPair
+      setTooltipText(els.editSelectionTranslateCueEl, bondCenterSelection.metalPair
         ? `Bond style ${getMetalBondStyleLabel(bondCenterSelection.style)}`
         : `Bond order ${bondCenterSelection.order | 0}`);
     } else if (isBondSideSelection) {
-      setTooltipText(editSelectionTranslateCueEl, bondSideCueMode === 'distance'
+      setTooltipText(els.editSelectionTranslateCueEl, bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
         : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis'));
     } else {
-      setTooltipText(editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
+      setTooltipText(els.editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
     }
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
     if (editSelectionPositionUi?.isEditing()) return;
-    const badgeWidth = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().width || editSelectionTranslateCueEl.offsetWidth || 42));
-    const badgeHeight = Math.max(40, Math.round(editSelectionTranslateCueEl.getBoundingClientRect().height || editSelectionTranslateCueEl.offsetHeight || 42));
+    const badgeWidth = Math.max(40, Math.round(els.editSelectionTranslateCueEl.getBoundingClientRect().width || els.editSelectionTranslateCueEl.offsetWidth || 42));
+    const badgeHeight = Math.max(40, Math.round(els.editSelectionTranslateCueEl.getBoundingClientRect().height || els.editSelectionTranslateCueEl.offsetHeight || 42));
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || document.documentElement.clientWidth));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || document.documentElement.clientHeight));
     const margin = 12;
@@ -20351,13 +19043,13 @@
     left = Math.max(margin, Math.min(maxLeft, left));
     if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
-    editSelectionTranslateCueEl.style.left = `${left}px`;
-    editSelectionTranslateCueEl.style.top = `${top}px`;
-    editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
-    if (editSelectionCoordinationCuePopoverEl && editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    els.editSelectionTranslateCueEl.style.left = `${left}px`;
+    els.editSelectionTranslateCueEl.style.top = `${top}px`;
+    els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
+    if (els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionCoordinationCuePopover();
     }
-    if (editSelectionMetalBondingCuePopoverEl && editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
+    if (els.editSelectionMetalBondingCuePopoverEl && els.editSelectionMetalBondingCuePopoverEl.getAttribute('aria-hidden') === 'false') {
       renderSelectionMetalBondingCuePopover();
     }
   }
@@ -26161,9 +24853,9 @@
       setAppearanceResetPopoverOpen(false);
       return;
     }
-    if (e.key === 'Escape' && elementColorOverlay && elementColorOverlay.style.display === 'flex') {
+    if (e.key === 'Escape' && periodicTableController.isVisible()) {
       e.preventDefault();
-      setElementColorOverlayOpen(false);
+      periodicTableController.setOpen(false);
       return;
     }
     if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceEnabled) {
@@ -26218,7 +24910,7 @@
       return;
     }
     if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()
-      && (!workspaceEnabled || symmetryPreviewState)) {
+      && (!workspaceEnabled || symmetryPanelController.getPreviewState())) {
       e.preventDefault();
       if (workspaceEnabled) cancelSymmetryPreview();
       else hideSymmetryPopover({ restore: true });
@@ -27132,11 +25824,8 @@
       syncAppearancePersistenceUi();
     },
     beforeSavePreset: () => {
-      if (elementColorPicker) {
-        const active = getActiveElementHexColor(selectedElementForEditor);
-        const pending = normalizeHexColor(elementColorPicker.value, active);
-        if (pending !== active) setElementColorOverride(selectedElementForEditor, pending);
-      }
+      const color = periodicTableController.getPendingColor();
+      if (color && color.pending !== color.active) setElementColorOverride(color.z, color.pending);
     },
     downloadJsonText: (textPayload, filename) => {
       const blob = new Blob([textPayload], { type: 'application/json' });
@@ -27161,7 +25850,6 @@
   const syncBuilderExtensionFromVolumes = presetController.syncBuilderExtensionFromVolumes;
   const exportPresetEnvelope = presetController.exportEnvelope;
   const importPresetEnvelope = presetController.importEnvelope;
-  const saveCurrentPresetToFile = presetController.saveCurrentPresetToFile;
   const importPresetFromTextRaw = presetController.importFromText;
   const getPresetPublicApi = presetController.getPublicApi;
 
@@ -27421,12 +26109,12 @@
     useElementColors = asBoolean(value);
     if (elementColors) elementColors.checked = useElementColors;
     if (visibilityElementColorsToggleEl) visibilityElementColorsToggleEl.checked = useElementColors;
-    refreshPeriodicCells();
+    periodicTableController.refreshCells();
   });
   registerAppearancePresetSetting('global.elementColorOverrides', () => exportElementColorOverrides(), (value) => {
     importElementColorOverrides(value);
-    refreshPeriodicCells();
-    if (elementColorPicker) elementColorPicker.value = getActiveElementHexColor(selectedElementForEditor);
+    periodicTableController.refreshCells();
+    periodicTableController.syncColorPicker();
   });
   registerAppearancePresetSetting('global.showBox', () => showSimulationBoxes, (value) => {
     showSimulationBoxes = asBoolean(value);
@@ -27580,9 +26268,9 @@
     info.vib.speed = Math.max(0.1, Math.min(30, asFiniteNumber(value, info.vib.speed || VIBRATION_DEFAULT_SPEED)));
     syncVibrationControls();
   });
-  registerPresetSetting('vibration.hideSmallFrequencies', () => !!vibrationHideSmallFrequencies, (value) => {
-    vibrationHideSmallFrequencies = asBoolean(value);
-    if (vibrationHideLowFreqEl) vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+  registerPresetSetting('vibration.hideSmallFrequencies', () => !!vibrationRuntimeController.getHideSmallFrequencies(), (value) => {
+    vibrationRuntimeController.setHideSmallFrequencies(asBoolean(value));
+    if (vibrationHideLowFreqEl) vibrationHideLowFreqEl.checked = !!vibrationRuntimeController.getHideSmallFrequencies();
     syncVibrationControls();
   });
 
@@ -28788,16 +27476,16 @@
     },
     getBondSideCueState: () => ({
       mode: getEffectiveEditBondSideCueMode(),
-      rotateVisible: !!(editSelectionRotateCueButtonEl && !editSelectionRotateCueButtonEl.hidden),
-      orbitVisible: !!(editSelectionBondOrbitCueButtonEl && !editSelectionBondOrbitCueButtonEl.hidden),
-      distanceVisible: !!(editSelectionBondDistanceCueButtonEl && !editSelectionBondDistanceCueButtonEl.hidden),
+      rotateVisible: !!(els.editSelectionRotateCueButtonEl && !els.editSelectionRotateCueButtonEl.hidden),
+      orbitVisible: !!(els.editSelectionBondOrbitCueButtonEl && !els.editSelectionBondOrbitCueButtonEl.hidden),
+      distanceVisible: !!(els.editSelectionBondDistanceCueButtonEl && !els.editSelectionBondDistanceCueButtonEl.hidden),
     }),
     getBondCenterCueState: () => {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
       const resolved = getBondCenterSelectionResolved(vol);
       return {
-        visible: !!(editSelectionBondOrderCueButtonEl && !editSelectionBondOrderCueButtonEl.hidden),
+        visible: !!(els.editSelectionBondOrderCueButtonEl && !els.editSelectionBondOrderCueButtonEl.hidden),
         order: resolved ? (resolved.order | 0) : -1,
         style: resolved ? String(resolved.style || '') : '',
         metalPair: !!(resolved && resolved.metalPair),
@@ -28818,7 +27506,6 @@
     }),
   });
 
-  if (savePresetBtn) savePresetBtn.onclick = () => saveCurrentPresetToFile();
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
 
   // Axes gizmo state
@@ -28866,8 +27553,8 @@
       if (evt && evt.stopPropagation) evt.stopPropagation();
       const shouldPlay = !isAnyTrajectoryPlaybackActive();
       if (shouldPlay) {
-        vibrationPlaying = false;
-        vibrationLastStepMs = 0;
+        vibrationRuntimeController.setPlaybackState({ playing: false });
+        vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
         restoreActiveVibrationEquilibrium({ syncUi: false });
       }
       setAllTrajectoryPlayback(shouldPlay, { syncUi: true });
@@ -28876,8 +27563,8 @@
   }
   if (trajectoryResetBtn) {
     trajectoryResetBtn.onclick = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
       resetAllTrajectoryFrames({ syncUi: true });
       syncVibrationControls();
@@ -28885,8 +27572,8 @@
   }
   if (trajectoryFrameEl) {
     trajectoryFrameEl.oninput = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: false });
       stopTrajectoryPlayback({ syncUi: false });
       const idx = Number(trajectoryFrameEl.value);
@@ -28914,12 +27601,12 @@
     vibrationPlayBtn.onclick = () => {
       const info = getActiveVibrationInfo();
       if (!info.enabled) return;
-      const nextPlaying = !vibrationPlaying;
+      const nextPlaying = !vibrationRuntimeController.getPlaybackState().playing;
       if (nextPlaying) {
         stopAllTrajectoryPlayback({ syncUi: false });
       }
-      vibrationPlaying = nextPlaying;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: nextPlaying });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       if (!nextPlaying) applyActiveVibrationPhase(info.vib.phase || 0, { syncUi: false });
       syncTrajectoryControls();
       syncVibrationControls();
@@ -28927,8 +27614,8 @@
   }
   if (vibrationResetBtn) {
     vibrationResetBtn.onclick = () => {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreActiveVibrationEquilibrium({ syncUi: true });
     };
   }
@@ -28949,11 +27636,11 @@
       info.vib.phase = 0;
       stopAllTrajectoryPlayback({ syncUi: false });
       if (shouldTogglePlayback) {
-        vibrationPlaying = !vibrationPlaying;
+        vibrationRuntimeController.setPlaybackState({ playing: !vibrationRuntimeController.getPlaybackState().playing });
       } else {
-        vibrationPlaying = true;
+        vibrationRuntimeController.setPlaybackState({ playing: true });
       }
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       applyActiveVibrationPhase(0, { syncUi: false });
       syncTrajectoryControls();
       syncVibrationControls();
@@ -28980,9 +27667,9 @@
     };
   }
   if (vibrationHideLowFreqEl) {
-    vibrationHideLowFreqEl.checked = !!vibrationHideSmallFrequencies;
+    vibrationHideLowFreqEl.checked = !!vibrationRuntimeController.getHideSmallFrequencies();
     vibrationHideLowFreqEl.onchange = () => {
-      vibrationHideSmallFrequencies = !!vibrationHideLowFreqEl.checked;
+      vibrationRuntimeController.setHideSmallFrequencies(!!vibrationHideLowFreqEl.checked);
       syncVibrationControls();
     };
   }
@@ -29035,19 +27722,7 @@
    * @param {*} traj
    * @returns {*|null}
    */
-  function cloneTrajectoryState(traj) {
-    if (!traj || !Array.isArray(traj.frames)) return null;
-    return {
-      frames: traj.frames.map((frame) => new Float32Array(frame)),
-      comments: Array.isArray(traj.comments) ? traj.comments.slice() : [],
-      frameIndex: Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0,
-      currentFrame: Number.isFinite(Number(traj.currentFrame)) ? Number(traj.currentFrame) | 0 : (Number.isFinite(Number(traj.frameIndex)) ? Number(traj.frameIndex) | 0 : 0),
-      playing: !!traj.playing,
-      fps: Number.isFinite(Number(traj.fps)) ? Number(traj.fps) : 12,
-      loop: traj.loop !== false,
-      syncEnabled: !!traj.syncEnabled,
-    };
-  }
+  function cloneTrajectoryState(...args) { return trajectoryPlaybackController.cloneTrajectoryState(...args); }
 
   /**
    * Deep-clone one vibration state for undoable coordinate-panel edits.
@@ -29148,8 +27823,8 @@
     vol.natoms = vol.atoms.length;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     stopAllTrajectoryPlayback({ syncUi: false });
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     syncBuilderExtensionFromVolumes();
     currentIndex = idx;
     clearTransientInteractionState();
@@ -29195,8 +27870,8 @@
     const afterState = cloneCoordsPanelEditState(vol);
     pushCoordsPanelEditHistoryEntry(record, beforeState, afterState, actionLabel);
     stopAllTrajectoryPlayback({ syncUi: false });
-    vibrationPlaying = false;
-    vibrationLastStepMs = 0;
+    vibrationRuntimeController.setPlaybackState({ playing: false });
+    vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
     clearTransientInteractionState();
     rebuildScene({ preserveView: true });
     updateSidePanel();
@@ -30656,8 +29331,8 @@
     };
 
     if (target.index === currentIndex) {
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       applyActiveVibrationPhase(0, { syncUi: false });
       syncVibrationControls();
     }
@@ -30918,29 +29593,7 @@
    * @param {*} record
    */
   function updatePubChemMetadataPanel(record) {
-    if (!pubchemMetaContent) return;
-    const meta = record && record.pubchemMeta;
-    if (!meta) {
-      if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'none';
-      pubchemMetaContent.innerHTML = '';
-      return;
-    }
-    if (pubchemMetaWrap) pubchemMetaWrap.style.display = 'block';
-    const rows = [
-      ['Name', meta.title || '—'],
-      ['CID', meta.cid != null ? String(meta.cid) : '—'],
-      ['Formula', meta.molecularFormula || '—'],
-      ['Molar mass', meta.molecularWeight ? `${meta.molecularWeight} g/mol` : '—'],
-      ['IUPAC', meta.iupacName || '—'],
-      ['SMILES', meta.connectivitySmiles || '—'],
-      ['Source', meta.source || 'PubChem']
-    ];
-    if (meta.query) rows.splice(1, 0, ['Query', meta.query]);
-    if (meta.url) rows.push(['URL', meta.url]);
-    const body = rows.map(([k, v]) => {
-      return `<tr><th>${escapeHtml(k)}</th><td>${escapeHtml(v)}</td></tr>`;
-    }).join('');
-    pubchemMetaContent.innerHTML = `<table class="meta-table pubchem-metadata"><tbody>${body}</tbody></table>`;
+    return pubchemController.updatePubChemMetadataPanel(record);
   }
 
   /**
@@ -30961,12 +29614,7 @@
     return fileLoaderController.handleFiles(fileList);
   }
 
-  const PUBCHEM_AUTOCOMPLETE_LIMIT = 10;
-  let pubchemBusy = false;
-  let pubchemSuggestTimer = null;
-  let pubchemSuggestToken = 0;
-  const pubchemHas3DByNameCache = new Map();
-  const pubchemHas3DByCidCache = new Map();
+
 
   function clearHintVisibilityTimer() {
     if (!hintVisibilityTimer) return;
@@ -31078,419 +29726,25 @@
     emptyStateEl.classList.toggle('hidden', !showEmptyState);
   }
 
-  /**
-   * Update PubChem autocomplete options.
-   * @param {string[]} terms
-   */
-  function setPubChemSuggestions(terms) {
-    if (!pubchemSuggestionsEl) return;
-    pubchemSuggestionsEl.innerHTML = '';
-    for (const term of terms) {
-      const opt = document.createElement('option');
-      opt.value = term;
-      pubchemSuggestionsEl.appendChild(opt);
-    }
-  }
 
-  /**
-   * Normalize a PubChem search string.
-   * @param {*} value
-   * @returns {string}
-   */
-  function normalizePubChemQuery(value) {
-    return String(value || '').trim();
-  }
 
-  /**
-   * Build a canonical PubChem compound URL for one CID.
-   * @param {number} cid
-   * @returns {string}
-   */
-  function getPubChemCompoundUrl(cid) {
-    return `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`;
-  }
 
-  /**
-   * Fetch JSON from PubChem with consistent error handling.
-   * @param {string} url
-   * @param {string} context
-   * @param {{allow404?:boolean}=} options
-   * @returns {Promise<object|null>}
-   */
-  async function fetchPubChemJson(url, context, options = {}) {
-    const allow404 = !!options.allow404;
-    const res = await fetch(url);
-    if (allow404 && res.status === 404) return null;
-    if (!res.ok) throw new Error(`${context} failed (${res.status})`);
-    return await res.json();
-  }
 
-  /**
-   * Fetch text from PubChem with consistent error handling.
-   * @param {string} url
-   * @param {string} context
-   * @returns {Promise<string>}
-   */
-  async function fetchPubChemText(url, context) {
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`${context} failed (${res.status})`);
-    return await res.text();
-  }
 
-  /**
-   * Read CID list from a PUG JSON payload.
-   * @param {*} data
-   * @returns {number[]}
-   */
-  function extractPubChemCidList(data) {
-    const cidsRaw = data && data.IdentifierList && Array.isArray(data.IdentifierList.CID)
-      ? data.IdentifierList.CID
-      : [];
-    return cidsRaw.map((v) => Number(v)).filter((v) => Number.isFinite(v));
-  }
 
-  /**
-   * Build minimal metadata when PubChem property lookup is unavailable.
-   * @param {number} cid
-   * @param {string} query
-   * @returns {{cid:number,query:string,source:string,url:string}}
-   */
-  function buildPubChemMetadataFallback(cid, query) {
-    return {
-      cid,
-      query: normalizePubChemQuery(query),
-      source: 'PubChem',
-      url: getPubChemCompoundUrl(cid),
-    };
-  }
 
-  /**
-   * Check whether a conformer endpoint exists for one PubChem lookup target.
-   * @param {string} cacheKey
-   * @param {Map<string|number,boolean>} cache
-   * @param {string} url
-   * @param {string} context
-   * @returns {Promise<boolean>}
-   */
-  async function hasPubChemConformer(cacheKey, cache, url, context) {
-    if (cache.has(cacheKey)) return cache.get(cacheKey);
-    const data = await fetchPubChemJson(url, context, { allow404: true });
-    const has3D = !!data;
-    cache.set(cacheKey, has3D);
-    return has3D;
-  }
 
-  /**
-   * Fetch compound name suggestions from PubChem autocomplete API.
-   * @param {string} query
-   * @param {number} limit
-   * @returns {Promise<string[]>}
-   */
-  async function fetchPubChemSuggestions(query, limit = PUBCHEM_AUTOCOMPLETE_LIMIT) {
-    const q = normalizePubChemQuery(query);
-    if (!q) return [];
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/JSON?limit=${Math.max(1, Math.min(25, limit | 0))}`;
-    const data = await fetchPubChemJson(url, 'PubChem autocomplete');
-    const terms = (data && data.dictionary_terms && Array.isArray(data.dictionary_terms.compound))
-      ? data.dictionary_terms.compound
-      : [];
-    const seen = new Set();
-    const unique = [];
-    for (const t of terms) {
-      if (typeof t !== 'string') continue;
-      const key = t.trim().toLowerCase();
-      if (!key || seen.has(key)) continue;
-      seen.add(key);
-      unique.push(t.trim());
-    }
-    if (unique.length === 0) return unique;
 
-    // Keep only entries that have at least one 3D conformer record.
-    const checks = await Promise.all(
-      unique.map(async (term) => {
-        try {
-          return await hasPubChem3DByName(term);
-        } catch (err) {
-          console.warn('[PubChem] 3D availability check failed', term, err);
-          return false;
-        }
-      })
-    );
 
-    const filtered = [];
-    for (let i = 0; i < unique.length; i++) {
-      if (checks[i]) filtered.push(unique[i]);
-    }
-    return filtered;
-  }
 
-  /**
-   * Check whether a PubChem name has at least one 3D conformer entry.
-   * Results are memoized to keep autocomplete responsive.
-   * @param {string} name
-   * @returns {Promise<boolean>}
-   */
-  async function hasPubChem3DByName(name) {
-    const q = normalizePubChemQuery(name);
-    if (!q) return false;
-    const cacheKey = q.toLowerCase();
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/conformers/JSON`;
-    return await hasPubChemConformer(cacheKey, pubchemHas3DByNameCache, url, 'PubChem conformer lookup');
-  }
 
-  /**
-   * Check whether one CID has at least one 3D conformer.
-   * @param {number} cid
-   * @returns {Promise<boolean>}
-   */
-  async function hasPubChem3DByCid(cid) {
-    const n = Number(cid);
-    if (!Number.isFinite(n)) return false;
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/conformers/JSON`;
-    return await hasPubChemConformer(n, pubchemHas3DByCidCache, url, 'PubChem CID conformer lookup');
-  }
 
-  /**
-   * Resolve the first CID that matches a PubChem name query.
-   * When `require3D` is set, returns the first CID with a 3D conformer.
-   * @param {string} name
-   * @param {{require3D?:boolean}=} options
-   * @returns {Promise<number>}
-   */
-  async function fetchPubChemCidByName(name, options = {}) {
-    const require3D = !!options.require3D;
-    const q = normalizePubChemQuery(name);
-    if (!q) throw new Error('Empty PubChem query.');
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/cids/JSON`;
-    const data = await fetchPubChemJson(url, 'PubChem CID lookup');
-    const cids = extractPubChemCidList(data);
-    if (cids.length === 0) throw new Error(`No PubChem CID found for "${q}".`);
-    if (!require3D) return cids[0];
 
-    for (const cid of cids.slice(0, 24)) {
-      try {
-        if (await hasPubChem3DByCid(cid)) return cid;
-      } catch (err) {
-        console.warn('[PubChem] CID 3D check failed', cid, err);
-      }
-    }
-    throw new Error(`No PubChem 3D structure found for "${q}".`);
-  }
 
-  /**
-   * Fetch an SDF record for one PubChem CID.
-   * Prefers 3D coordinates and optionally requires 3D-only mode.
-   * @param {number} cid
-   * @param {{require3D?:boolean}=} options
-   * @returns {Promise<string>}
-   */
-  async function fetchPubChemSdfByCid(cid, options = {}) {
-    const require3D = !!options.require3D;
-    const modes = require3D ? ['3d'] : ['3d', '2d'];
-    let lastStatus = 0;
-    for (const recordType of modes) {
-      const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=${recordType}`;
-      try {
-        return await fetchPubChemText(url, 'PubChem SDF fetch');
-      } catch (err) {
-        const msg = String((err && err.message) || err || '');
-        const m = msg.match(/\((\d+)\)$/);
-        lastStatus = m ? Number(m[1]) : lastStatus;
-      }
-    }
-    throw new Error(`PubChem SDF fetch failed for CID ${cid} (${lastStatus || 'no response'}).`);
-  }
 
-  /**
-   * Fetch selected metadata fields for one PubChem CID.
-   * @param {number} cid
-   * @param {string} query
-   * @returns {Promise<{cid:number,query:string,title:string,molecularFormula:string,molecularWeight:string,iupacName:string,connectivitySmiles:string,source:string,url:string}>}
-   */
-  async function fetchPubChemMetadata(cid, query = '') {
-    const n = Number(cid);
-    if (!Number.isFinite(n)) throw new Error(`Invalid PubChem CID: ${cid}`);
-    const fields = [
-      'Title',
-      'IUPACName',
-      'MolecularFormula',
-      'MolecularWeight',
-      'ConnectivitySMILES'
-    ].join(',');
-    const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/property/${fields}/JSON`;
-    const data = await fetchPubChemJson(url, 'PubChem metadata lookup');
-    const prop = data && data.PropertyTable && Array.isArray(data.PropertyTable.Properties)
-      ? data.PropertyTable.Properties[0]
-      : null;
-    if (!prop || typeof prop !== 'object') throw new Error(`No PubChem metadata found for CID ${n}.`);
-    return {
-      cid: n,
-      query: normalizePubChemQuery(query),
-      title: (typeof prop.Title === 'string' && prop.Title.trim()) ? prop.Title.trim() : '',
-      molecularFormula: typeof prop.MolecularFormula === 'string' ? prop.MolecularFormula : '',
-      molecularWeight: typeof prop.MolecularWeight === 'string' ? prop.MolecularWeight : '',
-      iupacName: typeof prop.IUPACName === 'string' ? prop.IUPACName : '',
-      connectivitySmiles: typeof prop.ConnectivitySMILES === 'string' ? prop.ConnectivitySMILES : '',
-      source: 'PubChem',
-      url: getPubChemCompoundUrl(n)
-    };
-  }
 
-  /**
-   * Convert an SDF mol block to XYZ text for existing parser reuse.
-   * @param {string} sdfText
-   * @param {string} fallbackTitle
-   * @returns {string}
-   */
-  function sdfToXYZText(sdfText, fallbackTitle) {
-    const lines = String(sdfText || '').replace(/\r/g, '').split('\n');
-    if (lines.length < 5) throw new Error('Invalid SDF payload from PubChem.');
-    const countsLine = lines[3] || '';
-    let natoms = parseInt(countsLine.slice(0, 3).trim(), 10);
-    if (!Number.isFinite(natoms)) {
-      const c = countsLine.trim().split(/\s+/);
-      natoms = parseInt(c[0] || '', 10);
-    }
-    if (!Number.isFinite(natoms) || natoms <= 0) throw new Error('Could not parse atom count from PubChem SDF.');
 
-    const atomLines = lines.slice(4, 4 + natoms);
-    if (atomLines.length !== natoms) throw new Error('PubChem SDF ended before atom block completed.');
-
-    const xyzRows = [];
-    for (const line of atomLines) {
-      let x = parseFloat(line.slice(0, 10));
-      let y = parseFloat(line.slice(10, 20));
-      let z = parseFloat(line.slice(20, 30));
-      let sym = line.slice(31, 34).trim();
-      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !sym) {
-        const p = line.trim().split(/\s+/);
-        x = parseFloat(p[0]);
-        y = parseFloat(p[1]);
-        z = parseFloat(p[2]);
-        sym = p[3] || '';
-      }
-      if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z) || !sym) {
-        throw new Error('Failed to parse PubChem SDF atom coordinates.');
-      }
-      xyzRows.push(`${sym} ${x.toFixed(6)} ${y.toFixed(6)} ${z.toFixed(6)}`);
-    }
-
-    return `${xyzRows.length}\n${fallbackTitle}\n${xyzRows.join('\n')}\n`;
-  }
-
-  /**
-   * Enable/disable the PubChem load button during network calls.
-   * @param {boolean} busy
-   */
-  function setPubChemBusy(busy) {
-    pubchemBusy = !!busy;
-    if (!pubchemLoadBtn) return;
-    pubchemLoadBtn.disabled = pubchemBusy;
-    pubchemLoadBtn.innerHTML = pubchemBusy
-      ? '<span class="vm-spinner" aria-hidden="true"></span>'
-      : PUBCHEM_SEARCH_ICON_SVG;
-    setTooltipText(pubchemLoadBtn, pubchemBusy
-      ? 'Loading PubChem…'
-      : 'Search PubChem and load the selected molecule');
-    pubchemLoadBtn.setAttribute('aria-label', pubchemBusy ? 'Loading PubChem' : 'Search PubChem');
-    pubchemLoadBtn.setAttribute('aria-busy', pubchemBusy ? 'true' : 'false');
-  }
-
-  /**
-   * Import one molecule from PubChem name query and append it as XYZ.
-   * @param {string} rawQuery
-   * @returns {Promise<void>}
-   */
-  async function loadPubChemCompound(rawQuery) {
-    const query = normalizePubChemQuery(rawQuery);
-    if (!query || pubchemBusy) return;
-    setPubChemBusy(true);
-    try {
-      setHintMessage(`PubChem: searching "${query}"...`);
-      const cid = await fetchPubChemCidByName(query, { require3D: true });
-      const sdfText = await fetchPubChemSdfByCid(cid, { require3D: true });
-      let pubchemMeta = null;
-      try {
-        pubchemMeta = await fetchPubChemMetadata(cid, query);
-      } catch (metaErr) {
-        console.warn('[PubChem] metadata lookup failed', metaErr);
-      }
-      const xyzText = sdfToXYZText(sdfText, `PubChem CID ${cid} ${query}`);
-      const vol = parseXYZ(xyzText);
-      if (!vol || !Array.isArray(vol.atoms) || vol.atoms.length === 0) {
-        throw new Error('PubChem import produced an empty structure.');
-      }
-      vol.title = `PubChem CID ${cid}`;
-      vol.comment = query;
-      const handled = handleSceneDropRecords([{
-        name: `${query} [CID ${cid}].xyz`,
-        fileKind: 'xyz',
-        vol,
-        extras: {
-          pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query),
-        },
-      }], { skipAutoIsoOnInitialRebuild: true });
-      if (!handled) {
-        volumes = [];
-        currentIndex = -1;
-        clearSceneMeshes();
-        clearEditHistory();
-        const startIndex = 0;
-        appendParsedVolumeRecord(
-          `${query} [CID ${cid}].xyz`,
-          vol,
-          {
-            pubchemMeta: pubchemMeta || buildPubChemMetadataFallback(cid, query),
-            inferBondOrders: true,
-          }
-        );
-        finalizeLoadedVolumes(startIndex);
-      }
-      setNavigationHint(`Loaded PubChem: ${query} (CID ${cid})`);
-    } catch (err) {
-      const msg = err && err.message ? err.message : String(err);
-      console.error('[PubChem] import failed', err);
-      setHintMessage(`PubChem import failed: ${msg}`);
-      alert(`PubChem import failed: ${msg}`);
-    } finally {
-      setPubChemBusy(false);
-    }
-  }
-
-  /**
-   * Debounced autocomplete lookup for the PubChem query input.
-   */
-  function schedulePubChemSuggestions() {
-    if (!pubchemQueryInput) return;
-    if (pubchemSuggestTimer) clearTimeout(pubchemSuggestTimer);
-    const query = normalizePubChemQuery(pubchemQueryInput.value);
-    if (query.length < 2) {
-      setPubChemSuggestions([]);
-      return;
-    }
-    const token = ++pubchemSuggestToken;
-    pubchemSuggestTimer = setTimeout(async () => {
-      try {
-        const terms = await fetchPubChemSuggestions(query, PUBCHEM_AUTOCOMPLETE_LIMIT);
-        if (token !== pubchemSuggestToken) return;
-        setPubChemSuggestions(terms);
-      } catch (err) {
-        if (token !== pubchemSuggestToken) return;
-        console.warn('[PubChem] autocomplete failed', err);
-        setPubChemSuggestions([]);
-      }
-    }, 240);
-  }
-
-  if (pubchemQueryInput) {
-    pubchemQueryInput.addEventListener('input', schedulePubChemSuggestions);
-    pubchemQueryInput.addEventListener('keydown', (e) => {
-      if (e.key !== 'Enter') return;
-      e.preventDefault();
-      loadPubChemCompound(pubchemQueryInput.value);
-    });
-  }
-  if (pubchemLoadBtn) pubchemLoadBtn.onclick = () => loadPubChemCompound(pubchemQueryInput ? pubchemQueryInput.value : '');
+  pubchemController.bindControls();
 
   /**
    * Build one File object from embed payload data.
@@ -31729,35 +29983,8 @@
   if (visibilityElementColorsToggleEl) {
     visibilityElementColorsToggleEl.onchange = () => editAppearanceSettings({ 'global.elementColors': visibilityElementColorsToggleEl.checked });
   }
-  if (elementColorBtn) elementColorBtn.onclick = () => setElementColorOverlayOpen(true);
-  if (elementColorClose) elementColorClose.onclick = () => setElementColorOverlayOpen(false);
-  if (elementColorOverlay) {
-    elementColorOverlay.addEventListener('click', (e) => {
-      if (e.target === elementColorOverlay) setElementColorOverlayOpen(false);
-    });
-  }
-  /**
-   * Apply the current picker value as an override for the selected element.
-   */
-  function applyElementColorPickerValue(event) {
-    if (!elementColorPicker) return;
-    editAppearanceSettings({ 'global.elementColorOverrides': {
-      ...exportElementColorOverrides(), [selectedElementForEditor]: normalizeHexColor(elementColorPicker.value, getActiveElementHexColor(selectedElementForEditor)),
-    } }, event?.type);
-  }
-  if (elementColorPicker) {
-    // Some browsers commit `<input type="color">` on `change` only.
-    elementColorPicker.oninput = applyElementColorPickerValue;
-    elementColorPicker.onchange = applyElementColorPickerValue;
-  }
-  if (elementColorResetOne) {
-    elementColorResetOne.onclick = () => {
-      const colors = exportElementColorOverrides();
-      delete colors[selectedElementForEditor];
-      editAppearanceSettings({ 'global.elementColorOverrides': colors });
-    };
-  }
-  if (elementColorResetAll) elementColorResetAll.onclick = () => editAppearanceSettings({ 'global.elementColorOverrides': {} });
+  if (elementColorBtn) elementColorBtn.onclick = () => periodicTableController.setOpen(true);
+  periodicTableController.bindControls();
   toggleBox.onchange = () => {
     if (workspaceEnabled) {
       const value = toggleBox.checked;
@@ -32683,13 +30910,13 @@
           camera: camera.clone(), target: controls.target.clone(),
           master: Object.assign({}, getTrajectorySyncMaster()),
           trajectories: getAllTrajectoryInfos().map(info => ({ traj: info.traj, playing: info.traj.playing })),
-          vibrationPlaying,
+          vibrationPlaying: vibrationRuntimeController.getPlaybackState().playing,
           orbitals: volumes.filter(record => record.vol.kind === 'molden').map(record => ({ record, index: record.moldenMoIndex })),
         }),
         activate: target => {
           getTrajectorySyncMaster().playing = false;
           for (const info of getAllTrajectoryInfos()) info.traj.playing = false;
-          vibrationPlaying = false;
+          vibrationRuntimeController.setPlaybackState({ playing: false });
           exporter.activateTarget(sceneGraphController, target);
           currentIndex = Math.max(0, getRecordIndex(target.layer.record || target.scene.moleculeRecord));
           syncLoadedSceneControls();
@@ -32715,8 +30942,8 @@
           currentIndex = saved.currentIndex;
           Object.assign(getTrajectorySyncMaster(), saved.master, { lastStepMs: 0 });
           for (const { traj, playing } of saved.trajectories) Object.assign(traj, { playing, _lastStepMs: 0 });
-          vibrationPlaying = saved.vibrationPlaying;
-          vibrationLastStepMs = 0;
+          vibrationRuntimeController.setPlaybackState({ playing: saved.vibrationPlaying });
+          vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
           for (const { record, index } of saved.orbitals) record.moldenMoIndex = index;
           camera.copy(saved.camera);
           controls.target.copy(saved.target);
@@ -32829,11 +31056,11 @@
         surfaceRenderSuppressed,showSurfaces,surfaceGeometryDeferred,
         layers:getAllLookLayers().map(layer=>({layer,values:Object.fromEntries(figureLayerKeys.map(key=>[key,{own:Object.hasOwn(layer,key),value:cloneJsonLike(layer[key])}]))})),
         helpers:figureHelpers().map(obj=>({obj,visible:obj.visible})),
-        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying,
+        master:{...getTrajectorySyncMaster()},trajectories:getAllTrajectoryInfos().map(info=>({traj:info.traj,playing:info.traj.playing})),vibrationPlaying: vibrationRuntimeController.getPlaybackState().playing,
         orbitals:volumes.filter(r=>r.vol.kind==='molden').map(record=>({record,index:record.moldenMoIndex})),
       };
       figureRendering=true;pauseFigureUI(preview);
-      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationPlaying=false;
+      getTrajectorySyncMaster().playing=false;for(const info of getAllTrajectoryInfos())info.traj.playing=false;vibrationRuntimeController.setPlaybackState({ playing: false });
       currentMode=MODES.DISPLAY;surfaceRenderSuppressed=false;showSurfaces=true;
       return state;
     },
@@ -32844,7 +31071,7 @@
       for(const {layer,values} of state.layers)for(const [key,entry] of Object.entries(values)){if(entry.own)layer[key]=entry.value;else delete layer[key];}
       currentIndex=state.currentIndex;currentMode=state.currentMode;surfaceRenderSuppressed=state.surfaceRenderSuppressed;showSurfaces=state.showSurfaces;
       Object.assign(getTrajectorySyncMaster(),state.master,{lastStepMs:0});for(const {traj,playing} of state.trajectories)Object.assign(traj,{playing,_lastStepMs:0});
-      vibrationPlaying=state.vibrationPlaying;vibrationLastStepMs=0;
+      vibrationRuntimeController.setPlaybackState({ playing: state.vibrationPlaying });vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       for(const {record,index} of state.orbitals)record.moldenMoIndex=index;
       rebuildScene({preserveView:true,skipAutoIso:true});surfaceGeometryDeferred=state.surfaceGeometryDeferred;
       for(const {obj,visible} of state.helpers)obj.visible=visible;
@@ -32983,9 +31210,9 @@
       for (const layer of getAllLookLayers()) getSurfaceStyleOverrides(layer);
       sceneSources.restore(saved.sources);
       for (const record of volumes) if (record.vol.isTwoComponent) setVolume2CComponent(record, global2CComponentMode);
-      trajectoryPlaying = false;
-      vibrationPlaying = false;
-      vibrationLastStepMs = 0;
+      trajectoryPlaybackController.forgetPlaybackOwner();
+      vibrationRuntimeController.setPlaybackState({ playing: false });
+      vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       restoreSessionView(saved.view);
     };
     applyingSession = true;
@@ -33184,7 +31411,7 @@
     resetSurfaceOverrides: () => resetSurfaceStyleOverrides(undefined, !workspaceEnabled),
     getSurfaceOverrideCounts: () => getSurfaceOverrideCounts(workspaceEnabled ? getSurfaceAppearanceTargets() : getAllLookLayers()),
     surfaceColorSchemes: Array.from(schemeSelect.options, option => [option.value, option.textContent]),
-    openElementColors: () => setElementColorOverlayOpen(true),
+    openElementColors: () => periodicTableController.setOpen(true),
     references: lookReferences,
     initializeReferences: () => {
       if (pendingAppearanceMigration) lookReferences.migrate(captureLookSettings(), pendingAppearanceMigration.recordedLook);
@@ -33277,6 +31504,135 @@
     setSidebarCollapsed: setWorkspaceSidebarCollapsed,
     resize,
   });
+
+  // Only the explicit QA launch exposes private cache values. The live DOM
+  // is queried by the harness, independently of these cached references.
+  if (launchParams.get('qa') === '1') {
+    // Issue-backed absence is distinct from a live cache, including the four
+    // obsolete edit slots that already stayed null before this refactor.
+    const knownAbsent = Object.freeze({
+      editAtomsMenuEl: Object.freeze({ id: 'editAtomsMenu', issue: 15, cached: 'null' }),
+      editAtomsMenuBodyEl: Object.freeze({ id: 'editAtomsMenuBody', issue: 15, cached: 'null' }),
+      editAtomsMenuCurrentEl: Object.freeze({ id: 'editAtomsMenuCurrent', issue: 15, cached: 'null' }),
+      editSelectionFragmentCuePopoverEl: Object.freeze({ id: 'editSelectionFragmentCuePopover', issue: 15, cached: 'null' }),
+      ...(workspaceEnabled ? {
+        elementColorBtn: Object.freeze({ id: 'elementColorBtn', issue: 14, cached: 'detached' }),
+      } : {}),
+    });
+    const inventoryIds = Object.freeze({
+        elementColorBtn: 'elementColorBtn',
+        elementColorOverlay: 'elementColorOverlay',
+        elementColorClose: 'elementColorClose',
+        periodicTableViewport: 'periodicTableViewport',
+        periodicTableCanvas: 'periodicTableCanvas',
+        elementColorName: 'elementColorName',
+        elementColorPicker: 'elementColorPicker',
+        elementColorResetOne: 'elementColorResetOne',
+        elementColorResetAll: 'elementColorResetAll',
+        canvasAdaptiveMenuEl: 'displayWindowAdaptiveMenu',
+        measurementsPanel: 'measurementsPanel',
+        calculationsPanel: 'subspacePanel',
+        editAtomsMenuEl: 'editAtomsMenu',
+        editAtomsMenuBodyEl: 'editAtomsMenuBody',
+        editAtomsMenuCurrentEl: 'editAtomsMenuCurrent',
+        editSelectionTranslateCueEl: 'editSelectionTranslateCue',
+        editSelectionTranslateCueButtonEl: 'editSelectionTranslateCueButton',
+        editSelectionRotateCueButtonEl: 'editSelectionRotateCueButton',
+        editSelectionCoordinationCueButtonEl: 'editSelectionCoordinationCueButton',
+        editSelectionMetalBondingCueButtonEl: 'editSelectionMetalBondingCueButton',
+        editSelectionBondOrbitCueButtonEl: 'editSelectionBondOrbitCueButton',
+        editSelectionBondDistanceCueButtonEl: 'editSelectionBondDistanceCueButton',
+        editSelectionBondOrderCueButtonEl: 'editSelectionBondOrderCueButton',
+        editSelectionAddFragmentCueButtonEl: 'editSelectionAddFragmentCueButton',
+        editSelectionDeleteCueButtonEl: 'editSelectionDeleteCueButton',
+        editSelectionFragmentCuePopoverEl: 'editSelectionFragmentCuePopover',
+        editSelectionCoordinationCuePopoverEl: 'editSelectionCoordinationCuePopover',
+        editSelectionMetalBondingCuePopoverEl: 'editSelectionMetalBondingCuePopover',
+        editAdaptiveAddAtomBtn: 'editAdaptiveAddAtomBtn',
+        editAdaptiveSymmetryBtn: 'editAdaptiveSymmetryBtn',
+        editAdaptiveSymmetryMetaEl: 'editAdaptiveSymmetryMeta',
+        editAdaptiveCleanStructureBtn: 'editAdaptiveCleanStructureBtn',
+        editAdaptiveCleanStructureMetaEl: 'editAdaptiveCleanStructureMeta',
+        editAdaptiveShiftComBtn: 'editAdaptiveShiftComBtn',
+        editAdaptiveShiftComMetaEl: 'editAdaptiveShiftComMeta',
+        editAdaptiveAlignPrincipalBtn: 'editAdaptiveAlignPrincipalBtn',
+        editAdaptiveAlignPrincipalMetaEl: 'editAdaptiveAlignPrincipalMeta',
+        editAdaptiveAddAtomPopoverEl: 'editAdaptiveAddAtomPopover',
+        editAdaptiveSymmetryPopoverEl: 'editAdaptiveSymmetryPopover',
+        editBuildSearchEl: 'editBuildSearch',
+        editBuildAtomsHostEl: 'editBuildAtomsHost',
+        editBuildFragmentsHostEl: 'editBuildFragmentsHost',
+        editBuildMoleculesHostEl: 'editBuildMoleculesHost',
+        editSymmetryTargetSummaryEl: 'editSymmetryTargetSummary',
+        editSymmetryExactResultCardEl: 'editSymmetryExactResultCard',
+        editSymmetryExactResultEl: 'editSymmetryExactResult',
+        editSymmetryToleranceSelectEl: 'editSymmetryToleranceSelect',
+        editSymmetryElementSelectEl: 'editSymmetryElementSelect',
+        editSymmetryCandidatesEl: 'editSymmetryCandidates',
+        editSymmetryApplyBtnEl: 'editSymmetryApplyBtn',
+        editSymmetryCancelBtnEl: 'editSymmetryCancelBtn',
+        editSymmetryAutoBtnEl: 'editSymmetryAutoBtn',
+    });
+    window.__vmqaElementCaches = Object.freeze({
+      ids: Object.freeze(Object.fromEntries(Object.entries(inventoryIds)
+        .filter(([name]) => !Object.hasOwn(knownAbsent, name)))),
+      knownAbsent,
+      readNodes: () => ({
+        elementColorBtn: elementColorBtn,
+        elementColorOverlay: els.elementColorOverlay,
+        elementColorClose: els.elementColorClose,
+        periodicTableViewport: els.periodicTableViewport,
+        periodicTableCanvas: els.periodicTableCanvas,
+        elementColorName: els.elementColorName,
+        elementColorPicker: els.elementColorPicker,
+        elementColorResetOne: els.elementColorResetOne,
+        elementColorResetAll: els.elementColorResetAll,
+        canvasAdaptiveMenuEl: els.displayWindowAdaptiveMenuEl,
+        measurementsPanel: measurementsPanel.panel,
+        calculationsPanel: calculationsPanel.panel,
+        editAtomsMenuEl: els.editAtomsMenuEl,
+        editAtomsMenuBodyEl: els.editAtomsMenuBodyEl,
+        editAtomsMenuCurrentEl: els.editAtomsMenuCurrentEl,
+        editSelectionTranslateCueEl: els.editSelectionTranslateCueEl,
+        editSelectionTranslateCueButtonEl: els.editSelectionTranslateCueButtonEl,
+        editSelectionRotateCueButtonEl: els.editSelectionRotateCueButtonEl,
+        editSelectionCoordinationCueButtonEl: els.editSelectionCoordinationCueButtonEl,
+        editSelectionMetalBondingCueButtonEl: els.editSelectionMetalBondingCueButtonEl,
+        editSelectionBondOrbitCueButtonEl: els.editSelectionBondOrbitCueButtonEl,
+        editSelectionBondDistanceCueButtonEl: els.editSelectionBondDistanceCueButtonEl,
+        editSelectionBondOrderCueButtonEl: els.editSelectionBondOrderCueButtonEl,
+        editSelectionAddFragmentCueButtonEl: els.editSelectionAddFragmentCueButtonEl,
+        editSelectionDeleteCueButtonEl: els.editSelectionDeleteCueButtonEl,
+        editSelectionFragmentCuePopoverEl: els.editSelectionFragmentCuePopoverEl,
+        editSelectionCoordinationCuePopoverEl: els.editSelectionCoordinationCuePopoverEl,
+        editSelectionMetalBondingCuePopoverEl: els.editSelectionMetalBondingCuePopoverEl,
+        editAdaptiveAddAtomBtn: els.editAdaptiveAddAtomBtn,
+        editAdaptiveSymmetryBtn: els.editAdaptiveSymmetryBtn,
+        editAdaptiveSymmetryMetaEl: els.editAdaptiveSymmetryMetaEl,
+        editAdaptiveCleanStructureBtn: els.editAdaptiveCleanStructureBtn,
+        editAdaptiveCleanStructureMetaEl: els.editAdaptiveCleanStructureMetaEl,
+        editAdaptiveShiftComBtn: els.editAdaptiveShiftComBtn,
+        editAdaptiveShiftComMetaEl: els.editAdaptiveShiftComMetaEl,
+        editAdaptiveAlignPrincipalBtn: els.editAdaptiveAlignPrincipalBtn,
+        editAdaptiveAlignPrincipalMetaEl: els.editAdaptiveAlignPrincipalMetaEl,
+        editAdaptiveAddAtomPopoverEl: els.editAdaptiveAddAtomPopoverEl,
+        editAdaptiveSymmetryPopoverEl: els.editAdaptiveSymmetryPopoverEl,
+        editBuildSearchEl: els.editBuildSearchEl,
+        editBuildAtomsHostEl: els.editBuildAtomsHostEl,
+        editBuildFragmentsHostEl: els.editBuildFragmentsHostEl,
+        editBuildMoleculesHostEl: els.editBuildMoleculesHostEl,
+        editSymmetryTargetSummaryEl: els.editSymmetryTargetSummaryEl,
+        editSymmetryExactResultCardEl: els.editSymmetryExactResultCardEl,
+        editSymmetryExactResultEl: els.editSymmetryExactResultEl,
+        editSymmetryToleranceSelectEl: els.editSymmetryToleranceSelectEl,
+        editSymmetryElementSelectEl: els.editSymmetryElementSelectEl,
+        editSymmetryCandidatesEl: els.editSymmetryCandidatesEl,
+        editSymmetryApplyBtnEl: els.editSymmetryApplyBtnEl,
+        editSymmetryCancelBtnEl: els.editSymmetryCancelBtnEl,
+        editSymmetryAutoBtnEl: els.editSymmetryAutoBtnEl,
+      }),
+    });
+  }
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

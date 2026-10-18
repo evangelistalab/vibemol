@@ -1,0 +1,12 @@
+{
+  "comparison": "Tagged-base Stage 0 installed loader versus Stage 1 first characterization run",
+  "environment": "Same host, Chromium 145.0.7632.6 and SwiftShader; separate browser launches in this task. Diagnostic only; not a portable pixel golden.",
+  "baseHashes": 64,
+  "stage1Hashes": 64,
+  "changedSnapshots": [],
+  "rawBase": "out/test-artifacts/stage0/installed-final/characterize-pixels-1.json",
+  "rawStage1": "out/test-artifacts/stage1/characterize/characterize-pixels-1.json",
+  "baseFileSha256": "6d0b2016d7100c91666292d6c5e7fb8137d6255d4f45dbce257ee38514e33a53",
+  "stage1FileSha256": "6d0b2016d7100c91666292d6c5e7fb8137d6255d4f45dbce257ee38514e33a53",
+  "knownLimitation": "The shared camera pin masks the known orthographic preset projection defect (#3); this comparison does not validate ordinary camera/target preset batches."
+}

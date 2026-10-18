@@ -1,0 +1,214 @@
+[
+  {
+    "file": "periodic-table.js",
+    "name": "createPeriodicTableController",
+    "dependencyCount": 11,
+    "allUsed": true,
+    "inputs": [
+      {
+        "name": "THREE",
+        "references": 23
+      },
+      {
+        "name": "ATOM_Z_TO_DATA",
+        "references": 4
+      },
+      {
+        "name": "ATOM_SYMBOL_TO_Z",
+        "references": 4
+      },
+      {
+        "name": "UI_PALETTE",
+        "references": 2
+      },
+      {
+        "name": "getActiveElementHexColor",
+        "references": 6
+      },
+      {
+        "name": "getElementSymbol",
+        "references": 1
+      },
+      {
+        "name": "getElementName",
+        "references": 1
+      },
+      {
+        "name": "editAppearanceSettings",
+        "references": 3
+      },
+      {
+        "name": "exportElementColorOverrides",
+        "references": 2
+      },
+      {
+        "name": "normalizeHexColor",
+        "references": 2
+      },
+      {
+        "name": "els",
+        "references": 38
+      }
+    ]
+  },
+  {
+    "file": "pubchem.js",
+    "name": "createPubChemController",
+    "dependencyCount": 13,
+    "allUsed": true,
+    "inputs": [
+      {
+        "name": "els",
+        "references": 26
+      },
+      {
+        "name": "escapeHtml",
+        "references": 2
+      },
+      {
+        "name": "setTooltipText",
+        "references": 1
+      },
+      {
+        "name": "setHintMessage",
+        "references": 2
+      },
+      {
+        "name": "parseXYZ",
+        "references": 1
+      },
+      {
+        "name": "handleSceneDropRecords",
+        "references": 1
+      },
+      {
+        "name": "setVolumes",
+        "references": 1
+      },
+      {
+        "name": "setCurrentIndex",
+        "references": 1
+      },
+      {
+        "name": "clearSceneMeshes",
+        "references": 1
+      },
+      {
+        "name": "clearEditHistory",
+        "references": 1
+      },
+      {
+        "name": "appendParsedVolumeRecord",
+        "references": 1
+      },
+      {
+        "name": "finalizeLoadedVolumes",
+        "references": 1
+      },
+      {
+        "name": "setNavigationHint",
+        "references": 1
+      }
+    ]
+  },
+  {
+    "file": "trajectory-playback.js",
+    "name": "createTrajectoryPlaybackController",
+    "dependencyCount": 8,
+    "allUsed": true,
+    "inputs": [
+      {
+        "name": "getSceneGraphController",
+        "references": 7
+      },
+      {
+        "name": "getActiveRecord",
+        "references": 1
+      },
+      {
+        "name": "TrajectoryClock",
+        "references": 4
+      },
+      {
+        "name": "applyAtomCoordinateFrame",
+        "references": 1
+      },
+      {
+        "name": "markSessionChanged",
+        "references": 1
+      },
+      {
+        "name": "isEditMode",
+        "references": 2
+      },
+      {
+        "name": "syncTrajectoryControls",
+        "references": 9
+      },
+      {
+        "name": "getVideoController",
+        "references": 8
+      }
+    ]
+  },
+  {
+    "file": "vibration.js",
+    "name": "createVibrationController",
+    "dependencyCount": 13,
+    "allUsed": true,
+    "inputs": [
+      {
+        "name": "els",
+        "references": 63
+      },
+      {
+        "name": "getActiveRecord",
+        "references": 1
+      },
+      {
+        "name": "snapshotAtomCoordinates",
+        "references": 1
+      },
+      {
+        "name": "applyAtomCoordinateFrame",
+        "references": 3
+      },
+      {
+        "name": "markSessionChanged",
+        "references": 1
+      },
+      {
+        "name": "isEditMode",
+        "references": 1
+      },
+      {
+        "name": "UI_PALETTE",
+        "references": 7
+      },
+      {
+        "name": "escapeHtml",
+        "references": 5
+      },
+      {
+        "name": "getVideoController",
+        "references": 13
+      },
+      {
+        "name": "setTooltipText",
+        "references": 1
+      },
+      {
+        "name": "setMotionPanelButtonGlyph",
+        "references": 2
+      },
+      {
+        "name": "setVibrationPanelOpen",
+        "references": 1
+      },
+      {
+        "name": "updateDisplayWindowAdaptiveMenuUi",
+        "references": 3
+      }
+    ]
+  }
+]

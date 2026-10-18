@@ -6,17 +6,17 @@
     panel.setAttribute('aria-label','AVAS subspace');panel.setAttribute('aria-hidden','true');
     panel.innerHTML=`<header class="vm-list-popover__header motionPanelHeader" data-vm-drag-handle tabindex="0"><span class="vm-list-popover__title title">Subspace</span><div class="vm-list-popover__actions"><button type="button" class="vm-btn vm-btn--ghost" data-close aria-label="Close Subspace">×</button></div></header>
       <div class="vm-list-popover__body">
-        <p class="vm-session-status" data-active></p>
-        <p class="vm-session-status">Click atoms to select or deselect them, then choose shells or orbitals in the popup. Atom selection alone does not change AVAS.</p>
-        <p class="vm-session-status" data-loading role="status"></p>
-        <p class="vm-session-status" data-selection-summary></p><button class="vm-btn vm-btn--ghost" type="button" data-choose>Choose orbitals</button><div data-atoms></div>
-        <p class="vm-calculations-count" data-count aria-live="polite"></p><p class="vm-session-status" data-preview-basis></p>
+        <p class="vm-status-text" data-active></p>
+        <p class="vm-helper-text">Click atoms to select or deselect them, then choose shells or orbitals in the popup. Atom selection alone does not change AVAS.</p>
+        <p class="vm-status-text" data-loading role="status"></p>
+        <p class="vm-status-text" data-selection-summary></p><button class="vm-btn vm-btn--ghost" type="button" data-choose>Choose orbitals</button><div data-atoms></div>
+        <p class="vm-calculations-count" data-count aria-live="polite"></p><p class="vm-helper-text" data-preview-basis></p>
         <div class="vm-field-row"><label class="vm-field-label" for="avas-lobe-size">Lobe size</label><div class="vm-field-control vm-avas-lobe-control"><input id="avas-lobe-size" type="range" class="vm-slider__range" min="35" max="85" step="1" aria-describedby="avas-contour-note"><output for="avas-lobe-size" data-contour></output></div></div>
-        <details class="vm-appearance-section" data-planes><summary class="inspectorSubsectionSummary"><span class="vm-section-label">π planes</span></summary><div data-plane-atoms></div><p class="vm-session-status" data-plane-reason></p><button class="vm-btn vm-btn--ghost" type="button" data-fit>Fit selected atoms</button><div data-plane-list></div></details>
-        <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">AVAS settings</span></summary><div data-fields></div><p class="vm-session-status" data-reference-note></p></details>
+        <details class="vm-appearance-section" data-planes><summary class="inspectorSubsectionSummary"><span class="vm-section-label">π planes</span></summary><div data-plane-atoms></div><p class="vm-helper-text" data-plane-reason></p><button class="vm-btn vm-btn--ghost" type="button" data-fit>Fit selected atoms</button><div data-plane-list></div></details>
+        <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">AVAS settings</span></summary><div data-fields></div><p class="vm-helper-text" data-reference-note></p></details>
         <details class="vm-appearance-section"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Basis sets</span></summary><div data-basis></div></details>
-        <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">forte2 input</span></summary><p class="vm-session-status" data-validation role="status"></p><button class="vm-btn vm-btn--ghost" type="button" data-copy>Copy input</button><textarea class="vm-mono" readonly aria-label="Generated forte2 input" spellcheck="false"></textarea></details>
-        <p class="vm-session-status" id="avas-contour-note"></p>
+        <details class="vm-appearance-section" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">forte2 input</span></summary><p class="vm-status-text" data-validation role="status"></p><button class="vm-btn vm-btn--ghost" type="button" data-copy>Copy input</button><textarea class="vm-mono" readonly aria-label="Generated forte2 input" spellcheck="false"></textarea></details>
+        <p class="vm-helper-text" id="avas-contour-note"></p>
       </div>`;
     document.body.append(panel);
     global.VibeMolFloatingPanels.register(panel,{label:'Subspace',handle:'[data-vm-drag-handle]'});
@@ -62,7 +62,7 @@
     field('method','Selection method','select',[['cumulative','Cumulative'],['cutoff','Cutoff'],['separate','Separate occupied / virtual'],['total','Total']]);
     for(const [key,title]of [['sigma','Sigma'],['cutoff','Cutoff'],['docc','Occupied'],['uocc','Virtual'],['total','Total active']])field(key,title,'number');
     const totalHelp=document.createElement('div'),totalNote=document.createElement('p');
-    totalNote.id='avas-total-note';totalNote.className='vm-session-status';
+    totalNote.id='avas-total-note';totalNote.className='vm-helper-text';
     fields.get('total').setAttribute('aria-describedby',totalNote.id);
     const resetTotal=button('Use selection count',()=>{model.setOptions(deps.getRecord(),{totalFollowsSelection:true});changed(false);});
     totalHelp.append(totalNote,resetTotal);$('[data-fields]').append(totalHelp);
@@ -108,7 +108,7 @@
     }
     function renderAtoms(record,s,all){
       const container=$('[data-atoms]');container.replaceChildren();
-      if(!s.selections.length){const p=document.createElement('p');p.className='vm-session-status';p.textContent='No orbitals assigned to AVAS.';container.append(p);}
+      if(!s.selections.length){const p=document.createElement('p');p.className='vm-helper-text';p.textContent='No orbitals assigned to AVAS.';container.append(p);}
       for(const atom of all.filter(a=>s.selections.some(r=>r.id===a.id))){
         const row=s.selections.find(r=>r.id===atom.id),entry=document.createElement('section');entry.className='vm-avas-atom';entry.dataset.atom=atom.label;
         const header=document.createElement('div');header.className='vm-avas-atom-title';
@@ -116,7 +116,7 @@
         const edit=button('Edit',()=>deps.onSelect([atom.id]));edit.setAttribute('aria-label',`Edit orbitals for ${atom.label}`);
         const remove=button('Remove',()=>{model.removeOrbitals(record,[atom.id]);changed();});remove.setAttribute('aria-label',`Remove ${atom.label}`);
         const actions=document.createElement('div');actions.className='vm-list-popover__actions';actions.append(edit,remove);
-        const summary=document.createElement('p');summary.className='vm-session-status';
+        const summary=document.createElement('p');summary.className='vm-helper-text';
         summary.textContent=Object.entries(row.shells).flatMap(([shell,choice])=>choice==='all'?[shell]:choice.map(c=>shell[0]+c)).join(', ');
         header.append(title,actions);entry.append(header,summary);container.append(entry);
       }

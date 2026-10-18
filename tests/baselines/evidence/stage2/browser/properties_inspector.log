@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/properties_inspector.py", line 191, in <module>
+    if __name__=='__main__': main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/properties_inspector.py", line 173, in main
+    assert page.evaluate('VibeMolWorkbench.snapshot()') == layout
+AssertionError

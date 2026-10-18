@@ -1,0 +1,4 @@
+[style lab] collection, live materials, geometry and camera preservation: passed
+[style lab] save, rename, revert, and reload persistence: passed
+[style lab] exact look export/import, invalid-file isolation, and PNG export: passed
+[style lab] subjects, orbital signs, mobile layout, and browser errors: passed

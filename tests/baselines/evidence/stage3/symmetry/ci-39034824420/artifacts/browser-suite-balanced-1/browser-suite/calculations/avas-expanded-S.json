@@ -1,0 +1,16 @@
+{
+  "code": "from forte2 import AVAS, CISolver, MCOptimizer, RHF, State, System\n\nxyz = \"\"\"\nS 0.0000000000 0.0000000000 0.0000000000\n\"\"\"\n\nsystem = System(\n    xyz=xyz,\n    basis_set=\"cc-pvdz\",\n    auxiliary_basis_set=\"def2-universal-jkfit\",\n    minao_basis_set=\"cc-pvtz-minao\",\n)\n\nrhf = RHF(charge=0)(system)\n\navas = AVAS(\n    subspace=[\"S(4px)\"],\n    selection_method=\"cumulative\",\n    sigma=0.98,\n    diagonalize=True,\n)(rhf)\n\nci_solver = CISolver(State(nel=rhf.nel, multiplicity=1, ms=0.0))\nmc = MCOptimizer(ci_solver)(avas)\nmc.run()\n",
+  "specs": [
+    "S(4px)"
+  ],
+  "planes": [],
+  "counts": {
+    "minao": 1,
+    "orbitals": 1,
+    "atoms": 1
+  },
+  "validation": {
+    "errors": [],
+    "warnings": []
+  }
+}

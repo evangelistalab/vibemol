@@ -1,0 +1,13 @@
+[picking] single-atom XYZ arrows: hover, constrained pointer drags, unselected-atom isolation and undo/redo: passed
+[picking] editable atom/COM positions: rigid translation, units, undo, input validation, stale focus, Tab and compact layout: passed
+Traceback (most recent call last):
+  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_picking.py", line 473, in <module>
+    main()
+  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_picking.py", line 461, in main
+    slab(page)
+  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_picking.py", line 298, in slab
+    invalidates(page, point, lambda: page.set_viewport_size({'width': 1100, 'height': 850}))
+  File "/home/runner/work/vibemol/vibemol/tests/e2e/edit_picking.py", line 145, in invalidates
+    assert compare_fresh(page, point)['counts']['queries'] >= 1, 'Changed geometry/view reused a stale hit'
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Changed geometry/view reused a stale hit

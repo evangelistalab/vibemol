@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/smoke.py", line 5504, in <module>
+    raise SystemExit(main())
+  File "/private/tmp/vibemol-characterize-1c609b3/tests/e2e/smoke.py", line 2948, in main
+    raise AssertionError('Translate selection cue is not visible for move smoke')
+AssertionError: Translate selection cue is not visible for move smoke

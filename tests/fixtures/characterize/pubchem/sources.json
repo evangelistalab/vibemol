@@ -1,0 +1,7 @@
+{
+  "benzene.sdf": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/241/SDF?record_type=3d",
+  "properties.json": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/241/property/Title,IUPACName,MolecularFormula,MolecularWeight,ConnectivitySMILES/JSON",
+  "conformers.json": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/241/conformers/JSON",
+  "cids.json": "https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/benzene/cids/JSON",
+  "autocomplete.json": "https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/benzene/JSON?limit=7"
+}

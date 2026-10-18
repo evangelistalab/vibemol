@@ -1,0 +1,266 @@
+{
+  "baseline": {
+    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "tag": "v0.9.5-pre-refactor",
+    "appSha256": "481543d9158aaff114f73b9113baea4b00b1cdf318627546df1ff668425eebd6",
+    "viewport": {
+      "width": 1512,
+      "height": 1000
+    },
+    "captureTimestampFields": [
+      "savedAt",
+      "preset.meta.createdAt",
+      "preset.meta.updatedAt"
+    ],
+    "pinnedCamera": [
+      30,
+      0,
+      0
+    ],
+    "metrics": {
+      "lines": 32928,
+      "functionDeclarations": 1181,
+      "letDeclarations": 306,
+      "constDeclarations": 588
+    }
+  },
+  "runs": 2,
+  "capturesPerRun": 102,
+  "browserVersion": "145.0.7632.6",
+  "deterministic": true,
+  "console": {
+    "sample/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "sample/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "methane/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "methane/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "two-component/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "two-component/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "pubchem/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "pubchem/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "session/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "session/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "look/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "look/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "trajectory/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "trajectory/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "vibration/light": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    },
+    "vibration/dark": {
+      "errors": [],
+      "console": [
+        {
+          "type": "warning",
+          "text": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation"
+        }
+      ]
+    }
+  },
+  "sessionCameraPin": [
+    {
+      "resizeBeforePin": true,
+      "render": {
+        "projection": {
+          "far": 33.41,
+          "matrix": [
+            0.048071799206768996,
+            0,
+            0,
+            0,
+            0,
+            0.08047378541243651,
+            0,
+            0,
+            0,
+            0,
+            -0.2656042496679948,
+            0,
+            -0.0,
+            -0.0,
+            -7.873837981407704,
+            1
+          ],
+          "near": 25.88,
+          "type": "OrthographicCamera",
+          "zoom": 1
+        },
+        "viewport": {
+          "bufferHeight": 724,
+          "bufferWidth": 1212,
+          "cssHeight": 724,
+          "cssWidth": 1212
+        }
+      },
+      "structuredIdentical": true,
+      "pixelsIdentical": true
+    },
+    {
+      "resizeBeforePin": false,
+      "render": {
+        "projection": {
+          "far": 33.41,
+          "matrix": [
+            0.048071799206768996,
+            0,
+            0,
+            0,
+            0,
+            0.08047378541243651,
+            0,
+            0,
+            0,
+            0,
+            -0.2656042496679948,
+            0,
+            -0.0,
+            -0.0,
+            -7.873837981407704,
+            1
+          ],
+          "near": 25.88,
+          "type": "OrthographicCamera",
+          "zoom": 1
+        },
+        "viewport": {
+          "bufferHeight": 724,
+          "bufferWidth": 1212,
+          "cssHeight": 724,
+          "cssWidth": 1212
+        }
+      },
+      "structuredIdentical": true,
+      "pixelsIdentical": true
+    }
+  ],
+  "sameSessionPixelChanges": [],
+  "matchesUnchangedGoldensBothRuns": true,
+  "baselineFileHashesUnchanged": {
+    "tests/baselines/characterize-api-additions.json": "556ac24539267342604b35ccfb6b7d8e35bb57048ca497dba43ba29f1b628025",
+    "tests/baselines/characterize-summary.json": "3a1b83dd3b7d0bd337987a193a2de6902bd354678bcb7b2fa7ea0a5479313679",
+    "tests/baselines/characterize.json.gz": "6d80d00a0ecadff2d481536153fb18754021c7a911d27bea300f2fb99e02890d"
+  },
+  "decompressedGoldenSha256": "2a636346dd90bede1008de971e537bebe3da6870223f73bb7da92156c4074388",
+  "rawCaptureSha256": {
+    "run-1": "03721dc2e078f33655474d1d3ed6f8629ce3c97a9d8e04d1be38e2b845aaf0ac",
+    "run-2": "03721dc2e078f33655474d1d3ed6f8629ce3c97a9d8e04d1be38e2b845aaf0ac"
+  },
+  "captureComparison": "characterize.py compared each run with unchanged goldens plus the unchanged exact Stage 1/2 API addition contract"
+}

@@ -2,6 +2,7 @@
 """Armed Edit tool, Escape ladder, keyboard semantics and visual contrast fixtures."""
 import json
 import premerge as p
+from helpers import wait_for_presented_state
 
 
 def state(page):
@@ -127,8 +128,26 @@ def run(page, url):
     for width in [320,390,768,1440,1920]:
         page.set_viewport_size({'width':width,'height':1000});page.locator('#editTransformToolBtn').focus()
         page.keyboard.press('ArrowRight');tool(page,'build')
-        page.wait_for_timeout(100)
-        assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width
+        # #21: the fixed sleep read pre-compact state; nine CI observations
+        # invalidated that expectation without changing the overflow invariant:
+        # https://github.com/evangelistalab/vibemol/actions/runs/39129507791
+        if width == 320:
+            try:
+                page.wait_for_function("() => document.body.dataset.wbCompact === 'true'")
+            finally:
+                print('[edit-tool-compact] '+json.dumps({
+                    'viewportWidth': width,
+                    'actual': page.locator('body').get_attribute('data-wb-compact'),
+                    'expected': 'true',
+                }, sort_keys=True), flush=True)
+        wait_for_presented_state(page, '() => true')
+        tool_widths = page.locator('.wb-tools').evaluate('el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth})')
+        print('[edit-tool-layout] '+json.dumps({
+            'viewportWidth': width, 'actual': tool_widths,
+            'expected': {'maximumScrollWidth': tool_widths['clientWidth'] + 1},
+            'passed': tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1,
+        }, sort_keys=True), flush=True)
+        assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width
         assert page.locator('#editToolStrip').evaluate('''el=>[...el.querySelectorAll('button')].every(b=>{
           const r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''),width
         page.keyboard.press('ArrowLeft');tool(page,'transform')

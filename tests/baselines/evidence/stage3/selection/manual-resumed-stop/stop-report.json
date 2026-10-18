@@ -1,0 +1,44 @@
+{
+  "status": "stopped on tagged-base responsive bounds assertion; no Selection PR/CI",
+  "originalStopResolution": {
+    "issue": 17,
+    "intendedBehavior": "Clicking Coordination while Metal is open must dismiss Metal and open Coordination in one click.",
+    "userAuthorizedWorkaround": "Explicit click-away before Coordination, applied equally to tagged/proposed comparison.",
+    "workaroundEncodesCorrectProductBehavior": false
+  },
+  "sourceTested": "v0.9.5-pre-refactor 1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "context": "workbench/light",
+  "completedBeforeFailure": [
+    "Metal choices inventory",
+    "issue-17 click-away workaround",
+    "Coordination choice committed",
+    "four Metal modes committed",
+    "mode suspension"
+  ],
+  "failure": {
+    "assertion": "Metal popover stays inside viewport at 390 x 850",
+    "viewport": {
+      "width": 390,
+      "height": 850
+    },
+    "actualBox": {
+      "x": 12,
+      "y": 12,
+      "width": 386,
+      "height": 503.1875
+    },
+    "rightEdge": 398,
+    "overflowCssPixels": 8,
+    "issue": 17
+  },
+  "proposedMenuMatrixReached": false,
+  "boundsAssertionChanged": false,
+  "failedProbeRetried": false,
+  "ciRerun": false,
+  "productionChanged": false,
+  "selectionLetCount": 275,
+  "selectionPr": null,
+  "selectionCiRun": null,
+  "watch": "PAUSED"
+}

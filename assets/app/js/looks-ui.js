@@ -38,7 +38,7 @@
       <section class="vm-appearance-section" id="lookPresetSection"><h3 class="vm-section-label">Looks</h3>
         <div class="vm-field-row"><label class="vm-field-label" for="lookPreset">Style</label><div class="vm-field-control"><select id="lookPreset" class="vm-select" data-tooltip="Apply geometry, material, lighting and contours; keep the current color scheme."><option value="">Custom</option></select></div></div>
         <div class="vm-field-row"><label class="vm-field-label" for="lookColorPreset">Color scheme</label><div class="vm-field-control"><select id="lookColorPreset" class="vm-select" data-tooltip="Apply atom, bond, orbital and background colors; keep the current style."></select></div></div>
-        <p class="vm-session-status">Tiles apply a complete look. Use Style and Color scheme to mix them.</p>
+        <p class="vm-helper-text">Tiles apply a complete look. Use Style and Color scheme to mix them.</p>
         <div id="lookGallery" class="vm-look-gallery" role="group" aria-label="Preset previews"></div>
         <div class="vm-field-row" id="lookSavedRow"><label class="vm-field-label" for="lookSaved">My looks</label><div class="vm-field-control"><select id="lookSaved" class="vm-select"><option value="">Choose saved look</option></select></div></div>
         <p class="vm-stat-label" id="lookCurrentName"></p>
@@ -48,8 +48,8 @@
           <div class="vm-popover__actions"><button id="lookUpdate" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Update saved</button><button id="lookRename" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Rename</button><button id="lookDelete" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" disabled>Delete</button></div>
           <div class="vm-popover__actions"><button id="lookExport" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Export look</button><button id="lookImport" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Import look</button></div>
           <div class="vm-popover__actions"><button id="lookDefault" class="vm-btn vm-btn--ghost vm-btn--sm" type="button">Set as default</button><button id="lookClearDefault" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" hidden>Use last appearance</button></div>
-          <p id="lookDefaultStatus" class="vm-session-status"></p><input id="lookFileInput" type="file" accept=".json,application/json" hidden>
-        </details><p id="lookStatus" class="vm-session-status" role="status" aria-live="polite"></p>
+          <p id="lookDefaultStatus" class="vm-status-text"></p><input id="lookFileInput" type="file" accept=".json,application/json" hidden>
+        </details><p id="lookStatus" class="vm-status-text" role="status" aria-live="polite"></p>
       </section><div id="lookComponentEditor"></div>`;
     const $ = id => root.querySelector('#' + id), state = () => references.project(deps.captureSettings());
     const managedLook = () => {

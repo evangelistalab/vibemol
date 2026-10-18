@@ -1,0 +1,48 @@
+[
+  {
+    "test": "tests/e2e/axis_gizmo.py",
+    "matched": true,
+    "firstFailure": {
+      "suite": "axis_gizmo.py",
+      "line": 130,
+      "function": "run"
+    },
+    "failureCallSite": {
+      "suite": "axis_gizmo.py",
+      "line": 170,
+      "function": "main"
+    }
+  },
+  {
+    "test": "tests/e2e/smoke.py",
+    "matched": true,
+    "firstFailure": {
+      "suite": "ci_gate_diagnostics.py",
+      "line": 88,
+      "function": "wait_for_video_idle"
+    },
+    "failureCallSite": {
+      "suite": "smoke.py",
+      "line": 4531,
+      "function": "main"
+    }
+  },
+  {
+    "test": "different smoke trajectory caller",
+    "rejected": true
+  },
+  {
+    "test": "tests/e2e/mode_consistency.py",
+    "matched": true,
+    "firstFailure": {
+      "suite": "mode_consistency.py",
+      "line": 80,
+      "function": "coordinate_row_actions"
+    },
+    "failureCallSite": {
+      "suite": "mode_consistency.py",
+      "line": 162,
+      "function": "main"
+    }
+  }
+]

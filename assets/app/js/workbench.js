@@ -481,9 +481,14 @@
     if (!menu.hidden && menuReturn === preferencesButton) { closeMenu(true); return; }
     startMenu(preferencesButton, 'App settings');
     menu.append(host.properties.preferences);
-    const note = document.createElement('p'); note.className = 'vm-session-status';
+    const note = document.createElement('p'); note.className = 'vm-helper-text';
     note.textContent = 'Theme and typeface are browser preferences, independent of molecules, looks, and workspace layouts.';
-    menu.append(note); finishMenu();
+    menu.append(note, document.createElement('hr'));
+    menuAction('Download preset', 'tune', () => {
+      closeMenu();
+      global.VibeMolPreset.download();
+    }, 'Save the current visualization settings as JSON');
+    finishMenu();
   }
   function setFocus(value) {
     const next = !!value; if (focus === next) return;

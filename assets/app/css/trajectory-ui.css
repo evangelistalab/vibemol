@@ -24,8 +24,8 @@
   gap: 8px;
   margin-bottom: 6px;
   color: var(--vm-color-text-primary);
-  font-size: var(--vm-text-sm);
-  font-weight: var(--vm-font-weight-strong);
+  font-size: var(--vm-type-data-size);
+  font-weight: var(--vm-type-data-emphasis-weight);
 }
 
 .trajectorySceneControls,
@@ -95,7 +95,8 @@
 .trajectoryMasterReadout,
 .trajectorySyncedBadge {
   color: var(--vm-color-text-secondary);
-  font-size: var(--vm-text-xs);
+  font-size: var(--vm-type-status-size);
+  font-weight: var(--vm-type-status-weight);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

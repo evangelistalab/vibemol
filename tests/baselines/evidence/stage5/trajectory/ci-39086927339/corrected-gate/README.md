@@ -1,0 +1,1 @@
+Direct human policy correction, not a retry. Original attempt39086927339 has33/4/37 and exactly the four authorized raw workflows. The original failed34/3 aggregate, old assessment and archive stay unchanged. All other conjunction items independently pass. PR26 exact head41363b6 merged as7f9f9f9; full tree equality and push verified.

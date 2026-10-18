@@ -1,0 +1,9 @@
+{
+  "status": "passed",
+  "command": [
+    "python3",
+    "tests/e2e/look_references.py"
+  ],
+  "seconds": 110.12861633300781,
+  "exitCode": 0
+}

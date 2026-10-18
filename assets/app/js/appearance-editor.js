@@ -9,8 +9,8 @@
     let radiusElement = '6';
     root.innerHTML = `
       <details class="vm-appearance-section" id="appearanceGeometrySection" open><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Geometry</span></summary><div id="geometryFields"></div>
-        <p class="vm-session-status" id="bondRadiusStatus">Bond radius sets the maximum thickness. Each bond is narrowed as needed to fit both atoms, including multiple bonds and joints.</p>
-        <details id="appearanceAtomRadiiSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Atom radii</span></summary><div id="atomRadiusFields"></div><p class="vm-session-status" id="atomRadiusStatus"></p></details>
+        <p class="vm-helper-text" id="bondRadiusStatus">Bond radius sets the maximum thickness. Each bond is narrowed as needed to fit both atoms, including multiple bonds and joints.</p>
+        <details id="appearanceAtomRadiiSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Atom radii</span></summary><div id="atomRadiusFields"></div><p class="vm-helper-text" id="atomRadiusStatus"></p></details>
         <details id="appearanceMeshSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Mesh detail</span></summary><div id="meshDetailFields"></div></details>
         <details id="appearanceScaleSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Size multipliers</span></summary><div id="appearanceScaleFields"></div></details>
       </details>
@@ -18,11 +18,11 @@
         <h3 class="vm-section-label">Atoms</h3><div id="studioAtomColorFields"></div>
         <h3 class="vm-section-label">Bonds</h3><div id="studioBondColorFields"></div>
         <h3 class="vm-section-label">Orbital defaults</h3><div id="studioSurfaceColorFields"></div>
-        <p class="vm-session-status">Individual orbital color overrides are preserved.</p>
+        <p class="vm-helper-text">Individual orbital color overrides are preserved.</p>
         <h3 class="vm-section-label">Scene</h3><div id="studioBackgroundFields"></div>
       </details>
       <details class="vm-appearance-section" id="appearanceMaterialsSection" data-section="material"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material</span></summary>
-        <p class="vm-session-status" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p>
+        <p class="vm-helper-text" id="appearanceMaterialScope">One material for atoms, bonds, and surfaces.</p>
         <button id="appearanceUseSurfaceMaterial" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" hidden>Use surface finish everywhere</button><div id="materialFields"></div>
         <details id="appearanceMaterialChannels"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Material channels</span></summary><div id="materialAdvancedFields"></div></details>
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Save material</span></summary><div id="materialLibraryFields"></div></details>
@@ -32,9 +32,9 @@
         <details><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Light positions</span></summary><div id="lightPositionFields"></div></details>
       </details>
       <details class="vm-appearance-section" id="appearanceSurfaceDefaultsSection"><summary class="inspectorSubsectionSummary"><span class="vm-section-label">Surfaces</span></summary>
-        <p class="vm-session-status">${deps.surfaceSelectionMode ? 'Selected surface colors and opacity. Use the outliner to choose an orbital or group.' : 'Style defaults. Custom orbital colors and opacity are preserved when changing styles.'}</p>
+        <p class="vm-helper-text">${deps.surfaceSelectionMode ? 'Selected surface colors and opacity. Use the outliner to choose an orbital or group.' : 'Style defaults. Custom orbital colors and opacity are preserved when changing styles.'}</p>
         <div id="surfaceDefaultFields"></div>
-        <p id="studioSurfaceOverridesStatus" class="vm-session-status"></p>
+        <p id="studioSurfaceOverridesStatus" class="vm-status-text"></p>
         <button id="studioResetSurfaceOverrides" class="vm-btn vm-btn--ghost vm-btn--sm" type="button" data-tooltip="${deps.surfaceSelectionMode ? 'Reset the selected orbital colors and opacity to the Look defaults.' : 'Replace custom colors and opacity on every loaded orbital with these style defaults.'} Undo restores the overrides.">${deps.surfaceSelectionMode ? 'Reset selected surfaces to look' : 'Apply defaults to all orbitals'}</button>
       </details>`;
     for (const id of ['moleculeAtomRadiusScale','moleculeBondRadiusScale']) {

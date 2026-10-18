@@ -1,0 +1,3 @@
+[looks] tighter shadow framing, device map limit, rotated/offset molecules, large surfaces and pole-aligned lights: passed
+[looks] opaque and WBOIT surface cross-shadows (opacity, receive pixels, cast pixels): [(1, 8035, 7741), (0.55, 8059, 7612)]; toggle geometry and session round-trip: passed
+[looks] 2C phase/Bloch shadows, separate alpha/beta shadow maps, opacity, depth of field and transparency fallback: passed

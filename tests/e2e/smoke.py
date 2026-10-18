@@ -13,9 +13,11 @@ from playwright.sync_api import sync_playwright
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-    from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+    from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
+    from ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 else:
-    from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+    from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
+    from .ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT_DIR = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(REPO_ROOT / 'out' / 'test-artifacts'))))
@@ -1413,12 +1415,14 @@ def main() -> int:
     with run_http_server(REPO_ROOT) as base_url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1440, 'height': 1000})
+        install_video_probe(page, REPO_ROOT, ARTIFACT_DIR)
         page.on('pageerror', lambda err: page_errors.append(str(err)))
         page.on('console', lambda msg: console_errors.append(msg.text) if msg.type == 'error' else None)
         try:
             log_step('load app')
             page.goto(base_url+'?workspaceLab=0', wait_until='networkidle')
             wait_for_ready(page)
+            record_renderer(page, ARTIFACT_DIR, 'smoke')
             page.wait_for_function(
                 """() => {
                     const title = document.querySelector('#sceneOutliner .vm-outliner__title');
@@ -2943,6 +2947,12 @@ def main() -> int:
             before_move = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
+            # Issue #4 / Stage 0 proof: selection is synchronous, cue layout is
+            # presented by the render loop. Preserve the existing move checks.
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionTranslateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             translate_cue_box = page.locator('#editSelectionTranslateCueButton').bounding_box()
             if not translate_cue_box:
                 raise AssertionError('Translate selection cue is not visible for move smoke')
@@ -2999,6 +3009,10 @@ def main() -> int:
             before_rotate = page.evaluate(
                 """() => window.VibeMolStructure.exportActive().volume.atoms.map((atom) => [atom.x, atom.y, atom.z])"""
             )
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionRotateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
             if not rotate_cue_box:
                 raise AssertionError('Rotate selection cue is not visible for rotate smoke')
@@ -3074,6 +3088,10 @@ def main() -> int:
             )
             if not isinstance(before_group_bond, dict):
                 raise AssertionError(f'Could not capture grouped bond carrier before live rotate: {before_group_bond!r}')
+            wait_for_presented_state(page, '''() => {
+              const el=document.getElementById('editSelectionRotateCueButton');
+              return !!el && !el.hidden && el.getBoundingClientRect().width>0;
+            }''')
             rotate_cue_box = page.locator('#editSelectionRotateCueButton').bounding_box()
             if not rotate_cue_box:
                 raise AssertionError('Rotate selection cue is not visible for grouped-bond rotate smoke')
@@ -4370,9 +4388,10 @@ def main() -> int:
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
             page.locator('#trajectoryVideoCropStartBtn').click()
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'recording'""")
+            arm_video_stop_trace(page, 'trajectory')
             page.locator('#trajectorySaveVideoBtn').click()
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
-            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            wait_for_video_idle(page, 'trajectory')
             page.locator('#trajectorySaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
             page.locator('#trajectoryVideoCropStartBtn').click()
@@ -4506,9 +4525,10 @@ def main() -> int:
             page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
             page.locator('#vibrationVideoCropStartBtn').click()
             page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'recording'""")
+            arm_video_stop_trace(page, 'vibration')
             page.locator('#vibrationSaveVideoBtn').click()
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
-            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.getAttribute('aria-hidden') === 'true'""")
+            wait_for_video_idle(page, 'vibration')
             page.locator('#vibrationSaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
             page.locator('#vibrationVideoCropStartBtn').click()

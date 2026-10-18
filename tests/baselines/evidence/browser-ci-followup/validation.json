@@ -1,0 +1,40 @@
+{
+  "followupIssue": "https://github.com/evangelistalab/vibemol/issues/4",
+  "pr": "https://github.com/evangelistalab/vibemol/pull/10",
+  "portabilityPr9": {
+    "merged": true,
+    "mergeCommit": "a1b00b72bf0fa4e9f992a22170000e4a204fcaf6"
+  },
+  "cachePr8": {
+    "state": "held/unmerged",
+    "unchangedHead": "2056f2a5f60743ffc5fbe2523f6540cb0b860f65",
+    "fourBuildConversionsChanged": false
+  },
+  "completeBaselineComparison": "local 35/2/37 (historical), CI 34/3/37",
+  "requiredGate": "CI 34/3/37",
+  "gateMet": false,
+  "focusedCi": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534233",
+    "head": "2f9cb3e0b2c5fe6fdba273b5ef0e1a8213c4f143",
+    "editPicking": "passed full suite with unbounded synchronous real-state wait",
+    "smoke": "failed terminal-state discriminator in earlier trajectory variant; stopped; later vibration path not reached",
+    "negativeControl": "False predicate rejected in both jobs; true predicate passed",
+    "bothRenderers": "software SwiftShader; Chromium 153.0.8010.12 / Linux x86_64",
+    "newDefect": "https://github.com/evangelistalab/vibemol/issues/11"
+  },
+  "newComplete37SuiteResult": "pending in CI run 38109534243; focused probes do not replace the historical aggregate",
+  "productionIntegrity": "source-integrity.json",
+  "supersededRuns": "observer-correction.json",
+  "staticChecks": "passed",
+  "characterizationCi": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38109534243",
+    "testedHead": "2f9cb3e0b2c5fe6fdba273b5ef0e1a8213c4f143",
+    "result": "passed",
+    "runs": 2,
+    "capturesPerRun": 102,
+    "goldensChanged": false,
+    "sameMachineRepeatsExactlyIdentical": true,
+    "evidence": "tests/baselines/evidence/browser-ci-followup/ci-standard-workflow.json"
+  },
+  "issue4FinalFollowup": "https://github.com/evangelistalab/vibemol/issues/4#issuecomment-6105269811"
+}

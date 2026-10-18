@@ -1,0 +1,727 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "classificationDefinitions": {
+    "environment": "Browser/runtime or test-harness timing, viewport, numerical comparison, or obsolete interaction assumptions. This classification does not mark a failed suite as passing.",
+    "real pre-existing defect": "A default UI collision or incorrect event routing observed on the tagged base and persisting after presented frames."
+  },
+  "summary": {
+    "failures": 13,
+    "environment": 11,
+    "realPreExistingDefects": 2,
+    "scope": "Historical original 13 Stage 0 failures plus the Properties alias; 12 of the 14 entry points now pass after the separate harness repair. Only axis_gizmo.py and mode_consistency.py remain failing.",
+    "additionalFailingEntryPoints": 1,
+    "currentFailedEntryPoints": 2,
+    "historicalFailedEntryPoints": 14
+  },
+  "prRequirement": "Every stage touching mapped functions or their dependencies must name affected suites and record the panel manual workflows, base/current outcomes and evidence in its PR. The original first failures remain historical characterization limits; current automated outcomes are in the browser-repair report. The two surviving defects still fail. Generic captures do not replace manual verification or close the open Looks intermittent.",
+  "failures": [
+    {
+      "suite": "tests/e2e/figure.py",
+      "failingLine": 12,
+      "classification": "environment",
+      "reason": "The test snapshots camera depth immediately after changing isovalue, before the animation loop refits geometry bounds. Near/far are 0.6440626127553415/9.762780447525557 before and 0.8436596013601929/9.563183493333447 after composition. Waiting for depth fitting makes both snapshots identical; camera restoration succeeds.",
+      "appJsCoverage": [
+        {
+          "function": "render",
+          "baseLine": 6858,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function render() {"
+        },
+        {
+          "function": "rebuildFigureScene",
+          "baseLine": 32773,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function rebuildFigureScene() {"
+        },
+        {
+          "function": "renderFigurePixels",
+          "baseLine": 32779,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderFigurePixels(size,pixelScale) {"
+        },
+        {
+          "function": "figureRenderer.restoreApp",
+          "baseLine": 32839,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "restoreApp: state => {"
+        },
+        {
+          "function": "rebuildScene",
+          "baseLine": 32508,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function rebuildScene(options = {}) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "With two cube layers, change iso and wait for a presented frame; compose fit/current-camera PNG and SVG grids. Compare camera pose, frustum, renderer size and graph before/after.",
+        "Repeat with Edit suppression, forced capture failure and abort; verify visibility, inert UI, playback and camera restore."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/figure.json",
+        "evidence/stage0/semantic-proofs.json"
+      ]
+    },
+    {
+      "suite": "tests/e2e/measurements.py",
+      "failingLine": 180,
+      "classification": "environment",
+      "reason": "The recovery test dereferences JSON.parse(null).last during the 180 ms layout-save debounce. The unsafe poll throws; a null-safe poll observes the correct stored layout. This is a harness synchronization failure, not missing persistence.",
+      "appJsCoverage": [
+        {
+          "function": "getSessionState",
+          "baseLine": 32954,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getSessionState() {"
+        },
+        {
+          "function": "applySessionState",
+          "baseLine": 32960,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applySessionState(staged) {"
+        },
+        {
+          "function": "sessionRecoveryController construction",
+          "baseLine": 33087,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "sessionRecovery = window.VibeMolSessionRecovery.createRecoveryController({"
+        },
+        {
+          "function": "setMode",
+          "baseLine": 11170,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function setMode(newMode, options = {}) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Save two scenes, reload, leave recovery pending and open live Coordinates/Properties/Subspace panels; confirm the saved snapshot is untouched until an explicit choice.",
+        "Recover and dismiss in separate fresh pages; verify measurements, layout and named active structure. Wait for the saved-layout record safely."
+      ],
+      "evidence": [
+        "evidence/stage0/failures/measurements.log",
+        "evidence/stage0/semantic-proofs.json"
+      ]
+    },
+    {
+      "suite": "tests/e2e/build_panel.py",
+      "failingLine": 20,
+      "classification": "environment",
+      "reason": "Entering Edit with an empty scene already opens Build. Its Panels row is checked and the panel is visible before the test clicks the row; that click correctly closes it. The test assumes a closed initial panel.",
+      "appJsCoverage": [
+        {
+          "function": "setMode",
+          "baseLine": 11170,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function setMode(newMode, options = {}) {"
+        },
+        {
+          "function": "syncEditSceneTool",
+          "baseLine": 15536,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function syncEditSceneTool(force = false) {"
+        },
+        {
+          "function": "chooseEditTool",
+          "baseLine": 15572,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function chooseEditTool(tool, options = {}) {"
+        },
+        {
+          "function": "showBuildPopover",
+          "baseLine": 18750,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function showBuildPopover(options = {}) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Enter Edit with both an empty scene and a loaded structure; verify initial Build/Transform choice and Panels checkmarks.",
+        "Place an atom/fragment/molecule, change modes, then float/minimize/reopen Build; verify search, placement, saved-layout and legacy behavior."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/build_panel.json",
+        "evidence/stage0/semantic-proofs.json"
+      ]
+    },
+    {
+      "suite": "tests/e2e/hydrogen_contacts.py",
+      "failingLine": 57,
+      "classification": "environment",
+      "reason": "After returning to View the active right-dock tab is Measurements; Properties remains open but inactive. The test tries to uncheck its hidden Hydrogen bonds control without revealing it. Revealing Properties lets the entire original chemistry/session/trajectory workflow pass.",
+      "appJsCoverage": [
+        {
+          "function": "getMoleculeDisplay",
+          "baseLine": 9258,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getMoleculeDisplay(layer = null) {"
+        },
+        {
+          "function": "editMoleculeDisplay",
+          "baseLine": 9269,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function editMoleculeDisplay(key, value) {"
+        },
+        {
+          "function": "buildAtoms",
+          "baseLine": 3758,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function buildAtoms(vol, display = getMoleculeDisplay()) {"
+        },
+        {
+          "function": "buildBonds",
+          "baseLine": 3951,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function buildBonds(vol, display = getMoleculeDisplay()) {"
+        },
+        {
+          "function": "setMode",
+          "baseLine": 11170,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function setMode(newMode, options = {}) {"
+        },
+        {
+          "function": "applyCoordsPanelEditState",
+          "baseLine": 29133,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyCoordsPanelEditState(record, snapshot) {"
+        },
+        {
+          "function": "applySessionState",
+          "baseLine": 32960,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applySessionState(staged) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Reveal Properties Object explicitly, toggle Hydrogen bonds independently of chemical bonds, edit coordinates and undo; check contacts and topology.",
+        "Switch molecule layers, round-trip new/old sessions and play a trajectory; check per-object flags, defaults, contact counts and Look independence."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/hydrogen_contacts.json",
+        "evidence/stage0/semantic-proofs.json"
+      ]
+    },
+    {
+      "suite": "tests/e2e/axis_gizmo.py",
+      "failingLine": 130,
+      "classification": "real pre-existing defect",
+      "reason": "Workbench intercepts Escape in the document capture phase through host.editToolEscape. With an Edit selection it clears selection and stops propagation before the gizmo can focus the canvas; focus stays on the axis endpoint. This is an actual keyboard-routing defect.",
+      "appJsCoverage": [
+        {
+          "function": "axisGizmo onEscape callback",
+          "baseLine": 1294,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "onEscape: () => canvas.focus({ preventScroll: true }),"
+        },
+        {
+          "function": "handleEditToolEscape",
+          "baseLine": 15592,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function handleEditToolEscape(event) {"
+        },
+        {
+          "function": "global keydown routing",
+          "baseLine": 26136,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "window.addEventListener('keydown', (e) => {"
+        },
+        {
+          "function": "VibeMolWorkbenchHost.editToolEscape",
+          "baseLine": 33257,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "editToolEscape: handleEditToolEscape,"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "In Edit select atoms, focus an axis endpoint, use arrows/Home/End/Space/Enter and Escape; verify selection and focus against the tagged base.",
+        "Check all six directions in both projections and modes, pointer/touch gestures, small viewports and canvas PNG/WebM rendering. Record the pre-existing Escape defect if still present.",
+        "Exercise Escape from menus, coordinate/operator fields, provisional placement, armed Build, selected Transform, Focus and panels; preserve cancellation/disarm/selection-clear precedence and gizmo focus return."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/axis_gizmo.json",
+        "evidence/stage0/failures/axis_gizmo.log"
+      ],
+      "fixConstraints": {
+        "origin": "0.9.2/0.9.3 Escape-ladder work",
+        "captureEditToolBranchCommit": "5f6a3909",
+        "source": "assets/app/js/workbench.js:610-624; docs/edit-tools.md",
+        "requirement": "Preserve capture-phase arbitration and ladder semantics; do not fix focus by dropping interception.",
+        "precedence": [
+          "Dismiss active menus and let coordinate/operator fields cancel their own drafts.",
+          "Cancel provisional placement while retaining Build.",
+          "Disarm Build to Transform while retaining selection.",
+          "Clear Transform selection.",
+          "Allow subsequent Focus/panel dismissal."
+        ],
+        "focusHandoff": "Retain the intended axis-gizmo-to-canvas focus handoff while preserving the edit action selected by the ladder."
+      }
+    },
+    {
+      "suite": "tests/e2e/smoke.py",
+      "failingLine": 2948,
+      "classification": "environment",
+      "reason": "The test reads the Translate cue bounding box immediately after observing synchronous selection state. The cue is rendered in requestAnimationFrame. Under the software renderer even a 250 ms sleep can precede presentation; waiting for actual rendered frames reveals the control. Both the failure screenshot and saved HTML show it visible. This is a harness settle race.",
+      "appJsCoverage": [
+        {
+          "function": "getEditSelectionClientBounds",
+          "baseLine": 20005,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getEditSelectionClientBounds(indices, vol, worldTransform = false) {"
+        },
+        {
+          "function": "projectWorldToClient",
+          "baseLine": 18561,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function projectWorldToClient(world) {"
+        },
+        {
+          "function": "renderEditSelectionTranslateCue",
+          "baseLine": 20202,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderEditSelectionTranslateCue() {"
+        },
+        {
+          "function": "updateEditSelectionVisuals",
+          "baseLine": 23006,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function updateEditSelectionVisuals() {"
+        },
+        {
+          "function": "applyTransformWorldPositions",
+          "baseLine": 15317,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyTransformWorldPositions(vol, indices, worldPositions) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Repeat the legacy two-atom fixture after the preceding auto-hydrogen/import actions, select both atoms, wait for the cue to be visible and drag Translate; verify displacement and undo.",
+        "Repeat Rotate and bond-group selection/operator inputs, including shifted/rotated content and camera changes. Verify actual frame presentation instead of a fixed sleep."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/smoke.json",
+        "evidence/stage0/failures/smoke.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/looks.py",
+      "failingLine": 978,
+      "classification": "environment",
+      "reason": "The test expects the Build-only hydrogen bond-order warning while the loaded structure enters Transform. Clicking selects the H-C single bond, leaves its topology unchanged and shows the selection hint. The assertion assumes the former editing contract.",
+      "appJsCoverage": [
+        {
+          "function": "syncEditSceneTool",
+          "baseLine": 15536,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function syncEditSceneTool(force = false) {"
+        },
+        {
+          "function": "chooseEditTool",
+          "baseLine": 15572,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function chooseEditTool(tool, options = {}) {"
+        },
+        {
+          "function": "stepBuildBondOrder",
+          "baseLine": 23377,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function stepBuildBondOrder(bondHit, delta, pointerLike = null) {"
+        },
+        {
+          "function": "setBondCenterSelectionFromHit",
+          "baseLine": 23538,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function setBondCenterSelectionFromHit(bondHit, options = {}) {"
+        },
+        {
+          "function": "applyEditBondScopeSelection",
+          "baseLine": 23818,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyEditBondScopeSelection(bondHit) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Import legacy multiple/over-coordinated H bonds; verify repair to a single bond.",
+        "Explicitly choose Build and attempt bond-order cycling/growth from saturated H; then choose Transform and check scope selection, metal styles and topology export."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/looks.json",
+        "evidence/stage0/failures/looks.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/edit_picking.py",
+      "failingLine": 381,
+      "classification": "environment",
+      "reason": "The test reads bond-cue visibility immediately after a raw mouse click. The selected metal-dative bond/style is already correct; the cue becomes visible after the next rendered frame (observed after 250 ms) with the rear atom deselected. This is a test settle race.",
+      "appJsCoverage": [
+        {
+          "function": "pickMoleculeHitUncached",
+          "baseLine": 24012,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function pickMoleculeHitUncached(e) {"
+        },
+        {
+          "function": "setBondCenterSelectionFromHit",
+          "baseLine": 23538,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function setBondCenterSelectionFromHit(bondHit, options = {}) {"
+        },
+        {
+          "function": "applyEditBondScopeSelection",
+          "baseLine": 23818,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyEditBondScopeSelection(bondHit) {"
+        },
+        {
+          "function": "renderEditSelectionTranslateCue",
+          "baseLine": 20202,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderEditSelectionTranslateCue() {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Use foreground covalent/strong/dative/weak bonds overlapping a selected rear atom in both projections; click exposed centers and dash gaps, then wait for presented UI.",
+        "Check hover/frontmost ownership, metal-style cues, rear-atom deselection and live coordinate changes under every Look."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/edit_picking.json",
+        "evidence/stage0/failures/edit_picking.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/mode_consistency.py",
+      "failingLine": 80,
+      "classification": "real pre-existing defect",
+      "reason": "In the legacy interface the automatically anchored selection/position card overlaps Coordinates. Its higher stacking order intercepts the row Delete button. This is a real default-layout collision, with both panels visible.",
+      "appJsCoverage": [
+        {
+          "function": "renderEditSelectionTranslateCue",
+          "baseLine": 20202,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderEditSelectionTranslateCue() {"
+        },
+        {
+          "function": "buildCoordsRowActions",
+          "baseLine": 29319,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function buildCoordsRowActions(item) {"
+        },
+        {
+          "function": "applyCoordsPanelEditState",
+          "baseLine": 29133,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyCoordsPanelEditState(record, snapshot) {"
+        },
+        {
+          "function": "finalizeCoordsPanelEdit",
+          "baseLine": 29188,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function finalizeCoordsPanelEdit(record, beforeState, actionLabel) {"
+        },
+        {
+          "function": "renderCoordsPanelIfOpen",
+          "baseLine": 29549,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderCoordsPanelIfOpen() {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Open Coordinates in the legacy interface, enter Edit and select two atoms; attempt row Delete/Copy/Reorder with the selection card visible.",
+        "Move panels to expose controls, perform edits and undo, then repeat in Workbench; verify atom IDs, selection remapping, units and clipboard round-trips. Record the default legacy overlap."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/mode_consistency.json",
+        "evidence/stage0/failures/mode_consistency.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/style_studio.py",
+      "failingLine": 141,
+      "classification": "environment",
+      "reason": "The test compares camera dictionaries with exact equality while vendored OrbitControls performs repeated spherical conversions. Pose changes are only about 1.4e-13 in the sampled coordinates; target/up/controls state and molecule are unchanged. The assertion uses no numerical tolerance.",
+      "appJsCoverage": [
+        {
+          "function": "applyNamedLook",
+          "baseLine": 27964,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyNamedLook(look, { includeColors = true } = {}) {"
+        },
+        {
+          "function": "finishLookChange",
+          "baseLine": 27934,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function finishLookChange(options = {}) {"
+        },
+        {
+          "function": "rebuildAppearanceMolecules",
+          "baseLine": 27909,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function rebuildAppearanceMolecules() {"
+        },
+        {
+          "function": "applyMoleculeStyleUiState",
+          "baseLine": 26786,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyMoleculeStyleUiState() {"
+        },
+        {
+          "function": "render",
+          "baseLine": 6858,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function render() {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "In the legacy Style Studio, apply every Look and compare camera pose within a documented 1e-12 tolerance, molecule topology and material/geometry values.",
+        "Edit materials/geometry, Undo/Revert, save/import named Looks and switch themes; verify popup layout and live rendering."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/style_studio.json",
+        "evidence/stage0/failures/style_studio.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/properties_inspector.py",
+      "failingLine": 173,
+      "classification": "environment",
+      "reason": "The first entry to Measure intentionally introduces Measurements and activates its right-dock tab. The test incorrectly requires the entire layout snapshot to equal the earlier inspector-only layout. Properties tab and floating position are preserved.",
+      "appJsCoverage": [
+        {
+          "function": "setMode (Measurements introduction)",
+          "baseLine": 11287,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "window.VibeMolWorkbench.open('measurementsPanel', false);"
+        },
+        {
+          "function": "getPropertyObjects",
+          "baseLine": 9263,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getPropertyObjects() {"
+        },
+        {
+          "function": "editMoleculeDisplay",
+          "baseLine": 9269,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function editMoleculeDisplay(key, value) {"
+        },
+        {
+          "function": "applyLookSettings",
+          "baseLine": 27949,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyLookSettings(settings, layers = getAllLookLayers()) {"
+        },
+        {
+          "function": "propertiesInspector construction",
+          "baseLine": 33201,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "propertiesInspector = window.VibeMolPropertiesInspector.createController({"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Select structures and surfaces together; edit Object/Look controls, 2C cloud settings and per-surface inheritance.",
+        "Float/park/reopen Properties, cycle Edit/Measure/View and verify Object/Look tab and placement separately from the intentional first-Measure panel introduction."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/properties_inspector.json",
+        "evidence/stage0/failures/properties_inspector.log"
+      ],
+      "additionalEntryPoints": [
+        "tests/e2e/appearance_controls.py"
+      ],
+      "additionalEvidence": [
+        "evidence/stage0/followups/appearance_controls.log"
+      ]
+    },
+    {
+      "suite": "tests/e2e/properties_disclosures.py",
+      "failingLine": 19,
+      "classification": "environment",
+      "reason": "At 445x655 the bottom-dock Look body is only 71.234375 px high. The test wheels at body.y+75=658.765625, below the viewport. Wheeling inside the same body gives scrollTop=140. This is an invalid test pointer position.",
+      "appJsCoverage": [
+        {
+          "function": "propertiesInspector construction",
+          "baseLine": 33201,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "propertiesInspector = window.VibeMolPropertiesInspector.createController({"
+        },
+        {
+          "function": "syncAppearanceControlsToActiveLayer",
+          "baseLine": 26462,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function syncAppearanceControlsToActiveLayer() {"
+        },
+        {
+          "function": "finishLookChange",
+          "baseLine": 27934,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function finishLookChange(options = {}) {"
+        },
+        {
+          "function": "updateDisplayWindowAdaptiveMenuUi",
+          "baseLine": 11762,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function updateDisplayWindowAdaptiveMenuUi() {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Place Properties right, bottom and floating at desktop/mobile widths; wheel inside the visible Look body and verify scroll movement.",
+        "Click each disclosure at fixed coordinates through pointer down/up, then Space/Enter; check first-click behavior, stable heading positions and no focus-induced scrolling."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/properties_disclosures.json",
+        "evidence/stage0/semantic-proofs.json"
+      ]
+    },
+    {
+      "suite": "tests/e2e/floating_panels.py",
+      "failingLine": 135,
+      "classification": "environment",
+      "reason": "The test first manually moves Selection tools over the Atom placement handle, then Locator.hover targets the covered handle center. The drag routine actually grabs its exposed left edge. Using that intended grab point makes the entire live workflow pass; panel dragging itself works.",
+      "appJsCoverage": [
+        {
+          "function": "renderEditSelectionTranslateCue",
+          "baseLine": 20202,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function renderEditSelectionTranslateCue() {"
+        },
+        {
+          "function": "positionRightOperatorPanel",
+          "baseLine": 21432,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function positionRightOperatorPanel(panelEl) {"
+        },
+        {
+          "function": "positionAddAtomOperatorPanel",
+          "baseLine": 21439,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function positionAddAtomOperatorPanel() {"
+        },
+        {
+          "function": "showBuildPopover",
+          "baseLine": 18750,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function showBuildPopover(options = {}) {"
+        }
+      ],
+      "coverageStatus": "uncharacterized failing workflow; suite not green",
+      "manualVerification": [
+        "Exercise actual exposed title bars/grips with overlapping windows, including Selection tools and Atom placement; verify drag, keyboard movement/reset and collapse clicks.",
+        "Repeat Build search, orbital filters, modal/reset menus and video controls, including touch/resize, reopen-position persistence and viewport bounds."
+      ],
+      "evidence": [
+        "evidence/stage0/probes/floating_panels.json",
+        "evidence/stage0/floating-proof.json"
+      ]
+    }
+  ],
+  "coverageMeaning": "The listed app.js functions delimit the failed workflow and its intended verification scope; they are not claims that later assertions in the interrupted suite ran successfully.",
+  "additionalSuiteFailures": [
+    {
+      "suite": "tests/e2e/appearance_controls.py",
+      "classification": "environment",
+      "sameWorkflowAs": "tests/e2e/properties_inspector.py",
+      "failingLine": 173,
+      "appJsCoverage": [
+        {
+          "function": "setMode (Measurements introduction)",
+          "baseLine": 11287,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "window.VibeMolWorkbench.open('measurementsPanel', false);"
+        },
+        {
+          "function": "getPropertyObjects",
+          "baseLine": 9263,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function getPropertyObjects() {"
+        },
+        {
+          "function": "editMoleculeDisplay",
+          "baseLine": 9269,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function editMoleculeDisplay(key, value) {"
+        },
+        {
+          "function": "applyLookSettings",
+          "baseLine": 27949,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "function applyLookSettings(settings, layers = getAllLookLayers()) {"
+        },
+        {
+          "function": "propertiesInspector construction",
+          "baseLine": 33201,
+          "baseFile": "assets/app/js/app.js",
+          "excerpt": "propertiesInspector = window.VibeMolPropertiesInspector.createController({"
+        }
+      ],
+      "manualVerification": [
+        "Select structures and surfaces together; edit Object/Look controls, 2C cloud settings and per-surface inheritance.",
+        "Float/park/reopen Properties, cycle Edit/Measure/View and verify Object/Look tab and placement separately from the intentional first-Measure panel introduction."
+      ],
+      "evidence": [
+        "evidence/stage0/followups/appearance_controls.log"
+      ]
+    }
+  ],
+  "projectionAppDefect": {
+    "classification": "real pre-existing defect",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/3",
+    "evidence": "characterize-pixel-investigation.json",
+    "separateFromSuiteFailureCounts": true,
+    "harnessMasksDefect": true
+  },
+  "stageRiskPlan": "refactor-stage-risk.json",
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "supersedesHistoricalCounts": true,
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
+  },
+  "scheduledRepair": "browser-suite-repair-plan.json",
+  "preRepairBrowserBaseline": {
+    "passed": 23,
+    "failed": 14,
+    "total": 37,
+    "evidence": "tests/baselines/characterize-validation.json",
+    "supersedesHistoricalCounts": true
+  },
+  "currentRemainingFailures": [
+    {
+      "suite": "axis_gizmo.py",
+      "line": 130,
+      "function": "run"
+    },
+    {
+      "suite": "mode_consistency.py",
+      "line": 80,
+      "function": "coordinate_row_actions"
+    }
+  ]
+}

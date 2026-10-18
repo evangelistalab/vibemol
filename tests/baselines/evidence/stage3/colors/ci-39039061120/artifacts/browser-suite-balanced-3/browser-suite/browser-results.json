@@ -1,0 +1,202 @@
+{
+  "sourceAppSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+  "expected": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "suites": [
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "seconds": 305.23,
+      "wallTimeSeconds": 305.23,
+      "testSha256": "9f454e5f0ddc42aea0a8cf18272876d33ceccfa0ff690336762a24ee117d45a8",
+      "rawLog": "out/test-artifacts/browser-suite/look_references/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/edit_picking.py",
+      "exitCode": 0,
+      "seconds": 293.06,
+      "wallTimeSeconds": 293.06,
+      "testSha256": "9dbda25245e2f406e02c44f5a2858ec92a105779066456a020fb1123ad578867",
+      "rawLog": "out/test-artifacts/browser-suite/edit_picking/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/sessions.py",
+      "exitCode": 0,
+      "seconds": 251.79,
+      "wallTimeSeconds": 251.79,
+      "testSha256": "95cf8c50246953fcacd95e28d5483d7aff5de750252454ca8d913d6881cb61ee",
+      "rawLog": "out/test-artifacts/browser-suite/sessions/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/appearance_scopes.py",
+      "exitCode": 0,
+      "seconds": 136.8,
+      "wallTimeSeconds": 136.8,
+      "testSha256": "d06e9b3f3b826558067be4a7df37bbf8564ace54e798519b7e364a6920edad29",
+      "rawLog": "out/test-artifacts/browser-suite/appearance_scopes/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/ux_review.py",
+      "exitCode": 0,
+      "seconds": 113.94,
+      "wallTimeSeconds": 113.94,
+      "testSha256": "063c5d9d30ebadc5b15651c27290a6e432c597aaaaa6c09702bbcc374fa7d69e",
+      "rawLog": "out/test-artifacts/browser-suite/ux_review/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/figure.py",
+      "exitCode": 0,
+      "seconds": 119.08,
+      "wallTimeSeconds": 119.08,
+      "testSha256": "cf90f32366ced96b7fe3b994523325ebae525227b02b385b102a9619cbbff9d1",
+      "rawLog": "out/test-artifacts/browser-suite/figure/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/workbench_consistency.py",
+      "exitCode": 0,
+      "seconds": 70.39,
+      "wallTimeSeconds": 70.39,
+      "testSha256": "45e953ea63ce36c29fccc4163b87a0d4023b63e21738761feca84ecf94209842",
+      "rawLog": "out/test-artifacts/browser-suite/workbench_consistency/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/properties_inspector.py",
+      "exitCode": 0,
+      "seconds": 46.88,
+      "wallTimeSeconds": 46.88,
+      "testSha256": "769128912ef6e82bdbd574b7639329146d24838e871621d80dd9e068913774d6",
+      "rawLog": "out/test-artifacts/browser-suite/properties_inspector/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exitCode": 1,
+      "seconds": 34.22,
+      "wallTimeSeconds": 34.22,
+      "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+      "rawLog": "out/test-artifacts/browser-suite/axis_gizmo/run.log",
+      "firstFailure": {
+        "suite": "axis_gizmo.py",
+        "line": 130,
+        "function": "run"
+      },
+      "failureCallSite": {
+        "suite": "axis_gizmo.py",
+        "line": 170,
+        "function": "main"
+      },
+      "exceptionType": "AssertionError",
+      "failureWorkflow": {
+        "id": "escape-canvas-focus"
+      },
+      "knownDefect": true
+    },
+    {
+      "test": "tests/e2e/symmetry_panel.py",
+      "exitCode": 0,
+      "seconds": 26.36,
+      "wallTimeSeconds": 26.36,
+      "testSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d",
+      "rawLog": "out/test-artifacts/browser-suite/symmetry_panel/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/asset_cache.py",
+      "exitCode": 0,
+      "seconds": 18.75,
+      "wallTimeSeconds": 18.75,
+      "testSha256": "972943c7726e419ca8c6a4e46feb711a484f9e0517a6858916302262e270c641",
+      "rawLog": "out/test-artifacts/browser-suite/asset_cache/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    },
+    {
+      "test": "tests/e2e/hydrogen_contacts.py",
+      "exitCode": 0,
+      "seconds": 15.69,
+      "wallTimeSeconds": 15.69,
+      "testSha256": "57c62e65d56ecf66654ab4af3f5b9b344cb77b9bffd5e86b03b97bce5e8d2e05",
+      "rawLog": "out/test-artifacts/browser-suite/hydrogen_contacts/run.log",
+      "firstFailure": null,
+      "failureCallSite": null,
+      "exceptionType": null,
+      "failureWorkflow": null,
+      "knownDefect": false
+    }
+  ],
+  "method": "Each assigned entry point runs once, sequentially within this shard; the join asserts the aggregate gate.",
+  "timingMethod": "time.monotonic wall time around each suite subprocess; includes browser/server startup",
+  "artifactIdentity": {
+    "commit": "c354eca81cd05fad178deddcf9bb068ce233bf4c",
+    "tree": "a36a574d2fa7b3a612c2602c0453d41259978537",
+    "appSha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d",
+    "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+    "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+    "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+    "ciRunAttempt": "1"
+  },
+  "shard": "balanced-3",
+  "shardPlanSha256": "2a4ff210d359a5d85726a6ec16d2f242f744a6a7d8ad839f5bd8cd6d251d98c9",
+  "executionComplete": true,
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+  "passed": 11,
+  "failed": 1,
+  "total": 12,
+  "unexpectedFailures": [],
+  "matchesAcceptedBaseline": null,
+  "aggregationRequired": true,
+  "issue11Workflow": {
+    "status": "not in this shard"
+  },
+  "wallTimeSeconds": 1432.21
+}

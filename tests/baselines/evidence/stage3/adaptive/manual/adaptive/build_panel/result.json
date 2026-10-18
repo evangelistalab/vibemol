@@ -1,0 +1,13 @@
+{
+  "suite": "build_panel.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol",
+  "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+  "testSha256": "3aac1c5861aa5c565b73bf8eef3b250f836f66a012947a952c482bf3eb17df26",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 19.45
+}

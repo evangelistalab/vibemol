@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/fevange/Source/vibemol/tests/e2e/figure.py", line 200, in <module>
+    if __name__=='__main__':main()
+  File "/Users/fevange/Source/vibemol/tests/e2e/figure.py", line 196, in main
+    run(page,url);auto_iso(page,url);samples(page,url);assert not errors,errors;assert not console,console
+  File "/Users/fevange/Source/vibemol/tests/e2e/figure.py", line 41, in run
+    data,result=compose(page,{'widthIn':6.5,'dpi':300,'cols':2,'sharedIso':True,'camera':'fit'},'figure-regression.png')
+  File "/Users/fevange/Source/vibemol/tests/e2e/figure.py", line 23, in compose
+    same_view(result['before'],result['after'])
+  File "/Users/fevange/Source/vibemol/tests/e2e/figure.py", line 12, in same_view
+    elif key in ["near","far"]:assert math.isclose(a[key],b[key],rel_tol=1e-12,abs_tol=1e-12),(a,b)
+AssertionError: ({'width': 1140, 'height': 944, 'pixelRatio': 1, 'position': [2.916000622988134, 2.916000622988133, 2.9160006229881317], 'quaternion': [0.17591989660616122, 0.42470820027786693, 0.8204732385702833, 0.33985114297998736], 'zoom': 1, 'target': [0, 0, 0], 'near': 0.6440626127553415, 'far': 9.762780447525557, 'aspect': 1.2076271186440677}, {'width': 1140, 'height': 944, 'pixelRatio': 1, 'position': [2.9160006229881335, 2.916000622988131, 2.916000622988127], 'quaternion': [0.1759198966061614, 0.4247082002778672, 0.8204732385702831, 0.3398511429799875], 'zoom': 1, 'target': [0, 0, 0], 'near': 0.8436596013601929, 'far': 9.563183493333447, 'aspect': 1.2076271186440677})

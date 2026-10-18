@@ -1,0 +1,44 @@
+[
+  {
+    "source": "tagged-base",
+    "suite": "edit_tool",
+    "exitCode": 0,
+    "seconds": 52.92,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/edit_tool/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "build_panel",
+    "exitCode": 0,
+    "seconds": 25.07,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/build_panel/result.json"
+  },
+  {
+    "source": "tagged-base",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "seconds": 34.78,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/floating_panels/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "edit_tool",
+    "exitCode": 0,
+    "seconds": 51.47,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/edit_tool/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "build_panel",
+    "exitCode": 0,
+    "seconds": 18.96,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/build_panel/result.json"
+  },
+  {
+    "source": "proposed",
+    "suite": "floating_panels",
+    "exitCode": 0,
+    "seconds": 33.33,
+    "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/floating_panels/result.json"
+  }
+]

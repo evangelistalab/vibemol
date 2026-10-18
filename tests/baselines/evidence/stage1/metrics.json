@@ -1,0 +1,42 @@
+{
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "stage0Head": "79c3f04ffc21f345a18226714450c3498db1315e",
+  "countMethod": "Line count: splitlines(); function/let/const declarations: two-space app.js top-level lines. Function count includes async declarations and excludes arrow aliases.",
+  "before": {
+    "lines": 33280,
+    "functionDeclarations": 1197,
+    "letDeclarations": 313,
+    "constDeclarations": 595,
+    "sha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5"
+  },
+  "taggedBase": {
+    "lines": 33280,
+    "functionDeclarations": 1197,
+    "letDeclarations": 313,
+    "constDeclarations": 595,
+    "sha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5"
+  },
+  "after": {
+    "lines": 33270,
+    "functionDeclarations": 1196,
+    "letDeclarations": 313,
+    "constDeclarations": 596,
+    "sha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be"
+  },
+  "utilityDefinitions": {
+    "original": 14,
+    "shared": 8,
+    "difference": -6
+  },
+  "dependencyContract": "Pure helpers use arguments only. Symbol lookup callers pass the atomic metadata table at call time; no controller factory or app closure dependency is required.",
+  "runtimeVersion": "0.9.5",
+  "sessionFormatVersion": 1,
+  "vendorChanges": false,
+  "delta": {
+    "lines": -10,
+    "functionDeclarations": -1,
+    "letDeclarations": 0,
+    "constDeclarations": 1
+  }
+}

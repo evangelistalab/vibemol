@@ -1,0 +1,152 @@
+{
+  "baseRefOid": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "body": "Extract PubChem autocomplete, search, fetch/parse/import and metadata rendering from app.js into one controller with **13 genuine explicit dependencies**, all used. Metadata remains available during ordinary autosave restoration because the inert controller is constructed immediately after `els`. All eager inputs are ready or hoisted; construction performs no DOM/network work, listener registration or input callback. Original DOM query positions and late listener timing remain unchanged.\n\nThis is the corrected revision of the single Stage 4 PR. Original `25fd30a` and rejected CI39057387687 (32/5/37) remain preserved. Instrumented three-source diagnostic39062919011 passed tagged/integration and failed only the original candidate; neither diagnostic nor the rejected run supplies merge evidence.\n\nThe error was caught by `restoreAppearancePresetAutosave`, logged as `console.warn` and returned as false to an ignoring caller. A controlled tagged-base failure independently reproduced partial restoration: identical rendered settings, but Basic/Basic modified references instead of Opal/Classic unmodified. This separate restore reliability defect is filed/carried as **#25**, without a rollback/user-error fix in this PR. Generic goldens use `appearanceStudy=1` and skip autosave; their earlier success never covered this path.\n\n## Manual verification\n\n- Fixed source passed the full instrumented `look_references.py`, including both original migration cases: `[opal, classic]` / `[false, false]` and `[classic, classic]` / `[false, false]`. Original predicates, readiness and waits are unchanged; both comparands/resolved state are emitted before either assertion.\n- All **72 fixed native PubChem cases** matched the preserved immutable **72-case tagged control**, using the exact same harness: 18 scenarios across Workbench/legacy and light/dark. Covers search by click/Enter, autocomplete/cache/stale-token behavior, metadata/import preservation, HTTP/transport failure, malformed JSON/schema/SDF, metadata fallback and real browser request aborts at CID/SDF/autocomplete. No forced clicks, production handler replacements or cancellation UI was added.\n- The inverse construction audit now checks incoming readers/callers and conservatively synchronous callback escape. **Stages1\u20133 and fixed4 pass; original4 is rejected as the negative control.** Introduced module/helper scopes, every reading reference, earliest possible activation and constructor proof are retained. The check and assertion-comparand rule are standing AGENTS requirements; Stage5 remains design only.\n- Independent complete-source audit: **1,229 checks**, all **1,190** original declarations accounted for; **19** moved implementations exact after inverse lexical substitution, **1,171** other app declarations byte-identical. Full app/module reconstructions match. The old named-call-only exemption is explicitly superseded.\n- Checks, **433 JS/29 Python** tests and local **102 unchanged goldens twice** passed, exact serialized repeat/zero diagnostic pixel changes. All **52 slots \u00d78 contexts**, fixed **47 live+5 known-absent Workbench /48+4 legacy**, every current observer/checkpoint minimum. Local characterization **1077.39s**, Chromium **145.0.7632.6**.\n\nTracked app lets **265 \u2192262**; **13 genuine used controller dependencies**, under15. Periodic factory remains **11** (ten non-DOM+els). App **32,669 lines /1,163 direct declarations**, module **480 lines /21 declarations**. No golden, fixture, QA, workflow, expected predicate or wait changed; the exact authorized test logging and standalone audit tool are disclosed.\n\n## CI\n\nCorrected head **d2f1958302632666d66d91a6ea3e23440fc49501** passed its own first automatic ordinary [CI run 39071994182](https://github.com/evangelistalab/vibemol/actions/runs/39071994182), **attempt1**, with the full conjunction independently reconstructed before merge:\n\n- **34 passing /3 exact accepted failures /37 executed once**. Raw failures are axis Escape/canvas focus, selection-card interception of Coordinates Delete and #11 at **trajectory after the second download**. Vibration export was not reached in this run. No extra failure, retry or relaxed gate.\n- **102 unchanged goldens twice**, exact serialized repeat/zero diagnostic pixel changes; **52 slots \u00d78 contexts**, Workbench47 live+5 known-absent /legacy48+4, every current observer/checkpoint minimum. Actual mode checks408/9 (404/6 observed beyond explicit calls), presented39/32, session restore1 each; all live nodes remained connected and equal to private caches.\n- Checks **433 JS/29 Python** and WebKit passed; all11 jobs passed. Both shipped joins independently reproduced the CI results. All9 original ZIPs matched GitHub SHA256 and CRC. Actual checkout **4e79f5125a1483eae52b905274bd0d6afec1c796**, tree **f9ae773665a4f359d5c53387b30e664b25e11204**, parents exactly base6c58355/headd2f1958302632666d66d91a6ea3e23440fc49501; all11 raw checkout logs agree.\n- **Both Studio/Properties material-family paths completed**, Looks **1892.07s/31.53min**, without the material-preset timeout in this completed run; the intermittent remains open. Runtime: Linux x86_64, Chromium156.0.8078.4 /Playwright1.64.0, ANGLE Vulkan SwiftShader(Subzero).\n- Whole sharded CI **1936s/32.2667min** vs132.93min: **75.73% less /4.120\u00d7**, one observed run with **8 browser-cache hits /0 misses**. Looks was the last worker; aggregate join completed last. Queues/setup/artifacts/joins are included. Original rejected run39057387687 remains32/5/37 with material paths **not covered**.\n\nThe failed original candidate and diagnostics never supplied merge evidence. No production, shipped harness/tool, fixture, golden or workflow bytes changed after this corrected head was frozen. Durable own-run evidence will be recorded under `tests/baselines/evidence/stage4/pubchem/ci-39071994182/` through post-merge documentation-only bookkeeping.\n\n## Carried findings\n\nKeep #3, #11, axis Escape/Coordinates Delete, #21 layout collapse (priority above #17), #17 and follow-ups #5/#14/#15, the material-preset intermittent and new #25. The rejected original PubChem run **did not cover either material-family path**; its recurrence status is **not assessed**, not \u201cdid not recur.\u201d Stage5 design/notes are accepted, its mirror hypothesis is recorded as refuted, and no Stage5 implementation is included.\n\nEvidence: `tests/baselines/evidence/stage4/pubchem/ordering-correction/`, `construction-order/`, `restore-fault/`, the preserved failed/diagnostic CI folders, and `tests/baselines/pubchem-validation.json`.\n",
+  "headRefOid": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "mergeStateStatus": "CLEAN",
+  "mergeable": "MERGEABLE",
+  "number": 24,
+  "state": "OPEN",
+  "statusCheckRollup": [
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:41:17Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994202/job/117511333187",
+      "name": "request",
+      "startedAt": "2026-10-17T21:41:17Z",
+      "status": "COMPLETED",
+      "workflowName": "Record characterization baseline on CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:41:45Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332580",
+      "name": "checks-and-unit",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:41:17Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994202/job/117511333557",
+      "name": "record",
+      "startedAt": "2026-10-17T21:41:18Z",
+      "status": "COMPLETED",
+      "workflowName": "Record characterization baseline on CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:53:56Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332603",
+      "name": "Browser suites (smoke)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T22:13:18Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332626",
+      "name": "Browser suites (looks)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T22:12:32Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332543",
+      "name": "Browser suites (balanced-1)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T22:12:42Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332538",
+      "name": "Browser suites (balanced-2)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T22:12:35Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332673",
+      "name": "Browser suites (balanced-3)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:41:17Z",
+      "conclusion": "SKIPPED",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994202/job/117511365113",
+      "name": "compare",
+      "startedAt": "2026-10-17T21:41:26Z",
+      "status": "COMPLETED",
+      "workflowName": "Record characterization baseline on CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:57:50Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332524",
+      "name": "Characterization (1)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:57:52Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332592",
+      "name": "Characterization (2)",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:42:44Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117511332411",
+      "name": "WebKit Properties interactions",
+      "startedAt": "2026-10-17T21:41:20Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T22:13:33Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117517763629",
+      "name": "Aggregate browser gate (34/3/37)",
+      "startedAt": "2026-10-17T22:13:21Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    },
+    {
+      "__typename": "CheckRun",
+      "completedAt": "2026-10-17T21:58:10Z",
+      "conclusion": "SUCCESS",
+      "detailsUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182/job/117514623184",
+      "name": "Exact characterization repeat and goldens",
+      "startedAt": "2026-10-17T21:57:55Z",
+      "status": "COMPLETED",
+      "workflowName": "CI"
+    }
+  ],
+  "url": "https://github.com/evangelistalab/vibemol/pull/24"
+}

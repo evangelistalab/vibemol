@@ -1,0 +1,13 @@
+{
+  "suite": "edit_picking",
+  "os": "Darwin",
+  "architecture": "arm64",
+  "browserName": "chromium",
+  "browserVersion": "145.0.7632.6",
+  "rendererClass": "software",
+  "vendor": "WebKit",
+  "renderer": "WebKit WebGL",
+  "unmaskedVendor": "Google Inc. (Google)",
+  "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+  "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+}

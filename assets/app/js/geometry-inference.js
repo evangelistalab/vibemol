@@ -1,6 +1,9 @@
 (function (global) {
   'use strict';
 
+  const { getElementSymbolByAtomicNumber, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
+  const getElementSymbol = z => getElementSymbolByAtomicNumber(z, global.ATOM_Z_TO_DATA);
+
   const { countsTowardAtomValence } = global.VibeMolBondInference || {};
   const {
     GeometryId,
@@ -52,21 +55,6 @@
   const GROUP16 = new Set([8, 16, 34, 52, 84, 116]);
   const GROUP17 = new Set([9, 17, 35, 53, 85, 117]);
   const GROUP18 = new Set([10, 18, 36, 54, 86, 118]);
-
-  function getElementSymbol(z) {
-    const info = global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z | 0];
-    return info && info.symbol ? String(info.symbol) : `Z${z | 0}`;
-  }
-
-  function isTransitionMetalAtomicNumber(z) {
-    const n = z | 0;
-    return (n >= 21 && n <= 30) || (n >= 39 && n <= 48) || (n >= 72 && n <= 80) || (n >= 104 && n <= 112);
-  }
-
-  function isLanthanideOrActinideAtomicNumber(z) {
-    const n = z | 0;
-    return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
-  }
 
   function period(z) {
     const n = z | 0;

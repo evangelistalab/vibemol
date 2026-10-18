@@ -4,6 +4,7 @@ import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function loadAutoHydrogen(extraGlobals = {}) {
   return loadGlobalModules([
+    'assets/app/js/element-utils.js',
     'assets/app/js/bond-inference.js',
     'assets/app/js/auto-hydrogen.js',
   ], {

@@ -1,0 +1,39 @@
+[smoke] load app
+[smoke] startup theme controls
+[smoke] initial edit mode and adaptive menu
+[smoke] deterministic fixture import
+[smoke] deterministic fixture selection
+[smoke] selection move smoke
+[smoke] selection rotate smoke
+[smoke] live rotate updates grouped bond carriers
+[smoke] edit void orbit matches display orbit
+[smoke] symmetry popover smoke
+[smoke] fragment cue Escape disarms Build, then clears selection
+[smoke] Transform selects a new anchor before rearming fragment attachment
+[smoke] copy paste smoke
+[smoke] add atom smoke
+[smoke] grow-add can be followed immediately by atom selection
+[smoke] add molecule smoke
+[smoke] bond gesture smoke
+[smoke] clean structure smoke
+[smoke] trajectory smoke
+[smoke] vibration video export smoke
+[smoke] new file edit smoke
+[smoke] fragment cue shows fragment ghost on undercoordinated atom
+[smoke] fragment attach Smart on methane resolves to Replace H
+[smoke] fragment cue replace target keeps anchor selected and cue armed
+[smoke] fragment attach Smart on bare carbon resolves to Append
+[smoke] fragment attach Smart on open-site ghost resolves to Append with open-site hint
+[smoke] fragment attach Append keeps host hydrogens
+[smoke] fragment attach explicit Replace H on methane resolves to Replace H
+[smoke] fragment attach explicit Replace H falls back to Append when no host hydrogen exists
+[smoke] fragment attach explicit Replace H falls back when fragment lacks replace_h support
+[smoke] clicking a bond with a fusion-capable fragment enters fuse preview regardless of policy
+[smoke] clicking a bond with a non-fusion fragment leaves fuse preview inactive
+[smoke] grow drag onto terminal hydrogen replaces it with loaded atom
+[smoke] wboit surface transparency
+[smoke] wboit cloud transparency
+[smoke] 2c spinor labels and info
+[smoke] wboit 2c alpha/beta split view
+[smoke] wboit cloud 2c alpha/beta split view
+[smoke] final runtime error check

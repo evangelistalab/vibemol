@@ -1,0 +1,76 @@
+{
+  "stage": 4,
+  "scope": "PubChem controller extraction",
+  "status": "Complete: authorized ordering correction, own first ordinary fixed-candidate full gate, exact-head merge and pushed integration.",
+  "base": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+  "sourcePubchemSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+  "trackedLet": [
+    265,
+    262
+  ],
+  "genuineControllerInputs": [
+    "els",
+    "escapeHtml",
+    "setTooltipText",
+    "setHintMessage",
+    "parseXYZ",
+    "handleSceneDropRecords",
+    "setVolumes",
+    "setCurrentIndex",
+    "clearSceneMeshes",
+    "clearEditHistory",
+    "appendParsedVolumeRecord",
+    "finalizeLoadedVolumes",
+    "setNavigationHint"
+  ],
+  "dependencyCount": 13,
+  "exclusiveLimit": 15,
+  "manualCasesPerSource": 72,
+  "capturesPerRun": 102,
+  "runs": 2,
+  "identitySlots": 52,
+  "identityContexts": 8,
+  "validation": "tests/baselines/evidence/stage4/pubchem/ordering-correction/local-validation.json",
+  "appLines": 32669,
+  "appDirectFunctionDeclarations": 1163,
+  "originalFailedCandidate": {
+    "head": "25fd30a6e273fa289f17ec999b8528e82c061631",
+    "failedCi": 39057387687,
+    "counts": [
+      32,
+      5,
+      37
+    ],
+    "diagnosticCi": 39062919011,
+    "usableAsMergeGate": false
+  },
+  "restorationError": {
+    "issue": 25,
+    "taggedInducedFailureReproduced": true,
+    "caughtAs": "console.warn",
+    "pageerror": false,
+    "userFacingError": false,
+    "rollback": false,
+    "fixedHere": false
+  },
+  "constructionOrderAudit": "Stages1\u20133 and fixed4 passed; original4 rejected as negative control",
+  "periodicFactoryInputs": 11,
+  "pr": "https://github.com/evangelistalab/vibemol/pull/24",
+  "candidateHead": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "ciRun": "https://github.com/evangelistalab/vibemol/actions/runs/39071994182",
+  "ciAttempt": 1,
+  "ciEvidence": "tests/baselines/evidence/stage4/pubchem/ci-39071994182/candidate-verification.json",
+  "integrationCommit": "a418a284070603b258a8e64f74cfe9746cdbc0a0",
+  "ciGate": [
+    34,
+    3,
+    37
+  ],
+  "shardedWallTimeMinutes": 32.266666666666666,
+  "restorationFailureFinding": {
+    "issue": 25,
+    "fixedHere": false,
+    "taggedInducedFailure": "warning only, partial settings/reference state"
+  }
+}

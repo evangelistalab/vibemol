@@ -1,0 +1,15 @@
+[premerge] scene_creation: passed
+[premerge] molecule_styles: passed
+[premerge] orbital_reference_presets: passed
+[premerge] imports: passed
+[premerge] psi4_frequencies: passed
+[premerge] xyz_units: passed
+[premerge] clipboard_roundtrip: passed
+[premerge] clipboard_edit_selection: passed
+[premerge] persistence: passed
+[premerge] batch_export: passed
+[premerge] orbital_group_appearance: passed
+[premerge] molden_group_appearance: passed
+[premerge] molden_browsing: passed
+[premerge] arithmetic: passed
+[premerge] synchronized_trajectories: passed

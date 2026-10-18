@@ -1,0 +1,13 @@
+{
+  "suite": "transform_selection.py",
+  "sourceRoot": "/Users/fevange/Source/vibemol",
+  "sourceAppSha256": "a02188110418906cabbdb46dd3be31583cb791d821fefe5dc18a51491d493e45",
+  "testSha256": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601",
+  "method": "Unchanged suite main() and real UI events; only static server root and artifact destination redirected.",
+  "assertionsChanged": false,
+  "waitsChanged": false,
+  "retries": 0,
+  "serialBrowserExecution": true,
+  "status": "passed",
+  "seconds": 42.92
+}

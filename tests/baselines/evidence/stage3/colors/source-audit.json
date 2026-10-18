@@ -1,0 +1,135 @@
+{
+  "group": "Element Colors hand-off",
+  "baseCommit": "04e01adb68e100282d4a1d211197001a5a461f84",
+  "previewOnly": false,
+  "files": {
+    "app.js": {
+      "before": {
+        "lines": 33069,
+        "letDeclarations": 265,
+        "functionDeclarations": 1181,
+        "sha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c"
+      },
+      "after": {
+        "lines": 33070,
+        "letDeclarations": 265,
+        "functionDeclarations": 1181,
+        "sha256": "03beb5dc5739daecf46a2dfa989565983d4f7f17743e9a83f560ec413214456d"
+      }
+    },
+    "periodic-table.js": {
+      "before": {
+        "lines": 421,
+        "letDeclarations": 0,
+        "functionDeclarations": 1,
+        "sha256": "7f33ab422368e1026d8c686beadba902d132271aec6bf1a06d4267def642b374"
+      },
+      "after": {
+        "lines": 412,
+        "letDeclarations": 0,
+        "functionDeclarations": 1,
+        "sha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a"
+      }
+    }
+  },
+  "auditedFunctionDeclarations": {
+    "app.js": 1190,
+    "periodic-table.js": 19
+  },
+  "all1190ExistingAppFunctionsByteExact": true,
+  "wholeSourcesExactAfterIndependentInverseOfApprovedEdits": {
+    "app.js": true,
+    "periodic-table.js": true
+  },
+  "shadowedElsReferences": [],
+  "constQuerySnapshotTimingPreserved": true,
+  "queries": [
+    {
+      "name": "elementColorOverlay",
+      "id": "elementColorOverlay",
+      "originalLine": 6934,
+      "candidateLine": 6942,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "elementColorClose",
+      "id": "elementColorClose",
+      "originalLine": 6935,
+      "candidateLine": 6943,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "periodicTableViewport",
+      "id": "periodicTableViewport",
+      "originalLine": 6936,
+      "candidateLine": 6944,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "periodicTableCanvas",
+      "id": "periodicTableCanvas",
+      "originalLine": 6937,
+      "candidateLine": 6945,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "elementColorName",
+      "id": "elementColorName",
+      "originalLine": 6938,
+      "candidateLine": 6946,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "elementColorPicker",
+      "id": "elementColorPicker",
+      "originalLine": 6939,
+      "candidateLine": 6947,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "elementColorResetOne",
+      "id": "elementColorResetOne",
+      "originalLine": 6940,
+      "candidateLine": 6948,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    },
+    {
+      "name": "elementColorResetAll",
+      "id": "elementColorResetAll",
+      "originalLine": 6941,
+      "candidateLine": 6949,
+      "queryExpressionExact": true,
+      "noAccessorRefresh": true
+    }
+  ],
+  "canonicalPlainFields": 8,
+  "periodicInputsBefore": 19,
+  "periodicInputsExcludingButton": 18,
+  "periodicInputsAfter": 11,
+  "nonDomInputs": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor"
+  ],
+  "legacyButtonConstRetained": true,
+  "legacyPublicSetOpenIsOriginalFunction": true,
+  "lateButtonListenerOrderPreserved": true,
+  "qaGoldensAssertionsAndWaitsChanged": false,
+  "netAppLines": 1,
+  "netPeriodicModuleLines": -9,
+  "authorizedDifference": "Eight canonical plain DOM fields and lexical references; explicit factory hand-off; legacy launcher input excluded and its original first late onclick assignment moved immediately before bindControls. No new controller/helper or production fix."
+}

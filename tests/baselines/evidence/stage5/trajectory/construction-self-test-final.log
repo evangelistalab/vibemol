@@ -1,0 +1,1 @@
+construction-order self-test: direct early call, escaped callback, fixed ordering, lexical shadowing, existing-wrapper parameters and existing-callback locals passed

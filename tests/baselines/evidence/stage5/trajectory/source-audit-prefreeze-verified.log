@@ -1,0 +1,42 @@
+{
+  "status": "passed",
+  "checks": 1220,
+  "dependencies": 8,
+  "proof": {
+    "wholeAppReconstructed": true,
+    "movedFunctionCount": 27,
+    "originalDeclarationCount": 1172,
+    "unchangedDeclarationCount": 1143,
+    "allExistingDeclarationsAccounted": true,
+    "allDepsUsed": true,
+    "noHiddenAppClosureReferences": true,
+    "ambientGlobals": [
+      "Array",
+      "Float32Array",
+      "Math",
+      "Number",
+      "Object",
+      "String"
+    ]
+  },
+  "metrics": {
+    "beforeApp": {
+      "lines": 32669,
+      "trackedTwoSpaceLetDeclarationLines": 262,
+      "directIifeFunctionDeclarations": 1163,
+      "allFunctionDeclarations": 1172
+    },
+    "proposedApp": {
+      "lines": 32385,
+      "trackedTwoSpaceLetDeclarationLines": 260,
+      "directIifeFunctionDeclarations": 1163,
+      "allFunctionDeclarations": 1172
+    },
+    "module": {
+      "lines": 410,
+      "trackedTwoSpaceLetDeclarationLines": 0,
+      "directIifeFunctionDeclarations": 1,
+      "allFunctionDeclarations": 30
+    }
+  }
+}

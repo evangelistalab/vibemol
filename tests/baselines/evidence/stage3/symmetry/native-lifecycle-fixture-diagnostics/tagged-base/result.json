@@ -1,0 +1,295 @@
+{
+  "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "sourceRoot": "/Users/fevange/Source/vibemol/out/test-artifacts/stage3/tagged-base",
+  "browserVersion": "145.0.7632.6",
+  "method": "Native Symmetry/shared-launcher events; fixture setup and observation are explicit.",
+  "assertionRelaxation": false,
+  "retries": 0,
+  "cases": [
+    {
+      "launch": "workbench",
+      "theme": "light",
+      "events": [
+        {
+          "event": "Td preview",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Cancel",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Apply and element guide",
+          "element": "element-1",
+          "groupText": "Current point group: Td",
+          "positions": [
+            [
+              -0.0040000000000000036,
+              0.026000000000000002,
+              0.01200000000000001
+            ],
+            [
+              0.6927471430295611,
+              0.6305519789611702,
+              0.6184143516071425
+            ],
+            [
+              0.5710568523105808,
+              -0.6421250504799724,
+              -0.6525273327355431
+            ],
+            [
+              -0.6372195947986141,
+              0.6945789314839463,
+              -0.5968622172213494
+            ],
+            [
+              -0.6425844005415277,
+              -0.5790058599651441,
+              0.67897519834975
+            ]
+          ]
+        },
+        {
+          "event": "Apply Undo, Auto, Auto Undo",
+          "exactCoordinatesRestored": true
+        },
+        {
+          "event": "mode suspension/return",
+          "reopenedOnModeReturn": true
+        },
+        {
+          "event": "Symmetry keyboard close/reopen",
+          "passed": true
+        },
+        {
+          "event": "shared launcher mode projection",
+          "observations": [
+            {
+              "mode": "Display",
+              "menu": {
+                "mode": "display",
+                "hidden": "false"
+              }
+            },
+            {
+              "mode": "Measure",
+              "menu": {
+                "mode": "measure",
+                "hidden": "false"
+              }
+            },
+            {
+              "mode": "Edit",
+              "menu": {
+                "mode": "edit",
+                "hidden": "false"
+              }
+            }
+          ]
+        },
+        {
+          "event": "Coordinates to Camera",
+          "coordinatesRemainVisible": true
+        }
+      ],
+      "status": "failed",
+      "exception": "AssertionError",
+      "error": "",
+      "pageErrors": []
+    },
+    {
+      "launch": "workbench",
+      "theme": "dark",
+      "events": [
+        {
+          "event": "Td preview",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Cancel",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Apply and element guide",
+          "element": "element-1",
+          "groupText": "Current point group: Td",
+          "positions": [
+            [
+              -0.0040000000000000036,
+              0.026000000000000002,
+              0.01200000000000001
+            ],
+            [
+              0.6927471430295611,
+              0.6305519789611702,
+              0.6184143516071425
+            ],
+            [
+              0.5710568523105808,
+              -0.6421250504799724,
+              -0.6525273327355431
+            ],
+            [
+              -0.6372195947986141,
+              0.6945789314839463,
+              -0.5968622172213494
+            ],
+            [
+              -0.6425844005415277,
+              -0.5790058599651441,
+              0.67897519834975
+            ]
+          ]
+        },
+        {
+          "event": "Apply Undo, Auto, Auto Undo",
+          "exactCoordinatesRestored": true
+        },
+        {
+          "event": "mode suspension/return",
+          "reopenedOnModeReturn": true
+        },
+        {
+          "event": "Symmetry keyboard close/reopen",
+          "passed": true
+        },
+        {
+          "event": "shared launcher mode projection",
+          "observations": [
+            {
+              "mode": "Display",
+              "menu": {
+                "mode": "display",
+                "hidden": "false"
+              }
+            },
+            {
+              "mode": "Measure",
+              "menu": {
+                "mode": "measure",
+                "hidden": "false"
+              }
+            },
+            {
+              "mode": "Edit",
+              "menu": {
+                "mode": "edit",
+                "hidden": "false"
+              }
+            }
+          ]
+        },
+        {
+          "event": "Coordinates to Camera",
+          "coordinatesRemainVisible": true
+        }
+      ],
+      "status": "failed",
+      "exception": "AssertionError",
+      "error": "",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "light",
+      "events": [
+        {
+          "event": "Td preview",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Cancel",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Apply and element guide",
+          "element": "element-1",
+          "groupText": "Current point group: Td",
+          "positions": [
+            [
+              -0.0040000000000000036,
+              0.026000000000000002,
+              0.01200000000000001
+            ],
+            [
+              0.6927471430295611,
+              0.6305519789611702,
+              0.6184143516071425
+            ],
+            [
+              0.5710568523105808,
+              -0.6421250504799724,
+              -0.6525273327355431
+            ],
+            [
+              -0.6372195947986141,
+              0.6945789314839463,
+              -0.5968622172213494
+            ],
+            [
+              -0.6425844005415277,
+              -0.5790058599651441,
+              0.67897519834975
+            ]
+          ]
+        }
+      ],
+      "status": "failed",
+      "exception": "TimeoutError",
+      "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#editSymmetryAutoBtn\")\n    - locator resolved to <button type=\"button\" id=\"editSymmetryAutoBtn\" class=\"editSymmetryActionBtn\" data-tooltip=\"Detect and apply the highest valid point group\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    49 \u00d7 waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "pageErrors": []
+    },
+    {
+      "launch": "legacy",
+      "theme": "dark",
+      "events": [
+        {
+          "event": "Td preview",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Cancel",
+          "coordinatesUnchanged": true
+        },
+        {
+          "event": "Apply and element guide",
+          "element": "element-1",
+          "groupText": "Current point group: Td",
+          "positions": [
+            [
+              -0.0040000000000000036,
+              0.026000000000000002,
+              0.01200000000000001
+            ],
+            [
+              0.6927471430295611,
+              0.6305519789611702,
+              0.6184143516071425
+            ],
+            [
+              0.5710568523105808,
+              -0.6421250504799724,
+              -0.6525273327355431
+            ],
+            [
+              -0.6372195947986141,
+              0.6945789314839463,
+              -0.5968622172213494
+            ],
+            [
+              -0.6425844005415277,
+              -0.5790058599651441,
+              0.67897519834975
+            ]
+          ]
+        }
+      ],
+      "status": "failed",
+      "exception": "TimeoutError",
+      "error": "Locator.click: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator(\"#editSymmetryAutoBtn\")\n    - locator resolved to <button type=\"button\" id=\"editSymmetryAutoBtn\" class=\"editSymmetryActionBtn\" data-tooltip=\"Detect and apply the highest valid point group\">\u2026</button>\n  - attempting click action\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n    - waiting 20ms\n    2 \u00d7 waiting for element to be visible, enabled and stable\n      - element is not visible\n    - retrying click action\n      - waiting 100ms\n    49 \u00d7 waiting for element to be visible, enabled and stable\n       - element is not visible\n     - retrying click action\n       - waiting 500ms\n",
+      "pageErrors": []
+    }
+  ],
+  "seconds": 95.97
+}

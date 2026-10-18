@@ -1,0 +1,315 @@
+{
+  "branch": "codex/app-js-decomposition",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "productionAppUnchanged": true,
+  "staticChecks": {
+    "result": "passed",
+    "evidence": "tests/baselines/evidence/stage0/checks.log"
+  },
+  "unitTests": {
+    "passed": 422,
+    "failed": 0,
+    "evidence": "tests/baselines/evidence/stage0/unit-tests.log"
+  },
+  "baselineCharacterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "apiGlobals": 86,
+    "deterministic": true,
+    "sameBrowserPixelDifferences": 0,
+    "allPriorStructuredFieldsUnchanged": true,
+    "newCapturedFields": [
+      "render.viewport",
+      "render.projection"
+    ],
+    "evidence": "tests/baselines/evidence/stage0/base-final-evidence.json",
+    "knownLimitation": "The camera pin forces projection refresh and masks the open 0.9.x app defect (#3). Passing captures do not validate ordinary preset camera/target batches."
+  },
+  "installedLoader": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "matchesGolden": true,
+    "deterministic": true,
+    "pixelDiagnosticChanges": [],
+    "ordinaryLaunchLoadsHarness": false,
+    "qaAssetVersion": "0.9.5",
+    "sessionCameraPinResizeOrderRegression": "passed for both orderings",
+    "browserVersion": "145.0.7632.6",
+    "evidence": "tests/baselines/evidence/stage0/installed-final-evidence.json",
+    "knownLimitation": "The camera pin forces projection refresh and masks the open 0.9.x app defect (#3). Passing captures do not validate ordinary preset camera/target batches."
+  },
+  "existingBrowserSuites": [
+    {
+      "test": "tests/e2e/asset_cache.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/edit_tool.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/build_bonds.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/build_orbit.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/transform_selection.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/figure.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/calculations.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/ux_review.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/accessibility.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/measurements.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/build_panel.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/symmetry_panel.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/hydrogen_contacts.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/workbench_release.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/smoke.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/premerge.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/sessions.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/looks.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/camera_depth.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/edit_picking.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/mode_consistency.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/style_studio.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/appearance_scopes.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/properties_inspector.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/properties_disclosures.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/floating_panels.py",
+      "exitCode": 1
+    },
+    {
+      "test": "tests/e2e/workbench.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/workbench_consistency.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/workbench_bar.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/style_lab.py",
+      "exitCode": 0
+    },
+    {
+      "test": "tests/e2e/appearance_controls.py",
+      "exitCode": 1,
+      "evidence": "tests/baselines/evidence/stage0/followups/appearance_controls.log"
+    },
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/look_references.log"
+    },
+    {
+      "test": "tests/e2e/look_tiles.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/look_tiles.log"
+    },
+    {
+      "test": "tests/e2e/surface_schemes.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_schemes.log"
+    },
+    {
+      "test": "tests/e2e/surface_shadows.py",
+      "exitCode": 0,
+      "evidence": "tests/baselines/evidence/stage0/followups/surface_shadows.log"
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "verificationScope": "Supplemental direct periodic-table check captured during Stage 2; not part of the original suite sweep",
+      "verifiedSource": "Tagged base v0.9.5-pre-refactor / 1c609b3; direct gate passes in all four cases",
+      "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+      "logEvidence": "tests/baselines/evidence/stage2/periodic.log"
+    }
+  ],
+  "consoleExceptions": {
+    "vendorWarning": "Scripts \"build/three.js\" and \"build/three.min.js\" are deprecated with r150+, and will be removed with r160. Please use ES Modules or alternatives: https://threejs.org/docs/index.html#manual/en/introduction/Installation",
+    "browserReadbackDiagnostic": "^\\[\\.WebGL-0x[0-9a-f]+\\]GL Driver Message \\(OpenGL, Performance, GL_CLOSE_PATH_NV, High\\): GPU stall due to ReadPixels(?: \\(this message will no longer repeat\\))?$"
+  },
+  "stage1Finding": "getElementSymbol copies differ in fallback, whitespace handling and numeric coercion",
+  "existingBrowserSuitesSummary": {
+    "passed": 23,
+    "failed": 14,
+    "all13FailuresObservedOnBase": true,
+    "failedWorkflowClassification": {
+      "environment": 12,
+      "realPreExistingDefects": 2
+    },
+    "failuresReport": "tests/baselines/characterize-failures.json",
+    "fullMakeTestE2eGreen": false,
+    "originalStage0SuiteCounts": {
+      "passed": 18,
+      "failed": 13,
+      "total": 31,
+      "supersededBy": {
+        "passed": 35,
+        "failed": 2,
+        "total": 37,
+        "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+        "supersedesHistoricalCounts": true,
+        "environment": "local",
+        "comparison": "local 35/2/37 (historical), CI 34/3/37",
+        "ci": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "environment": "CI",
+          "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+        },
+        "requiredCiGate": {
+          "passed": 34,
+          "failed": 3,
+          "total": 37,
+          "environment": "CI",
+          "satisfied": false
+        }
+      }
+    },
+    "failedEntryPointCount": 14,
+    "distinctRecordedFailingWorkflows": 13,
+    "additionalFailureAlias": "appearance_controls.py delegates to properties_inspector.py and fails at the same assertion.",
+    "countScope": "31 original Stage 0 entry points, five standalone Appearance follow-ups and the later periodic_table.py check against the tagged base. Historical aggregate is 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+    "total": 37,
+    "supplementalPeriodicGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz"
+  },
+  "baseTag": "v0.9.5-pre-refactor",
+  "pixelInvestigation": "tests/baselines/characterize-pixel-investigation.json",
+  "manualVerificationPolicy": "AGENTS.md: app.js Refactor Characterization; applies to every affected future stage PR, including environment-classified failed workflows.",
+  "styleLab": {
+    "includedInMakeTestE2e": true,
+    "standaloneRun": "passed",
+    "evidence": "tests/baselines/evidence/stage0/style-lab.log"
+  },
+  "rawArtifacts": "out/test-artifacts/stage0 (ignored); concise evidence committed under tests/baselines/evidence/stage0",
+  "goldenSha256": "2a636346dd90bede1008de971e537bebe3da6870223f73bb7da92156c4074388",
+  "additionalAppearanceSuites": {
+    "passed": 4,
+    "failed": 1,
+    "evidence": "tests/baselines/evidence/stage0/followups/appearance-results.json",
+    "allFiveIncludedInMakeTestE2e": true
+  },
+  "projectionDefect": {
+    "classification": "real pre-existing defect",
+    "releaseLine": "0.9.x",
+    "issue": "https://github.com/evangelistalab/vibemol/issues/3",
+    "harnessMasksDefect": true,
+    "productionFixApplied": false,
+    "countedAmongBrowserSuiteFailures": false,
+    "ordinaryApiEvidence": "tests/baselines/evidence/stage0/followups/public-projection-proof.json"
+  },
+  "stageRiskPlan": "tests/baselines/refactor-stage-risk.json",
+  "followupChecks": "tests/baselines/evidence/stage0/followups/checks.json",
+  "browserSuiteRepair": {
+    "issue": "https://github.com/evangelistalab/vibemol/issues/4",
+    "plan": "tests/baselines/browser-suite-repair-plan.json",
+    "target": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "separateExtractionPR": true,
+    "beforeElementCacheStage": 3,
+    "validatedEvidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "gateEnvironment": "CI",
+    "ciGateSatisfied": false,
+    "comparison": "local 35/2/37 (historical), CI 34/3/37"
+  },
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
+  }
+}

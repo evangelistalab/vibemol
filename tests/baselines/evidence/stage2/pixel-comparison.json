@@ -1,0 +1,7 @@
+{
+  "sameSessionChanges": [],
+  "capturesPerRun": 64,
+  "sameHostStage1Changes": [],
+  "scope": "Diagnostic only; comparisons between stages use separate browser launches on this host, not portable pixel goldens.",
+  "knownProjectionMask": "Characterization camera pin still masks issue #3."
+}

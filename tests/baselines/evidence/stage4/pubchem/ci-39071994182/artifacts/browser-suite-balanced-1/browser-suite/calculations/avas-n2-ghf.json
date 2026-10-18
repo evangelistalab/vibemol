@@ -1,0 +1,16 @@
+{
+  "code": "from forte2 import AVAS, CI, GHF, RelCISolver, System\n\nxyz = \"\"\"\nN 0.0000000000 0.0000000000 0.0000000000\nN 0.0000000000 0.0000000000 1.2000000000\n\"\"\"\n\nsystem = System(\n    xyz=xyz,\n    basis_set=\"cc-pvdz\",\n    auxiliary_basis_set=\"def2-universal-jkfit\",\n    minao_basis_set=\"cc-pvtz-minao\",\n    x2c_type=\"so\",\n)\n\nmf = GHF(charge=0)(system)\n\navas = AVAS(\n    subspace=[\"N(2p)\"],\n    selection_method=\"separate\",\n    num_active_docc=6,\n    num_active_uocc=6,\n    diagonalize=True,\n)(mf)\n\nci = CI(RelCISolver(nel=mf.nel))(avas)\nci.run()\n",
+  "specs": [
+    "N(2p)"
+  ],
+  "planes": [],
+  "counts": {
+    "minao": 6,
+    "orbitals": 12,
+    "atoms": 2
+  },
+  "validation": {
+    "errors": [],
+    "warnings": []
+  }
+}

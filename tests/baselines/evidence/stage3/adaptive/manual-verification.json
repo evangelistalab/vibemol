@@ -1,0 +1,151 @@
+{
+  "method": "Serial Playwright native DOM/pointer/keyboard UI event replays, with recorded screenshots and results on the tagged base and proposed source. No human actions claimed.",
+  "baseTag": "v0.9.5-pre-refactor",
+  "baseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+  "baseAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+  "proposedAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+  "existingSuitesRunOncePerSource": 5,
+  "existingSuiteAssertionsChanged": false,
+  "existingSuiteWaitsChanged": false,
+  "existingSuiteRetries": 0,
+  "records": [
+    {
+      "source": "tagged-base",
+      "suite": "edit_tool",
+      "exitCode": 0,
+      "seconds": 52.62,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/edit_tool/run.log.gz",
+      "workflow": "Loaded/empty initial tool choice; arming and selection; atom/fragment/molecule placement and Escape ladder; keyboard/ARIA, modes, widths and both-theme rendering.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/edit_tool/result.json"
+    },
+    {
+      "source": "tagged-base",
+      "suite": "build_panel",
+      "exitCode": 0,
+      "seconds": 19.59,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/build_panel/run.log.gz",
+      "workflow": "Search/filter/commit and retained Build selection; atom/fragment/molecule placement; dock/float/minimize, mode suspension, saved layout, mobile and legacy reopen.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/build_panel/result.json"
+    },
+    {
+      "source": "tagged-base",
+      "suite": "symmetry_panel",
+      "exitCode": 0,
+      "seconds": 21.35,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/symmetry_panel/run.log.gz",
+      "workflow": "Button and S entry, candidates/preview/apply/cancel/Undo; target and scene changes; Build coexistence, mode suspension, saved layout, keyboard and mobile.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/symmetry_panel/result.json"
+    },
+    {
+      "source": "tagged-base",
+      "suite": "workbench_bar",
+      "exitCode": 0,
+      "seconds": 29.22,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/workbench_bar/run.log.gz",
+      "workflow": "All four modes; keyboard/roving focus; conditional panels and checkmarks; 11 widths from 320 to 1920 px; both themes; quick actions, Q/Focus, COM/orientation and legacy.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/workbench_bar/result.json"
+    },
+    {
+      "source": "tagged-base",
+      "suite": "floating_panels",
+      "exitCode": 0,
+      "seconds": 35.09,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/floating_panels/run.log.gz",
+      "workflow": "Live Build search and operator controls; popup drag/reopen and keyboard; touch and small-viewport bounds; dock/float and dynamic handle registration.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/floating_panels/result.json"
+    },
+    {
+      "source": "tagged-base",
+      "suite": "actions",
+      "exitCode": 0,
+      "seconds": 22.21,
+      "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/actions/run.log.gz",
+      "workflow": "Every legacy adaptive button/meta getter in both themes; native COM, principal-axis alignment and Undo; Build slash focus/close; Symmetry button/key close; Optimize shortens a stretched bond.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/actions/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "edit_tool",
+      "exitCode": 0,
+      "seconds": 53.1,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/edit_tool/run.log.gz",
+      "workflow": "Loaded/empty initial tool choice; arming and selection; atom/fragment/molecule placement and Escape ladder; keyboard/ARIA, modes, widths and both-theme rendering.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/edit_tool/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "build_panel",
+      "exitCode": 0,
+      "seconds": 19.59,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/build_panel/run.log.gz",
+      "workflow": "Search/filter/commit and retained Build selection; atom/fragment/molecule placement; dock/float/minimize, mode suspension, saved layout, mobile and legacy reopen.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/build_panel/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "symmetry_panel",
+      "exitCode": 0,
+      "seconds": 22.82,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/symmetry_panel/run.log.gz",
+      "workflow": "Button and S entry, candidates/preview/apply/cancel/Undo; target and scene changes; Build coexistence, mode suspension, saved layout, keyboard and mobile.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/symmetry_panel/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "workbench_bar",
+      "exitCode": 0,
+      "seconds": 30.14,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/workbench_bar/run.log.gz",
+      "workflow": "All four modes; keyboard/roving focus; conditional panels and checkmarks; 11 widths from 320 to 1920 px; both themes; quick actions, Q/Focus, COM/orientation and legacy.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/workbench_bar/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "floating_panels",
+      "exitCode": 0,
+      "seconds": 36.65,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/floating_panels/run.log.gz",
+      "workflow": "Live Build search and operator controls; popup drag/reopen and keyboard; touch and small-viewport bounds; dock/float and dynamic handle registration.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/floating_panels/result.json"
+    },
+    {
+      "source": "adaptive",
+      "suite": "actions",
+      "exitCode": 0,
+      "seconds": 22.39,
+      "sourceAppSha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23",
+      "rawLog": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/actions/run.log.gz",
+      "workflow": "Every legacy adaptive button/meta getter in both themes; native COM, principal-axis alignment and Undo; Build slash focus/close; Symmetry button/key close; Optimize shortens a stretched bond.",
+      "result": "tests/baselines/evidence/stage3/adaptive/manual/adaptive/actions/result.json"
+    }
+  ],
+  "legacyActionOutcomesAndChipStateExactlyEqualAcrossSources": true,
+  "newProbeInitialTargetingError": "tests/baselines/evidence/stage3/adaptive/manual/tagged-base/actions-initial-targeting/classification.json",
+  "screenshotReview": {
+    "method": "Agent visual inspection of paired legacy dark adaptive controls and mobile Workbench Symmetry screenshots.",
+    "result": "Controls, chip labels, geometry and mobile panel placement agree between tagged base and proposed source."
+  },
+  "knownDefectsRetained": [
+    "#3 projection refresh masked by characterization pin",
+    "axis_gizmo Escape interception prevents canvas focus",
+    "mode_consistency selection card covers Coordinates Delete",
+    "#11 delayed Stop after second trajectory or vibration recording download"
+  ],
+  "appearanceMaterialPresetIntermittent": {
+    "recurred": false,
+    "looksSeconds": 1463.1,
+    "looksMinutes": 24.38
+  },
+  "full37SuiteCi": "Completed approved stack CI 38177282064: 34/3/37, all 43 identities in eight contexts and all reason minima."
+}

@@ -1,0 +1,602 @@
+{
+  "sourceAppSha256": "c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be",
+  "knownBaseline": {
+    "passed": 23,
+    "failed": 14,
+    "total": 37
+  },
+  "suites": [
+    {
+      "test": "tests/e2e/asset_cache.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 12.01,
+      "rawLog": "out/test-artifacts/stage1/browser/asset_cache/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/asset_cache.log"
+    },
+    {
+      "test": "tests/e2e/edit_tool.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 53.29,
+      "rawLog": "out/test-artifacts/stage1/browser/edit_tool/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/edit_tool.log"
+    },
+    {
+      "test": "tests/e2e/build_bonds.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 37.42,
+      "rawLog": "out/test-artifacts/stage1/browser/build_bonds/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/build_bonds.log"
+    },
+    {
+      "test": "tests/e2e/build_orbit.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 37.8,
+      "rawLog": "out/test-artifacts/stage1/browser/build_orbit/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/build_orbit.log"
+    },
+    {
+      "test": "tests/e2e/transform_selection.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 43.15,
+      "rawLog": "out/test-artifacts/stage1/browser/transform_selection/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/transform_selection.log"
+    },
+    {
+      "test": "tests/e2e/figure.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 8.2,
+      "rawLog": "out/test-artifacts/stage1/browser/figure/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/figure.log",
+      "failureSites": [
+        {
+          "suite": "figure.py",
+          "line": 200,
+          "function": "<module>"
+        },
+        {
+          "suite": "figure.py",
+          "line": 196,
+          "function": "main"
+        },
+        {
+          "suite": "figure.py",
+          "line": 41,
+          "function": "run"
+        },
+        {
+          "suite": "figure.py",
+          "line": 23,
+          "function": "compose"
+        },
+        {
+          "suite": "figure.py",
+          "line": 12,
+          "function": "same_view"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 12
+    },
+    {
+      "test": "tests/e2e/calculations.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 107.08,
+      "rawLog": "out/test-artifacts/stage1/browser/calculations/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/calculations.log"
+    },
+    {
+      "test": "tests/e2e/ux_review.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 37.8,
+      "rawLog": "out/test-artifacts/stage1/browser/ux_review/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/ux_review.log"
+    },
+    {
+      "test": "tests/e2e/accessibility.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 46.2,
+      "rawLog": "out/test-artifacts/stage1/browser/accessibility/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/accessibility.log"
+    },
+    {
+      "test": "tests/e2e/measurements.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 35.42,
+      "rawLog": "out/test-artifacts/stage1/browser/measurements/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/measurements.log",
+      "failureSites": [
+        {
+          "suite": "measurements.py",
+          "line": 237,
+          "function": "<module>"
+        },
+        {
+          "suite": "measurements.py",
+          "line": 233,
+          "function": "main"
+        },
+        {
+          "suite": "measurements.py",
+          "line": 180,
+          "function": "recovery_live_panels"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 180
+    },
+    {
+      "test": "tests/e2e/build_panel.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 6.46,
+      "rawLog": "out/test-artifacts/stage1/browser/build_panel/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/build_panel.log",
+      "failureSites": [
+        {
+          "suite": "build_panel.py",
+          "line": 141,
+          "function": "<module>"
+        },
+        {
+          "suite": "build_panel.py",
+          "line": 134,
+          "function": "main"
+        },
+        {
+          "suite": "build_panel.py",
+          "line": 20,
+          "function": "run"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 20
+    },
+    {
+      "test": "tests/e2e/symmetry_panel.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 21.8,
+      "rawLog": "out/test-artifacts/stage1/browser/symmetry_panel/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/symmetry_panel.log"
+    },
+    {
+      "test": "tests/e2e/hydrogen_contacts.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 43.81,
+      "rawLog": "out/test-artifacts/stage1/browser/hydrogen_contacts/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/hydrogen_contacts.log",
+      "failureSites": [
+        {
+          "suite": "hydrogen_contacts.py",
+          "line": 110,
+          "function": "<module>"
+        },
+        {
+          "suite": "hydrogen_contacts.py",
+          "line": 104,
+          "function": "main"
+        },
+        {
+          "suite": "hydrogen_contacts.py",
+          "line": 57,
+          "function": "run"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 57
+    },
+    {
+      "test": "tests/e2e/axis_gizmo.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 55.56,
+      "rawLog": "out/test-artifacts/stage1/browser/axis_gizmo/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/axis_gizmo.log",
+      "failureSites": [
+        {
+          "suite": "axis_gizmo.py",
+          "line": 179,
+          "function": "<module>"
+        },
+        {
+          "suite": "axis_gizmo.py",
+          "line": 170,
+          "function": "main"
+        },
+        {
+          "suite": "axis_gizmo.py",
+          "line": 130,
+          "function": "run"
+        }
+      ],
+      "baselineFailureClassification": "real pre-existing defect",
+      "baselineFailureLine": 130
+    },
+    {
+      "test": "tests/e2e/workbench_release.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 25.81,
+      "rawLog": "out/test-artifacts/stage1/browser/workbench_release/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/workbench_release.log"
+    },
+    {
+      "test": "tests/e2e/smoke.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 57.65,
+      "rawLog": "out/test-artifacts/stage1/browser/smoke/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/smoke.log",
+      "failureSites": [
+        {
+          "suite": "smoke.py",
+          "line": 5504,
+          "function": "<module>"
+        },
+        {
+          "suite": "smoke.py",
+          "line": 2948,
+          "function": "main"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 2948
+    },
+    {
+      "test": "tests/e2e/premerge.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 147.61,
+      "rawLog": "out/test-artifacts/stage1/browser/premerge/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/premerge.log"
+    },
+    {
+      "test": "tests/e2e/sessions.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 77.82,
+      "rawLog": "out/test-artifacts/stage1/browser/sessions/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/sessions.log"
+    },
+    {
+      "test": "tests/e2e/looks.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 362.26,
+      "rawLog": "out/test-artifacts/stage1/browser/looks/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/looks.log",
+      "failureSites": [
+        {
+          "suite": "looks.py",
+          "line": 1014,
+          "function": "<module>"
+        },
+        {
+          "suite": "looks.py",
+          "line": 1006,
+          "function": "main"
+        },
+        {
+          "suite": "looks.py",
+          "line": 978,
+          "function": "hydrogen_bond_restrictions"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 978
+    },
+    {
+      "test": "tests/e2e/camera_depth.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 43.59,
+      "rawLog": "out/test-artifacts/stage1/browser/camera_depth/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/camera_depth.log"
+    },
+    {
+      "test": "tests/e2e/edit_picking.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 279.14,
+      "rawLog": "out/test-artifacts/stage1/browser/edit_picking/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/edit_picking.log",
+      "failureSites": [
+        {
+          "suite": "edit_picking.py",
+          "line": 470,
+          "function": "<module>"
+        },
+        {
+          "suite": "edit_picking.py",
+          "line": 460,
+          "function": "main"
+        },
+        {
+          "suite": "edit_picking.py",
+          "line": 381,
+          "function": "occlusion"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 381
+    },
+    {
+      "test": "tests/e2e/mode_consistency.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 46.58,
+      "rawLog": "out/test-artifacts/stage1/browser/mode_consistency/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/mode_consistency.log",
+      "failureSites": [
+        {
+          "suite": "mode_consistency.py",
+          "line": 174,
+          "function": "<module>"
+        },
+        {
+          "suite": "mode_consistency.py",
+          "line": 162,
+          "function": "main"
+        },
+        {
+          "suite": "mode_consistency.py",
+          "line": 80,
+          "function": "coordinate_row_actions"
+        }
+      ],
+      "baselineFailureClassification": "real pre-existing defect",
+      "baselineFailureLine": 80
+    },
+    {
+      "test": "tests/e2e/style_studio.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 15.06,
+      "rawLog": "out/test-artifacts/stage1/browser/style_studio/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/style_studio.log",
+      "failureSites": [
+        {
+          "suite": "style_studio.py",
+          "line": 250,
+          "function": "<module>"
+        },
+        {
+          "suite": "style_studio.py",
+          "line": 239,
+          "function": "main"
+        },
+        {
+          "suite": "style_studio.py",
+          "line": 141,
+          "function": "run"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 141
+    },
+    {
+      "test": "tests/e2e/appearance_scopes.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 79.97,
+      "rawLog": "out/test-artifacts/stage1/browser/appearance_scopes/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/appearance_scopes.log"
+    },
+    {
+      "test": "tests/e2e/properties_inspector.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 25.58,
+      "rawLog": "out/test-artifacts/stage1/browser/properties_inspector/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/properties_inspector.log",
+      "failureSites": [
+        {
+          "suite": "properties_inspector.py",
+          "line": 191,
+          "function": "<module>"
+        },
+        {
+          "suite": "properties_inspector.py",
+          "line": 173,
+          "function": "main"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 173
+    },
+    {
+      "test": "tests/e2e/properties_disclosures.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 40.89,
+      "rawLog": "out/test-artifacts/stage1/browser/properties_disclosures/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/properties_disclosures.log",
+      "failureSites": [
+        {
+          "suite": "properties_disclosures.py",
+          "line": 82,
+          "function": "<module>"
+        },
+        {
+          "suite": "properties_disclosures.py",
+          "line": 69,
+          "function": "main"
+        },
+        {
+          "suite": "properties_disclosures.py",
+          "line": 19,
+          "function": "check_panel"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 19
+    },
+    {
+      "test": "tests/e2e/floating_panels.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 44.31,
+      "rawLog": "out/test-artifacts/stage1/browser/floating_panels/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/floating_panels.log",
+      "failureSites": [
+        {
+          "suite": "floating_panels.py",
+          "line": 233,
+          "function": "<module>"
+        },
+        {
+          "suite": "floating_panels.py",
+          "line": 224,
+          "function": "main"
+        },
+        {
+          "suite": "floating_panels.py",
+          "line": 135,
+          "function": "live_workflows"
+        },
+        {
+          "suite": "floating_panels.py",
+          "line": 11,
+          "function": "drag"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 135
+    },
+    {
+      "test": "tests/e2e/workbench.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 28.49,
+      "rawLog": "out/test-artifacts/stage1/browser/workbench/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/workbench.log"
+    },
+    {
+      "test": "tests/e2e/workbench_consistency.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 39.86,
+      "rawLog": "out/test-artifacts/stage1/browser/workbench_consistency/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/workbench_consistency.log"
+    },
+    {
+      "test": "tests/e2e/workbench_bar.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 28.97,
+      "rawLog": "out/test-artifacts/stage1/browser/workbench_bar/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/workbench_bar.log"
+    },
+    {
+      "test": "tests/e2e/style_lab.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 25.17,
+      "rawLog": "out/test-artifacts/stage1/browser/style_lab/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/style_lab.log"
+    },
+    {
+      "test": "tests/e2e/appearance_controls.py",
+      "exitCode": 1,
+      "baselineExitCode": 1,
+      "seconds": 25.49,
+      "rawLog": "out/test-artifacts/stage1/browser/appearance_controls/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/appearance_controls.log",
+      "failureSites": [
+        {
+          "suite": "appearance_controls.py",
+          "line": 13,
+          "function": "<module>"
+        },
+        {
+          "suite": "properties_inspector.py",
+          "line": 173,
+          "function": "main"
+        }
+      ],
+      "baselineFailureClassification": "environment",
+      "baselineFailureLine": 173
+    },
+    {
+      "test": "tests/e2e/look_references.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 107.22,
+      "rawLog": "out/test-artifacts/stage1/browser/look_references/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/look_references.log"
+    },
+    {
+      "test": "tests/e2e/look_tiles.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 44.2,
+      "rawLog": "out/test-artifacts/stage1/browser/look_tiles/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/look_tiles.log"
+    },
+    {
+      "test": "tests/e2e/surface_schemes.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 17.48,
+      "rawLog": "out/test-artifacts/stage1/browser/surface_schemes/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/surface_schemes.log"
+    },
+    {
+      "test": "tests/e2e/surface_shadows.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "seconds": 31.97,
+      "rawLog": "out/test-artifacts/stage1/browser/surface_shadows/run.log",
+      "evidence": "tests/baselines/evidence/stage1/browser/surface_shadows.log"
+    },
+    {
+      "test": "tests/e2e/periodic_table.py",
+      "exitCode": 0,
+      "baselineExitCode": 0,
+      "verificationScope": "Supplemental direct periodic-table check captured during Stage 2; not part of the original suite sweep",
+      "verifiedSource": "Accepted Stage 1 app.js c1699483551b943833129cc7136cac6e699508aca7825f9f4aad69b8794d01be; exactMatch against the later direct-gate capture",
+      "evidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+      "logEvidence": "tests/baselines/evidence/stage2/periodic.log"
+    }
+  ],
+  "passed": 23,
+  "failed": 14,
+  "total": 37,
+  "outcomeChangesFromBaseline": [],
+  "countScope": "Original 36-entry-point sweep plus the later verified periodic_table.py gate. Historical aggregate 23 passing / 14 failing of 37; no new 37-suite sweep claimed.",
+  "originalSweepEntryPoints": 36,
+  "supplementalGateEvidence": "tests/baselines/evidence/stage2/periodic-table-proof.json.gz",
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "evidence": "tests/baselines/evidence/browser-repair/browser-results.json",
+    "environment": "local",
+    "comparison": "local 35/2/37 (historical), CI 34/3/37",
+    "ci": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/pre-gate-browser-results.json"
+    },
+    "requiredCiGate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": false
+    }
+  }
+}

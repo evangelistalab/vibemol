@@ -1,0 +1,145 @@
+{
+  "group": "editAtomsMenu*",
+  "baseCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "sourceAppSha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "localChecks": {
+    "makeCheck": "passed",
+    "javascriptUnitTests": {
+      "passing": 433,
+      "failing": 0
+    },
+    "pythonUnitTests": {
+      "passing": 16,
+      "failing": 0
+    }
+  },
+  "metrics": {
+    "before": {
+      "lines": 33037,
+      "functionDeclarations": 1181,
+      "letDeclarations": 291,
+      "constDeclarations": 590,
+      "sha256": "051ed5e1e77dd84610442642aa122c47e009475997717a2d699a7b00bec13a23"
+    },
+    "after": {
+      "lines": 33069,
+      "functionDeclarations": 1181,
+      "letDeclarations": 288,
+      "constDeclarations": 590,
+      "sha256": "bf43d66a9d6f256f2c2c882f0375d354731385327801dbf2f9e852920b2ce40a"
+    }
+  },
+  "conversion": {
+    "cacheBindings": 3,
+    "referenceSubstitutions": 9,
+    "existingFunctionDeclarationsAudited": 1190,
+    "exactAfterLexicalSubstitution": true,
+    "queryTimingPreserved": true,
+    "conversionNetLines": 0,
+    "userRequestedQaInfrastructureNetAppLines": 32,
+    "dependencyCount": 4,
+    "dependencyDefinition": "Three cache inputs plus the existing cacheElement helper; no new controller/module dependencies."
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "goldensUnchanged": true,
+    "floatTolerance": {
+      "rel": 1e-09,
+      "abs": 1e-12
+    },
+    "repeatExact": true,
+    "pixelDifferences": 0,
+    "identityContexts": 8,
+    "composition": {
+      "workbench": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "legacy": {
+        "live": 48,
+        "knownAbsent": 4
+      }
+    },
+    "allMinimaMet": true,
+    "countsEvidence": "tests/baselines/evidence/stage3/atoms/identity-firing-counts.json"
+  },
+  "manualVerification": {
+    "method": "Unchanged current suite main() replayed on tagged 1c609b3 and proposed source; real UI events, not a claim of human interaction. Only source root and evidence destination redirected.",
+    "matrix": [
+      {
+        "source": "tagged-base",
+        "suite": "edit_tool",
+        "exitCode": 0,
+        "seconds": 52.92,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/edit_tool/result.json"
+      },
+      {
+        "source": "tagged-base",
+        "suite": "build_panel",
+        "exitCode": 0,
+        "seconds": 25.07,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/build_panel/result.json"
+      },
+      {
+        "source": "tagged-base",
+        "suite": "floating_panels",
+        "exitCode": 0,
+        "seconds": 34.78,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/tagged-base/floating_panels/result.json"
+      },
+      {
+        "source": "proposed",
+        "suite": "edit_tool",
+        "exitCode": 0,
+        "seconds": 51.47,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/edit_tool/result.json"
+      },
+      {
+        "source": "proposed",
+        "suite": "build_panel",
+        "exitCode": 0,
+        "seconds": 18.96,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/build_panel/result.json"
+      },
+      {
+        "source": "proposed",
+        "suite": "floating_panels",
+        "exitCode": 0,
+        "seconds": 33.33,
+        "result": "tests/baselines/evidence/stage3/atoms/manual/proposed/floating_panels/result.json"
+      }
+    ],
+    "acceptedDefectsUnchanged": [
+      "axis_gizmo Escape interception prevents canvas focus",
+      "mode_consistency selection card covers Coordinates Delete",
+      "smoke issue #11 after second trajectory or vibration download"
+    ]
+  },
+  "heldElementColors": {
+    "productionConversionImported": false,
+    "integratedControllerDependencies": 19,
+    "heldProposalMeasuredDependencies": 11,
+    "deadReferenceIssue": 14,
+    "requestedCleanupRecount": "Ungrouped 18 after removing button; grouped remains ten non-DOM inputs plus els = 11 until another dependency is removed."
+  },
+  "knownAbsentIssues": [
+    14,
+    15
+  ],
+  "appearanceMaterialPresetIntermittent": {
+    "status": "open",
+    "localMaterialFamiliesPathExecuted": false,
+    "classification": "Pending this candidate own CI looks.py; local cache identity success does not classify a hang."
+  },
+  "browserCi": {
+    "status": "pending",
+    "required": {
+      "passing": 34,
+      "failing": 3,
+      "total": 37
+    },
+    "sameCandidateConjunctionRequired": true
+  }
+}

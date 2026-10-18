@@ -1,0 +1,32 @@
+{
+  "status": "passed",
+  "runId": 39092934677,
+  "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+  "attempt": 1,
+  "cacheRef": "refs/heads/codex/vibration-runtime",
+  "entries": [
+    {
+      "createdAt": "2026-10-18T03:15:41.066421Z",
+      "id": 9108282556,
+      "key": "Linux-X64-playwright-1.64.0-webkit",
+      "lastAccessedAt": "2026-10-18T03:15:41.066421Z",
+      "ref": "refs/heads/codex/vibration-runtime",
+      "sizeInBytes": 102454911,
+      "version": "b11b119dfd10565044882f81f06d3a75b1602bec6f8658ac905dd63583b2a885"
+    },
+    {
+      "createdAt": "2026-10-18T03:15:31.148394Z",
+      "id": 9108279587,
+      "key": "Linux-X64-playwright-1.64.0-chromium",
+      "lastAccessedAt": "2026-10-18T03:15:31.148394Z",
+      "ref": "refs/heads/codex/vibration-runtime",
+      "sizeInBytes": 293400131,
+      "version": "b11b119dfd10565044882f81f06d3a75b1602bec6f8658ac905dd63583b2a885"
+    }
+  ],
+  "cacheKeysIdenticalToWorkers": true,
+  "bothSaved": true,
+  "rawLogSha256": "e75bfb73573fc2529ff7d4e1fc76b54140874deed0ad1f793f98eb968d8b4b4e",
+  "acceptanceCiNotStarted": true,
+  "purpose": "Prepare browser binaries; not a test retry or merge gate."
+}

@@ -1,0 +1,33 @@
+{
+  "sourceCommit": "b8baed5236cb675fe3361b630e304de24dc01fea",
+  "moduleBindingsInspected": 2215,
+  "directIdCacheBindings": 322,
+  "detachedReferences": 26,
+  "detachedIds": 25,
+  "knownAbsentStageSlots": {
+    "elementColorBtn": 14,
+    "editAtomsMenuEl": 15,
+    "editAtomsMenuBodyEl": 15,
+    "editAtomsMenuCurrentEl": 15,
+    "editSelectionFragmentCuePopoverEl": 15
+  },
+  "composition": {
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 4
+    }
+  },
+  "elementColorsMeasuredDependencies": {
+    "before": 19,
+    "after": 11,
+    "landed": false
+  },
+  "cruftIssue": "https://github.com/evangelistalab/vibemol/issues/14",
+  "absentSlotsIssue": "https://github.com/evangelistalab/vibemol/issues/15",
+  "workbenchEditorReachable": true,
+  "remainingGroupsContainAdditionalDetachedNodes": false
+}

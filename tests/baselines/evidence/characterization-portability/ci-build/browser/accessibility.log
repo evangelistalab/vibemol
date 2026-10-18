@@ -1,0 +1,9 @@
+[axe light/View] 0 violating nodes; 4 need review; 197 pass
+[axe light/Measure] 0 violating nodes; 4 need review; 172 pass
+[axe light/Edit] 0 violating nodes; 6 need review; 219 pass
+[axe light/Calculations] 0 violating nodes; 7 need review; 184 pass
+[axe dark/View] 0 violating nodes; 4 need review; 197 pass
+[axe dark/Measure] 0 violating nodes; 4 need review; 172 pass
+[axe dark/Edit] 0 violating nodes; 6 need review; 219 pass
+[axe dark/Calculations] 0 violating nodes; 7 need review; 184 pass
+[axe] No new failing/incomplete targets against baseline. See report for existing findings.

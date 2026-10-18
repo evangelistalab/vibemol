@@ -1,0 +1,61 @@
+name: Edit tool 320 diagnostic (not a merge gate)
+
+on:
+  push:
+    branches: [codex/edit-tool-320-diagnostic]
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    name: Numeric readback (${{ matrix.label }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: integration
+            ref: e35da9ca4721ad0645f9b0744aa38bfd9ca4b18d
+          - label: symmetry
+            ref: 537e95ff462b5f2eb5fd6d3518e4525c0ea18e2f
+    steps:
+      - name: Check out harness
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check out immutable source under test
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.ref }}
+          path: source-under-test
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install original CI Playwright version
+        run: python -m pip install -r source-under-test/api/requirements.txt playwright==1.64.0
+      - name: Install Chromium and Linux dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Record Python dependencies
+        run: python -m pip freeze > diagnostic-dependencies.txt
+      - name: Run unchanged edit_tool once with numeric observation
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/edit-tool-320-pycache
+        run: >-
+          python tools/diagnostics/edit_tool_320.py
+          --source-root source-under-test
+          --artifacts out/diagnostic-${{ matrix.label }}
+          --label ${{ matrix.label }}
+      - name: Preserve all diagnostic evidence on pass or failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edit-tool-320-${{ matrix.label }}
+          path: |
+            out/diagnostic-${{ matrix.label }}/
+            diagnostic-dependencies.txt
+            tools/diagnostics/edit_tool_320.py
+            .github/workflows/edit-tool-320-diagnostic.yml
+          if-no-files-found: error

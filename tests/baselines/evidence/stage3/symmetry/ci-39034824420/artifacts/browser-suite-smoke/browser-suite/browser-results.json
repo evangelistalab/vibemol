@@ -1,0 +1,61 @@
+{
+  "sourceAppSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+  "expected": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "suites": [
+    {
+      "test": "tests/e2e/smoke.py",
+      "exitCode": 1,
+      "seconds": 413.04,
+      "wallTimeSeconds": 413.04,
+      "testSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+      "rawLog": "out/test-artifacts/browser-suite/smoke/run.log",
+      "firstFailure": {
+        "suite": "ci_gate_diagnostics.py",
+        "line": 88,
+        "function": "wait_for_video_idle"
+      },
+      "failureCallSite": {
+        "suite": "smoke.py",
+        "line": 4531,
+        "function": "main"
+      },
+      "exceptionType": "TimeoutError",
+      "failureWorkflow": {
+        "id": "issue-11-stop-after-second-download",
+        "site": "vibration"
+      },
+      "knownDefect": true
+    }
+  ],
+  "method": "Each assigned entry point runs once, sequentially within this shard; the join asserts the aggregate gate.",
+  "timingMethod": "time.monotonic wall time around each suite subprocess; includes browser/server startup",
+  "artifactIdentity": {
+    "commit": "92842ae1777dc1abad798dc09388c30844b6e07e",
+    "tree": "f7e99c3fb3740d93aa5d9d8e1cb6658764f760de",
+    "appSha256": "40853e5b547e34e8fa9e7dddcc5d11d4df50fe7186de1d9dad4130d302cfc95c",
+    "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+    "goldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+    "manifestSha256": "371a7c19ec564aa751869aca5352e33ecdf8f12ce5e75054cdd481ace916ca66",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39034824420",
+    "ciRunAttempt": "1"
+  },
+  "shard": "smoke",
+  "shardPlanSha256": "2a4ff210d359a5d85726a6ec16d2f242f744a6a7d8ad839f5bd8cd6d251d98c9",
+  "executionComplete": true,
+  "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39034824420",
+  "passed": 0,
+  "failed": 1,
+  "total": 1,
+  "unexpectedFailures": [],
+  "matchesAcceptedBaseline": null,
+  "aggregationRequired": true,
+  "issue11Workflow": {
+    "id": "issue-11-stop-after-second-download",
+    "site": "vibration"
+  },
+  "wallTimeSeconds": 413.07
+}

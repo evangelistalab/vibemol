@@ -1,0 +1,17 @@
+{
+  "issue": 21,
+  "status": "closed test synchronization",
+  "authority": "Direct human instruction in this chat",
+  "diagnostic": "https://github.com/evangelistalab/vibemol/actions/runs/39129507791",
+  "oldExpectationInvalidated": "100ms does not imply compact=true/presented",
+  "unchangedComparison": "scrollWidth <= clientWidth +1",
+  "newReadiness": "Observe compact=true at320, then cross a presentation boundary",
+  "gate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "noProductionChange": true,
+  "originalFailuresRemainHistorical": true,
+  "productFlashQuestion": "nonblocking; separate low-priority issue only if presented"
+}

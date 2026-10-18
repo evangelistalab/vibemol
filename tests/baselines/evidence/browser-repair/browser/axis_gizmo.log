@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<repo>/tests/e2e/axis_gizmo.py", line 179, in <module>
+    if __name__=='__main__':main()
+  File "<repo>/tests/e2e/axis_gizmo.py", line 170, in main
+    run(page,url);assert not errors,errors
+  File "<repo>/tests/e2e/axis_gizmo.py", line 130, in run
+    page.keyboard.press('Escape');assert page.locator('#canvas').evaluate('el=>el===document.activeElement')
+AssertionError

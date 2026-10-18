@@ -1,0 +1,33 @@
+{
+  "verifiedAt": "2026-10-17T22:18:50.295320+00:00",
+  "integrationCommit": "a418a284070603b258a8e64f74cfe9746cdbc0a0",
+  "candidateHead": "d2f1958302632666d66d91a6ea3e23440fc49501",
+  "testedBase": "6c583556bcc84bff9442602a7dd8aed056b4a660",
+  "entireTree": "f9ae773665a4f359d5c53387b30e664b25e11204",
+  "entireTreeIdenticalToTestedCandidate": true,
+  "mergeParentsExact": true,
+  "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
+  "sourcePubchemSha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "trackedLet": 262,
+  "newControllerDependencies": 13,
+  "periodicFactoryInputs": [
+    "THREE",
+    "ATOM_Z_TO_DATA",
+    "ATOM_SYMBOL_TO_Z",
+    "UI_PALETTE",
+    "getActiveElementHexColor",
+    "getElementSymbol",
+    "getElementName",
+    "editAppearanceSettings",
+    "exportElementColorOverrides",
+    "normalizeHexColor",
+    "els"
+  ],
+  "remoteCommit": "a418a284070603b258a8e64f74cfe9746cdbc0a0",
+  "pushed": true,
+  "userEditPreserved": true,
+  "userEditOnlyDirtyPath": ".gitignore",
+  "mailbox": "retired",
+  "monitor": "paused by direct human request"
+}

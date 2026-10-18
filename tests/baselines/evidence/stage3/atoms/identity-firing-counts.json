@@ -1,0 +1,202 @@
+[
+  {
+    "run": 1,
+    "launch": "workbench",
+    "theme": "light",
+    "composition": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "checksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 408,
+      "DOM replacement": 5321,
+      "session restore": 1,
+      "panel transition": 1070
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 5,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 4,
+    "observedModeChecks": 404
+  },
+  {
+    "run": 1,
+    "launch": "workbench",
+    "theme": "dark",
+    "composition": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "checksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 408,
+      "DOM replacement": 5431,
+      "session restore": 1,
+      "panel transition": 1058
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 5,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 4,
+    "observedModeChecks": 404
+  },
+  {
+    "run": 1,
+    "launch": "legacy",
+    "theme": "light",
+    "composition": {
+      "live": 48,
+      "knownAbsent": 4
+    },
+    "checksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 9,
+      "DOM replacement": 2969,
+      "session restore": 1,
+      "panel transition": 678
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 4,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 3,
+    "observedModeChecks": 6
+  },
+  {
+    "run": 1,
+    "launch": "legacy",
+    "theme": "dark",
+    "composition": {
+      "live": 48,
+      "knownAbsent": 4
+    },
+    "checksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 9,
+      "DOM replacement": 3083,
+      "session restore": 1,
+      "panel transition": 681
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 4,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 3,
+    "observedModeChecks": 6
+  },
+  {
+    "run": 2,
+    "launch": "workbench",
+    "theme": "light",
+    "composition": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "checksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 408,
+      "DOM replacement": 5318,
+      "session restore": 1,
+      "panel transition": 1049
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 5,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 4,
+    "observedModeChecks": 404
+  },
+  {
+    "run": 2,
+    "launch": "workbench",
+    "theme": "dark",
+    "composition": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "checksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 408,
+      "DOM replacement": 5430,
+      "session restore": 1,
+      "panel transition": 1055
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 39,
+      "mode switch": 5,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 4,
+    "observedModeChecks": 404
+  },
+  {
+    "run": 2,
+    "launch": "legacy",
+    "theme": "light",
+    "composition": {
+      "live": 48,
+      "knownAbsent": 4
+    },
+    "checksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 9,
+      "DOM replacement": 2967,
+      "session restore": 1,
+      "panel transition": 669
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 4,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 3,
+    "observedModeChecks": 6
+  },
+  {
+    "run": 2,
+    "launch": "legacy",
+    "theme": "dark",
+    "composition": {
+      "live": 48,
+      "knownAbsent": 4
+    },
+    "checksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 9,
+      "DOM replacement": 3080,
+      "session restore": 1,
+      "panel transition": 681
+    },
+    "minimumChecksByReason": {
+      "presented checkpoint": 32,
+      "mode switch": 4,
+      "panel transition": 2,
+      "DOM replacement": 1,
+      "session restore": 1
+    },
+    "explicitModeChecks": 3,
+    "observedModeChecks": 6
+  }
+]

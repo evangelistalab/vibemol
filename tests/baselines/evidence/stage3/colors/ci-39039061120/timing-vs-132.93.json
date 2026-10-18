@@ -1,0 +1,91 @@
+{
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39039061120",
+  "head": "37200658972b658c0ef4c101efe5d993d39d7c18",
+  "attempt": 1,
+  "conclusion": "success",
+  "createdAt": "2026-10-17T14:02:32Z",
+  "lastJobCompletedAt": "2026-10-17T14:36:10Z",
+  "workflowSeconds": 2018.0,
+  "workflowMinutes": 33.63333333333333,
+  "baselineMinutes": 132.93,
+  "savedMinutes": 99.29666666666667,
+  "reductionPercent": 74.69846285012162,
+  "speedup": 3.952329038652131,
+  "jobSeconds": {
+    "Characterization (1)": 993.0,
+    "Browser suites (balanced-2)": 1087.0,
+    "Characterization (2)": 987.0,
+    "WebKit Properties interactions": 96.0,
+    "Browser suites (balanced-3)": 1476.0,
+    "checks-and-unit": 20.0,
+    "Browser suites (balanced-1)": 1313.0,
+    "Browser suites (smoke)": 772.0,
+    "Browser suites (looks)": 1989.0,
+    "Exact characterization repeat and goldens": 18.0,
+    "Aggregate browser gate (34/3/37)": 23.0
+  },
+  "shards": [
+    {
+      "shard": "balanced-1",
+      "suites": 11,
+      "subprocessSeconds": 1271.76,
+      "batchSeconds": 1271.77,
+      "jobSeconds": 1313.0
+    },
+    {
+      "shard": "balanced-2",
+      "suites": 12,
+      "subprocessSeconds": 1048.12,
+      "batchSeconds": 1048.12,
+      "jobSeconds": 1087.0
+    },
+    {
+      "shard": "balanced-3",
+      "suites": 12,
+      "subprocessSeconds": 1432.19,
+      "batchSeconds": 1432.21,
+      "jobSeconds": 1476.0
+    },
+    {
+      "shard": "looks",
+      "suites": 1,
+      "subprocessSeconds": 1951.74,
+      "batchSeconds": 1951.74,
+      "jobSeconds": 1989.0
+    },
+    {
+      "shard": "smoke",
+      "suites": 1,
+      "subprocessSeconds": 735.89,
+      "batchSeconds": 735.94,
+      "jobSeconds": 772.0
+    }
+  ],
+  "lastWorker": "Browser suites (looks)",
+  "lastJob": "Aggregate browser gate (34/3/37)",
+  "characterizationWorkerSeconds": {
+    "1": 943.77,
+    "2": 946.76
+  },
+  "characterizationJoinSeconds": 18.0,
+  "browserJoinSeconds": 23.0,
+  "cache": {
+    "restoreHits": 0,
+    "restoreMisses": 8,
+    "hitJobs": [],
+    "missJobs": [
+      "Browser suites (balanced-1)",
+      "Browser suites (balanced-2)",
+      "Browser suites (balanced-3)",
+      "Browser suites (looks)",
+      "Browser suites (smoke)",
+      "Characterization (1)",
+      "Characterization (2)",
+      "WebKit Properties interactions"
+    ],
+    "playwrightVersions": [
+      "1.64.0"
+    ]
+  },
+  "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+}

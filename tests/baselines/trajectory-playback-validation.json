@@ -1,0 +1,328 @@
+{
+  "status": "local verification complete",
+  "group": "5a trajectory playback core",
+  "base": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+  "appSha256": "f3c5e0759afd86c2bcc73821ef1b0c13cd8aec8883513fc0aafd94b9448ac9d2",
+  "moduleSha256": "18fe3450a725a12b70011bf9ce316b0846b5475c738795d713f113632fd61a55",
+  "qaSha256": "e2ce28006c95b93ec193c406bea3d0555e462739465c32860b0ca0c7211a5c88",
+  "trackedLetBefore": 262,
+  "trackedLetAfter": 260,
+  "appLines": 32385,
+  "appDirectFunctionDeclarations": 1163,
+  "controllerInputs": [
+    "getSceneGraphController",
+    "getActiveRecord",
+    "TrajectoryClock",
+    "applyAtomCoordinateFrame",
+    "markSessionChanged",
+    "isEditMode",
+    "syncTrajectoryControls",
+    "getVideoController"
+  ],
+  "controllerDependencyCount": 8,
+  "periodicFactoryDependencyCount": 11,
+  "sourceAudit": {
+    "status": "passed",
+    "checks": 1220,
+    "proof": {
+      "wholeAppReconstructed": true,
+      "movedFunctionCount": 27,
+      "originalDeclarationCount": 1172,
+      "unchangedDeclarationCount": 1143,
+      "allExistingDeclarationsAccounted": true,
+      "allDepsUsed": true,
+      "noHiddenAppClosureReferences": true,
+      "ambientGlobals": [
+        "Array",
+        "Float32Array",
+        "Math",
+        "Number",
+        "Object",
+        "String"
+      ]
+    }
+  },
+  "differential": {
+    "status": "passed",
+    "scenarios": 109,
+    "checkpoints": 2559,
+    "constructorDependencyCalls": 0
+  },
+  "manualMatrix": {
+    "status": "passed",
+    "contexts": 8,
+    "taggedContexts": 4,
+    "proposedContexts": 4,
+    "comparandsExactAcrossSources": true,
+    "seconds": 91.16790445800001,
+    "harnessSha256": "c5ea953c0c3c4a9b3199ae86ded920a8526330717d3d6c3ea21b3c1a413b8746"
+  },
+  "soak": {
+    "status": "passed",
+    "contexts": 4,
+    "seconds": 281.072716916,
+    "checkpoints": 32,
+    "harnessSha256": "16f553a0a0616b0f7db780d69d191a9f948b32a30cda17546fe805ad905c8b31"
+  },
+  "constructionOrder": {
+    "status": "passed",
+    "appBindings": 29,
+    "moduleBindings": 129,
+    "retroStages1to4Passed": true,
+    "originalPubchemNegativeControlRejected": true,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  },
+  "checksAndUnit": {
+    "status": "passed",
+    "js": 433,
+    "python": 34
+  },
+  "characterization": {
+    "status": "passed",
+    "runs": 2,
+    "captures": 102,
+    "exactSerializedRepeat": true,
+    "goldensUnchanged": true,
+    "identityContexts": 8,
+    "identityCounts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5324,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5433,
+          "session restore": 1,
+          "panel transition": 1058
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2970,
+          "session restore": 1,
+          "panel transition": 669
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3083,
+          "session restore": 1,
+          "panel transition": 687
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5319,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5430,
+          "session restore": 1,
+          "panel transition": 1061
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2968,
+          "session restore": 1,
+          "panel transition": 672
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3081,
+          "session restore": 1,
+          "panel transition": 681
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "pixelChanges": [],
+    "seconds": 1047.13,
+    "browserVersion": "145.0.7632.6"
+  },
+  "issue11": {
+    "hypothesis": "refuted",
+    "productDefectOpen": true,
+    "gatePolicy": "Any changed site/shape/disappearance is a stop",
+    "referenceCi": 39071994182,
+    "expectedWorkflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    }
+  },
+  "ci": "Not run yet; own first automatic ordinary conjunction still required",
+  "collectorDiagnostics": "Preserved failed collector setup: CJS module variable name, map(Array.from) callback arity, portable session missing master playing/timestamp fields, and ordinary file picker append semantics. No shipped assertion, expected value, wait or production bug was changed to pass a test.",
+  "completion": {
+    "status": "merged and pushed",
+    "integration": "7f9f9f9d01b3ec56e339b9bb4221db7e819338d1",
+    "humanCorrectedGate": {
+      "passed": 33,
+      "failed": 4,
+      "total": 37
+    },
+    "runId": 39086927339,
+    "attempt": 1,
+    "evidence": "tests/baselines/evidence/stage5/trajectory/ci-39086927339/corrected-gate",
+    "originalGithubAggregateStillFailed": true,
+    "noRetry": true,
+    "trackedLetAfter": 260
+  }
+}

@@ -1,0 +1,37 @@
+{
+  "timeout": null,
+  "before": {
+    "requested": {
+      "width": 720,
+      "height": 794
+    },
+    "applied": {
+      "cssWidth": 720,
+      "cssHeight": 794,
+      "bufferWidth": 720,
+      "bufferHeight": 794,
+      "dpr": 1
+    },
+    "canvas": {
+      "width": 720,
+      "height": 794
+    }
+  },
+  "after": {
+    "requested": {
+      "width": 720,
+      "height": 794
+    },
+    "applied": {
+      "cssWidth": 720,
+      "cssHeight": 794,
+      "bufferWidth": 720,
+      "bufferHeight": 794,
+      "dpr": 1
+    },
+    "canvas": {
+      "width": 720,
+      "height": 794
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "status": "passed",
+  "sourceCommit": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+  "modules": [
+    {
+      "file": "assets/app/js/trajectory-playback.js",
+      "factory": "createTrajectoryPlaybackController",
+      "dependencyCount": 8,
+      "expectedCount": 8,
+      "allInputsUsed": true,
+      "inputs": [
+        {
+          "name": "getSceneGraphController",
+          "references": 7
+        },
+        {
+          "name": "getActiveRecord",
+          "references": 1
+        },
+        {
+          "name": "TrajectoryClock",
+          "references": 4
+        },
+        {
+          "name": "applyAtomCoordinateFrame",
+          "references": 1
+        },
+        {
+          "name": "markSessionChanged",
+          "references": 1
+        },
+        {
+          "name": "isEditMode",
+          "references": 2
+        },
+        {
+          "name": "syncTrajectoryControls",
+          "references": 9
+        },
+        {
+          "name": "getVideoController",
+          "references": 8
+        }
+      ],
+      "sha256": "18fe3450a725a12b70011bf9ce316b0846b5475c738795d713f113632fd61a55"
+    },
+    {
+      "file": "assets/app/js/vibration.js",
+      "factory": "createVibrationController",
+      "dependencyCount": 13,
+      "expectedCount": 13,
+      "allInputsUsed": true,
+      "inputs": [
+        {
+          "name": "els",
+          "references": 63
+        },
+        {
+          "name": "getActiveRecord",
+          "references": 1
+        },
+        {
+          "name": "snapshotAtomCoordinates",
+          "references": 1
+        },
+        {
+          "name": "applyAtomCoordinateFrame",
+          "references": 3
+        },
+        {
+          "name": "markSessionChanged",
+          "references": 1
+        },
+        {
+          "name": "isEditMode",
+          "references": 1
+        },
+        {
+          "name": "UI_PALETTE",
+          "references": 7
+        },
+        {
+          "name": "escapeHtml",
+          "references": 5
+        },
+        {
+          "name": "getVideoController",
+          "references": 13
+        },
+        {
+          "name": "setTooltipText",
+          "references": 1
+        },
+        {
+          "name": "setMotionPanelButtonGlyph",
+          "references": 2
+        },
+        {
+          "name": "setVibrationPanelOpen",
+          "references": 1
+        },
+        {
+          "name": "updateDisplayWindowAdaptiveMenuUi",
+          "references": 3
+        }
+      ],
+      "sha256": "90d0cb0d570c4dc367025482815d8ccc82ddca72fe08bb999135a3254abd1732"
+    },
+    {
+      "file": "assets/app/js/symmetry-panel.js",
+      "factory": "createSymmetryPanelController",
+      "dependencyCount": 11,
+      "expectedCount": 11,
+      "allInputsUsed": true,
+      "inputs": [
+        {
+          "name": "els",
+          "references": 53
+        },
+        {
+          "name": "Symmetry",
+          "references": 3
+        },
+        {
+          "name": "resolveEditSymmetryTarget",
+          "references": 2
+        },
+        {
+          "name": "resolveVolumeAtomId",
+          "references": 1
+        },
+        {
+          "name": "workspaceEnabled",
+          "references": 1
+        },
+        {
+          "name": "isEditMode",
+          "references": 1
+        },
+        {
+          "name": "clearSymmetryElementGuide",
+          "references": 3
+        },
+        {
+          "name": "renderSymmetryElementGuide",
+          "references": 1
+        },
+        {
+          "name": "positionSymmetryPopover",
+          "references": 2
+        },
+        {
+          "name": "updateEditAdaptiveMenuUi",
+          "references": 2
+        },
+        {
+          "name": "setHintMessage",
+          "references": 2
+        }
+      ],
+      "sha256": "59f3a599f6c97e9c070ff293f9b518402f328b9763edac4a53d6d82b73e5eb64"
+    },
+    {
+      "file": "assets/app/js/periodic-table.js",
+      "factory": "createPeriodicTableController",
+      "dependencyCount": 11,
+      "expectedCount": 11,
+      "allInputsUsed": true,
+      "inputs": [
+        {
+          "name": "THREE",
+          "references": 23
+        },
+        {
+          "name": "ATOM_Z_TO_DATA",
+          "references": 4
+        },
+        {
+          "name": "ATOM_SYMBOL_TO_Z",
+          "references": 4
+        },
+        {
+          "name": "UI_PALETTE",
+          "references": 2
+        },
+        {
+          "name": "getActiveElementHexColor",
+          "references": 6
+        },
+        {
+          "name": "getElementSymbol",
+          "references": 1
+        },
+        {
+          "name": "getElementName",
+          "references": 1
+        },
+        {
+          "name": "editAppearanceSettings",
+          "references": 3
+        },
+        {
+          "name": "exportElementColorOverrides",
+          "references": 2
+        },
+        {
+          "name": "normalizeHexColor",
+          "references": 2
+        },
+        {
+          "name": "els",
+          "references": 38
+        }
+      ],
+      "sha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a"
+    },
+    {
+      "file": "assets/app/js/pubchem.js",
+      "factory": "createPubChemController",
+      "dependencyCount": 13,
+      "expectedCount": 13,
+      "allInputsUsed": true,
+      "inputs": [
+        {
+          "name": "els",
+          "references": 26
+        },
+        {
+          "name": "escapeHtml",
+          "references": 2
+        },
+        {
+          "name": "setTooltipText",
+          "references": 1
+        },
+        {
+          "name": "setHintMessage",
+          "references": 2
+        },
+        {
+          "name": "parseXYZ",
+          "references": 1
+        },
+        {
+          "name": "handleSceneDropRecords",
+          "references": 1
+        },
+        {
+          "name": "setVolumes",
+          "references": 1
+        },
+        {
+          "name": "setCurrentIndex",
+          "references": 1
+        },
+        {
+          "name": "clearSceneMeshes",
+          "references": 1
+        },
+        {
+          "name": "clearEditHistory",
+          "references": 1
+        },
+        {
+          "name": "appendParsedVolumeRecord",
+          "references": 1
+        },
+        {
+          "name": "finalizeLoadedVolumes",
+          "references": 1
+        },
+        {
+          "name": "setNavigationHint",
+          "references": 1
+        }
+      ],
+      "sha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5"
+    }
+  ],
+  "method": "Babel lexical-binding reference recount of every explicit deps property, not a formal-parameter or call-site count."
+}

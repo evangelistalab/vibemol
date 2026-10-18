@@ -21,12 +21,12 @@
       </div>
       <div id="inspectorObject" class="vm-properties-body" role="tabpanel" aria-labelledby="inspectorObjectTab">
         <p id="inspectorSelection" class="vm-stat-label" aria-live="polite"></p>
-        <p id="inspectorEmpty" class="vm-session-status">Select a structure or orbital in Scenes to edit its properties. Use ⌘/Ctrl-click to select several objects.</p>
+        <p id="inspectorEmpty" class="vm-helper-text">Select a structure or orbital in Scenes to edit its properties. Use ⌘/Ctrl-click to select several objects.</p>
         <section id="inspectorSelectionSection" class="vm-appearance-section"><div id="inspectorVisibilityFields"></div></section>
         <section id="inspectorStructure" class="vm-appearance-section"><h3 id="inspectorStructureTitle" class="vm-section-label">Structure</h3><div id="inspectorStructureFields"></div></section>
       </div>
       <div id="inspectorLook" class="vm-properties-body" role="tabpanel" aria-labelledby="inspectorLookTab" hidden>
-        <p class="vm-session-status vm-properties-scope">Style and color scheme apply across the workspace. Object colors and opacity can override them.</p>
+        <p class="vm-helper-text vm-properties-scope">Style and color scheme apply across the workspace. Object colors and opacity can override them.</p>
       </div>`;
     document.body.append(panel);
     const lookBody = $('inspectorLook'), objectBody = $('inspectorObject');
@@ -49,7 +49,7 @@
     const twoComponent = $('appearanceTwoComponentSection');
     twoComponent.querySelector('.vm-section-label').textContent = 'Two-component display';
     $('twoComponentModeRow').querySelector('.vm-field-label').textContent = 'Component';
-    const twoNote = document.createElement('p'); twoNote.className = 'vm-session-status';
+    const twoNote = document.createElement('p'); twoNote.className = 'vm-helper-text';
     twoNote.textContent = 'Applies to all loaded two-component files.'; twoComponent.append(twoNote);
     $('appearanceBackgroundColor').setAttribute('data-tooltip', 'Workspace background, included in the color scheme.');
     // Legacy preset adapters retain their bound backing values off-DOM. The

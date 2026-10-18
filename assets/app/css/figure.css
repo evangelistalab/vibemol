@@ -1,9 +1,9 @@
-.vm-figure { position: fixed; top: 80px; right: 24px; width: min(400px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); font: var(--vm-text-sm) var(--vm-font-sans); }
+.vm-figure { position: fixed; top: 80px; right: 24px; width: min(400px, calc(100vw - 24px)); max-height: calc(100dvh - 96px); font: var(--vm-type-data-weight) var(--vm-type-data-size)/var(--vm-leading-body) var(--vm-font-sans); }
 .vm-figure [hidden] { display: none !important; }
 .vm-figure .vm-list-popover__body { padding: 8px 12px 12px; }
 .vm-figure section, .vm-figure-camera { margin: 12px 0; padding: 10px 0 0; border: 0; border-top: 1px solid var(--vm-color-border); min-width: 0; }
 .vm-figure .vm-field-control > :is(input:not([type='checkbox']),select) { min-width: 0; width: 100%; }
-.vm-figure-note { color: var(--vm-color-text-secondary); font-size: var(--vm-text-sm); line-height: 1.5; margin: 8px 0; overflow-wrap: anywhere; }
+.vm-figure-note { color: var(--vm-color-text-secondary); font-size: var(--vm-type-helper-size); font-weight: var(--vm-type-helper-weight); line-height: var(--vm-leading-body); margin: 8px 0; overflow-wrap: anywhere; }
 .vm-figure-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
 .vm-figure-row > .vm-section-label { margin-right: auto; }
 .vm-figure-targets { margin: 8px 0; padding: 0; list-style: none; max-height: 240px; overflow: auto; }
@@ -15,5 +15,5 @@
 .vm-figure-preview img { display: block; width: 100%; height: auto; }
 .vm-figure-preview span { padding: 16px; color: var(--vm-color-text-secondary); }
 .vm-figure-freeze { position: fixed; pointer-events: none; z-index: 29; }
-.vm-figure-busy { position: fixed; inset: 0; z-index: 20001; display: grid; place-content: center; justify-items: center; gap: 16px; background: rgba(20,28,40,.65); color: white; font: var(--vm-text-base) var(--vm-font-sans); }
+.vm-figure-busy { position: fixed; inset: 0; z-index: 20001; display: grid; place-content: center; justify-items: center; gap: 16px; background: rgba(20,28,40,.65); color: white; font: var(--vm-type-body-weight) var(--vm-type-body-size)/var(--vm-leading-body) var(--vm-font-sans); }
 .vm-figure-busy[hidden] { display: none; }

@@ -1,0 +1,12 @@
+{
+  "firstProbeRun": "https://github.com/evangelistalab/vibemol/actions/runs/38108824029",
+  "firstProbeHead": "cd1efbf9a797cd179a51c32a6bde9b462d629688",
+  "smoke": "Cancelled/superseded; NOT valid unbounded-wait proof",
+  "editPicking": "Suite passed and dimensions settled, but async helper did not establish a valid unbounded predicate wait; superseded for that discriminator",
+  "observerProblem": "A native capture-listener microtask executed before the actual target click listener; moved the after-click observer to a later target listener.",
+  "waitProblem": "Playwright 1.60 checks the immediate predicate return for truthiness. An async predicate returns a truthy Promise even when it resolves false. The original presented-state helper could therefore falsely pass.",
+  "fix": "Separate two-frame presentation boundary from synchronous wait_for_function predicate; timeout=0 for both app-state probes. No sleeps or timeout retries.",
+  "negativeControl": "local-wait-negative-control.json",
+  "supersededSecondRun": "https://github.com/evangelistalab/vibemol/actions/runs/38109368959",
+  "productionJsChanged": false
+}

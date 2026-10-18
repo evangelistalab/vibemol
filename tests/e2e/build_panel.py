@@ -16,7 +16,10 @@ def run(page, url):
     assert open_menu(page).get_by_role('menuitemcheckbox',name='Build',exact=True).count()==0
     page.keyboard.press('Escape')
     mode(page,'Edit')
-    open_menu(page).get_by_role('menuitemcheckbox',name='Build',exact=True).click()
+    # 5f6a390 (v0.9.2): empty scenes enter Build with its palette already open.
+    row=open_menu(page).get_by_role('menuitemcheckbox',name='Build',exact=True)
+    assert row.get_attribute('aria-checked')=='true'
+    page.keyboard.press('Escape')
     assert build.is_visible() and build.get_attribute('data-wb-placement')=='right'
     bounded_build(page,build)
 
@@ -118,7 +121,9 @@ def run(page, url):
     # Explicit legacy launches retain the popup and close-on-selection behavior.
     page.goto(url+'?workspaceLab=0&appearanceStudy=1')
     page.wait_for_function('()=>window.VibeMolTesting')
-    page.locator('#modeEditBtn').click();trigger.click()
+    # The same 5f6a390 empty-scene default applies to explicit legacy launches.
+    page.locator('#modeEditBtn').click()
+    assert build.is_visible()
     search.fill('carbon');search.press('Enter')
     assert build.is_hidden() and build.get_attribute('data-wb-panel') is None
     print('[build panel] placement, persistent selection, docking, mode suspension, layouts, mobile and legacy: passed',flush=True)
