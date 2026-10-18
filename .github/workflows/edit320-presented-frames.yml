@@ -40,7 +40,7 @@ jobs:
       - name: Observe native320px presentation on three sources, three times each
         env:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/edit320-frame-pycache
-        run: python tools/diagnostics/edit320_presented_frames.py
+        run: xvfb-run -a python tools/diagnostics/edit320_presented_frames.py
       - name: Preserve frame evidence regardless of observation outcome
         if: always()
         uses: actions/upload-artifact@v4

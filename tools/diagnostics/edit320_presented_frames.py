@@ -48,6 +48,8 @@ class Page:
     def __init__(self,page,report,save,out):
         self.page,self.report,self.save,self.out=page,report,save,out
         self.cdp=page.context.new_cdp_session(page);self.active=False
+        self.cdp.send('Page.enable')
+        self.cdp.send('Page.bringToFront')
         self.cdp.on('Page.screencastFrame',self.frame)
     def frame(self,event):
         index=len(self.report['screencastFrames'])
@@ -91,12 +93,13 @@ for repetition,label,source in [(rep,label,source) for rep in [1,2,3] for label,
     report={'label':label,'repetition':repetition,'sourceCommit':expected['commit'],'sourceTree':expected['tree'],'github':{k:os.environ.get(k) for k in ['GITHUB_RUN_ID','GITHUB_RUN_ATTEMPT','GITHUB_SHA','ImageOS','ImageVersion','RUNNER_NAME']},'playwrightVersion':importlib.metadata.version('playwright'),'sourceAppSha256':hashlib.sha256((source/'assets/app/js/app.js').read_bytes()).hexdigest(),
             'harnessSha256':hashlib.sha256((harness/'tests/e2e/edit_tool.py').read_bytes()).hexdigest(),
             'widths':[],'screencastFrames':[],'productionSourceChanged':False,'diagnosticOnly':True,'usableAsMergeGate':False,
+            'presentationEnvironment':'Foreground Chromium under Xvfb; Page domain explicitly enabled. Prior headless run39133050593 emitted no compositor rasters and is preserved as an incomplete pixel observation.',
             'frameProbeLimitation':'Compositor screencast plus read-only requestAnimationFrame attribute sampling can affect timing. The probe observes a possible visible transient; it never drives compact state or refreshes Workbench.'}
     assert report['sourceAppSha256']==expected['hashes']['assets/app/js/app.js']
     def save():(dest/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     started=time.monotonic();save()
     with suite.p.run_http_server(source) as url,suite.p.sync_playwright() as pw:
-        browser=pw.chromium.launch(headless=True,args=['--use-angle=swiftshader'])
+        browser=pw.chromium.launch(headless=False,args=['--use-angle=swiftshader'])
         report['browserVersion']=browser.version
         page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
         page.add_init_script(INIT);page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
