@@ -1,0 +1,58 @@
+name: Accessibility hint timing diagnostic (not a gate)
+on:
+  push:
+    branches: [codex/accessibility-hint-diagnostic]
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        source:
+          - 1c609b338344aaa49ffd11b9ee2ad834a6e0d85d
+          - 04eaf660607072b6f4bebafa3f8daef92a92afe8
+          - 323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install the pinned ordinary browser
+        run: |
+          python -m pip install -r api/requirements.txt playwright==1.64.0
+          python -m playwright install --with-deps chromium
+      - name: Observe the unchanged full suite three times
+        env:
+          DIAG_SOURCE: ${{ matrix.source }}
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/hint-diagnostic-pycache
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json,os,subprocess
+          root=Path.cwd();temp=Path(os.environ['RUNNER_TEMP']);source=os.environ['DIAG_SOURCE']
+          harness=temp/'unchanged-harness';target=temp/'immutable-source';out=root/'out/test-artifacts/hint-diagnostic';out.mkdir(parents=True)
+          for sha,destination in [('323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea',harness),(source,target)]:
+              destination.mkdir()
+              archive=subprocess.check_output(['git','archive',sha])
+              subprocess.run(['tar','-x','-C',str(destination)],input=archive,check=True)
+          statuses=[]
+          for repeat in [1,2,3]:
+              destination=out/f'run-{repeat}'
+              with (out/f'run-{repeat}.log').open('w') as log:
+                  result=subprocess.run(['python','tools/run-hint-diagnostic.py','--harness-root',str(harness),'--source-root',str(target),'--source-commit',source,'--output',str(destination)],stdout=log,stderr=subprocess.STDOUT)
+              statuses.append({'repeat':repeat,'originalSuiteExitCode':result.returncode,'measurementProduced':(destination/'hint-measurements.json').is_file()})
+          report={'role':'diagnostic collection only; not a merge gate','sourceCommit':source,'sourceTree':subprocess.check_output(['git','rev-parse',source+'^{tree}'],text=True).strip(),'harnessCommit':'323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea','runs':statuses}
+          (out/'diagnostic-collection.json').write_text(json.dumps(report,indent=2)+'\n')
+          assert all(x['measurementProduced'] for x in statuses),report
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: hint-diagnostic-${{ matrix.source }}
+          path: out/test-artifacts/hint-diagnostic/
+          if-no-files-found: error

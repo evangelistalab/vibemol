@@ -1,0 +1,23 @@
+{
+  "status": "Directly authorized 2026-10-18; diagnostic measurements only, not a merge gate",
+  "accessibilitySha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4",
+  "baselineSha256": "12f13279dbec2731822c122da64502408480bb9e84105a3ccc74d8e85084b825",
+  "harnessCommit": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+  "sources": [
+    "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+    "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea"
+  ],
+  "repetitionsPerSource": 3,
+  "oneDiagnosticWorkflowOnly": true,
+  "originalFullSuitePerRepetition": true,
+  "noProductionEdits": true,
+  "noShippedAssertionWaitOrGoldenEdits": true,
+  "noDiagnosticAsMergeGate": true,
+  "prospectiveLocations": {
+    "run-hint-diagnostic.py": "tools/run-hint-diagnostic.py",
+    "proposal.json": "tools/proposal.json",
+    "accessibility-hint-diagnostic.yml": ".github/workflows/accessibility-hint-diagnostic.yml"
+  },
+  "readOnlyMeasurementExtension": "Observe theme mutations/CSS transition events/font readiness/first paint/rAF and actual dark-Calculations compositor frames without changing assertions or waits"
+}
