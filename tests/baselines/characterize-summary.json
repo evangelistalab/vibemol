@@ -1,8 +1,8 @@
 {
   "baseline": {
-    "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
-    "tag": "v0.9.5-pre-refactor",
-    "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "commit": "3425e0231b71eeb8b8a11523806990f553265cba",
+    "tag": "v0.10.0",
+    "appSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -18,20 +18,20 @@
       0
     ],
     "metrics": {
-      "lines": 33280,
-      "functionDeclarations": 1197,
-      "letDeclarations": 313,
-      "constDeclarations": 595
+      "lines": 31639,
+      "functionDeclarations": 1163,
+      "letDeclarations": 249,
+      "constDeclarations": 570
     },
     "captureProvenance": {
       "os": "Linux",
       "osRelease": "6.17.0-1022-azure",
       "architecture": "x86_64",
       "browserName": "chromium",
-      "browserVersion": "153.0.8010.12",
+      "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/38098959945",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39161918761",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -60,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "5703d85b81458e52b4e9db57e02038a5844442fcb89b3c73095f5435f5742bad",
-      "5703d85b81458e52b4e9db57e02038a5844442fcb89b3c73095f5435f5742bad"
+      "ec8aedbceed3bf63a70844faed905366821e32e9ea7bf3ccf0f2170ee2336d6a",
+      "ec8aedbceed3bf63a70844faed905366821e32e9ea7bf3ccf0f2170ee2336d6a"
     ]
   },
   "api": {
@@ -305,6 +305,16 @@
       "computeMassPropertiesFromAtoms",
       "eigenSymmetric3x3"
     ],
+    "VibeMolElementUtils": [
+      "clamp",
+      "clampOrZero",
+      "clampWithUpperPriority",
+      "getElementSymbol",
+      "getElementSymbolByAtomicNumber",
+      "getElementSymbolRaw",
+      "isLanthanideOrActinideAtomicNumber",
+      "isTransitionMetalAtomicNumber"
+    ],
     "VibeMolEmbed": [
       "loadFiles",
       "version"
@@ -457,6 +467,9 @@
       "parseTwoComponentCube",
       "parseXYZ"
     ],
+    "VibeMolPeriodicTable": [
+      "createPeriodicTableController"
+    ],
     "VibeMolPrefs": [
       "applyFontPair",
       "getFontPair",
@@ -476,6 +489,9 @@
     ],
     "VibeMolPropertiesInspector": [
       "createController"
+    ],
+    "VibeMolPubChem": [
+      "createPubChemController"
     ],
     "VibeMolRecovery": [
       "flush",
@@ -611,6 +627,13 @@
       "createEditSymmetryController",
       "describeSymmetryElements"
     ],
+    "VibeMolSymmetryPanel": [
+      "DEFAULT_SYMMETRY_TOLERANCE_ANG",
+      "EXACT_SYMMETRY_TOLERANCE_ANG",
+      "MAX_SYMMETRY_TOLERANCE_ANG",
+      "SYMMETRY_TOLERANCE_OPTIONS_ANG",
+      "createSymmetryPanelController"
+    ],
     "VibeMolTesting": [
       "attachFragmentFromAnchorIndex",
       "copyEditSelectionToClipboard",
@@ -663,6 +686,9 @@
       "advance",
       "mapFrame",
       "normalize"
+    ],
+    "VibeMolTrajectoryPlayback": [
+      "createTrajectoryPlaybackController"
     ],
     "VibeMolTrajectoryUi": [
       "createTrajectoryUi"
@@ -718,6 +744,17 @@
       "plural",
       "renderCoordsContent",
       "volumeToXYZ"
+    ],
+    "VibeMolVibration": [
+      "CM_INV_HTML",
+      "CM_INV_TEXT",
+      "VIBRATION_DEFAULT_AMPLITUDE",
+      "VIBRATION_DEFAULT_SPEED",
+      "VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1",
+      "VIBRATION_IR_DEFAULT_SIGMA_CM1",
+      "VIBRATION_IR_MIN_FREQ_CM1",
+      "VIBRATION_KIND",
+      "createVibrationController"
     ],
     "VibeMolViewUtils": [
       "computeOrthographicFrustum",
@@ -784,7 +821,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "e449765fe429fb799fe665693ef8be711ebbcc0e66f1b11846a666b2be8bb8a5",
+  "goldenSha256": "28ad6ba41b4d146095879de97fcf1b7f4495f79c547c6a6b8287c6813ee99d27",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []

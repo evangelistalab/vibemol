@@ -1,0 +1,9 @@
+{
+  "archive": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/published-recording/ci-39161918761/immutable-evidence.tar.gz",
+  "bytes": 17544187,
+  "files": 39,
+  "sha256": "abd0e2c07caa2e0e8152f43e7f730b2815f81e86507c33808f71bcd1df981595",
+  "runId": 39161918761,
+  "attempt": 1,
+  "role": "Explicit published-tag recording; four exact 102-capture serializations, never ordinary merge-gate substitution"
+}

@@ -1,0 +1,9 @@
+{
+  "observed": "The old workflow removed the existing beta CNAME and Pages reset to the organization URL.",
+  "restoration": "Exact prior beta.vibemol.org CNAME bytes restored in mirror 57f072dbfb032614354b0bf36bc86189bcc78fc0",
+  "sourceDeploymentRun": 39161260923,
+  "fix": "Publishing workflow writes beta.vibemol.org instead of deleting CNAME",
+  "primaryProductionCnameUnchanged": "vibemol.org",
+  "appRuntimeUnchanged": true,
+  "correctedWorkflowMustBeDeployedAfterMerge": true
+}

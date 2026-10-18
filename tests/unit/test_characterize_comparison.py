@@ -32,6 +32,29 @@ class CharacterizationComparisonTests(unittest.TestCase):
                          "$.values[0]: '7' != '8'")
 
 
+    def test_future_session_versions_are_not_exempted_after_release(self):
+        import copy
+        import gzip
+        import json
+        from characterize import expected_captures
+        root = pathlib.Path(__file__).resolve().parents[2]
+        golden = json.loads(gzip.decompress((root / 'tests/baselines/characterize.json.gz').read_bytes()))
+        expected = expected_captures(golden, root)
+        self.assertEqual(expected, golden['captures'])
+        name = next(iter(expected))
+        for path in [('session', 'appVersion'), ('session', 'preset', 'appVersion')]:
+            with self.subTest(full_path=path):
+                wrong = copy.deepcopy(expected)
+                owner = wrong[name]
+                for part in path[:-1]:
+                    owner = owner[part]
+                self.assertEqual(owner[path[-1]], '0.10.0')
+                owner[path[-1]] = '0.11.0'
+                actual = first_difference(expected, wrong)
+                self.assertIsNotNone(actual)
+                self.assertIn('.'.join(path), actual)
+
+
 class BrowserFailureReportingTests(unittest.TestCase):
     def test_first_failure_uses_innermost_suite_site(self):
         log = ('  File "/repo/tests/e2e/axis_gizmo.py", line 179, in <module>\n'

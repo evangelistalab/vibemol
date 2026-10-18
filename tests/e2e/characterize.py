@@ -470,9 +470,7 @@ def expected_captures(golden, source_root):
         for capture in captures.values():
             assert module['global'] not in capture['api'], module['global']
             capture['api'][module['global']] = module['keys']
-    # Temporary and limited to the single human-authorized release tree.
-    from release_version_mapping import release_expectations
-    return release_expectations(captures, source_root, BASELINE)
+    return captures
 
 
 def main():

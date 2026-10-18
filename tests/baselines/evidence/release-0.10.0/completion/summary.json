@@ -1,0 +1,161 @@
+{
+  "status": "published 0.10.0; explicit baseline promotion and mapping expiry prepared for own gate",
+  "tag": "v0.10.0",
+  "commit": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "tree": "1fc531c3d2c1d194b98ef28f664cad8604e5b24b",
+  "publishedRelease": "https://github.com/evangelistalab/vibemol/releases/tag/v0.10.0",
+  "publishedTagRecordingRun": 39161918761,
+  "capturesPerRun": 102,
+  "independentCiJobs": 2,
+  "runsPerJob": 2,
+  "fourSerializedRepeatsExactlyEqual": true,
+  "approvedVersionLeaves": 204,
+  "residualDifference": null,
+  "oldGoldenSha256": "98c26a9db67b9e73a70b53628fb7b12763d41e91a303f9e3fa12f68af650be50",
+  "newGoldenSha256": "88d80db1aefa887eb96c439adef6dddafbcf81b8a81940efa536ee8e06731bb5",
+  "sixNamespacesAbsorbed": true,
+  "apiAdditionsRemaining": 0,
+  "mappingHelperAndBothScopesRemoved": true,
+  "trackedLet": 249,
+  "dependencyCounts": {
+    "trajectory": 8,
+    "vibration": 13,
+    "symmetry": 11,
+    "periodic": 11,
+    "pubchem": 13
+  },
+  "mainOrdinaryGateRun": 39158578780,
+  "harnessOrdinaryGateRun": 39155810731,
+  "mainCounts": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "mainLooks": {
+    "looksSeconds": 1449.42,
+    "looksMinutes": 24.157,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "mainTiming": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39158578780",
+    "head": "3425e0231b71eeb8b8a11523806990f553265cba",
+    "attempt": 1,
+    "conclusion": "success",
+    "createdAt": "2026-10-18T19:23:52Z",
+    "lastJobCompletedAt": "2026-10-18T19:55:46Z",
+    "workflowSeconds": 1914.0,
+    "workflowMinutes": 31.9,
+    "baselineMinutes": 132.93,
+    "savedMinutes": 101.03,
+    "reductionPercent": 76.00240728202814,
+    "speedup": 4.167084639498433,
+    "jobSeconds": {
+      "Characterization (2)": 942.0,
+      "checks-and-unit": 37.0,
+      "Browser suites (balanced-1)": 1466.0,
+      "Browser suites (balanced-3)": 1896.0,
+      "Characterization (1)": 979.0,
+      "Browser suites (balanced-2)": 1066.0,
+      "WebKit Properties interactions": 85.0,
+      "Browser suites (looks)": 1481.0,
+      "Browser suites (smoke)": 758.0,
+      "Exact characterization repeat and goldens": 22.0,
+      "Aggregate browser gate (34/3/37)": 11.0
+    },
+    "shards": [
+      {
+        "shard": "balanced-1",
+        "suites": 11,
+        "subprocessSeconds": 1428.74,
+        "batchSeconds": 1428.76,
+        "jobSeconds": 1466.0
+      },
+      {
+        "shard": "balanced-2",
+        "suites": 12,
+        "subprocessSeconds": 1032.47,
+        "batchSeconds": 1032.48,
+        "jobSeconds": 1066.0
+      },
+      {
+        "shard": "balanced-3",
+        "suites": 12,
+        "subprocessSeconds": 1867.06,
+        "batchSeconds": 1867.06,
+        "jobSeconds": 1896.0
+      },
+      {
+        "shard": "looks",
+        "suites": 1,
+        "subprocessSeconds": 1449.42,
+        "batchSeconds": 1449.42,
+        "jobSeconds": 1481.0
+      },
+      {
+        "shard": "smoke",
+        "suites": 1,
+        "subprocessSeconds": 730.95,
+        "batchSeconds": 731.01,
+        "jobSeconds": 758.0
+      }
+    ],
+    "lastWorker": "Browser suites (balanced-3)",
+    "lastJob": "Aggregate browser gate (34/3/37)",
+    "characterizationWorkerSeconds": {
+      "1": 951.28,
+      "2": 912.25
+    },
+    "characterizationJoinSeconds": 22.0,
+    "browserJoinSeconds": 11.0,
+    "cache": {
+      "restoreHits": 8,
+      "restoreMisses": 0,
+      "hitJobs": [
+        "Browser suites (balanced-1)",
+        "Browser suites (balanced-2)",
+        "Browser suites (balanced-3)",
+        "Browser suites (looks)",
+        "Browser suites (smoke)",
+        "Characterization (1)",
+        "Characterization (2)",
+        "WebKit Properties interactions"
+      ],
+      "missJobs": [],
+      "playwrightVersions": [
+        "1.64.0"
+      ]
+    },
+    "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+  },
+  "mainConstruction": {
+    "status": "passed",
+    "appBindings": 27,
+    "moduleBindings": 125,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  },
+  "carriedProductPriority": [
+    25,
+    17
+  ],
+  "otherCarried": [
+    3,
+    4,
+    11
+  ],
+  "maintenance": [
+    5,
+    14,
+    15
+  ],
+  "closedTestSynchronizationIssue": 21,
+  "expectedJsTests": 433,
+  "expectedPythonTests": 60,
+  "noProductionChanges": true
+}
