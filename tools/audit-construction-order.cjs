@@ -102,9 +102,16 @@ function auditBinding(binding, boundary, source) {
 
 function auditSource(before, after, extraNames=[]) {
   const b=mainScope(parse(before)), a=mainScope(parse(after));
+  const seenBindings=new WeakSet();
+  const bindings=[];
+  function append(binding,boundary,scope) {
+    if(seenBindings.has(binding))return;
+    seenBindings.add(binding);
+    bindings.push({...auditBinding(binding,boundary,after),...(scope?{scope}:{})});
+  }
   const introduced=Object.keys(a.scope.bindings).filter(name=>!b.scope.bindings[name]
     || b.scope.bindings[name].kind!==a.scope.bindings[name].kind || extraNames.includes(name));
-  const bindings=introduced.map(name=>auditBinding(a.scope.bindings[name],a,after));
+  introduced.forEach(name=>append(a.scope.bindings[name],a));
   for(const name of introduced) {
     const p=a.scope.bindings[name].path;
     if(!p.isVariableDeclarator()||!p.get('init').isCallExpression())continue;
@@ -113,7 +120,7 @@ function auditSource(before, after, extraNames=[]) {
       for(const prop of arg.get('properties')) {
         const fn=prop.isObjectProperty()?prop.get('value'):prop;
         if(!fn.isFunction())continue;
-        for(const b of Object.values(fn.scope.bindings))bindings.push({...auditBinding(b,fn,after),scope:name+'.'+(prop.node.key?.name||'<argument>')});
+        for(const b of Object.values(fn.scope.bindings))append(b,fn,name+'.'+(prop.node.key?.name||'<argument>'));
       }
     }
   }
@@ -122,7 +129,34 @@ function auditSource(before, after, extraNames=[]) {
     const bp=a.scope.bindings[name].path;
     const fn=bp.isVariableDeclarator()?bp.get('init'):bp;
     if (!fn?.isFunction()) continue;
-    for (const local of Object.values(fn.scope.bindings)) bindings.push({...auditBinding(local,fn,after),scope:name});
+    for (const local of Object.values(fn.scope.bindings)) append(local,fn,name);
+  }
+  // Existing wrappers/callbacks can gain parameters or locals without changing
+  // their app-level binding. Match their lexical owner paths, not source lines,
+  // and audit every newly introduced/changed-kind binding there as well.
+  function lexicalFunctions(boundary) {
+    const functions=new Map(),keys=new WeakMap([[boundary.node,'<app>']]),ordinals=new Map();
+    boundary.traverse({Function(p){
+      const owner=p.getFunctionParent(),prefix=keys.get(owner?.node)||'<app>';
+      const parent=p.parentPath;
+      let label=p.node.id?.name;
+      if(!label&&parent.isVariableDeclarator())label='variable:'+parent.node.id.name;
+      if(!label&&(parent.isObjectProperty()||p.isObjectMethod()))label='property:'+(p.isObjectMethod()?p.node.key.name:parent.node.key.name);
+      if(!label&&parent.isCallExpression())label='call:'+(parent.node.callee.name||parent.node.callee.property?.name||'<expression>')+':'+p.key;
+      if(!label&&parent.isAssignmentExpression())label='assignment:'+(parent.node.left.name||parent.node.left.property?.name||'<expression>');
+      label=prefix+'/'+(label||'<callback>');
+      const ordinal=ordinals.get(label)||0;ordinals.set(label,ordinal+1);
+      const key=label+'#'+ordinal;keys.set(p.node,key);functions.set(key,p);
+    }});
+    return functions;
+  }
+  const oldFunctions=lexicalFunctions(b),newFunctions=lexicalFunctions(a);
+  for(const [scope,fn] of newFunctions) {
+    const previous=oldFunctions.get(scope);
+    for(const [name,binding] of Object.entries(fn.scope.bindings)) {
+      const oldBinding=previous?.scope.bindings[name];
+      if(!oldBinding||oldBinding.kind!==binding.kind)append(binding,fn,scope);
+    }
   }
   return {beforeSha256:hash(before),afterSha256:hash(after),introducedOrChangedKind:introduced,bindings,
     status:bindings.every(b=>b.status==='passed')?'passed':'review-required'};
@@ -139,7 +173,15 @@ if (process.argv.includes('--self-test')) {
   assert.equal(auditSource(before,bad.replace('const controller','var controller')).status,'review-required');
   const shadow='(function(){ const controller={}; function unrelated(){const controller=1;return controller} })();';
   assert.equal(auditSource(before,shadow).status,'passed');
-  console.log('construction-order self-test: direct early call, escaped callback, fixed ordering and lexical shadowing passed');
+  const oldWrapper='(function(){function render(value){return value}})();';
+  const newWrapper='(function(){function render(...args){return args}})();';
+  const wrapperAudit=auditSource(oldWrapper,newWrapper);
+  assert.equal(wrapperAudit.status,'passed');
+  assert(wrapperAudit.bindings.some(b=>b.name==='args'&&b.kind==='param'&&b.scope.includes('/render#')));
+  const oldCallback='(function(){register({render(value){return value}})})();';
+  const newCallback='(function(){register({render(value){invoke(()=>late);const late=1;return value}})})();';
+  assert.equal(auditSource(oldCallback,newCallback).status,'review-required');
+  console.log('construction-order self-test: direct early call, escaped callback, fixed ordering, lexical shadowing, existing-wrapper parameters and existing-callback locals passed');
   process.exit(0);
 }
 
@@ -205,7 +247,7 @@ for (const stage of config.stages) {
   reports.push(report);
 }
 const result={parserVersion:babel('parser/package.json').version,traverseVersion:babel('traverse/package.json').version,toolSha256:hash(fs.readFileSync(__filename)),policy:'Fail closed on any possible incoming activation/callback exposure before a lexical binding is initialized. Function declarations/parameters are separately classified as hoisted; var value initialization is checked too. Report every reading reference; escaped callbacks are conservatively synchronous, not silently deferred.',
-  limitation:'A syntactic conservative bound, not an assertion that every reported branch executes. An early path requires manual proof or construction moved before exposure. Complete runtime gates remain mandatory. Audit captures incoming app references and introduced module/helper local bindings; it does not prove arbitrary external JavaScript behavior.',
+  limitation:'A syntactic conservative bound, not an assertion that every reported branch executes. An early path requires manual proof or construction moved before exposure. Complete runtime gates remain mandatory. Audit captures incoming app references, introduced module/helper locals and new parameters/locals in existing wrappers/callbacks; it does not prove arbitrary external JavaScript behavior.',
   stages:reports,status:reports.every(r=>r.matchesExpectedStatus)?'passed':'failed'};
 fs.writeFileSync(outputPath,JSON.stringify(result,null,2)+'\n');
 console.log(JSON.stringify({status:result.status,stages:reports.map(s=>({label:s.label,status:s.status,expected:s.expectedStatus,bindings:s.bindings.length,moduleBindings:s.modules.reduce((n,m)=>n+m.bindings.length,0)}))}));

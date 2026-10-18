@@ -1,0 +1,13 @@
+{
+  "stages": [
+    {
+      "label": "Stage 5a trajectory playback core",
+      "before": "83024dd0b71251a1e2cfacb4b9c52ab25e394f7a",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/trajectory-playback.js"
+      ],
+      "expectedStatus": "passed"
+    }
+  ]
+}

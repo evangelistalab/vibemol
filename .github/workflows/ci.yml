@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -23,6 +25,23 @@ jobs:
         run: make check
       - name: Unit tests
         run: make test-unit
+      - name: Install pinned construction-audit tooling
+        run: npm install --prefix "$RUNNER_TEMP/construction-audit" --no-save --ignore-scripts @babel/parser@7.24.4 @babel/traverse@7.24.1
+      - name: Inverse construction-order gate
+        env:
+          VIBEMOL_BABEL_ROOT: ${{ runner.temp }}/construction-audit/node_modules/@babel
+        run: |
+          mkdir -p out/test-artifacts/construction-order
+          node tools/audit-construction-order.cjs --self-test
+          node tools/audit-construction-order.cjs tests/baselines/stage5/construction-order.json out/test-artifacts/construction-order/report.json
+          PYTHONPATH=tests/e2e python -c 'import json; from pathlib import Path; from ci_evidence import artifact_identity; Path("out/test-artifacts/construction-order/identity.json").write_text(json.dumps(artifact_identity(), indent=2)+"\n")'
+      - name: Upload construction-order evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: construction-order
+          path: out/test-artifacts/construction-order/
+          if-no-files-found: error
 
   e2e:
     name: Browser suites (${{ matrix.shard }})
@@ -74,6 +93,8 @@ jobs:
           path: out/ci/browser-shards
       - name: Verify all suites once, raw failure workflows and aggregate counts
         run: python tests/e2e/join_browser_shards.py --input out/ci/browser-shards
+      - name: Require unchanged Stage 5 exporter-defect behavior
+        run: python tools/check-refactor-run.py --policy tests/baselines/stage5/run-policy.json --browser-result out/test-artifacts/browser-suite/browser-results.json
       - name: Upload aggregate browser result
         if: always()
         uses: actions/upload-artifact@v4

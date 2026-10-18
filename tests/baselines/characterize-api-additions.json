@@ -32,6 +32,14 @@
       "keys": [
         "createPubChemController"
       ]
+    },
+    {
+      "stage": "5a",
+      "script": "assets/app/js/trajectory-playback.js",
+      "global": "VibeMolTrajectoryPlayback",
+      "keys": [
+        "createTrajectoryPlaybackController"
+      ]
     }
   ]
 }
