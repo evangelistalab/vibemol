@@ -1,0 +1,4158 @@
+{
+  "role": "instrumented diagnostic, never merge acceptance",
+  "runId": 39154813750,
+  "attempt": 1,
+  "harnessHead": "629f9bd5f8e50414a23e5bc5358905337dc6dc64",
+  "originalSuiteSha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4",
+  "originalBaselineSha256": "12f13279dbec2731822c122da64502408480bb9e84105a3ccc74d8e85084b825",
+  "executions": 9,
+  "scans": 108,
+  "cases": 72,
+  "originalSuiteOutcomes": {
+    "04eaf660607072b6f4bebafa3f8daef92a92afe8": {
+      "passed": 2,
+      "failed": 1
+    },
+    "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d": {
+      "passed": 3,
+      "failed": 0
+    },
+    "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea": {
+      "passed": 1,
+      "failed": 2
+    }
+  },
+  "rows": [
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 1,
+      "originalSuiteExitCode": 1,
+      "error": "Contrast baseline changed; inspect artifacts:\ndark/Calculations incomplete: [\"#hint\"]",
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348542.1645658,
+      "completed": 1792348690.4370604,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 6512.500000000015,
+          "axeEndMs": 7195.500000000015,
+          "fontsReadyMs": 22.10000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 54,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 7388.699999999997,
+          "axeEndMs": 8040.000000000015,
+          "fontsReadyMs": 22.10000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 58,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.95264",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 16.674000000002742
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 16.674000000002742
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 8200.500000000015,
+          "axeEndMs": 8733.199999999997,
+          "fontsReadyMs": 22.10000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 61,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 8930.100000000006,
+          "axeEndMs": 9787.300000000017,
+          "fontsReadyMs": 22,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 108
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 108
+            }
+          ],
+          "rAFsBeforeAxe": 45,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.577596",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 66.64499999998696
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 66.64499999998696
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5474,
+          "msSinceHintThemeBackgroundSettled": 3456.100000000006,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 9964,
+          "axeEndMs": 10543.300000000017,
+          "fontsReadyMs": 22,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 108
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 108
+            }
+          ],
+          "rAFsBeforeAxe": 48,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5474,
+          "msSinceHintThemeBackgroundSettled": 4490,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 10715.5,
+          "axeEndMs": 11207.700000000012,
+          "fontsReadyMs": 22,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 108
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 108
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5474,
+          "msSinceHintThemeBackgroundSettled": 5241.5,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-04eaf660607072b6f4bebafa3f8daef92a92afe8/run-1/dark-calculations-compositor/frame-0034.png",
+        "sha256": "d3980fd06e4b749ad9c2894912fc51fd27819fc12da8c1f9089ed87b84567394",
+        "atSinceNavigationMs": 8368.79296875,
+        "msBeforeAxe": 561.3070312500058
+      }
+    },
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 2,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348690.6307805,
+      "completed": 1792348831.492094,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 4671.400000000023,
+          "axeEndMs": 5387,
+          "fontsReadyMs": 25.600000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 148
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 148
+            }
+          ],
+          "rAFsBeforeAxe": 53,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 5551.799999999988,
+          "axeEndMs": 6094.799999999988,
+          "fontsReadyMs": 25.600000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 148
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 148
+            }
+          ],
+          "rAFsBeforeAxe": 53,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 6243.299999999988,
+          "axeEndMs": 6814.299999999988,
+          "fontsReadyMs": 25.600000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 148
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 148
+            }
+          ],
+          "rAFsBeforeAxe": 53,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 8993.5,
+          "axeEndMs": 9769,
+          "fontsReadyMs": 26.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 46,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4943.400000000023,
+          "msSinceHintThemeBackgroundSettled": 4050.0999999999767,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 10024.900000000023,
+          "axeEndMs": 10526.200000000012,
+          "fontsReadyMs": 26.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 48,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4943.400000000023,
+          "msSinceHintThemeBackgroundSettled": 5081.5,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 10710.099999999977,
+          "axeEndMs": 11194.700000000012,
+          "fontsReadyMs": 26.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4943.400000000023,
+          "msSinceHintThemeBackgroundSettled": 5766.699999999953,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-04eaf660607072b6f4bebafa3f8daef92a92afe8/run-2/dark-calculations-compositor/frame-0034.png",
+        "sha256": "d3980fd06e4b749ad9c2894912fc51fd27819fc12da8c1f9089ed87b84567394",
+        "atSinceNavigationMs": 8375.18505859375,
+        "msBeforeAxe": 618.31494140625
+      }
+    },
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 3,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348831.6827793,
+      "completed": 1792348978.3109565,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 6058.799999999988,
+          "axeEndMs": 6724.099999999977,
+          "fontsReadyMs": 21.599999999976717,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 54,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 6891,
+          "axeEndMs": 7416.200000000012,
+          "fontsReadyMs": 21.599999999976717,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 60,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.253904",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.00599605"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 116.61799999998301
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 116.61799999998301
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 233.31799999998282
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 233.31799999998282
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 7581.200000000012,
+          "axeEndMs": 8096.200000000012,
+          "fontsReadyMs": 21.599999999976717,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 63,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 10639.200000000012,
+          "axeEndMs": 11286.400000000023,
+          "fontsReadyMs": 26.100000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5516,
+          "msSinceHintThemeBackgroundSettled": 5123.200000000012,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 11526.400000000023,
+          "axeEndMs": 12023.200000000012,
+          "fontsReadyMs": 26.100000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 53,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5516,
+          "msSinceHintThemeBackgroundSettled": 6010.400000000023,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 12190.600000000035,
+          "axeEndMs": 12541.600000000035,
+          "fontsReadyMs": 26.100000000034925,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 172
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 172
+            }
+          ],
+          "rAFsBeforeAxe": 55,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5516,
+          "msSinceHintThemeBackgroundSettled": 6674.600000000035,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-04eaf660607072b6f4bebafa3f8daef92a92afe8/run-3/dark-calculations-compositor/frame-0037.png",
+        "sha256": "94ff55131e34c3e4d2d1c0e34d31c9931b0810559da90e4fb2483f8a47195476",
+        "atSinceNavigationMs": 10373.653076171875,
+        "msBeforeAxe": 265.54692382813664
+      }
+    },
+    {
+      "source": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tree": "75275fe172ff8bfb3327a73e3a31b5fef3d19992",
+      "repeat": 1,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348540.8614352,
+      "completed": 1792348646.7513933,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 4826.300000000003,
+          "axeEndMs": 5357.899999999994,
+          "fontsReadyMs": 21.60000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 144
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 144
+            }
+          ],
+          "rAFsBeforeAxe": 58,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 5508.800000000003,
+          "axeEndMs": 5850.5,
+          "fontsReadyMs": 21.60000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 144
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 144
+            }
+          ],
+          "rAFsBeforeAxe": 60,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 5984,
+          "axeEndMs": 6290.699999999997,
+          "fontsReadyMs": 21.60000000000582,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 144
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 144
+            }
+          ],
+          "rAFsBeforeAxe": 64,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 6712.399999999994,
+          "axeEndMs": 7210.399999999994,
+          "fontsReadyMs": 27.699999999982538,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 49,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 3076.5,
+          "msSinceHintThemeBackgroundSettled": 3635.899999999994,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 7379.299999999988,
+          "axeEndMs": 7741,
+          "fontsReadyMs": 27.699999999982538,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 3076.5,
+          "msSinceHintThemeBackgroundSettled": 4302.799999999988,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 7902.399999999994,
+          "axeEndMs": 8234.699999999983,
+          "fontsReadyMs": 27.699999999982538,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 164
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 164
+            }
+          ],
+          "rAFsBeforeAxe": 54,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 3076.5,
+          "msSinceHintThemeBackgroundSettled": 4825.899999999994,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-1c609b338344aaa49ffd11b9ee2ad834a6e0d85d/run-1/dark-calculations-compositor/frame-0034.png",
+        "sha256": "883c8da85cc482cc49361dcd3834201ac4c15bc856f409b92c462b807a3cb001",
+        "atSinceNavigationMs": 6237.131103515625,
+        "msBeforeAxe": 475.2688964843692
+      }
+    },
+    {
+      "source": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tree": "75275fe172ff8bfb3327a73e3a31b5fef3d19992",
+      "repeat": 2,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348646.8930724,
+      "completed": 1792348748.6009257,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 3616.899999999994,
+          "axeEndMs": 4068.399999999994,
+          "fontsReadyMs": 18.29999999998836,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 152
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 152
+            }
+          ],
+          "rAFsBeforeAxe": 52,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 4211.799999999988,
+          "axeEndMs": 4564.600000000006,
+          "fontsReadyMs": 18.29999999998836,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 152
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 152
+            }
+          ],
+          "rAFsBeforeAxe": 53,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 4726.1999999999825,
+          "axeEndMs": 5019.299999999988,
+          "fontsReadyMs": 18.29999999998836,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 152
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 152
+            }
+          ],
+          "rAFsBeforeAxe": 57,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 5785.899999999994,
+          "axeEndMs": 6308.5,
+          "fontsReadyMs": 23.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 46,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 2970.600000000006,
+          "msSinceHintThemeBackgroundSettled": 2815.2999999999884,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 6509.399999999994,
+          "axeEndMs": 6935.5,
+          "fontsReadyMs": 23.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 47,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 2970.600000000006,
+          "msSinceHintThemeBackgroundSettled": 3538.7999999999884,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 7093.200000000012,
+          "axeEndMs": 7403,
+          "fontsReadyMs": 23.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 49,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 2970.600000000006,
+          "msSinceHintThemeBackgroundSettled": 4122.600000000006,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-1c609b338344aaa49ffd11b9ee2ad834a6e0d85d/run-2/dark-calculations-compositor/frame-0033.png",
+        "sha256": "feb17a5b2f6e001052fb1d754e29b8698ad51187c999e100af98d21cfb72239a",
+        "atSinceNavigationMs": 5699.0791015625,
+        "msBeforeAxe": 86.82089843749418
+      }
+    },
+    {
+      "source": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "tree": "75275fe172ff8bfb3327a73e3a31b5fef3d19992",
+      "repeat": 3,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348748.7446709,
+      "completed": 1792348851.559641,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 4085.9000000000233,
+          "axeEndMs": 4583.800000000047,
+          "fontsReadyMs": 14.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 55,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 4736.700000000012,
+          "axeEndMs": 5035.700000000012,
+          "fontsReadyMs": 14.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 58,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 5175.200000000012,
+          "axeEndMs": 5503.100000000035,
+          "fontsReadyMs": 14.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 61,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 6791.899999999965,
+          "axeEndMs": 7242.5,
+          "fontsReadyMs": 14.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 47,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 3723,
+          "msSinceHintThemeBackgroundSettled": 3068.899999999965,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#0c1119",
+                "contrastRatio": 16.66,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 7427.5,
+          "axeEndMs": 7782.5,
+          "fontsReadyMs": 14.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.952496",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.131142"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 16.70799999999062
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 16.70799999999062
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 150.00799999998992
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 150.00799999998992
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 3723,
+          "msSinceHintThemeBackgroundSettled": 3704.5,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 7947.099999999977,
+          "axeEndMs": 8195.5,
+          "fontsReadyMs": 14.5,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 52,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.131142",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 150.00799999998992
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 150.00799999998992
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 3723,
+          "msSinceHintThemeBackgroundSettled": 4224.099999999977,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-1c609b338344aaa49ffd11b9ee2ad834a6e0d85d/run-3/dark-calculations-compositor/frame-0038.png",
+        "sha256": "883c8da85cc482cc49361dcd3834201ac4c15bc856f409b92c462b807a3cb001",
+        "atSinceNavigationMs": 6303.20703125,
+        "msBeforeAxe": 488.6929687499651
+      }
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 1,
+      "originalSuiteExitCode": 0,
+      "error": null,
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348541.369459,
+      "completed": 1792348686.4275436,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 4698.400000000009,
+          "axeEndMs": 5357,
+          "fontsReadyMs": 26,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 55,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 5516.699999999997,
+          "axeEndMs": 6148.400000000009,
+          "fontsReadyMs": 26,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 55,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 6312.400000000009,
+          "axeEndMs": 6775.400000000009,
+          "fontsReadyMs": 26,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 160
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 160
+            }
+          ],
+          "rAFsBeforeAxe": 56,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 10102.799999999988,
+          "axeEndMs": 10755.699999999983,
+          "fontsReadyMs": 29.89999999999418,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 52,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5541.5,
+          "msSinceHintThemeBackgroundSettled": 4561.299999999988,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 10948.600000000006,
+          "axeEndMs": 11512.600000000006,
+          "fontsReadyMs": 29.89999999999418,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 55,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5541.5,
+          "msSinceHintThemeBackgroundSettled": 5407.100000000006,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 11663.799999999988,
+          "axeEndMs": 12089.699999999983,
+          "fontsReadyMs": 29.89999999999418,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 58,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 5541.5,
+          "msSinceHintThemeBackgroundSettled": 6122.299999999988,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea/run-1/dark-calculations-compositor/frame-0040.png",
+        "sha256": "3bee4383d56d5af3e448a24f0691b61bfb4dbeb9fafc3c5e1c3d5d08852a2a58",
+        "atSinceNavigationMs": 9955.080810546875,
+        "msBeforeAxe": 147.71918945311336
+      }
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 2,
+      "originalSuiteExitCode": 1,
+      "error": "Contrast baseline changed; inspect artifacts:\ndark/Calculations incomplete: [\"#hint\"]",
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348686.6166823,
+      "completed": 1792348832.5975714,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 6447.400000000023,
+          "axeEndMs": 7118.100000000035,
+          "fontsReadyMs": 22.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 59,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 7286.200000000012,
+          "axeEndMs": 7775.100000000035,
+          "fontsReadyMs": 22.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 63,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.131374",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 149.92699999996972
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 149.92699999996972
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 7959.600000000035,
+          "axeEndMs": 8436.700000000012,
+          "fontsReadyMs": 22.900000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 168
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 168
+            }
+          ],
+          "rAFsBeforeAxe": 65,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 9447.800000000047,
+          "axeEndMs": 10119.800000000047,
+          "fontsReadyMs": 25.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 48,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.856722",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 33.40299999996965
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 33.40299999996965
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4927.300000000047,
+          "msSinceHintThemeBackgroundSettled": 4520.5,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 10377.600000000035,
+          "axeEndMs": 10966,
+          "fontsReadyMs": 25.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 52,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4927.300000000047,
+          "msSinceHintThemeBackgroundSettled": 5450.299999999988,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 11154,
+          "axeEndMs": 11581.100000000035,
+          "fontsReadyMs": 25.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 184
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 184
+            }
+          ],
+          "rAFsBeforeAxe": 54,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4927.300000000047,
+          "msSinceHintThemeBackgroundSettled": 6226.699999999953,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea/run-2/dark-calculations-compositor/frame-0035.png",
+        "sha256": "6b9906777a185c832fbeca9161549bc749d2481146f71beab67d1da61f593c0e",
+        "atSinceNavigationMs": 8907.671875,
+        "msBeforeAxe": 540.1281250000466
+      }
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+      "repeat": 3,
+      "originalSuiteExitCode": 1,
+      "error": "Contrast baseline changed; inspect artifacts:\ndark/Calculations incomplete: [\"#hint\"]",
+      "scans": 12,
+      "cases": 8,
+      "started": 1792348832.7864392,
+      "completed": 1792348974.3026688,
+      "calculationHintScans": [
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 5112.799999999988,
+          "axeEndMs": 5789.700000000012,
+          "fontsReadyMs": 27.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 104
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 104
+            }
+          ],
+          "rAFsBeforeAxe": 51,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 5947.700000000012,
+          "axeEndMs": 6505.5,
+          "fontsReadyMs": 27.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 104
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 104
+            }
+          ],
+          "rAFsBeforeAxe": 56,
+          "hintBefore": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "is-visible",
+            "ariaHidden": "false",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "light",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 6657.099999999977,
+          "axeEndMs": 7219.799999999988,
+          "fontsReadyMs": 27.20000000001164,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 104
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 104
+            }
+          ],
+          "rAFsBeforeAxe": 60,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(26, 34, 48)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "1"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 0
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": null,
+          "msSinceHintThemeBackgroundSettled": null,
+          "axeHintChecks": [
+            {
+              "kind": "passes",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": "#e9f1ff",
+                "bgColor": "#1a2230",
+                "contrastRatio": 14.05,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": null,
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": []
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 1,
+          "axeStartMs": 8312.700000000012,
+          "axeEndMs": 8968.200000000012,
+          "fontsReadyMs": 21.400000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 45,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.72195",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0.72195"
+          },
+          "activeTransitionsBefore": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 50.035999999994196
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 50.035999999994196
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "activeTransitionsAfter": [
+            {
+              "target": "hint",
+              "property": "opacity",
+              "playState": "running",
+              "currentTime": 50.035999999994196
+            },
+            {
+              "target": "hint",
+              "property": "transform",
+              "playState": "running",
+              "currentTime": 50.035999999994196
+            },
+            {
+              "target": "modeCalculationsBtn",
+              "property": "color",
+              "playState": "running",
+              "currentTime": 0
+            }
+          ],
+          "hintThemeBackgroundTransitionEndedMs": 4406,
+          "msSinceHintThemeBackgroundSettled": 3906.7000000000116,
+          "axeHintChecks": [
+            {
+              "kind": "incomplete",
+              "rule": "color-contrast",
+              "target": [
+                "#hint"
+              ],
+              "check": "color-contrast",
+              "data": {
+                "fgColor": null,
+                "bgColor": null,
+                "contrastRatio": 0,
+                "fontSize": "8.3pt (11px)",
+                "fontWeight": "normal",
+                "messageKey": "imgNode",
+                "expectedContrastRatio": "4.5:1",
+                "shadowColor": null
+              },
+              "relatedNodes": [
+                {
+                  "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+                  "target": [
+                    "#hint"
+                  ]
+                },
+                {
+                  "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+                  "target": [
+                    "#canvas"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 2,
+          "axeStartMs": 9243.5,
+          "axeEndMs": 9730.200000000012,
+          "fontsReadyMs": 21.400000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 46,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4406,
+          "msSinceHintThemeBackgroundSettled": 4837.5,
+          "axeHintChecks": []
+        },
+        {
+          "theme": "dark",
+          "mode": "Calculations",
+          "scan": 3,
+          "axeStartMs": 9921.299999999988,
+          "axeEndMs": 10417.200000000012,
+          "fontsReadyMs": 21.400000000023283,
+          "firstPaint": [
+            {
+              "name": "first-paint",
+              "startTime": 156
+            },
+            {
+              "name": "first-contentful-paint",
+              "startTime": 156
+            }
+          ],
+          "rAFsBeforeAxe": 47,
+          "hintBefore": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0",
+            "foreground": "rgb(233, 241, 255)",
+            "background": "rgb(12, 17, 25)"
+          },
+          "hintAfter": {
+            "className": "",
+            "ariaHidden": "true",
+            "opacity": "0"
+          },
+          "activeTransitionsBefore": [],
+          "activeTransitionsAfter": [],
+          "hintThemeBackgroundTransitionEndedMs": 4406,
+          "msSinceHintThemeBackgroundSettled": 5515.299999999988,
+          "axeHintChecks": []
+        }
+      ],
+      "priorDarkCalculationCompositorFrame": {
+        "path": "artifacts/hint-diagnostic-323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea/run-3/dark-calculations-compositor/frame-0032.png",
+        "sha256": "1011f5ff23633497b170cd4ae63107acaf406111d7ce40232474169f3ee668da",
+        "atSinceNavigationMs": 7740.35595703125,
+        "msBeforeAxe": 572.3440429687616
+      }
+    }
+  ],
+  "allRawHintIncompleteScans": [
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "repeat": 1,
+      "theme": "light",
+      "mode": "Calculations",
+      "scan": 2,
+      "axeStartMs": 7388.699999999997,
+      "axeEndMs": 8040.000000000015,
+      "fontsReadyMs": 22.10000000000582,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 184
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 184
+        }
+      ],
+      "rAFsBeforeAxe": 58,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.95264",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(26, 34, 48)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 16.674000000002742
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 16.674000000002742
+        }
+      ],
+      "activeTransitionsAfter": [],
+      "hintThemeBackgroundTransitionEndedMs": null,
+      "msSinceHintThemeBackgroundSettled": null,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "repeat": 1,
+      "theme": "dark",
+      "mode": "Calculations",
+      "scan": 1,
+      "axeStartMs": 8930.100000000006,
+      "axeEndMs": 9787.300000000017,
+      "fontsReadyMs": 22,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 108
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 108
+        }
+      ],
+      "rAFsBeforeAxe": 45,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.577596",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(12, 17, 25)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 66.64499999998696
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 66.64499999998696
+        },
+        {
+          "target": "modeCalculationsBtn",
+          "property": "color",
+          "playState": "running",
+          "currentTime": 0
+        }
+      ],
+      "activeTransitionsAfter": [],
+      "hintThemeBackgroundTransitionEndedMs": 5474,
+      "msSinceHintThemeBackgroundSettled": 3456.100000000006,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "repeat": 3,
+      "theme": "light",
+      "mode": "Calculations",
+      "scan": 2,
+      "axeStartMs": 6891,
+      "axeEndMs": 7416.200000000012,
+      "fontsReadyMs": 21.599999999976717,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 172
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 172
+        }
+      ],
+      "rAFsBeforeAxe": 60,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.253904",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(26, 34, 48)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.00599605"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 116.61799999998301
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 116.61799999998301
+        }
+      ],
+      "activeTransitionsAfter": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 233.31799999998282
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 233.31799999998282
+        }
+      ],
+      "hintThemeBackgroundTransitionEndedMs": null,
+      "msSinceHintThemeBackgroundSettled": null,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "repeat": 3,
+      "theme": "dark",
+      "mode": "Calculations",
+      "scan": 2,
+      "axeStartMs": 7427.5,
+      "axeEndMs": 7782.5,
+      "fontsReadyMs": 14.5,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 160
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 160
+        }
+      ],
+      "rAFsBeforeAxe": 51,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.952496",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(12, 17, 25)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.131142"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 16.70799999999062
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 16.70799999999062
+        }
+      ],
+      "activeTransitionsAfter": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 150.00799999998992
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 150.00799999998992
+        }
+      ],
+      "hintThemeBackgroundTransitionEndedMs": 3723,
+      "msSinceHintThemeBackgroundSettled": 3704.5,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "repeat": 3,
+      "theme": "dark",
+      "mode": "Calculations",
+      "scan": 3,
+      "axeStartMs": 7947.099999999977,
+      "axeEndMs": 8195.5,
+      "fontsReadyMs": 14.5,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 160
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 160
+        }
+      ],
+      "rAFsBeforeAxe": 52,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.131142",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(12, 17, 25)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 150.00799999998992
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 150.00799999998992
+        }
+      ],
+      "activeTransitionsAfter": [],
+      "hintThemeBackgroundTransitionEndedMs": 3723,
+      "msSinceHintThemeBackgroundSettled": 4224.099999999977,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "repeat": 2,
+      "theme": "light",
+      "mode": "Calculations",
+      "scan": 2,
+      "axeStartMs": 7286.200000000012,
+      "axeEndMs": 7775.100000000035,
+      "fontsReadyMs": 22.900000000023283,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 168
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 168
+        }
+      ],
+      "rAFsBeforeAxe": 63,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.131374",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(26, 34, 48)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 149.92699999996972
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 149.92699999996972
+        }
+      ],
+      "activeTransitionsAfter": [],
+      "hintThemeBackgroundTransitionEndedMs": null,
+      "msSinceHintThemeBackgroundSettled": null,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "repeat": 2,
+      "theme": "dark",
+      "mode": "Calculations",
+      "scan": 1,
+      "axeStartMs": 9447.800000000047,
+      "axeEndMs": 10119.800000000047,
+      "fontsReadyMs": 25.20000000001164,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 184
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 184
+        }
+      ],
+      "rAFsBeforeAxe": 48,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.856722",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(12, 17, 25)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 33.40299999996965
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 33.40299999996965
+        },
+        {
+          "target": "modeCalculationsBtn",
+          "property": "color",
+          "playState": "running",
+          "currentTime": 0
+        }
+      ],
+      "activeTransitionsAfter": [],
+      "hintThemeBackgroundTransitionEndedMs": 4927.300000000047,
+      "msSinceHintThemeBackgroundSettled": 4520.5,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "source": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "repeat": 3,
+      "theme": "dark",
+      "mode": "Calculations",
+      "scan": 1,
+      "axeStartMs": 8312.700000000012,
+      "axeEndMs": 8968.200000000012,
+      "fontsReadyMs": 21.400000000023283,
+      "firstPaint": [
+        {
+          "name": "first-paint",
+          "startTime": 156
+        },
+        {
+          "name": "first-contentful-paint",
+          "startTime": 156
+        }
+      ],
+      "rAFsBeforeAxe": 45,
+      "hintBefore": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.72195",
+        "foreground": "rgb(233, 241, 255)",
+        "background": "rgb(12, 17, 25)"
+      },
+      "hintAfter": {
+        "className": "",
+        "ariaHidden": "true",
+        "opacity": "0.72195"
+      },
+      "activeTransitionsBefore": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 50.035999999994196
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 50.035999999994196
+        },
+        {
+          "target": "modeCalculationsBtn",
+          "property": "color",
+          "playState": "running",
+          "currentTime": 0
+        }
+      ],
+      "activeTransitionsAfter": [
+        {
+          "target": "hint",
+          "property": "opacity",
+          "playState": "running",
+          "currentTime": 50.035999999994196
+        },
+        {
+          "target": "hint",
+          "property": "transform",
+          "playState": "running",
+          "currentTime": 50.035999999994196
+        },
+        {
+          "target": "modeCalculationsBtn",
+          "property": "color",
+          "playState": "running",
+          "currentTime": 0
+        }
+      ],
+      "hintThemeBackgroundTransitionEndedMs": 4406,
+      "msSinceHintThemeBackgroundSettled": 3906.7000000000116,
+      "axeHintChecks": [
+        {
+          "kind": "incomplete",
+          "rule": "color-contrast",
+          "target": [
+            "#hint"
+          ],
+          "check": "color-contrast",
+          "data": {
+            "fgColor": null,
+            "bgColor": null,
+            "contrastRatio": 0,
+            "fontSize": "8.3pt (11px)",
+            "fontWeight": "normal",
+            "messageKey": "imgNode",
+            "expectedContrastRatio": "4.5:1",
+            "shadowColor": null
+          },
+          "relatedNodes": [
+            {
+              "html": "<div id=\"hint\" class=\"\" aria-hidden=\"true\">Click atoms to select \u00b7 choose orbitals in the popup \u00b7 drag to orbit \u00b7 click empty space to deselect</div>",
+              "target": [
+                "#hint"
+              ]
+            },
+            {
+              "html": "<canvas id=\"canvas\" data-engine=\"three.js r160\" width=\"832\" height=\"894\" style=\"touch-action: none; width: 832px; height: 894px;\" tabindex=\"0\" aria-label=\"Molecule viewport\"></canvas>",
+              "target": [
+                "#canvas"
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "verifiedCompositorFrames": 385,
+  "allIncompleteDuringHintOpacityTransition": true,
+  "noContrastViolationFound": true,
+  "mechanism": "Axe scans race the transient hint auto-hide opacity/transform fade. The three aggregate failures start during that fade after the hint theme background transition is complete. Earlier definite passing scans can resolve later incomplete scans, explaining the tagged passing aggregate despite raw incomplete measurements.",
+  "hypotheses": {
+    "beforeCanvasPaint": "refuted for the three aggregate failures: the actual prior compositor frames were visually inspected and show the rendered molecule",
+    "duringThemeColorTransition": "not supported for these failures: hint background transition ended before each failing scan",
+    "duringHintAutoHideFade": "observed in all eight raw incomplete scans across both Calculation themes"
+  },
+  "measurementLimit": "Observers/CDP can perturb timing. No diagnostic frequency is a population flake rate; rAF alone is not proof of canvas presentation. Actual compositor images and original raw scans are retained.",
+  "looksMaterialFamilies": "not covered this run"
+}

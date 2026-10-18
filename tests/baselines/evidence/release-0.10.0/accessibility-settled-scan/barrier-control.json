@@ -1,0 +1,70 @@
+{
+  "status": "passed",
+  "results": [
+    {
+      "action": "no-transition",
+      "state": {
+        "at": 140.30000001192093,
+        "fonts": "loaded",
+        "theme": null,
+        "activeTransitions": 0,
+        "hint": {
+          "className": "",
+          "ariaHidden": null,
+          "opacity": "1"
+        }
+      },
+      "observation": {
+        "events": [],
+        "frames": 2,
+        "at": 146.30000001192093,
+        "color": "rgb(0, 0, 0)"
+      }
+    },
+    {
+      "action": "transition",
+      "state": {
+        "at": 270.30000001192093,
+        "fonts": "loaded",
+        "theme": null,
+        "activeTransitions": 0,
+        "hint": {
+          "className": "changed",
+          "ariaHidden": null,
+          "opacity": "1"
+        }
+      },
+      "observation": {
+        "events": [
+          {
+            "kind": "transitionend",
+            "at": 264.5
+          }
+        ],
+        "frames": 26,
+        "at": 282.69999998807907,
+        "color": "rgb(255, 255, 255)"
+      }
+    },
+    {
+      "action": "cancellation",
+      "state": {
+        "at": 72.89999997615814,
+        "fonts": "loaded",
+        "theme": null,
+        "activeTransitions": 0,
+        "hint": {
+          "className": "changed",
+          "ariaHidden": null,
+          "opacity": "1"
+        }
+      },
+      "observation": {
+        "events": [],
+        "frames": 2,
+        "at": 76,
+        "color": "rgb(255, 255, 255)"
+      }
+    }
+  ]
+}

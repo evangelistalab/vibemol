@@ -141,4 +141,36 @@ class ReleaseVersionScope(unittest.TestCase):
         self.assertEqual(self.invoke(foreign_root=True)['0']['session']['appVersion'],'0.9.5')
 
 
+class AccessibilityReleaseScope(unittest.TestCase):
+    def invoke(self, *, changed=None, future=False, readded=False, bad_scope=False):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);path=root/mapping.HARNESS_SCOPE_PATH;path.parent.mkdir(parents=True)
+            scope=copy.deepcopy(mapping.HARNESS_SCOPE)
+            if bad_scope:scope['diagnosticRun']=0
+            path.write_text(json.dumps(scope))
+            creation='e'*40;tree='f'*40
+            def git(*args):
+                if args==('log','--diff-filter=A','--format=%H','--',mapping.HARNESS_SCOPE_PATH):
+                    return creation+'\n'+('a'*40 if readded else '')
+                if args==('rev-parse',creation+'^{tree}'):return tree
+                if args==('diff','--name-only',mapping.HARNESS_SCOPE['releaseHead'],'HEAD'):
+                    return '\n'.join(changed or ['tests/e2e/accessibility.py',mapping.HARNESS_SCOPE_PATH])
+                self.fail(args)
+            mapping.authorized_release_tree(root,git,'b'*40 if future else tree,mapping.HARNESS_SCOPE['releaseTree'])
+
+    def test_one_immutable_authorized_harness_tree_and_pure_merge(self):
+        self.invoke()
+
+    def test_later_harness_or_feature_commit_cannot_reuse_it(self):
+        with self.assertRaises(AssertionError):self.invoke(future=True)
+
+    def test_production_or_golden_change_is_rejected(self):
+        for path in ['assets/app/js/app.js','src/styles/tokens.css','index.html','tests/baselines/characterize.json.gz']:
+            with self.subTest(path=path),self.assertRaises(AssertionError):self.invoke(changed=[path])
+
+    def test_readding_or_editing_scope_cannot_authorize_another_tree(self):
+        for option in ['readded','bad_scope']:
+            with self.subTest(option=option),self.assertRaises(AssertionError):self.invoke(**{option:True})
+
+
 if __name__=='__main__':unittest.main()

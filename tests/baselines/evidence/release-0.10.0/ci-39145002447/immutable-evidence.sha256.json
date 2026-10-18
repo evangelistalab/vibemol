@@ -1,0 +1,9 @@
+{
+  "archive": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/ci-39145002447/immutable-evidence.tar.gz",
+  "bytes": 63577822,
+  "sha256": "3187673ea9250ea646cffe1432195d80c1b03b46222008793ae5f65acc970788",
+  "files": 349,
+  "runId": 39145002447,
+  "attempt": 1,
+  "role": "Failed automatic main gate; release stop preserved"
+}

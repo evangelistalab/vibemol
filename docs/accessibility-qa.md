@@ -89,3 +89,13 @@ returns **no targets smaller than 24 × 24 px** in the expanded Subspace fixture
 This checks geometry rather than inferring dimensions from stylesheet values.
 
 API reference: [axe-core documentation](https://github.com/dequelabs/axe-core/blob/v4.11.0/doc/API.md).
+
+## Settled scans and the named canvas-backed set
+
+The separate harness correction cites [diagnostic39154813750](https://github.com/evangelistalab/vibemol/actions/runs/39154813750), measured on the tagged base, accepted release PR tree and main three times each. The old fixed350ms preparation and100ms scroll delays did not guarantee a settled audit. Every scan now waits for `document.fonts.ready`, finite CSS transitions to finish or cancel, and two requestAnimationFrames after the last transition. No assertion retry, sleep, color substitution or app-style mutation supplies readiness.
+
+The original `color-contrast.json` incomplete inventory remains unchanged. `accessibility_contract.py` names only light/Calculations and dark/Calculations `#hint`, for axe's `color-contrast` / `imgNode` result with related `#canvas` whose HTML is actually a canvas. It remains an incomplete manual-review finding, never a passing contrast measurement. The same selector with a different reason, another case or canvas, a different target over the canvas, or a confirmed violation fails. Actual/baseline/named/unexpected target sets are printed on success and failure. Negative controls cover those distinctions and same-count target swaps.
+
+The diagnostic is not a merge gate. See `docs/refactor-release-retrospective.md` for the repeated deferral and the distinction between class repair and a passing replay.
+
+The nine-run diagnostic measured original-suite outcomes: tagged base3pass/0fail, accepted04eaf66 tree2/1, main323d03f1/2. All108 raw scans were independently compared;385 compositor-frame hashes were verified, and the three frames immediately before the failing scans were visually reviewed. Eight raw hint-incomplete scans occurred during its auto-hide opacity transition, three in light Calculations and five in dark. The tagged suite can still pass because an earlier definite pass resolves its later incomplete. At the three failing dark scans opacity was0.577596 /0.856722 /0.72195; the hint's theme-background transition had ended3456.10 /4520.50 /3906.70ms earlier. Actual compositor frames show the rendered molecule561.31 /540.13 /572.34ms before axe. The supported mechanism is the hint auto-hide fade, not a scan before canvas presentation or during the earlier theme-color transition. Read-only instrumentation can perturb timing; these counts are observations, not a population flake-rate estimate.

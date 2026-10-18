@@ -1,0 +1,751 @@
+{
+  "group": "0.10.0 release",
+  "head": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+  "base": "5ac250f7e8f9d012448736139c825e2a892e963c",
+  "tree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+  "runId": 39145002447,
+  "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39145002447",
+  "attempt": 1,
+  "pr": 31,
+  "checkoutMergeCommit": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+  "candidateConjunctionVerified": false,
+  "stopReasons": [
+    "all eleven jobs successful",
+    "overall conclusion",
+    "exact34/3/37 counts",
+    "exact raw failing workflow set",
+    "ordinary aggregate accepted"
+  ],
+  "gates": {
+    "all eleven jobs successful": {
+      "actual": false,
+      "expected": true,
+      "passed": false
+    },
+    "overall conclusion": {
+      "actual": "failure",
+      "expected": "success",
+      "passed": false
+    },
+    "required construction order": {
+      "actual": "passed",
+      "expected": "passed",
+      "passed": true
+    },
+    "all audited stages passed": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "all37 suites once": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "exact34/3/37 counts": {
+      "actual": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "expected": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "passed": false
+    },
+    "exact raw failing workflow set": {
+      "actual": false,
+      "expected": true,
+      "passed": false
+    },
+    "ordinary aggregate accepted": {
+      "actual": false,
+      "expected": true,
+      "passed": false
+    },
+    "ordinary #11 workflow/site": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "#11 origin/caller shape without line matching": {
+      "actual": {
+        "exceptionType": "TimeoutError",
+        "origin": {
+          "suite": "ci_gate_diagnostics.py",
+          "function": "wait_for_video_idle"
+        },
+        "caller": {
+          "suite": "smoke.py",
+          "function": "main"
+        }
+      },
+      "expected": {
+        "exceptionType": "TimeoutError",
+        "origin": {
+          "suite": "ci_gate_diagnostics.py",
+          "function": "wait_for_video_idle"
+        },
+        "caller": {
+          "suite": "smoke.py",
+          "function": "main"
+        }
+      },
+      "passed": true
+    },
+    "Edit suite passed": {
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    "every width comparand emitted": {
+      "actual": [
+        320,
+        390,
+        768,
+        1440,
+        1920
+      ],
+      "expected": [
+        320,
+        390,
+        768,
+        1440,
+        1920
+      ],
+      "passed": true
+    },
+    "all unchanged overflow comparisons pass": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "compact readiness observed": {
+      "actual": [
+        {
+          "actual": "true",
+          "expected": "true",
+          "viewportWidth": 320
+        }
+      ],
+      "expected": [
+        {
+          "actual": "true",
+          "expected": "true",
+          "viewportWidth": 320
+        }
+      ],
+      "passed": true
+    },
+    "102 unchanged goldens twice/exact repeat,52slots/eight contexts/all minima": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "Looks completed": {
+      "actual": 0,
+      "expected": 0,
+      "passed": true
+    },
+    "Looks raw completion without timeout": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "Studio material-family path": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "Properties material-family path": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "WebKit Properties": {
+      "actual": "success",
+      "expected": "success",
+      "passed": true
+    },
+    "JS unit count": {
+      "actual": [
+        "433"
+      ],
+      "expected": [
+        "433"
+      ],
+      "passed": true
+    },
+    "Python unit count": {
+      "actual": [
+        "64"
+      ],
+      "expected": [
+        "64"
+      ],
+      "passed": true
+    },
+    "exact204 metadata leaves on both workers and join": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    },
+    "zero residual difference on both workers and join": {
+      "actual": true,
+      "expected": true,
+      "passed": true
+    }
+  },
+  "failedJobs": [
+    {
+      "name": "Aggregate browser gate (34/3/37)",
+      "conclusion": "failure"
+    }
+  ],
+  "browser": {
+    "passed": 33,
+    "failed": 4,
+    "total": 37,
+    "allExecutedOnce": true,
+    "actualFailingWorkflows": [
+      [
+        "tests/e2e/accessibility.py",
+        null
+      ],
+      [
+        "tests/e2e/axis_gizmo.py",
+        "escape-canvas-focus"
+      ],
+      [
+        "tests/e2e/mode_consistency.py",
+        "coordinates-delete-selection-card"
+      ],
+      [
+        "tests/e2e/smoke.py",
+        "issue-11-stop-after-second-download"
+      ]
+    ],
+    "expectedFailingWorkflows": [
+      [
+        "tests/e2e/axis_gizmo.py",
+        "escape-canvas-focus"
+      ],
+      [
+        "tests/e2e/mode_consistency.py",
+        "coordinates-delete-selection-card"
+      ],
+      [
+        "tests/e2e/smoke.py",
+        "issue-11-stop-after-second-download"
+      ]
+    ],
+    "acceptedFailures": [
+      {
+        "test": "tests/e2e/accessibility.py",
+        "exitCode": 1,
+        "seconds": 166.0,
+        "wallTimeSeconds": 166.0,
+        "testSha256": "d08584aea8afad874e511b5a1db544868924b2b6e53511e2aa08ef8ef91c6cf4",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/ci-39145002447/independent/browser-suite/accessibility/run.log",
+        "firstFailure": {
+          "suite": "accessibility.py",
+          "line": 158,
+          "function": "main"
+        },
+        "failureCallSite": {
+          "suite": "accessibility.py",
+          "line": 163,
+          "function": "<module>"
+        },
+        "exceptionType": "AssertionError",
+        "failureWorkflow": null,
+        "knownDefect": false,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/axis_gizmo.py",
+        "exitCode": 1,
+        "seconds": 44.49,
+        "wallTimeSeconds": 44.49,
+        "testSha256": "7847c5ede2ccc827e4725a86e0eb71d15bac7a6a91801cc2a1ce8bd2596fceb6",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/ci-39145002447/independent/browser-suite/axis_gizmo/run.log",
+        "firstFailure": {
+          "suite": "axis_gizmo.py",
+          "line": 130,
+          "function": "run"
+        },
+        "failureCallSite": {
+          "suite": "axis_gizmo.py",
+          "line": 170,
+          "function": "main"
+        },
+        "exceptionType": "AssertionError",
+        "failureWorkflow": {
+          "id": "escape-canvas-focus"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/smoke.py",
+        "exitCode": 1,
+        "seconds": 729.04,
+        "wallTimeSeconds": 729.04,
+        "testSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/ci-39145002447/independent/browser-suite/smoke/run.log",
+        "firstFailure": {
+          "suite": "ci_gate_diagnostics.py",
+          "line": 88,
+          "function": "wait_for_video_idle"
+        },
+        "failureCallSite": {
+          "suite": "smoke.py",
+          "line": 4394,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "issue-11-stop-after-second-download",
+          "site": "trajectory"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      },
+      {
+        "test": "tests/e2e/mode_consistency.py",
+        "exitCode": 1,
+        "seconds": 67.58,
+        "wallTimeSeconds": 67.58,
+        "testSha256": "f88242838ba6f50e5ca1988c4601478d62e3fb91f51b9024f73684fbc3142aa1",
+        "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/release-0.10.0/ci-39145002447/independent/browser-suite/mode_consistency/run.log",
+        "firstFailure": {
+          "suite": "mode_consistency.py",
+          "line": 80,
+          "function": "coordinate_row_actions"
+        },
+        "failureCallSite": {
+          "suite": "mode_consistency.py",
+          "line": 162,
+          "function": "main"
+        },
+        "exceptionType": "TimeoutError",
+        "failureWorkflow": {
+          "id": "coordinates-delete-selection-card"
+        },
+        "knownDefect": true,
+        "rawFailureIndependentlyVerified": true
+      }
+    ],
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationReachedThisRun": false,
+    "editTool320": {
+      "actual": {
+        "clientWidth": 304,
+        "scrollWidth": 304
+      },
+      "expected": {
+        "maximumScrollWidth": 305
+      },
+      "passed": true,
+      "viewportWidth": 320
+    }
+  },
+  "characterization": {
+    "runs": 2,
+    "capturesPerRun": 102,
+    "identityContexts": 8,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5353,
+          "session restore": 1,
+          "panel transition": 1178
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5466,
+          "session restore": 1,
+          "panel transition": 1112
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3285,
+          "session restore": 1,
+          "panel transition": 847
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3099,
+          "session restore": 1,
+          "panel transition": 757
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5355,
+          "session restore": 1,
+          "panel transition": 1124
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 412,
+          "DOM replacement": 5766,
+          "session restore": 1,
+          "panel transition": 1131
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 408
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3290,
+          "session restore": 1,
+          "panel transition": 860
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3398,
+          "session restore": 1,
+          "panel transition": 823
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ],
+    "unchangedGoldensMatched": true,
+    "exactSerializedRepeat": true,
+    "pixelChangesDiagnosticOnly": []
+  },
+  "appearanceMaterialPresetIntermittent": {
+    "looksSeconds": 1932.78,
+    "looksMinutes": 32.213,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "constructionOrder": {
+    "status": "passed",
+    "appBindings": 27,
+    "moduleBindings": 125,
+    "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+  },
+  "renderer": {
+    "suite": "smoke",
+    "os": "Linux",
+    "architecture": "x86_64",
+    "browserName": "chromium",
+    "browserVersion": "156.0.8078.4",
+    "rendererClass": "software",
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "unmaskedVendor": "Google Inc. (Google)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)",
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39145002447"
+  },
+  "controllerInputs": [
+    "els",
+    "Symmetry",
+    "resolveEditSymmetryTarget",
+    "resolveVolumeAtomId",
+    "workspaceEnabled",
+    "isEditMode",
+    "clearSymmetryElementGuide",
+    "renderSymmetryElementGuide",
+    "positionSymmetryPopover",
+    "updateEditAdaptiveMenuUi",
+    "setHintMessage"
+  ],
+  "controllerInterfaceCount": 11,
+  "periodicFactoryInputs": 11,
+  "trackedLetBefore": 249,
+  "trackedLetAfter": 249,
+  "sourceAudit": {
+    "status": "passed",
+    "checks": 5,
+    "proof": {
+      "allAppControllerExporterQaBytesUnchanged": true,
+      "approvedVersionUrlAndNoteOnly": true,
+      "allInputsUsed": true,
+      "noSavedAppVersionBehaviorBranch": true
+    },
+    "metrics": {
+      "proposedApp": {
+        "trackedTwoSpaceLetDeclarationLines": 249,
+        "lines": 31639,
+        "directIifeFunctionDeclarations": 1163,
+        "allFunctionDeclarations": 1171
+      }
+    }
+  },
+  "timing": {
+    "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39145002447",
+    "head": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+    "attempt": 1,
+    "conclusion": "failure",
+    "createdAt": "2026-10-18T16:26:28Z",
+    "lastJobCompletedAt": "2026-10-18T17:03:22Z",
+    "workflowSeconds": 2214.0,
+    "workflowMinutes": 36.9,
+    "baselineMinutes": 132.93,
+    "savedMinutes": 96.03,
+    "reductionPercent": 72.24102911306703,
+    "speedup": 3.602439024390244,
+    "jobSeconds": {
+      "checks-and-unit": 36.0,
+      "Browser suites (looks)": 1974.0,
+      "WebKit Properties interactions": 87.0,
+      "Characterization (2)": 1003.0,
+      "Characterization (1)": 973.0,
+      "Browser suites (balanced-3)": 1914.0,
+      "Browser suites (balanced-1)": 1897.0,
+      "Browser suites (balanced-2)": 2195.0,
+      "Browser suites (smoke)": 769.0,
+      "Exact characterization repeat and goldens": 20.0,
+      "Aggregate browser gate (34/3/37)": 13.0
+    },
+    "shards": [
+      {
+        "shard": "balanced-1",
+        "suites": 11,
+        "subprocessSeconds": 1862.05,
+        "batchSeconds": 1862.05,
+        "jobSeconds": 1897.0
+      },
+      {
+        "shard": "balanced-2",
+        "suites": 12,
+        "subprocessSeconds": 2156.8,
+        "batchSeconds": 2156.81,
+        "jobSeconds": 2195.0
+      },
+      {
+        "shard": "balanced-3",
+        "suites": 12,
+        "subprocessSeconds": 1876.72,
+        "batchSeconds": 1876.73,
+        "jobSeconds": 1914.0
+      },
+      {
+        "shard": "looks",
+        "suites": 1,
+        "subprocessSeconds": 1932.78,
+        "batchSeconds": 1932.78,
+        "jobSeconds": 1974.0
+      },
+      {
+        "shard": "smoke",
+        "suites": 1,
+        "subprocessSeconds": 729.04,
+        "batchSeconds": 729.09,
+        "jobSeconds": 769.0
+      }
+    ],
+    "lastWorker": "Browser suites (balanced-2)",
+    "lastJob": "Aggregate browser gate (34/3/37)",
+    "characterizationWorkerSeconds": {
+      "1": 935.66,
+      "2": 965.08
+    },
+    "characterizationJoinSeconds": 20.0,
+    "browserJoinSeconds": 13.0,
+    "cache": {
+      "restoreHits": 0,
+      "restoreMisses": 8,
+      "hitJobs": [],
+      "missJobs": [
+        "Browser suites (balanced-1)",
+        "Browser suites (balanced-2)",
+        "Browser suites (balanced-3)",
+        "Browser suites (looks)",
+        "Browser suites (smoke)",
+        "Characterization (1)",
+        "Characterization (2)",
+        "WebKit Properties interactions"
+      ],
+      "playwrightVersions": [
+        "1.64.0"
+      ]
+    },
+    "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
+  },
+  "cacheFixDeployment": {
+    "status": "restore task still open",
+    "actualRestoreHits": 0,
+    "actualRestoreMisses": 8,
+    "featureBranchPrimeDidNotRestore": true,
+    "integrationWarmRun": 39095059338,
+    "noRetry": true,
+    "standingGateUnchanged": true,
+    "taskComplete": false
+  },
+  "metadataMapping": {
+    "applied": true,
+    "mappedLeaves": 204,
+    "residualDifference": 0,
+    "expiresAfterPublishedTagRefresh": true
+  },
+  "manualGateSeparate": true
+}

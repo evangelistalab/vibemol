@@ -1,0 +1,8 @@
+{
+  "status": "passed",
+  "js": 433,
+  "python": 78,
+  "negativeControls": "10 explicit contrast inventory tests; four additional release-scope controls",
+  "barrier": "fonts plus two frames; active transition completion and cancellation observed",
+  "productionChanges": []
+}

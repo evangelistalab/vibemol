@@ -1,0 +1,1343 @@
+{
+  "status": "STOP: Stage5 complete; 0.10.0 tag/publication and baseline refresh held pending human decision",
+  "stage5Groups": [
+    {
+      "label": "5a trajectory shadows",
+      "runId": 39086927339,
+      "attempt": 1,
+      "pr": 26,
+      "head": "41363b608592991afcaf6c7a501efd86885040f2",
+      "accepted": true,
+      "historicalHumanGateCorrection": {
+        "authority": "direct human instruction in this chat",
+        "expected": {
+          "passed": 33,
+          "failed": 4,
+          "total": 37
+        },
+        "originalCiConclusion": "failure",
+        "onlySupersededGate": "old 34/3 aggregate assertion",
+        "noRerun": true,
+        "originalEvidenceUnchanged": true
+      },
+      "actualBrowserCounts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "letsBefore": 262,
+      "letsAfter": 260,
+      "usedControllerInputs": 8,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 29,
+        "moduleBindings": 129,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1794.63,
+        "looksMinutes": 29.910500000000003,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1969.0,
+        "workflowMinutes": 32.81666666666667,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.31282128438527,
+        "speedup": 4.05068562722194,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/trajectory/ci-39086927339/corrected-gate/candidate-verification.json",
+      "evidenceSha256": "0f8c3536ec2d53d3a682c2af3c6d3ae515d7e0dfc585b7d501a5c51c825fbac2"
+    },
+    {
+      "label": "5b vibration",
+      "runId": 39093054459,
+      "attempt": 1,
+      "pr": 27,
+      "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+      "accepted": true,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "letsBefore": 260,
+      "letsAfter": 256,
+      "usedControllerInputs": 13,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 16,
+        "moduleBindings": 161,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1364.44,
+        "looksMinutes": 22.740666666666666,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1950.0,
+        "workflowMinutes": 32.5,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.5510419017528,
+        "speedup": 4.0901538461538465,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/vibration/ci-39093054459/candidate-verification.json",
+      "evidenceSha256": "3c0b04ee70ceb9c2f28ae9f2c979aef050a7d97dab224328c8f86335986bcfb2"
+    },
+    {
+      "label": "5c accepted unchanged runtime",
+      "runId": 39135895060,
+      "attempt": 1,
+      "pr": 28,
+      "head": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+      "accepted": true,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "letsBefore": 256,
+      "letsAfter": 249,
+      "usedControllerInputs": 11,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 27,
+        "moduleBindings": 125,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1015.93,
+        "looksMinutes": 16.932166666666667,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1937.0,
+        "workflowMinutes": 32.28333333333333,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.71403495574111,
+        "speedup": 4.117604543107899,
+        "cache": {
+          "restoreHits": 8,
+          "restoreMisses": 0,
+          "hitJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "missJobs": [],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/symmetry/ci-39135895060/candidate-verification.json",
+      "evidenceSha256": "4664b317d2559d6182117e4e19c1b5fe5f11433d78c6c8f88df51346bd2dae7a"
+    }
+  ],
+  "ordinaryRunChronology": [
+    {
+      "label": "5a trajectory shadows",
+      "runId": 39086927339,
+      "attempt": 1,
+      "pr": 26,
+      "head": "41363b608592991afcaf6c7a501efd86885040f2",
+      "accepted": true,
+      "historicalHumanGateCorrection": {
+        "authority": "direct human instruction in this chat",
+        "expected": {
+          "passed": 33,
+          "failed": 4,
+          "total": 37
+        },
+        "originalCiConclusion": "failure",
+        "onlySupersededGate": "old 34/3 aggregate assertion",
+        "noRerun": true,
+        "originalEvidenceUnchanged": true
+      },
+      "actualBrowserCounts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "letsBefore": 262,
+      "letsAfter": 260,
+      "usedControllerInputs": 8,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 29,
+        "moduleBindings": 129,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1794.63,
+        "looksMinutes": 29.910500000000003,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1969.0,
+        "workflowMinutes": 32.81666666666667,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.31282128438527,
+        "speedup": 4.05068562722194,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/trajectory/ci-39086927339/corrected-gate/candidate-verification.json",
+      "evidenceSha256": "0f8c3536ec2d53d3a682c2af3c6d3ae515d7e0dfc585b7d501a5c51c825fbac2"
+    },
+    {
+      "label": "5b vibration",
+      "runId": 39093054459,
+      "attempt": 1,
+      "pr": 27,
+      "head": "fe765f8c3e3f943a22f190535e0f16e6f3a03049",
+      "accepted": true,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "letsBefore": 260,
+      "letsAfter": 256,
+      "usedControllerInputs": 13,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 16,
+        "moduleBindings": 161,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1364.44,
+        "looksMinutes": 22.740666666666666,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1950.0,
+        "workflowMinutes": 32.5,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.5510419017528,
+        "speedup": 4.0901538461538465,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/vibration/ci-39093054459/candidate-verification.json",
+      "evidenceSha256": "3c0b04ee70ceb9c2f28ae9f2c979aef050a7d97dab224328c8f86335986bcfb2"
+    },
+    {
+      "label": "5c initial held attempt",
+      "runId": 39096866233,
+      "attempt": 1,
+      "pr": 28,
+      "head": "8d75a4fa83045d2244f5cd1fe980ebd323141a90",
+      "accepted": false,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "letsBefore": 256,
+      "letsAfter": 249,
+      "usedControllerInputs": 11,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 27,
+        "moduleBindings": 125,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1420.05,
+        "looksMinutes": 23.6675,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1921.0,
+        "workflowMinutes": 32.016666666666666,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.91464179141904,
+        "speedup": 4.151900052056221,
+        "cache": {
+          "restoreHits": 8,
+          "restoreMisses": 0,
+          "hitJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "missJobs": [],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/symmetry/ci-39096866233/candidate-verification.json",
+      "evidenceSha256": "b9fdd4739dc295a052710ec4ca6c758bf6107fb34c8f8ee59b0dcdf6289973ba"
+    },
+    {
+      "label": "harness-only #21 fix",
+      "runId": 39132743102,
+      "attempt": 1,
+      "pr": 29,
+      "head": "517d5f91cb5332fd1952ac5591fefb0f23b409aa",
+      "accepted": true,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "letsBefore": 256,
+      "letsAfter": 256,
+      "usedControllerInputs": null,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 16,
+        "moduleBindings": 161,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1776.88,
+        "looksMinutes": 29.61466666666667,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1955.0,
+        "workflowMinutes": 32.583333333333336,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.48835226560345,
+        "speedup": 4.079693094629156,
+        "cache": {
+          "restoreHits": 8,
+          "restoreMisses": 0,
+          "hitJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "missJobs": [],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/edit320-sync-fix/ci-39132743102/candidate-verification.json",
+      "evidenceSha256": "dd6f80538d8fef09052a7aeb6cb9cfc0b63e9773ab17dff7c79c3be141974808"
+    },
+    {
+      "label": "5c accepted unchanged runtime",
+      "runId": 39135895060,
+      "attempt": 1,
+      "pr": 28,
+      "head": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+      "accepted": true,
+      "historicalHumanGateCorrection": null,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "letsBefore": 256,
+      "letsAfter": 249,
+      "usedControllerInputs": 11,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 27,
+        "moduleBindings": 125,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "looks": {
+        "looksSeconds": 1015.93,
+        "looksMinutes": 16.932166666666667,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1937.0,
+        "workflowMinutes": 32.28333333333333,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.71403495574111,
+        "speedup": 4.117604543107899,
+        "cache": {
+          "restoreHits": 8,
+          "restoreMisses": 0,
+          "hitJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "missJobs": [],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceFile": "/Users/fevange/Source/vibemol/out/test-artifacts/stage5/symmetry/ci-39135895060/candidate-verification.json",
+      "evidenceSha256": "4664b317d2559d6182117e4e19c1b5fe5f11433d78c6c8f88df51346bd2dae7a"
+    },
+    {
+      "label": "rejected release note ID",
+      "runId": 39139792758,
+      "pr": 30,
+      "accepted": false,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "reason": "Unnecessary ID added to the requested visible release note changed the exact DOM identity golden",
+      "looks": {
+        "seconds": 1045.86,
+        "bothMaterialPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "appearanceMaterialPresetTimeoutRecurred": false,
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "seconds": 1953.0,
+        "minutes": 32.55,
+        "baselineMinutes": 132.93,
+        "cacheHits": 0,
+        "cacheMisses": 8
+      }
+    },
+    {
+      "label": "accepted release PR",
+      "runId": 39142040274,
+      "pr": 31,
+      "head": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "accepted": true,
+      "actualBrowserCounts": {
+        "passed": 34,
+        "failed": 3,
+        "total": 37
+      },
+      "letsAfter": 249,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 27,
+        "moduleBindings": 125,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "metadataMapping": {
+        "applied": true,
+        "mappedLeaves": 204,
+        "residualDifference": 0,
+        "expiresAfterPublishedTagRefresh": true
+      },
+      "looks": {
+        "looksSeconds": 992.66,
+        "looksMinutes": 16.544333333333334,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 1980.0,
+        "workflowMinutes": 33.0,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 75.17490408485669,
+        "speedup": 4.028181818181818,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceSha256": "6a3ad748d227d868eef096f8b2e4006860ffbeb9f3cdc3bc5fb0e07c57f0b390"
+    },
+    {
+      "label": "automatic release main push",
+      "runId": 39145002447,
+      "pr": 31,
+      "head": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+      "accepted": false,
+      "actualBrowserCounts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "letsAfter": 249,
+      "constructionOrder": {
+        "status": "passed",
+        "appBindings": 27,
+        "moduleBindings": 125,
+        "toolSha256": "6d8fdf9ecb421e9a4c3d10d368cff214c7b76007273b67054f80aeac4384f496"
+      },
+      "metadataMapping": {
+        "applied": true,
+        "mappedLeaves": 204,
+        "residualDifference": 0,
+        "expiresAfterPublishedTagRefresh": true
+      },
+      "looks": {
+        "looksSeconds": 1932.78,
+        "looksMinutes": 32.213,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "ci": {
+        "workflowSeconds": 2214.0,
+        "workflowMinutes": 36.9,
+        "baselineMinutes": 132.93,
+        "reductionPercent": 72.24102911306703,
+        "speedup": 3.602439024390244,
+        "cache": {
+          "restoreHits": 0,
+          "restoreMisses": 8,
+          "hitJobs": [],
+          "missJobs": [
+            "Browser suites (balanced-1)",
+            "Browser suites (balanced-2)",
+            "Browser suites (balanced-3)",
+            "Browser suites (looks)",
+            "Browser suites (smoke)",
+            "Characterization (1)",
+            "Characterization (2)",
+            "WebKit Properties interactions"
+          ],
+          "playwrightVersions": [
+            "1.64.0"
+          ]
+        }
+      },
+      "evidenceSha256": "3ac040ba3c0fecc291f8c3f9db5da802bda7565029be809993f83c8b71121696"
+    },
+    {
+      "label": "unbounded automatic diagnostic on release PR",
+      "runId": 39142040226,
+      "role": "not a gate",
+      "materialFamilyPaths": "not covered this run",
+      "assessment": "known #11 trajectory terminal new crop after second download"
+    }
+  ],
+  "letProgression": {
+    "stage3": 265,
+    "stage4PubChem": 262,
+    "5a": 260,
+    "5b": 256,
+    "5cAndRelease": 249,
+    "finalVsStage3": -16
+  },
+  "usedControllerInputs": {
+    "trajectory": 8,
+    "vibration": 13,
+    "symmetry": 11,
+    "periodic": 11,
+    "pubchem": 13
+  },
+  "currentGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "acceptedWorkflowKeys": [
+      [
+        "axis_gizmo.py",
+        "escape-canvas-focus"
+      ],
+      [
+        "mode_consistency.py",
+        "coordinates-delete-selection-card"
+      ],
+      [
+        "smoke.py",
+        "issue-11-stop-after-second-download"
+      ]
+    ]
+  },
+  "identityComposition": {
+    "slots": 52,
+    "contexts": 8,
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 5
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 4
+    }
+  },
+  "carriedProductPriority": [
+    25,
+    17
+  ],
+  "otherCarried": [
+    3,
+    4,
+    11
+  ],
+  "maintenanceFollowups": [
+    5,
+    14,
+    15
+  ],
+  "closedTestIssue": 21,
+  "materialPresetIntermittent": "still open; each ordinary run records both-path coverage; diagnostic/recording workflows do not cover it",
+  "nativeReleaseMatrix": {
+    "status": "native release matrix and corrected-note delta verified",
+    "matrixSourceHead": "cf40737c4327510a71f418fb69c4bbf86f243e6f",
+    "matrixSourceTree": "8df67af2bae09e2934af63634675f26bd1cfa5e3",
+    "correctedCandidateHead": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+    "correctedCandidateTree": "d65e13321c8027fe555b992be4186b815a1e1be1",
+    "soleSourceDifferenceFromFullMatrix": "Removed unused id from visible release-note paragraph; all app/controller/exporter/QA and fixture bytes identical",
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "widths": [
+      1512,
+      1280,
+      1024
+    ],
+    "modes": [
+      "Display",
+      "Measure",
+      "Edit",
+      "Calculations"
+    ],
+    "fixtureFlowCountPerContext": 34,
+    "staticFixtureFiles": 32,
+    "nativeSessionRoundtrips": 204,
+    "modeObservations": 816,
+    "checks": 2908,
+    "contextReports": [
+      {
+        "id": "light-1512",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 488,
+        "pageErrors": []
+      },
+      {
+        "id": "light-1280",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 484,
+        "pageErrors": []
+      },
+      {
+        "id": "light-1024",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 484,
+        "pageErrors": []
+      },
+      {
+        "id": "dark-1512",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 484,
+        "pageErrors": []
+      },
+      {
+        "id": "dark-1280",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 484,
+        "pageErrors": []
+      },
+      {
+        "id": "dark-1024",
+        "flows": 34,
+        "modeObservations": 136,
+        "nativeSessionRoundtrips": 34,
+        "checks": 484,
+        "pageErrors": []
+      }
+    ],
+    "actualBrowserContextsForMainMatrix": 9,
+    "collectorAttempts": 4,
+    "reusedCompletedPrefix": 33,
+    "allOriginalFailuresRetained": true,
+    "originalScreenshotSha256Checks": 816,
+    "contactSheetReview": "34 fixture thumbnails for each of24 mode/theme/width sheets; raw images unchanged; timing limitation retained",
+    "visualFollowup": {
+      "status": "supplementary checks passed; no new product regression established",
+      "correctedHead": "04eaf660607072b6f4bebafa3f8daef92a92afe8",
+      "fullMatrixSource": "cf40737c4327510a71f418fb69c4bbf86f243e6f",
+      "soleSourceDelta": "Removed unused note id; visible copy and every app/controller/exporter/QA byte unchanged",
+      "welcomeContextsVerified": 6,
+      "settledPublicStatePairs": [
+        {
+          "setup": "fresh",
+          "mode": "Display",
+          "tagged": {
+            "mode": "display",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "display",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "fresh",
+          "mode": "Measure",
+          "tagged": {
+            "mode": "measure",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "measure",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "fresh",
+          "mode": "Edit",
+          "tagged": {
+            "mode": "edit",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "edit",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "fresh",
+          "mode": "Calculations",
+          "tagged": {
+            "mode": "calculations",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.904853971168208,
+              "view.camera.y": 2.904853971168199,
+              "view.camera.z": 2.9048539711681944,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "calculations",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.9048539711682078,
+              "view.camera.y": 2.904853971168197,
+              "view.camera.z": 2.904853971168194,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "perspective",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": false
+        },
+        {
+          "setup": "after-psi4-checkpoint",
+          "mode": "Display",
+          "tagged": {
+            "mode": "display",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "display",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "after-psi4-checkpoint",
+          "mode": "Measure",
+          "tagged": {
+            "mode": "measure",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "measure",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "after-psi4-checkpoint",
+          "mode": "Edit",
+          "tagged": {
+            "mode": "edit",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "edit",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.0254765944896787,
+              "view.camera.y": 2.025476594489678,
+              "view.camera.z": 2.0254765944896778,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        },
+        {
+          "setup": "after-psi4-checkpoint",
+          "mode": "Calculations",
+          "tagged": {
+            "mode": "calculations",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.9048539711682078,
+              "view.camera.y": 2.904853971168197,
+              "view.camera.z": 2.904853971168194,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "release": {
+            "mode": "calculations",
+            "settings": {
+              "global.showAtoms": true,
+              "global.showAtomLabels": false,
+              "global.showAtomLabelNumbers": false,
+              "global.showBonds": true,
+              "global.showMultiBonds": true,
+              "global.showBox": false,
+              "global.showAxes": true,
+              "view.shift.x": 0,
+              "view.shift.y": 0,
+              "view.shift.z": 0,
+              "view.camera.x": 2.9048539711682078,
+              "view.camera.y": 2.904853971168197,
+              "view.camera.z": 2.904853971168194,
+              "view.target.x": 0,
+              "view.target.y": 0,
+              "view.target.z": 0,
+              "view.projection": "orthographic",
+              "view.autoRotate": false,
+              "view.rotateSpeed": 1.5,
+              "view.damping": 0.05,
+              "view.autoRotateSpeed": 2
+            },
+            "atoms": 2
+          },
+          "firstDifferenceAtStandingFloatTolerance": null,
+          "exactlyEqual": true
+        }
+      ],
+      "stateComparison": "Standing float-only1e-9/1e-12;7 exact pairs; one fresh Calculations pair differs in3 camera last-ULP coordinates. Strict-equality failure preserved separately.",
+      "measureVisualFollowup": "All four sampled Measure PNGs show the molecule after eight extra animation-frame observations, on tagged and corrected release, fresh and after a real session checkpoint.",
+      "limitation": "Some original full-matrix Measure PNGs captured the transition with two-frame UI readiness and no molecule-visibility assertion. Supplementary observations do not establish a product visibility defect or attribute transition images to the existing orthographic-frustum issue. Original PNGs remain unchanged.",
+      "newProductIssueFiled": false,
+      "noDiagnosticAsMergeGate": true
+    },
+    "noStandaloneExporter": "Unbuilt feature, excluded by direct human instruction",
+    "runtimeVersionBranches": false,
+    "metadataPolicy": "Exactly204 full-path0.9.5-to0.10.0 mappings, no other expected changes; expires after published-tag recording",
+    "localBrowserVersion": "145.0.7632.6"
+  },
+  "publishedRelease": null,
+  "mappingExpiry": "mandatory after published-tag recording; still pending",
+  "releaseMainCommit": "323d03fa393cfe5e3df6023fbdb0a2bd19cd6eea",
+  "firstReleasePrGatePassed": true,
+  "automaticMainGatePassed": false,
+  "stopReport": "ci-39145002447/release-stop.json",
+  "releaseTagExists": false,
+  "recordingDispatched": false,
+  "metadataMapping": "Still scoped only to release tree; no expansion. Removal remains mandatory after publication and explicit recording.",
+  "humanDecisionRequired": "Authorize prepared instrumented accessibility diagnostic or keep release held.",
+  "unappliedDiagnosticProposal": "hint-diagnostic-proposal/proposal.json",
+  "noCiRetry": true,
+  "recurringMailboxMonitor": "paused; mailbox retired"
+}

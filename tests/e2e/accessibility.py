@@ -7,6 +7,7 @@ import json
 import premerge as p
 from calculations import ready
 from helpers import read_app_version
+from accessibility_contract import compare_findings, KNOWN_CANVAS_BACKED_INCOMPLETE
 
 AXE_VERSION = '4.11.0'
 AXE_SHA256 = 'e9e5863c33a874f09bc01acd9234b7e3c871479f5eef8802fa582544465e6d01'
@@ -35,12 +36,49 @@ def prepare(page, url, theme, mode):
         ready(page)
         page.locator('#subspacePanel details').evaluate_all('els=>els.forEach(e=>e.open=true)')
     page.mouse.move(750, 130)  # no tooltips/cursor payload over the controls
-    page.evaluate('()=>document.fonts.ready')
-    page.wait_for_timeout(350)
     return panel
 
 
+def settled_frame(page):
+    # Diagnostic39154813750 and the direct human instruction replace the old
+    # 350/100ms guesses: fonts, completed CSS transitions, then two rAFs.
+    # Cancellation is completion of that transition, never an audit retry.
+    boundary = page.evaluate_handle('''() => {
+      const boundary = {ready:false, error:null, result:null};
+      (async () => {
+        await document.fonts.ready;
+        for (;;) {
+          await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+          const transitions=document.getAnimations().filter(a => a instanceof CSSTransition &&
+            a.playState!=='finished' && a.playState!=='idle');
+          if (!transitions.length) break;
+          await Promise.all(transitions.map(a => a.finished.catch(() => null)));
+        }
+        const hint=document.getElementById('hint');
+        boundary.result={at:performance.now(),fonts:document.fonts.status,
+          theme:document.documentElement.dataset.theme,
+          activeTransitions:document.getAnimations().filter(a=>a instanceof CSSTransition &&
+            a.playState!=='finished' && a.playState!=='idle').length,
+          hint:hint?{className:hint.className,ariaHidden:hint.getAttribute('aria-hidden'),
+            opacity:getComputedStyle(hint).opacity}:null};
+        boundary.ready=true;
+      })().catch(error=>{boundary.error=String(error);});
+      return boundary;
+    }''')
+    try:
+        page.wait_for_function('b => b.ready || b.error', arg=boundary)
+        state = boundary.json_value()
+        print('[axe-settled-frame] ' + json.dumps(state, sort_keys=True), flush=True)
+        assert state['error'] is None and state['ready'], state
+        assert state['result']['fonts'] == 'loaded', state
+        assert state['result']['activeTransitions'] == 0, state
+        return state['result']
+    finally:
+        boundary.dispose()
+
+
 def inspect(page):
+    settled_frame(page)
     return page.evaluate('''async () => {
       const result=await axe.run(document, {runOnly:{type:'rule',values:['color-contrast']}});
       return {engine:result.testEngine,environment:result.testEnvironment,
@@ -106,7 +144,6 @@ def main():
                                 if offset <= 0:
                                     continue
                                 body.evaluate('(e,y)=>e.scrollTop=y', offset)
-                                page.wait_for_timeout(100)
                                 scans.append({'position': offset, 'result': inspect(page)})
                         assert not errors, errors
                         assert all(s['result']['passes'] or s['result']['violations'] or s['result']['incomplete'] for s in scans), 'Audit ran no checks'
@@ -147,14 +184,11 @@ def main():
         baseline = json.loads(BASELINE.read_text())
         assert baseline['axeVersion'] == AXE_VERSION and baseline['viewport'] == VIEWPORT
         assert baseline['cases'].keys() == report['cases'].keys()
-        regressions = []
-        for key, case in report['cases'].items():
-            # Retain known issues, but a new failure OR newly inconclusive node
-            # must be reviewed. Counts alone would miss different failing nodes.
-            for kind in ['violations', 'incomplete']:
-                targets = lambda c: {json.dumps(n['target'], sort_keys=True) for n in c[kind]}
-                for target in sorted(targets(case) - targets(baseline['cases'][key])):
-                    regressions.append(f'{key} {kind}: {target}')
+        regressions, comparands = compare_findings(report, baseline)
+        for comparand in comparands:
+            print('[axe-baseline-comparands] ' + json.dumps(comparand, sort_keys=True), flush=True)
+        print('[axe-named-canvas-incomplete] ' + json.dumps({case: [list(target) for target in nodes]
+              for case, nodes in KNOWN_CANVAS_BACKED_INCOMPLETE.items()}, sort_keys=True), flush=True)
         assert not regressions, 'Contrast baseline changed; inspect artifacts:\n' + '\n'.join(regressions)
         print('[axe] No new failing/incomplete targets against baseline. See report for existing findings.', flush=True)
 
