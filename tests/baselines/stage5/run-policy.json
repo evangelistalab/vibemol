@@ -1,16 +1,17 @@
 {
-  "group": "DOM-independent appearance mode validation",
-  "baselineRun": 39196641240,
-  "baselineHead": "559698db5df26b77a4b9c46d9eb8ffa1134d192b",
+  "group": "Issue17 Metal popover placement",
+  "baselineRun": 39322438405,
+  "baselineHead": "27dae0cd56f66cf1b688dae9a10e18ef76dbe1f6",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Remove the validator DOM input using one existing-module2C catalog shared with selector population. Exporters and ordinary exact34/3/37 gate remain unchanged.",
+  "reason": "Authorized production repair for Metal popover bounds and reachable sibling/mode cues. No exporter or scientific setting changes; ordinary exact34/3/37 workflows remain required.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,
     "total": 37
   },
-  "preserveExporterSignature": false
+  "preserveExporterSignature": false,
+  "baselineIntegration": "8a11c93c4bd833e9b79778e4a2811081686abf8b"
 }

@@ -3,6 +3,7 @@
 import json
 import premerge as p
 from helpers import wait_for_presented_state
+from metal_popover import metal_popover_regression
 
 
 def state(page):
@@ -193,7 +194,17 @@ def main():
         page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
         page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
         try:
-            run(page,url);visual_schemes(browser,url);assert not errors,errors
+            run(page,url);visual_schemes(browser,url)
+            # Run39279175556 and the instrumented full-sequence reproduction
+            # reached31.85s in the first native Coordination pointer handler.
+            # https://github.com/evangelistalab/vibemol/actions/runs/39279175556
+            # Retire the completed rendering page before independent previews;
+            # the click, assertions, readiness and30s timeout remain unchanged.
+            page.close()
+            isolation={'actualContextCount':len(browser.contexts),'expectedContextCount':0}
+            print('[metal-isolation] '+json.dumps(isolation,sort_keys=True),flush=True)
+            assert isolation['actualContextCount']==isolation['expectedContextCount'],isolation
+            metal_popover_regression(browser,url);assert not errors,errors
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'edit-tool-failure',errors,[]);raise
         finally:browser.close()

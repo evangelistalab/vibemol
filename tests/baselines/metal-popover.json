@@ -1,0 +1,696 @@
+{
+  "issue": 17,
+  "status": "proposed fix; not merged",
+  "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+  "harness": "tests/e2e/metal_popover.py",
+  "harnessSha256": "fb525bdf903f613bcea149bbd1b3796a4077a68384786f6bb221d34c640b8ec7",
+  "sourceHashes": {
+    "assets/app/js/app.js": "c459e99cdb6a5c569148ffbf84e97ea50e41cd324803f686f76b9c51b38ee1ae",
+    "assets/app/css/edit-ui.css": "ded935b3ef2ff14dae28080a8c26c385533d6f8c77bbf793b330c8a0ec11238d"
+  },
+  "scope": "Only existing Metal position helper and Metal-specific CSS. Query/listener timing, inside pointerdown propagation, all four Metal semantics, Coordination placement and exporters unchanged.",
+  "native": {
+    "cases": 28,
+    "metalCommits": 112,
+    "directCoordinationSwitchesAndCommits": 28,
+    "contextModeDismissals": 4,
+    "pageerrors": [],
+    "loggedComparands": 384,
+    "casesMeasured": [
+      {
+        "context": "workbench-light-1512",
+        "popover": {
+          "x": 916,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1302,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-1440",
+        "popover": {
+          "x": 880,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1266,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-1280",
+        "popover": {
+          "x": 722,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1108,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-1024",
+        "popover": {
+          "x": 466,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 852,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-390",
+        "popover": {
+          "x": 12,
+          "y": 267,
+          "width": 366,
+          "height": 503.1875,
+          "right": 378,
+          "bottom": 770.1875
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-320",
+        "popover": {
+          "x": 12,
+          "y": 267,
+          "width": 296,
+          "height": 503.1875,
+          "right": 308,
+          "bottom": 770.1875
+        },
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-light-390-short",
+        "popover": {
+          "x": 12,
+          "y": 108,
+          "width": 366,
+          "height": 163,
+          "right": 378,
+          "bottom": 271
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-1512",
+        "popover": {
+          "x": 916,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1302,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-1440",
+        "popover": {
+          "x": 880,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1266,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-1280",
+        "popover": {
+          "x": 722,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1108,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-1024",
+        "popover": {
+          "x": 466,
+          "y": 270,
+          "width": 386,
+          "height": 503.1875,
+          "right": 852,
+          "bottom": 773.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-390",
+        "popover": {
+          "x": 12,
+          "y": 267,
+          "width": 366,
+          "height": 503.1875,
+          "right": 378,
+          "bottom": 770.1875
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-320",
+        "popover": {
+          "x": 12,
+          "y": 267,
+          "width": 296,
+          "height": 503.1875,
+          "right": 308,
+          "bottom": 770.1875
+        },
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "workbench-dark-390-short",
+        "popover": {
+          "x": 12,
+          "y": 108,
+          "width": 366,
+          "height": 163,
+          "right": 378,
+          "bottom": 271
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-light-1512",
+        "popover": {
+          "x": 941,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1327,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-light-1440",
+        "popover": {
+          "x": 882,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1268,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-light-1280",
+        "popover": {
+          "x": 722,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1108,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-light-1024",
+        "popover": {
+          "x": 466,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 852,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-light-390",
+        "popover": {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 503.1875,
+          "right": 378,
+          "bottom": 796.1875
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": true
+      },
+      {
+        "context": "legacy-light-320",
+        "popover": {
+          "x": 12,
+          "y": 293,
+          "width": 296,
+          "height": 503.1875,
+          "right": 308,
+          "bottom": 796.1875
+        },
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "squarePyramidal",
+        "legacyNarrowStaging": true
+      },
+      {
+        "context": "legacy-light-390-short",
+        "popover": {
+          "x": 12,
+          "y": 144,
+          "width": 366,
+          "height": 127,
+          "right": 378,
+          "bottom": 271
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": true
+      },
+      {
+        "context": "legacy-dark-1512",
+        "popover": {
+          "x": 941,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1327,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-dark-1440",
+        "popover": {
+          "x": 882,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1268,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-dark-1280",
+        "popover": {
+          "x": 722,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1108,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-dark-1024",
+        "popover": {
+          "x": 466,
+          "y": 227,
+          "width": 386,
+          "height": 503.1875,
+          "right": 852,
+          "bottom": 730.1875
+        },
+        "scrollWidth": 384,
+        "clientWidth": 384,
+        "reachableCues": 5,
+        "modeOrSidebar": "modeDisplayBtn",
+        "coordination": "trigonalBipyramidal",
+        "legacyNarrowStaging": false
+      },
+      {
+        "context": "legacy-dark-390",
+        "popover": {
+          "x": 12,
+          "y": 293,
+          "width": 366,
+          "height": 503.1875,
+          "right": 378,
+          "bottom": 796.1875
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": true
+      },
+      {
+        "context": "legacy-dark-320",
+        "popover": {
+          "x": 12,
+          "y": 293,
+          "width": 296,
+          "height": 503.1875,
+          "right": 308,
+          "bottom": 796.1875
+        },
+        "scrollWidth": 294,
+        "clientWidth": 294,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "squarePyramidal",
+        "legacyNarrowStaging": true
+      },
+      {
+        "context": "legacy-dark-390-short",
+        "popover": {
+          "x": 12,
+          "y": 144,
+          "width": 366,
+          "height": 127,
+          "right": 378,
+          "bottom": 271
+        },
+        "scrollWidth": 364,
+        "clientWidth": 364,
+        "reachableCues": 5,
+        "modeOrSidebar": "toolbarShowBtn",
+        "coordination": "tetrahedral",
+        "legacyNarrowStaging": true
+      }
+    ],
+    "role": "Complete Edit prelude and native matrix on Chromium156, with completed parent rendering context retired."
+  },
+  "control": {
+    "role": "Actual merged-main diagnostic on same engine/harness; not a merge gate",
+    "main": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+    "cases": 8,
+    "harnessIdentical": true,
+    "measurements": [
+      {
+        "context": "workbench-light-1440",
+        "popover": {
+          "x": 880,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1266,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton"
+        ]
+      },
+      {
+        "context": "workbench-light-390",
+        "popover": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 398,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton",
+          "editSelectionMetalBondingCueButton",
+          "editSelectionAddFragmentCueButton",
+          "editSelectionDeleteCueButton"
+        ]
+      },
+      {
+        "context": "workbench-dark-1440",
+        "popover": {
+          "x": 880,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1266,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton"
+        ]
+      },
+      {
+        "context": "workbench-dark-390",
+        "popover": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 398,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton",
+          "editSelectionMetalBondingCueButton",
+          "editSelectionAddFragmentCueButton",
+          "editSelectionDeleteCueButton"
+        ]
+      },
+      {
+        "context": "legacy-light-1440",
+        "popover": {
+          "x": 882,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1268,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton"
+        ]
+      },
+      {
+        "context": "legacy-light-390",
+        "popover": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 398,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": []
+      },
+      {
+        "context": "legacy-dark-1440",
+        "popover": {
+          "x": 882,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 1268,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": [
+          "editSelectionTranslateCueButton",
+          "editSelectionCoordinationCueButton"
+        ]
+      },
+      {
+        "context": "legacy-dark-390",
+        "popover": {
+          "x": 12,
+          "y": 12,
+          "width": 386,
+          "height": 503.1875,
+          "right": 398,
+          "bottom": 515.1875
+        },
+        "blockedCueIds": []
+      }
+    ]
+  },
+  "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
+  "sourceAudit": {
+    "status": "passed",
+    "file": "ignored out/test-artifacts/issue17/main-source-audit.json",
+    "sha256": "deb28cc44d4992bdc47868c47eefbb49930aaf18723de0a9ec3cff9bff9dfeed",
+    "newController": false,
+    "helperAppReads": [
+      "els",
+      "modeDisplayBtn",
+      "workspaceEnabled"
+    ],
+    "trackedLets": 251,
+    "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b"
+  },
+  "localChecks": {
+    "js": 433,
+    "python": 60,
+    "constructionNewHelperLocals": 9,
+    "constructionStatus": "passed"
+  },
+  "rawArtifacts": "Ignored out/test-artifacts/issue17/; failed collector/geometry attempts preserved; historical evidence untouched.",
+  "localRuntime": {
+    "browser": "156.0.8078.4",
+    "playwright": "1.64.0",
+    "os": "Darwin",
+    "architecture": "arm64",
+    "sourceHead": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+    "role": "Engine-matched local source comparison and lifecycle diagnostic; Linux CI conjunction remains required."
+  },
+  "ciEvidence": {
+    "rejectedPredecessor": {
+      "pr": 38,
+      "head": "b9affa28329b571f74771fc8b7b99f0a323b2edc",
+      "runId": 39279175556,
+      "counts": {
+        "passed": 33,
+        "failed": 4,
+        "total": 37
+      },
+      "extraFailure": "New matrix Coordination click timed out while completed parent Edit page remained rendering.",
+      "independentInfrastructureFailure": "Characterization1 system-dependency install received Microsoft package-repository HTTP403; complete repeat proof absent.",
+      "accepted": false,
+      "oldRunNeverRetried": true
+    },
+    "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
+  },
+  "lifecycleDiagnosis": {
+    "citation": "https://github.com/evangelistalab/vibemol/actions/runs/39279175556",
+    "localMatchingReproducer": {
+      "pointerdownToNextTaskMs": 31851.799999952316,
+      "nativeClickTimeoutSeconds": 30.0,
+      "preClickGeometryIdentical": true,
+      "productionFilesIdentical": true
+    },
+    "repair": "Retire the completed parent rendering page at the original suite lifetime boundary before independent native WebGL previews; log/assert0 existing browser contexts. Production code and original actions/assertions/readiness/waits/30s timeout unchanged.",
+    "fullSequenceCasesPassed": 28,
+    "firstClosedContextClickSeconds": 2.743903832975775,
+    "threePredecidedFreshBrowserClickSeconds": [
+      2.71442204201594,
+      2.5099596249638125,
+      2.6818985840072855
+    ],
+    "threeMeasuredBackgroundContextCounts": [
+      0,
+      0,
+      0
+    ],
+    "rawProof": "Ignored out/test-artifacts/issue17/lifecycle-diagnosis.json and lifecycle-repeat-result.json; original failed run and every development attempt preserved."
+  }
+}

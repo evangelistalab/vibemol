@@ -59,7 +59,6 @@
         "Metal bounds overflow by 8 CSS pixels at supported width390"
       ],
       "acceptedCiFailure": false,
-      "manualAssertionRemainsFailing": true,
       "supportedWidthEvidence": [
         {
           "suite": "tests/e2e/axis_gizmo.py",
@@ -82,29 +81,24 @@
         }
       ],
       "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
-      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json"
-    },
-    {
-      "id": "appearance-restore-partial-failure",
-      "issue": 25,
-      "url": "https://github.com/evangelistalab/vibemol/issues/25",
-      "status": "open",
-      "workflow": "Startup appearance import can silently apply only part of a payload, including loss of requested look/style references, while returning success.",
-      "acceptedCiFailure": false,
-      "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
-      "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
-      "productionFixIncluded": false,
-      "impact": "Resolved rendering can match while reference bookkeeping is lost. A restore shortfall must be detected before live mutation.",
-      "priorityRelativeTo": {
-        "aheadOfIssues": [
-          17
-        ],
-        "batch": "0.9.x",
-        "reason": "Silent partial restoration and state inconsistency"
-      },
+      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json",
+      "historicalManualAssertionFailed": true,
       "repairProgress": {
-        "PR1": "Discriminated results, visible persistent notice and session-long payload retention for detected failures, including compound fallback failure.",
-        "PR2Pending": "Validate then commit; exact requested/applied values and references after explicit legacy normalization, then STRICT."
+        "status": "proposed fix; not merged",
+        "scope": "Metal-only outer-width constraint and placement above/below the whole selection card, preserving mode-bar clearance and inside-click propagation.",
+        "liveRegression": "tests/e2e/metal_popover.py, called by edit_tool.py within the unchanged37-suite gate",
+        "nativeMatrixExpected": 28,
+        "nativeMatrixPassed": 28,
+        "metalNativeCommits": 112,
+        "directCoordinationSwitchesAndCommits": 28,
+        "baseline": "tests/baselines/metal-popover.json",
+        "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
+        "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+        "originalFailedRun": 39279175556,
+        "originalFailedPr": 38,
+        "lifecycleDiagnosis": "Completed parent Edit renderer competed with native preview contexts; exact full-sequence reproducer fixed by retiring that page and asserting0 background contexts. No production timing workaround or assertion/wait change.",
+        "closedContextStabilityTrials": 3,
+        "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
       }
     }
   ],
@@ -133,12 +127,11 @@
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
     "orderedIssues": [
-      25,
       17
     ],
     "scope": "Relative priority among carried product defects; closed test-synchronization issue#21 is removed. Exactly three manifest workflows are accepted.",
-    "reason": "Silent partial restoration#25 precedes Metal/Coordination/Translate popover#17.",
-    "authority": "Direct human correction after diagnostic39129507791."
+    "reason": "#25 is fixed/closed after approved PR34/35. #17 is next; #21 remains a closed test-synchronization issue.",
+    "authority": "Direct human PR35 approval/merge and next-carried #17 instruction."
   },
   "closedTestIssues": [
     {
@@ -192,5 +185,40 @@
     "productionFixAllowedInPubChemRefactor": false,
     "acceptedWorkflowKey": "issue-21-edit-toolbar-layout-collapse-320",
     "comparandLogging": "Shipped edit_tool width assertion now records actual scrollWidth/clientWidth and expected maximum on pass/fail, without changing its tolerance or waits."
-  }
+  },
+  "closedProductIssues": [
+    {
+      "id": "appearance-restore-partial-failure",
+      "issue": 25,
+      "url": "https://github.com/evangelistalab/vibemol/issues/25",
+      "status": "closed",
+      "workflow": "Startup appearance import can silently apply only part of a payload, including loss of requested look/style references, while returning success.",
+      "acceptedCiFailure": false,
+      "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
+      "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
+      "productionFixIncluded": true,
+      "impact": "Resolved rendering can match while reference bookkeeping is lost. A restore shortfall must be detected before live mutation.",
+      "priorityRelativeTo": {
+        "aheadOfIssues": [
+          17
+        ],
+        "batch": "0.9.x",
+        "reason": "Silent partial restoration and state inconsistency"
+      },
+      "repairProgress": {
+        "PR1": "Merged persistent honest reporting and payload retention.",
+        "PR2": "Merged validation before commit, STRICT import and exact requested/applied readbacks including references."
+      },
+      "closedBy": {
+        "PR1": 34,
+        "PR2": 35,
+        "mergeCommit": "b06a3d4a983aed2b3425e0b4c54e196cc26db271",
+        "ownRunId": 39191793272,
+        "matrixCases": 41,
+        "strictCompatibilityPayloads": 64,
+        "registryGuardPR": 36,
+        "registryGuardRun": 39196641240
+      }
+    }
+  ]
 }
