@@ -89,37 +89,64 @@ EXPOSE = '''
   };
 '''
 
-def census(browser, generated, startup=False):
+def census(browser, generated, startup=False, validated=False):
     corpus = json.loads((OUT/'corpus-payloads.json').read_text())
     sources = json.loads((OUT/'corpus-occurrences.json').read_text())
     for row in generated:
         h = digest(row['preset']); corpus[h] = row['preset']
         sources.append(dict(source='generated:'+row['version'], path=row['theme']+'/'+row['case'], sha256=h))
+    if PAYLOAD_SHA:
+        corpus = {PAYLOAD_SHA: corpus[PAYLOAD_SHA]}
     original = (ROOT/'assets/app/js/app.js').read_bytes()
     needle = '  window.VibeMolPreset = getSceneGraphAwarePresetPublicApi();\n'
     assert original.decode().count(needle) == 1
     served = original.decode().replace(needle, needle+EXPOSE)
-    if startup:
+    if validated:
+        needle = '  const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();\n'
+        assert served.count(needle) == 1
+        served = served.replace(needle, needle+'  window.__validatedRestoreResult = appearanceAutosaveRestoreResult;\n')
+        needle = '      const imported = importAppearancePresetEnvelope(candidate);\n'
+        assert served.count(needle) == 1
+        served = served.replace(needle, needle+'      window.__validatedInitialImport = imported;\n')
+    elif startup:
         start=served.index('  function importAppearancePresetEnvelope(')
         end=served.index('\n  function ',start+5)
         old=served[start:end]
         assert old.count('PRESET_MODE.RELAXED')==1 and old.count('return runWith')==1
         served=served.replace(old,old.replace('return runWith','return window.__strictStartupImportReport = runWith').replace('PRESET_MODE.RELAXED','PRESET_MODE.STRICT'))
-    expected = {r['sha256']:r['actual']['references'] for r in json.loads((OUT/'direct-import-results.json').read_text())['cases']} if startup else {}
+    expected = {r['sha256']:r['actual']['references'] for r in json.loads((OUT/'direct-import-results.json').read_text())['cases']} if startup and not validated else {}
     rows = []
     with run_http_server(ROOT) as url:
         for h, preset in corpus.items():
             context = browser.new_context(viewport={'width': 1512, 'height': 1000})
-            if startup:
+            if startup or validated:
                 context.add_init_script('localStorage.setItem("vibemol.autosavePreset",'+json.dumps(json.dumps(preset))+');')
             page = context.new_page(); warnings = []; errors = []
             page.on('pageerror', lambda e: errors.append(str(e)))
             page.on('console', lambda m: warnings.append(m.text) if m.type in ('warning','error') else None)
             page.route('**/assets/app/js/app.js*', lambda route: route.fulfill(
                 status=200, content_type='application/javascript', body=served))
-            page.goto(url+('' if startup else '?appearanceStudy=1'))
+            page.goto(url+('' if startup or validated else '?appearanceStudy=1'))
             page.wait_for_function('() => window.VibeMolAppearanceLooks && window.VibeMolWorkbench')
-            value = page.evaluate('''() => {
+            if validated:
+                page.evaluate('''async () => {
+                  await document.fonts.ready;
+                  await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+                }''')
+                value = page.evaluate('''() => {
+                  const result=window.__validatedRestoreResult, imported=result?.imported;
+                  return {ok:result?.status==='restored' && imported?.ok===true && imported?.complete===true,
+                    result:JSON.parse(JSON.stringify(result, (_key,value)=>value instanceof Error?{name:value.name,message:value.message,stack:value.stack}:value)),
+                    initialImport:window.__validatedInitialImport, actual:VibeMolPreset.export().settings,
+                    references:VibeMolPreset.export().settings['appearance.references'],
+                    snapshot:VibeMolAppearanceLooks.snapshot()};
+                }''')
+                required = (value.get('result') or {}).get('imported', {}).get('requestedValues', {})
+                value['startupShortfalls'] = [dict(key=k,expected=v,actual=value['actual'].get(k))
+                                              for k,v in required.items() if value['actual'].get(k)!=v]
+                value['ok'] = value['ok'] and not value['startupShortfalls'] and not errors
+            else:
+                value = page.evaluate('''() => {
               const result=window.__strictStartupImportReport;
               return {ok:result?.ok===true && result.mode==='strict',result,
                 references:VibeMolPreset.export().settings['appearance.references'],
@@ -130,7 +157,7 @@ def census(browser, generated, startup=False):
             }''', preset)
             row = dict(sha256=h, appVersion=preset.get('appVersion'), origins=[x for x in sources if x['sha256']==h],
                        actual=value, warnings=warnings, pageerrors=errors)
-            if startup:
+            if startup and not validated:
                 value['referencesMatchDirect']=value['references']==expected[h]
                 value['ok']=value['ok'] and value['referencesMatchDirect'] and not errors and not any('autosave restore failed' in w for w in warnings)
             rows.append(row)
@@ -139,8 +166,9 @@ def census(browser, generated, startup=False):
                                   warnings=value.get('result',{}).get('warnings',[]), error=value.get('error'))), flush=True)
             context.close()
     report = dict(sourceSha256=hashlib.sha256(original).hexdigest(),
+                  harnessSha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   servedSha256=hashlib.sha256(served.encode()).hexdigest(),
-                  diagnosticOnly=True, usableAsMergeGate=False, startup=startup, browserVersion=browser.version,cases=rows,
+                  diagnosticOnly=True, usableAsMergeGate=False, startup=startup, validatedRestore=validated, browserVersion=browser.version,cases=rows,
                   testedUnique=len(rows), strictPassed=sum(x['actual']['ok'] for x in rows),
                   sourceUnchanged=(ROOT/'assets/app/js/app.js').read_bytes()==original)
     (OUT/'strict-import-results.json').write_text(json.dumps(report,indent=2)+'\n')
@@ -200,10 +228,13 @@ if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--generated-only',action='store_true')
     parser.add_argument('--startup',action='store_true')
+    parser.add_argument('--validated-restore',action='store_true')
+    parser.add_argument('--payload-sha')
     parser.add_argument('--input-census',type=Path)
     parser.add_argument('--source-root',type=Path,default=ROOT)
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args();ROOT=args.source_root.resolve();OUT=args.output.resolve()
+    PAYLOAD_SHA=args.payload_sha
     OUT.mkdir(parents=True,exist_ok=True)
     assert not (OUT/'strict-import-results.json').exists(), 'Preserve completed census; use a fresh output directory'
     if args.input_census:
@@ -217,5 +248,5 @@ if __name__ == '__main__':
         browser=pw.chromium.launch(headless=True,args=['--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader'])
         print('browser '+browser.version, flush=True)
         generated = json.loads((OUT/'generated-payloads.json').read_text()) if (OUT/'generated-payloads.json').exists() else generate(browser)
-        if not args.generated_only: census(browser, generated, args.startup)
+        if not args.generated_only: census(browser, generated, args.startup, args.validated_restore)
         browser.close()

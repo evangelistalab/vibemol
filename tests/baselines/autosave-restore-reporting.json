@@ -1,5 +1,5 @@
 {
-  "status": "review-revision-local-passed-awaiting-own-CI",
+  "status": "merged PR34",
   "scope": "PR1 reporting, persistent user notice and payload preservation; #25 remains open pending PR2 validate-then-commit and silent-shortfall accounting.",
   "sourceSha256": "7e34c3ab8555d0106dc95f2bef24a35d2eb9fd17acf2c2577e7520588d7fe4f9",
   "harness": "tests/e2e/appearance_autosave.py",
@@ -166,5 +166,25 @@
     "resultSha256": "0cfb0e7d8b4faabe718422512c00574dda8ed74fa9845356debb8a3a4cfe9077",
     "logSha256": "2ba3fdc5a82198744d1fd321015cc128a09a1279ddf07bbaaa3d1056c3e9dceb"
   },
-  "appTrackedLets": 251
+  "appTrackedLets": 251,
+  "acceptedCI": {
+    "runId": 39186923236,
+    "attempt": 1,
+    "head": "c76cf12ab2a31a8e714de3dccda17a2a80473874",
+    "merge": "72bb8e41c5127bf3d12ce47a659cab8f653e5f23",
+    "tree": "e15b04ba8ff0b437c027d82a4882ab15e484d59e",
+    "counts": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "nativeCases": 20,
+    "looksSeconds": 1955.68,
+    "bothMaterialFamilyPathsCompleted": true,
+    "appearanceMaterialPresetRecurred": false,
+    "riskRemainsOpen": true,
+    "wholeCISeconds": 2216,
+    "archiveSha256": "95f503413323945821a96928f361aeda41b108548d8131fa536750d28ab67ba5",
+    "wholeMergeTreeMatchesTestedCandidate": true
+  }
 }
