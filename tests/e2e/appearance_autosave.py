@@ -98,6 +98,8 @@ def run_report_matrix(browser, source, output, url):
     output.mkdir(parents=True, exist_ok=True)
     assert not (output/'result.json').exists(), 'Use a fresh output directory; preserve previous attempts'
     original = (source/'assets/app/js/app.js').read_bytes()
+    source_hashes = {file:hashlib.sha256((source/file).read_bytes()).hexdigest()
+                     for file in ['assets/app/js/app.js','assets/app/js/looks-ui.js']}
     valid = json.loads(LEGACY.read_text())
     cases = [
         dict(name='malformed-json', raw='{broken', status='failed', reason='parse', count=0),
@@ -175,6 +177,9 @@ def run_report_matrix(browser, source, output, url):
                         page.screenshot(path=str(output/(label+'.png')))
                     elif case['name']=='valid-legacy':
                         log_assert(first['ids']==['opal','classic'] and first['flags']==[False,False],first,dict(ids=['opal','classic'],flags=[False,False]),label+' migration')
+                    if case['status']!='failed':
+                        count = page.locator('#lookRestoreStatus').count()
+                        log_assert(count==0,count,0,label+' normal DOM has no restore-failure notice')
                     log_assert(not row['pageerrors'],row['pageerrors'],[],label+' pageerrors')
                     row['status']='passed'
                 finally:
@@ -184,7 +189,9 @@ def run_report_matrix(browser, source, output, url):
     report=dict(status='passed',phase='PR1 reporting',historicalProbe=HISTORICAL_PROBE,
                 browserVersion=browser.version,harnessSha256=harness_sha,cases=rows,caseCount=len(rows),
                 pendingPR2=['missing-required-key','out-of-range','missing-reference','future-schema'],
-                sourceUnchanged=(source/'assets/app/js/app.js').read_bytes()==original)
+                sourceHashes=source_hashes,
+                sourceUnchanged=all(hashlib.sha256((source/file).read_bytes()).hexdigest()==expected
+                                    for file,expected in source_hashes.items()))
     assert report['sourceUnchanged']
     (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     return report

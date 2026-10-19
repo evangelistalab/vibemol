@@ -3,7 +3,7 @@
   "scope": "PR1 reporting, persistent user notice and payload preservation; #25 remains open pending PR2 validate-then-commit and silent-shortfall accounting.",
   "sourceSha256": "3adaff220a6b871a538685c845ad30dd1c7244945e75bfee486574e68cc31bd4",
   "harness": "tests/e2e/appearance_autosave.py",
-  "harnessSha256": "bd7036ed955d003d9d6b1cf733933892f518a4b7bc8c6341b3d6859b1a146b14",
+  "harnessSha256": "a2918290a707d3f6656b9bbcf06fee4e05658610d3662bbc81617bad4cd9b8eb",
   "historicalEvidenceUnchanged": true,
   "matrix": {
     "cases": 19,
@@ -23,7 +23,7 @@
       "import-callback-throws",
       "import-and-defaults-throw"
     ],
-    "assertions": "Exact default getter readback at fallback completion, visible aria-hidden=false after real4200ms+300ms deadline before a mode change, every supported mode change, durable Looks status, exact original saved bytes and zero writes after a real edit/750ms opportunity, exact injected call counts, no pageerrors."
+    "assertions": "Exact default getter readback at fallback completion, visible aria-hidden=false after real4200ms+300ms deadline before a mode change, every supported mode change, durable Looks status, exact original saved bytes and zero writes after a real edit/750ms opportunity, exact injected call counts, no pageerrors. All three normal controls assert no restore-notice DOM ID exists."
   },
   "states": [
     "skipped",
@@ -92,7 +92,7 @@
   "construction": {
     "status": "passed",
     "newAppBindings": 11,
-    "newLooksBindings": 1,
+    "newLooksBindings": 2,
     "newController": false
   },
   "pendingPR2": [
@@ -106,8 +106,9 @@
   "validationLimits": "Characterization is regression coverage only, never evidence for this repair. Defaults readback must precede ordinary startup enabling axes at app.js global.__showAxes__ initialization; the original stronger-check failure and all prior probe logs are preserved.",
   "raw": {
     "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1",
-    "resultSha256": "0a12912dfe8b277c87d88d8e3bb7bc263c501296c8dd1ca23ea2436be746a900",
-    "logSha256": "e239f9363946a027c3457f76564d7cc3abae1899e00002cdd1e69fb40029e328"
+    "resultSha256": "8aa49fa8885b1092fe5174ac015e9a4ccb2450dab0a1b7bbea382a0813fabad4",
+    "logSha256": "a1d1df07f3b83c817101fd4ae78656a3b719bebcc8c8cd8de8b056c25624ef96",
+    "matrixDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/matrix-failure-only-node"
   },
   "firstCandidateFailure": {
     "head": "090e7da0a15cedce9b681f2d1b326cd0bd4b86f4",
@@ -119,5 +120,27 @@
     "cause": "Policy label renamed after the local unit run; the local validation sequence missed its allowlist.",
     "correction": "Add the explicit PR1 label and assert exact ordinaryExpected34/3/37. All exporter/site/count rejection tests remain unchanged. No workflow or gate-count relaxation; no retry of the failed attempt.",
     "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/ci-39178725433/checks-and-unit-job.log"
+  },
+  "sourceHashes": {
+    "assets/app/js/app.js": "3adaff220a6b871a538685c845ad30dd1c7244945e75bfee486574e68cc31bd4",
+    "assets/app/js/looks-ui.js": "5568788c0564eeddf11b635b5b101af6a358e09e2311f083be5f960aa89a961b"
+  },
+  "secondCandidateFailure": {
+    "head": "8c7be761c2b5ce67f144636fff4e9403997f3a79",
+    "runId": 39179067956,
+    "job": "Characterization (1)",
+    "expectedDomIdCount": 740,
+    "actualDomIdCount": 741,
+    "onlyExtraId": "lookRestoreStatus",
+    "correction": "Create the durable Looks status only on a real restore failure; keep the normal HTML template and all goldens/assertions unchanged.",
+    "rawComparands": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/ci-39179067956/dom-id-failure-comparands.json"
+  },
+  "normalDomComparison": {
+    "status": "passed",
+    "contexts": 4,
+    "allIdsExactlyEqual": true,
+    "failureNoticeAbsentInAllNormalContexts": true,
+    "rawDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/normal-dom-final",
+    "resultSha256": "a0af4419aa200c4f1f7fa59848a36c12850b02e5c302912c713e915390e0d11d"
   }
 }
