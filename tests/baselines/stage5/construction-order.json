@@ -51,10 +51,16 @@
     {
       "label": "Registry-based DOM-independent2C validation catalog",
       "before": "559698db5df26b77a4b9c46d9eb8ffa1134d192b",
-      "worktree": ".",
       "consumers": [
         "assets/app/js/preset.js"
       ],
+      "expectedStatus": "passed",
+      "after": "f6239f917582dad0af6283feca766d1a7ec3a42c"
+    },
+    {
+      "label": "Issue17 bounded Metal popover and cue reachability",
+      "before": "f6239f917582dad0af6283feca766d1a7ec3a42c",
+      "worktree": ".",
       "expectedStatus": "passed"
     }
   ]

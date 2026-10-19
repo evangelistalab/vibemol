@@ -3,6 +3,7 @@
 import json
 import premerge as p
 from helpers import wait_for_presented_state
+from metal_popover import metal_popover_regression
 
 
 def state(page):
@@ -193,7 +194,7 @@ def main():
         page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
         page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
         try:
-            run(page,url);visual_schemes(browser,url);assert not errors,errors
+            run(page,url);visual_schemes(browser,url);metal_popover_regression(browser,url);assert not errors,errors
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'edit-tool-failure',errors,[]);raise
         finally:browser.close()
