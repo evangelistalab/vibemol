@@ -89,18 +89,22 @@
       "issue": 25,
       "url": "https://github.com/evangelistalab/vibemol/issues/25",
       "status": "open",
-      "workflow": "Startup autosave restoration applies settings then skips reference migration on callback failure; warning only, no rollback/user error",
+      "workflow": "Startup appearance import can silently apply only part of a payload, including loss of requested look/style references, while returning success.",
       "acceptedCiFailure": false,
       "classification": "Independent tagged-base induced-failure reproduction; PubChem exposed the latent restore policy",
       "evidence": "tests/baselines/evidence/stage4/pubchem/restore-fault/result.json",
       "productionFixIncluded": false,
-      "impact": "A failed startup restoration leaves partially applied settings and wrong appearance reference bookkeeping without rollback or a visible failure.",
+      "impact": "Resolved rendering can match while reference bookkeeping is lost. A restore shortfall must be detected before live mutation.",
       "priorityRelativeTo": {
         "aheadOfIssues": [
           17
         ],
         "batch": "0.9.x",
         "reason": "Silent partial restoration and state inconsistency"
+      },
+      "repairProgress": {
+        "PR1": "Discriminated results, visible persistent notice and session-long payload retention for detected failures, including compound fallback failure.",
+        "PR2Pending": "Validate then commit; exact requested/applied values and references after explicit legacy normalization, then STRICT."
       }
     }
   ],

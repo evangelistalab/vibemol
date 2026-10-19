@@ -1,12 +1,12 @@
 {
-  "group": "0.10.0 baseline refresh",
-  "baselineRun": 39135895060,
-  "baselineHead": "f0e9f0c47dfe23e6e577b2d4c73a26f0fe23dfa5",
+  "group": "Issue25 PR1 startup restore reporting",
+  "baselineRun": 39167491909,
+  "baselineHead": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Release metadata, URLs and notes leave exporter sources byte-identical. Use exactly34/3/37 and the ordinary second-download trajectory-or-vibration key; disappearance or any different workflow stops.",
+  "reason": "Appearance startup failure handling and persistent notice do not touch exporter implementations. Require the unchanged34/3/37 exact accepted failing workflows; #11 remains the ordinary trajectory-or-vibration second-download alternative.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,

@@ -1,0 +1,170 @@
+{
+  "status": "review-revision-local-passed-awaiting-own-CI",
+  "scope": "PR1 reporting, persistent user notice and payload preservation; #25 remains open pending PR2 validate-then-commit and silent-shortfall accounting.",
+  "sourceSha256": "7e34c3ab8555d0106dc95f2bef24a35d2eb9fd17acf2c2577e7520588d7fe4f9",
+  "harness": "tests/e2e/appearance_autosave.py",
+  "harnessSha256": "4941fb8de31f35af93a3b6af66d9960414d69a5d266cf089f208b6bfa3d5dc5c",
+  "historicalEvidenceUnchanged": true,
+  "matrix": {
+    "cases": 20,
+    "failureCases": 17,
+    "controls": 3,
+    "launches": [
+      "workbench",
+      "legacy"
+    ],
+    "themes": [
+      "light",
+      "dark"
+    ],
+    "faults": [
+      "malformed-json",
+      "storage-read-throws",
+      "import-callback-throws",
+      "import-and-defaults-throw"
+    ],
+    "assertions": "Exact default getter readback at restore completion; parse/storage startup import count0, import-failure count2; short sticky hint remains visible/aria-hidden=false after4200ms+300ms; a different mode-entry hint replaces it; durable full Looks notice survives mode changes and edits; short hint and scrolled full notice within390x850 with no horizontal overflow; original saved bytes and zero writes after an edit/750ms; distinct storage-unavailable wording; compound fallback failure; one additional transient-after-failure case must auto-hide/aria-hidden=true after its own deadline. Normal controls have no failure DOM ID."
+  },
+  "states": [
+    "skipped",
+    "empty",
+    "restored",
+    "failed"
+  ],
+  "failureReasons": [
+    "storage-read",
+    "parse",
+    "import"
+  ],
+  "notice": {
+    "channel": "Existing hint shell with per-message sticky flag; durable full Look section status.",
+    "pause": "Session-long latch checked at schedule and write; workspace session change tracking continues.",
+    "guidance": "Read/parse/import payload failure: Save Session and reload to retry. Storage denial: autosave unavailable in this browser session; Save Session, no saved-data/reload claim.",
+    "defaultsClaim": "Read/parse start from intact defaults without importing. Import failure claims Defaults only after successful fallback; compound fallback failure never claims success.",
+    "stickiness": "Set when the short failure message is posted; preserve only for the same message and clear on a different setHintMessage text. Does not use the session failure latch."
+  },
+  "dependencyInventory": {
+    "newController": false,
+    "functions": [
+      {
+        "name": "restoreAppearancePresetAutosave",
+        "appInputs": [
+          "AUTOSAVE_STORAGE_KEY",
+          "appearanceStudy",
+          "failAppearancePresetAutosaveRestore",
+          "importAppearancePresetEnvelope",
+          "syncAppearancePersistenceUi"
+        ],
+        "count": 5,
+        "platformGlobals": [
+          "Error",
+          "JSON",
+          "window"
+        ]
+      },
+      {
+        "name": "failAppearancePresetAutosaveRestore",
+        "appInputs": [
+          "appearancePresetAutosaveFailure",
+          "cancelAppearancePresetAutosave",
+          "defaultAppearancePresetEnvelope",
+          "importAppearancePresetEnvelope",
+          "syncAppearancePersistenceUi"
+        ],
+        "count": 5,
+        "platformGlobals": [
+          "Error",
+          "console"
+        ],
+        "writtenAppInputs": [
+          "appearancePresetAutosaveFailure"
+        ]
+      },
+      {
+        "name": "getAppearanceRestoreFailureMessage",
+        "appInputs": [
+          "appearancePresetAutosaveFailure"
+        ],
+        "count": 1,
+        "platformGlobals": []
+      }
+    ]
+  },
+  "construction": {
+    "status": "passed",
+    "newAppBindings": 12,
+    "newLooksBindings": 2,
+    "newController": false
+  },
+  "pendingPR2": [
+    "required envelope fields",
+    "range/type validation",
+    "missing recipe reference",
+    "future schema",
+    "actual requested/applied field and reference report",
+    "STRICT after compatibility normalization"
+  ],
+  "validationLimits": "Characterization is regression coverage only. PR2 must account for requested/applied settings and references through completion of downstream initialization, including the existing later axes-on write. No atomicity claim from PR1.",
+  "firstCandidateFailure": {
+    "head": "090e7da0a15cedce9b681f2d1b326cd0bd4b86f4",
+    "runId": 39178725433,
+    "job": "checks-and-unit",
+    "test": "test_current_group_uses_ordinary_site_policy",
+    "actual": "Issue25 PR1 startup restore reporting",
+    "expected": "Explicit allowlist of ordinary-policy labels omitted the new PR1 label.",
+    "cause": "Policy label renamed after the local unit run; the local validation sequence missed its allowlist.",
+    "correction": "Add the explicit PR1 label and assert exact ordinaryExpected34/3/37. All exporter/site/count rejection tests remain unchanged. No workflow or gate-count relaxation; no retry of the failed attempt.",
+    "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/ci-39178725433/checks-and-unit-job.log"
+  },
+  "sourceHashes": {
+    "assets/app/js/app.js": "7e34c3ab8555d0106dc95f2bef24a35d2eb9fd17acf2c2577e7520588d7fe4f9",
+    "assets/app/js/looks-ui.js": "5568788c0564eeddf11b635b5b101af6a358e09e2311f083be5f960aa89a961b"
+  },
+  "secondCandidateFailure": {
+    "head": "8c7be761c2b5ce67f144636fff4e9403997f3a79",
+    "runId": 39179067956,
+    "job": "Characterization (1)",
+    "expectedDomIdCount": 740,
+    "actualDomIdCount": 741,
+    "onlyExtraId": "lookRestoreStatus",
+    "correction": "Create the durable Looks status only on a real restore failure; keep the normal HTML template and all goldens/assertions unchanged.",
+    "rawComparands": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/ci-39179067956/dom-id-failure-comparands.json"
+  },
+  "normalDomComparison": {
+    "status": "passed",
+    "contexts": 4,
+    "allIdsExactlyEqual": true,
+    "failureNoticeAbsentInAllNormalContexts": true,
+    "rawDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/normal-dom-final",
+    "resultSha256": "a0af4419aa200c4f1f7fa59848a36c12850b02e5c302912c713e915390e0d11d",
+    "role": "Earlier-candidate evidence; revised candidate requires its own unchanged characterization gate."
+  },
+  "reviewChanges": {
+    "approvedParentHead": "ba1f5420566e5cb94e555be103eb2f5346f16b5d",
+    "scope": [
+      "message-scoped stickiness plus transient negative case",
+      "Defaults fallback only for import failures",
+      "distinct storage notice; short hint/full Looks text and390px presentation"
+    ],
+    "productionFilesChangedSinceApproval": [
+      "assets/app/js/app.js"
+    ],
+    "localCasesPassed": 20,
+    "all17FailureCasesMeasuredAt390": true,
+    "transientAfterFailureAutoHides": true,
+    "readParseImportCalls": 0
+  },
+  "previousLocalRaw": {
+    "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1",
+    "resultSha256": "8aa49fa8885b1092fe5174ac015e9a4ccb2450dab0a1b7bbea382a0813fabad4",
+    "logSha256": "a1d1df07f3b83c817101fd4ae78656a3b719bebcc8c8cd8de8b056c25624ef96",
+    "matrixDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/matrix-failure-only-node"
+  },
+  "raw": {
+    "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/review-revision",
+    "matrixDirectory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/review-revision/matrix-final",
+    "resultSha256": "0cfb0e7d8b4faabe718422512c00574dda8ed74fa9845356debb8a3a4cfe9077",
+    "logSha256": "2ba3fdc5a82198744d1fd321015cc128a09a1279ddf07bbaaa3d1056c3e9dceb"
+  },
+  "appTrackedLets": 251
+}
