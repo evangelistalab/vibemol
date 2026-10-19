@@ -108,5 +108,16 @@
     "directory": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1",
     "resultSha256": "0a12912dfe8b277c87d88d8e3bb7bc263c501296c8dd1ca23ea2436be746a900",
     "logSha256": "e239f9363946a027c3457f76564d7cc3abae1899e00002cdd1e69fb40029e328"
+  },
+  "firstCandidateFailure": {
+    "head": "090e7da0a15cedce9b681f2d1b326cd0bd4b86f4",
+    "runId": 39178725433,
+    "job": "checks-and-unit",
+    "test": "test_current_group_uses_ordinary_site_policy",
+    "actual": "Issue25 PR1 startup restore reporting",
+    "expected": "Explicit allowlist of ordinary-policy labels omitted the new PR1 label.",
+    "cause": "Policy label renamed after the local unit run; the local validation sequence missed its allowlist.",
+    "correction": "Add the explicit PR1 label and assert exact ordinaryExpected34/3/37. All exporter/site/count rejection tests remain unchanged. No workflow or gate-count relaxation; no retry of the failed attempt.",
+    "rawLog": "/Users/fevange/Source/vibemol/out/test-artifacts/issue25/pr1/ci-39178725433/checks-and-unit-job.log"
   }
 }
