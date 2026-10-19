@@ -149,7 +149,7 @@
       "newPresetBindings": 2,
       "newLooksBindings": 0
     },
-    "domIndependentCandidate": "Registry recut:500 exact readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty selector startup restores passed. Checks433JS/60Python and9app/2preset construction bindings pass. Own automatic CI pending.",
+    "domIndependentCandidate": "Registry recut:500 exact readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty selector startup restores passed. Checks433JS/60Python and9app/2preset construction bindings pass. Own automatic CI39268791586 attempt1 on verified source head f6239f917582dad0af6283feca766d1a7ec3a42c passed the independently checked complete gate: exact34/3/37 and accepted workflows, all37 once;102 unchanged goldens twice/exact repeat;52slots across8contexts/fixed composition/all minima;433JS/60Python, WebKit and9app/2preset construction bindings. The49-case restore matrix,500 registry readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty-selector startup restores passed. Looks1879.88s with both Studio/Properties material-family paths completed; whole CI1931s,8cache hits/0misses. #11 fired at vibration after the second download; material-preset intermittent remains open.",
     "rejectedCandidate": {
       "head": "e9be70b7586df24303c85c20ec797c775cfe793d",
       "runId": 39264968979,
