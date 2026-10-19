@@ -8,9 +8,10 @@ The legacy import-only appearance.look key must migrate explicitly to references
 import argparse
 import hashlib
 import json
+import re
 from pathlib import Path
 
-from appearance_autosave import log_assert
+from appearance_autosave import LEGACY, log_assert
 from helpers import run_appearance_scenarios
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -23,6 +24,7 @@ EXPOSE = '''  window.__appearanceRegistry = {
     export: () => exportAppearancePresetEnvelope('Registry symmetry'),
     prepare: raw => prepareAppearanceAutosaveRestore(raw, []),
     commit: candidate => importAppearancePresetEnvelope(candidate),
+    startup: () => appearanceAutosaveRestoreResult,
   };
 '''
 
@@ -127,10 +129,82 @@ def registry_symmetry(page, context, url):
         fresh.close()
 
 
+def component_mode_validation(page, context, url):
+    import premerge as p
+    output = p.ARTIFACTS/'component-modes'
+    output.mkdir(parents=True, exist_ok=True)
+    original = (ROOT/'assets/app/js/app.js').read_bytes()
+    html = (ROOT/'index.html').read_text()
+    served = original.decode().replace('  window.VibeMolPreset = getSceneGraphAwarePresetPublicApi();\n',
+                                     '  window.VibeMolPreset = getSceneGraphAwarePresetPublicApi();\n'+EXPOSE)
+    expected = [dict(value=value,label=label) for value,label in [
+        ('alphaRe','Re(ψ^α)'),('alphaIm','Im(ψ^α)'),('betaRe','Re(ψ^β)'),('betaIm','Im(ψ^β)'),
+        ('alphaPhase','ψ^α (phase)'),('betaPhase','ψ^β (phase)'),
+        ('alphaBetaPhase','ψ^α ‖ ψ^β'),('totalBloch','Ψ (Bloch)')]]
+    report = dict(sourceSha256=hashlib.sha256(original).hexdigest(),
+                  indexSha256=hashlib.sha256(html.encode()).hexdigest(),cases=[])
+    for availability in ['absent','empty']:
+        fresh=context.browser.new_context()
+        payload=json.loads(LEGACY.read_text())
+        payload['settings']['twoComponent.mode']='alphaPhase'
+        fresh.add_init_script('localStorage.setItem("vibemol.autosavePreset",'+json.dumps(json.dumps(payload))+');')
+        other=fresh.new_page()
+        row=dict(availability=availability,pageerrors=[])
+        other.on('pageerror',lambda error:row['pageerrors'].append(str(error)))
+        if availability=='absent':
+            altered,count=re.subn(r'<select id="twoComponentModeSelect"[^>]*>.*?</select>','',html,flags=re.S)
+            log_assert(count==1,count,1,'missing-element fixture')
+            row['servedIndexSha256']=hashlib.sha256(altered.encode()).hexdigest()
+            other.route(re.compile(r'/(?:\?.*)?$'),lambda route:route.fulfill(status=200,content_type='text/html',body=altered))
+        other.route('**/assets/app/js/app.js*',lambda route:route.fulfill(status=200,content_type='application/javascript',body=served))
+        try:
+            other.goto(url)
+            other.wait_for_function('() => window.VibeMolAppearanceLooks && window.__appearanceRegistry')
+            observed=other.evaluate('''availability => {
+              const probe=__appearanceRegistry, select=document.getElementById('twoComponentModeSelect');
+              const populated=select?Array.from(select.options,x=>({value:x.value,label:x.textContent})):null;
+              if(availability==='empty') select.replaceChildren();
+              const before=probe.export(), startup=probe.startup();
+              const modes=VibeMolLooks.twoComponentModes.map(mode=>{
+                const raw=probe.export();raw.settings['twoComponent.mode']=mode.value;
+                const candidate=probe.prepare(raw);
+                return {requested:mode.value,validated:candidate.envelope.settings['twoComponent.mode']};
+              });
+              const invalid=probe.export();invalid.settings['twoComponent.mode']='unknown-component';
+              let error;try {probe.prepare(invalid);} catch(e) {error=e.message;}
+              return {populated,elementPresent:!!select,optionCount:select?.options.length??0,
+                catalog:VibeMolLooks.twoComponentModes, startupStatus:startup.status,
+                restoredMode:before.settings['twoComponent.mode'],modes,error,
+                before:before.settings,after:probe.export().settings};
+            }''',availability)
+            row.update(observed)
+            log_assert(observed['catalog']==expected,observed['catalog'],expected,'shared eight-mode catalog')
+            if availability=='empty':
+                log_assert(observed['populated']==expected,observed['populated'],expected,'select populated from same source')
+            log_assert(observed['elementPresent']==(availability=='empty') and observed['optionCount']==0,
+                       dict(present=observed['elementPresent'],options=observed['optionCount']),
+                       dict(present=availability=='empty',options=0),availability+' precondition')
+            log_assert(observed['startupStatus']=='restored' and observed['restoredMode']=='alphaPhase',
+                       dict(status=observed['startupStatus'],mode=observed['restoredMode']),
+                       dict(status='restored',mode='alphaPhase'),availability+' actual startup restore')
+            log_assert(observed['modes']==[dict(requested=x['value'],validated=x['value']) for x in expected],
+                       observed['modes'],[x['value'] for x in expected],availability+' all modes validate without options')
+            log_assert(observed['error']=='Invalid autosaved appearance setting: twoComponent.mode',
+                       observed['error'],'Invalid autosaved appearance setting: twoComponent.mode',availability+' invalid mode rejected')
+            log_assert(exact(observed['before'],observed['after']),observed['after'],observed['before'],availability+' preparation leaves state intact')
+            log_assert(row['pageerrors']==[],row['pageerrors'],[],availability+' pageerrors')
+            row['passed']=True
+        finally:
+            report['cases'].append(row)
+            report['sourceUnchanged']=(ROOT/'assets/app/js/app.js').read_bytes()==original
+            (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
+            fresh.close()
+
+
 if __name__ == '__main__':
     parser=argparse.ArgumentParser()
     parser.add_argument('--output',type=Path,required=True)
     args=parser.parse_args()
     import premerge as p
     p.ARTIFACTS=args.output
-    run_appearance_scenarios(ROOT,args.output,[registry_symmetry])
+    run_appearance_scenarios(ROOT,args.output,[registry_symmetry,component_mode_validation])

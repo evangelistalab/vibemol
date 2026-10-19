@@ -6,6 +6,13 @@
   const number = (min, max) => value => typeof value === 'number' && Number.isFinite(value) && value >= min && value <= max;
   const choice = values => value => values.includes(value);
   const bool = value => typeof value === 'boolean';
+  // One ordered catalog for appearance validation and the 2C selector.
+  const twoComponentModes = Object.freeze([
+    ['alphaRe', 'Re(ψ^α)'], ['alphaIm', 'Im(ψ^α)'],
+    ['betaRe', 'Re(ψ^β)'], ['betaIm', 'Im(ψ^β)'],
+    ['alphaPhase', 'ψ^α (phase)'], ['betaPhase', 'ψ^β (phase)'],
+    ['alphaBetaPhase', 'ψ^α ‖ ψ^β'], ['totalBloch', 'Ψ (Bloch)'],
+  ].map(([value, label]) => Object.freeze({ value, label })));
   const surfaceColorSchemes = Object.freeze({
     emory: Object.freeze({ pos: '#ffba04', neg: '#153fc7' }),
     national: Object.freeze({ pos: '#e60000', neg: '#0033a0' }),
@@ -315,7 +322,7 @@
     return value?.meta?.lookVersion != null && Object.keys(value.settings || {}).every(key =>
       key in fields || key in cameraFields || key in extra || key === 'appearance.look');
   }
-  global.VibeMolLooks = Object.freeze({ builtins, materialFamilies, materialPresets, materialRecipe, fields, cameraFields, surfaceGroups, surfaceOverrides,
+  global.VibeMolLooks = Object.freeze({ twoComponentModes, builtins, materialFamilies, materialPresets, materialRecipe, fields, cameraFields, surfaceGroups, surfaceOverrides,
     extra, defaults, surfaceColorSchemes, normalizeSurfaceScheme, colorKeys, colors, withColors, colorsEqual, styleEqual, baseline,
     sameReference, normalizeReferenceState, createReferenceController, settings, normalizeLook, equal, exportLook, importLook, isLookPreset });
 })(window);

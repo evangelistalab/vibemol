@@ -6658,6 +6658,14 @@
   const rowSurfaceNegColor = document.getElementById('rowSurfaceNegColor');
   const twoComponentModeRow = document.getElementById('twoComponentModeRow');
   const twoComponentModeSelect = document.getElementById('twoComponentModeSelect');
+  if (twoComponentModeSelect) {
+    for (const mode of lookModule.twoComponentModes) {
+      const option = document.createElement('option');
+      option.value = mode.value;
+      option.textContent = mode.label;
+      twoComponentModeSelect.appendChild(option);
+    }
+  }
   const phaseWheelEl = document.getElementById('phaseWheel');
   const moldenInspectorTitle = document.getElementById('moldenInspectorTitle');
   const moldenInspectorClose = document.getElementById('moldenInspectorClose');
@@ -26367,7 +26375,7 @@
     }
     const choices = { 'render.cloudType': ['points', 'cubes'], 'render.mode': ['surface', 'cloud'],
       'view.projection': ['orthographic', 'perspective'],
-      'twoComponent.mode': Array.from(twoComponentModeSelect?.options || [], option => option.value) };
+      'twoComponent.mode': lookModule.twoComponentModes.map(mode => mode.value) };
     for (const [key, values] of Object.entries(choices)) validators[key] = value => values.includes(value);
     validators['surface.iso'] = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
     validators['appearance.look'] = value => value === null || (isPlainObject(value) && typeof value.id === 'string' && /^[a-z0-9-]{1,80}$/.test(value.id));
