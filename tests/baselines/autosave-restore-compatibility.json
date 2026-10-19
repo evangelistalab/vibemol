@@ -1355,5 +1355,44 @@
     "rawResultSha256": "0885db6e0dc2368eaeccefa8a8fd0fe7d765db8242bd6adbd64cfd4713495a2e",
     "instrumentation": "Only autosave import mode is changed to STRICT; same immutable payload bytes seeded before ordinary startup. Mode/result and resolved references checked after startup."
   },
-  "strictWarningCount": 0
+  "strictWarningCount": 0,
+  "validatedRestoreReplay": {
+    "status": "passed",
+    "uniquePayloads": 64,
+    "strictRestores": 64,
+    "passRate": "100%",
+    "exactCanonicalRequestedReadbacks": 2919,
+    "postStartupShortfalls": 0,
+    "pageErrors": 0,
+    "sourceSha256": "7f04b63c578aa8c2bec8548b917af61c6f69ba0ab6a3691fc174e72fc2aa7fb2",
+    "harnessSha256": "19dd4f4b7c6d1c366a69b15f4d8a5f132759de9fe25cb6797fa67e1527c24905",
+    "resultSha256": "b3a40489a5bc34e0c43ff61719762992ec301e8f422969f8cef9b52132ab97b9",
+    "normalizations": [
+      "legacy explicit colors without a named palette",
+      "legacy identity metadata; explicit references take precedence",
+      "legacy style/material/lighting settings",
+      "named palette is authoritative over fallback colors",
+      "supported descriptor version and optional defaults",
+      "validated reference identities and retained definitions"
+    ],
+    "appVersionIsInformational": true,
+    "mode": "STRICT",
+    "oldCliCorrection": {
+      "payloadSha256": "9fd3b450a7f58f0cb60c6e83783571dc22cea627267c9e8babca795106cf7871",
+      "before": [
+        {
+          "key": "surface.negColor",
+          "requested": "#0033a0",
+          "actual": "#153fc7"
+        },
+        {
+          "key": "surface.posColor",
+          "requested": "#f2a900",
+          "actual": "#ffba04"
+        }
+      ],
+      "normalization": "No palette id plus explicit colors becomes custom; preserve the explicit colors.",
+      "finalShortfalls": []
+    }
+  }
 }

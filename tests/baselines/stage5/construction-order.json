@@ -30,8 +30,16 @@
     {
       "label": "Issue 25 PR1 restore reporting and persistent notice",
       "before": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+      "consumers": [
+        "assets/app/js/looks-ui.js"
+      ],
+      "expectedStatus": "passed",
+      "after": "c76cf12ab2a31a8e714de3dccda17a2a80473874"
+    },
+    {
+      "label": "Issue 25 PR2 validated restore and applied accounting",
+      "before": "72bb8e41c5127bf3d12ce47a659cab8f653e5f23",
       "worktree": ".",
-      "consumers": ["assets/app/js/looks-ui.js"],
       "expectedStatus": "passed"
     }
   ]

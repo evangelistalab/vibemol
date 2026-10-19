@@ -5,10 +5,11 @@ Relocated and extended from the executed Stage 4 restore-fault/probe.py.
 That historical file/results remain immutable. Only served responses are
 instrumented; the original app bytes and both hashes are recorded.
 
-PR1's report matrix covers detected failures. Silent semantic shortfalls are
-the separate, required two-phase-restore PR2; they are not claimed fixed here.
+Checks pre-commit validation and silent semantic shortfalls as well as thrown
+callbacks, persistent notices, ordinary transient hints and saved-byte retention.
 """
 import argparse
+import copy
 import hashlib
 import json
 from pathlib import Path
@@ -37,6 +38,8 @@ SNAPSHOT = '''() => {
     flags:[state.styleModified,state.colorsModified],settings:state.settings,
     appearance:window.__restoreProbe.readAppearance(),defaults:window.__restoreProbe.defaults.settings,
     appearanceAtRestore:window.__restoreProbe.appearanceAtRestore,
+    initialImport:window.__restoreProbeInitialImport,
+    skippedSetters:window.__restoreProbeSkippedSetters,
     elapsed:performance.now()-window.__restoreProbe.at,
     throwCount:window.__restoreProbeThrowCount,mode:VibeMolWorkbenchHost.getMode()};
 }'''
@@ -52,7 +55,7 @@ LAYOUT = '''() => {
 }'''
 
 
-def instrument(original, count):
+def instrument(original, count, silent=False):
     body = original.decode()
     needle = '  const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();\n'
     assert body.count(needle) == 1, 'Current startup result must have one caller'
@@ -60,13 +63,24 @@ def instrument(original, count):
     result: appearanceAutosaveRestoreResult, at: performance.now(), hideMs: HINT_AUTO_HIDE_MS,
     defaults: defaultAppearancePresetEnvelope,
     readAppearance: () => exportAppearancePresetEnvelope('Readback').settings,
-    // Exact completion boundary, before ordinary startup enables the axes.
+    // Exact commit boundary; the later observation also checks completed startup.
     appearanceAtRestore: exportAppearancePresetEnvelope('Restore readback').settings,
   };
 ''')
-    needle = '  function importAppearancePresetEnvelope(presetLike) {\n'
+    needle = '  function importAppearancePresetEnvelope(candidate) {\n'
     assert body.count(needle) == 1
     body = body.replace(needle, needle + '    window.__restoreProbeImportCalls++;\n')
+    needle = '      const imported = importAppearancePresetEnvelope(candidate);\n'
+    assert body.count(needle) == 1
+    body = body.replace(needle, needle+'      window.__restoreProbeInitialImport = imported;\n')
+    if silent:
+        needle = "  registerAppearancePresetSetting('global.showBonds', () => !!(toggleBonds && toggleBonds.checked), (value) => {\n"
+        assert body.count(needle) == 1
+        body = body.replace(needle, needle+'''    if (!window.__restoreProbeSkippedSetters) {
+      window.__restoreProbeSkippedSetters++;
+      return; // Return normally without applying the first requested value.
+    }
+''')
     if count:
         needle = '  function updatePubChemMetadataPanel(record) {\n'
         assert body.count(needle) == 1
@@ -90,6 +104,8 @@ def init_script(raw, read_error, theme):
       window.__restoreProbeWrites = [];
       window.__restoreProbeThrowCount = 0;
       window.__restoreProbeImportCalls = 0;
+      window.__restoreProbeSkippedSetters = 0;
+      window.__restoreProbeInitialImport = null;
       Storage.prototype.setItem = function(k,v) {
         if (this === localStorage && k === key) __restoreProbeWrites.push({value:v,at:performance.now()});
         return write.call(this,k,v);
@@ -115,11 +131,22 @@ def run_report_matrix(browser, source, output, url):
     source_hashes = {file:hashlib.sha256((source/file).read_bytes()).hexdigest()
                      for file in ['assets/app/js/app.js','assets/app/js/looks-ui.js']}
     valid = json.loads(LEGACY.read_text())
+    def changed(settings=None, **envelope):
+        payload = copy.deepcopy(valid)
+        payload.update(envelope)
+        if settings: payload['settings'].update(settings)
+        return json.dumps(payload)
+    missing = copy.deepcopy(valid); del missing['settings']
     cases = [
         dict(name='malformed-json', raw='{broken', status='failed', reason='parse', count=0),
         dict(name='storage-read-throws', raw=json.dumps(valid), status='failed', reason='storage-read', count=0, read_error=True),
         dict(name='import-callback-throws', raw=json.dumps(valid), status='failed', reason='import', count=1),
         dict(name='import-and-defaults-throw', raw=json.dumps(valid), status='failed', reason='import', count=2),
+        dict(name='missing-required-settings', raw=json.dumps(missing), status='failed', reason='validation', count=0),
+        dict(name='out-of-range', raw=changed({'surface.opacity':2}), status='failed', reason='validation', count=0),
+        dict(name='missing-reference', raw=changed({'appearance.references':{'styleRef':{'kind':'user','id':'user-missing'},'colorsRef':None,'looks':[]}}), status='failed', reason='validation', count=0),
+        dict(name='future-schema', raw=changed(presetVersion=999), status='failed', reason='validation', count=0),
+        dict(name='silent-setter-shortfall', raw=changed({'global.showBonds':False}), status='failed', reason='import', count=0, silent=True),
     ]
     rows = []
     harness_sha = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
@@ -130,10 +157,11 @@ def run_report_matrix(browser, source, output, url):
                 active += [dict(name='empty',raw=None,status='empty',count=0),
                            dict(name='study-skipped',raw='{broken',status='skipped',count=0,study=True),
                            dict(name='valid-legacy',raw=json.dumps(valid),status='restored',count=0),
+                           dict(name='valid-axes-off',raw=changed({'global.showAxes':False}),status='restored',count=0,axes=False),
                            dict(name='transient-hint-after-failure',raw='{broken',status='failed',reason='parse',count=0,transient=True)]
             for case in active:
                 label = ('legacy' if legacy else 'workbench')+'-'+theme+'-'+case['name']
-                body = instrument(original, case['count'])
+                body = instrument(original, case['count'], case.get('silent',False))
                 context = browser.new_context(viewport={'width':1512,'height':1000})
                 context.add_init_script(init_script(case['raw'], case.get('read_error',False), theme))
                 page = context.new_page()
@@ -153,6 +181,10 @@ def run_report_matrix(browser, source, output, url):
                     suffix = '?workspaceLab='+('0' if legacy else '1')+('&appearanceStudy=1' if case.get('study') else '')
                     page.goto(url+suffix)
                     page.wait_for_function('() => window.VibeMolAppearanceLooks && window.__restoreProbe')
+                    page.evaluate('''async () => {
+                      await document.fonts.ready;
+                      await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+                    }''')
                     first = page.evaluate(SNAPSHOT);row['observations'].append(first)
                     log_assert(first['result']['status']==case['status'],first['result'],dict(status=case['status']),label+' result')
                     if case['status']=='failed':
@@ -161,10 +193,17 @@ def run_report_matrix(browser, source, output, url):
                         log_assert(first['result']['defaultsInUse']==defaults,first['result'],dict(defaultsInUse=defaults),label+' fallback')
                         if defaults:
                             log_assert(first['appearanceAtRestore']==first['defaults'],first['appearanceAtRestore'],first['defaults'],label+' actual defaults readback at completion')
+                            log_assert(first['appearance']==first['defaults'],first['appearance'],first['defaults'],label+' defaults after completed startup')
                         imports = page.evaluate('__restoreProbeImportCalls')
                         expected_imports = 2 if case['reason']=='import' else 0
                         row['startupImportCalls'] = imports
                         log_assert(imports==expected_imports,imports,expected_imports,label+' import/fallback calls')
+                        if case.get('silent'):
+                            report = first['initialImport']
+                            log_assert(report['ok'] is True,report['ok'],True,label+' underlying silent success')
+                            log_assert(report['complete'] is False,report['complete'],False,label+' shortfall detected')
+                            log_assert([x['key'] for x in report['shortfalls']]==['global.showBonds'],report['shortfalls'],[dict(key='global.showBonds',requested=False,actual=True)],label+' applied versus requested')
+                            log_assert(first['skippedSetters']==1,first['skippedSetters'],1,label+' no-op injection fired')
                         storage = case['reason']=='storage-read'
                         expected_hint = ('Appearance autosave unavailable. Details in Look.' if storage
                                          else 'Restore failed; autosave paused. Details in Look.')
@@ -228,8 +267,15 @@ def run_report_matrix(browser, source, output, url):
                         log_assert(last['notice']==expected_notice and not last['noticeHidden'],last['notice'],expected_notice,label+' durable Looks notice')
                         log_assert(last['throwCount']==case['count'],last['throwCount'],case['count'],label+' injected faults fired')
                         page.screenshot(path=str(output/(label+'.png')))
-                    elif case['name']=='valid-legacy':
-                        log_assert(first['ids']==['opal','classic'] and first['flags']==[False,False],first,dict(ids=['opal','classic'],flags=[False,False]),label+' migration')
+                    elif case['status']=='restored':
+                        log_assert(first['ids']==['opal','classic'],first['ids'],['opal','classic'],label+' migration identities')
+                        log_assert(first['flags']==[False,False],first['flags'],[False,False],label+' migration modified flags')
+                        report = first['initialImport']
+                        log_assert(report['complete'] and report['applied']==report['requested'],report,dict(allRequestedApplied=True),label+' complete import')
+                        residual = {k:dict(expected=v,actual=first['appearance'].get(k)) for k,v in report['requestedValues'].items() if first['appearance'].get(k)!=v}
+                        log_assert(not residual,residual,{},label+' all values after completed startup')
+                        if 'axes' in case:
+                            log_assert(first['appearance']['global.showAxes']==case['axes'],first['appearance']['global.showAxes'],case['axes'],label+' axes after startup')
                     if case['status']!='failed':
                         count = page.locator('#lookRestoreStatus').count()
                         log_assert(count==0,count,0,label+' normal DOM has no restore-failure notice')
@@ -239,9 +285,8 @@ def run_report_matrix(browser, source, output, url):
                     rows.append(row)
                     (output/'progress.json').write_text(json.dumps(rows,indent=2)+'\n')
                     context.close()
-    report=dict(status='passed',phase='PR1 reporting',historicalProbe=HISTORICAL_PROBE,
+    report=dict(status='passed',phase='PR2 validated restore',historicalProbe=HISTORICAL_PROBE,
                 browserVersion=browser.version,harnessSha256=harness_sha,cases=rows,caseCount=len(rows),
-                pendingPR2=['missing-required-key','out-of-range','missing-reference','future-schema'],
                 sourceHashes=source_hashes,
                 sourceUnchanged=all(hashlib.sha256((source/file).read_bytes()).hexdigest()==expected
                                     for file,expected in source_hashes.items()))

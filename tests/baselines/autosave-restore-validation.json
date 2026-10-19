@@ -1,0 +1,212 @@
+{
+  "status": "local-validation-passed-awaiting-own-CI",
+  "issue": 25,
+  "scope": "Dedicated appearance autosave candidate validation, STRICT commit, exact requested/applied accounting and downstream axes initialization. No general rollback framework or public preset API change.",
+  "sourceHashes": {
+    "assets/app/js/app.js": "7f04b63c578aa8c2bec8548b917af61c6f69ba0ab6a3691fc174e72fc2aa7fb2",
+    "assets/app/js/looks-ui.js": "5568788c0564eeddf11b635b5b101af6a358e09e2311f083be5f960aa89a961b"
+  },
+  "harness": {
+    "file": "tests/e2e/appearance_autosave.py",
+    "sha256": "60020744db58031819ca863162a0c7398fc751c6a9858c7380dcbeab199eb07d"
+  },
+  "candidate": {
+    "schemaFields": 51,
+    "validation": "Every appearance-scoped key has a pure validator; unknown keys, invalid values, unavailable reference identities and future preset schema are rejected before import. Existing documented legacy aliases, optional descriptor defaults, retired keys and identity migration are explicit normalizations/exclusions. appVersion remains informational.",
+    "mode": "STRICT",
+    "references": "Resolve against a private reference controller and normalized saved library; carry retained user definitions into the commit. Never prune requested identities silently.",
+    "commit": "One existing importer call after preparation; read back every canonical requested setting and reference exactly. A shortfall is failure even when the underlying importer returns ok:true.",
+    "axes": "Initialize the startup axes default before capturing Defaults and restoring. Later gizmo wiring only reads the committed value."
+  },
+  "matrix": {
+    "caseCount": 41,
+    "failureCases": 37,
+    "controls": 4,
+    "contexts": [
+      "workbench-light",
+      "workbench-dark",
+      "legacy-light",
+      "legacy-dark"
+    ],
+    "faults": [
+      "malformed-json",
+      "storage-read-throws",
+      "import-callback-throws",
+      "import-and-defaults-throw",
+      "missing-required-settings",
+      "out-of-range",
+      "missing-reference",
+      "future-schema",
+      "silent-setter-shortfall"
+    ],
+    "validationRejects": 16,
+    "validationImportCalls": 0,
+    "silentSuccessCases": 4,
+    "silentSuccessComparands": {
+      "key": "global.showBonds",
+      "requested": false,
+      "actual": true,
+      "underlyingOk": true,
+      "complete": false
+    },
+    "postStartupReadback": "Every requested value in the positive controls and exact Defaults after failures; axes-off remains off.",
+    "preservation": "All37 failures preserve the original storage bytes and make zero autosave writes after a later appearance edit.",
+    "notice": "All37 failures retain the initial short hint past the real hide deadline, fit the short/full notices at390x850, preserve the durable Looks notice across mode changes and edits. A different transient hint still expires.",
+    "normalDOM": "Four controls have no failure notice ID."
+  },
+  "dependencyInventory": {
+    "status": "passed",
+    "functions": [
+      {
+        "name": "prepareAppearanceAutosaveRestore",
+        "appInputs": [
+          "APPEARANCE_AUTOSAVE_PERSIST_SCOPE",
+          "MOLECULE_STYLE_ALIASES",
+          "PRESET_KIND",
+          "PRESET_VERSION",
+          "appearanceModel",
+          "defaultAppearancePresetEnvelope",
+          "flattenAutosavePresetSettings",
+          "isPlainObject",
+          "listPresetSettingSchema",
+          "lookModule",
+          "normalizeMoleculeStyleKey",
+          "twoComponentModeSelect"
+        ],
+        "dataInputs": [
+          "raw",
+          "savedLibrary"
+        ],
+        "platformGlobals": [
+          "Array",
+          "Error",
+          "JSON",
+          "Map",
+          "Number",
+          "Object",
+          "Set"
+        ],
+        "count": 14
+      },
+      {
+        "name": "importAppearancePresetEnvelope",
+        "appInputs": [
+          "PRESET_MODE",
+          "exportAppearancePresetEnvelope",
+          "runWithAppearancePresetAutosaveSuppressed"
+        ],
+        "dataInputs": [
+          "candidate"
+        ],
+        "platformGlobals": [
+          "Array",
+          "Object",
+          "window"
+        ],
+        "count": 4
+      },
+      {
+        "name": "restoreAppearancePresetAutosave",
+        "appInputs": [
+          "AUTOSAVE_STORAGE_KEY",
+          "appearanceStudy",
+          "failAppearancePresetAutosaveRestore",
+          "importAppearancePresetEnvelope",
+          "prepareAppearanceAutosaveRestore",
+          "syncAppearancePersistenceUi"
+        ],
+        "dataInputs": [],
+        "platformGlobals": [
+          "Error",
+          "JSON",
+          "window"
+        ],
+        "count": 6
+      },
+      {
+        "name": "failAppearancePresetAutosaveRestore",
+        "appInputs": [
+          "cancelAppearancePresetAutosave",
+          "defaultAppearancePresetEnvelope",
+          "importAppearancePresetEnvelope",
+          "prepareAppearanceAutosaveRestore",
+          "syncAppearancePersistenceUi"
+        ],
+        "dataInputs": [
+          "reason",
+          "error"
+        ],
+        "platformGlobals": [
+          "Error",
+          "console"
+        ],
+        "count": 7
+      }
+    ],
+    "limitExclusive": 15
+  },
+  "construction": {
+    "status": "passed",
+    "newAppBindings": 58,
+    "newModuleBindings": 0
+  },
+  "appTrackedLets": 251,
+  "ordinaryGate": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "changed": false
+  },
+  "historicalEvidenceUnchanged": true,
+  "validationLimits": "The injection matrix proves #25. Characterization is separate rendering/identity regression coverage and cannot prove restoration correctness.",
+  "raw": {
+    "directory": "out/test-artifacts/issue25/pr2",
+    "matrixResultSha256": "40dc68bd51a451420412be01969c9ed0e44c00ccd8d63caa963b01820b6af78e",
+    "matrixLogSha256": "f39a4b05f1847adcbd47c4427cc76dfeae9c78999941df4be35e99624ee7686d",
+    "constructionSha256": "f6086233a69e0129796d963fb9bc43fc8446be00104912f3f2aa1785d9d83baa",
+    "failedAttemptsPreserved": [
+      "census-attempt1.log (diagnostic Error serialization corrected before rerun)",
+      "census-attempt2 (63/64 actual readbacks; old CLI omitted palette)",
+      "cli-comparands (exact requested versus actual surface colors)"
+    ]
+  },
+  "compatibility": {
+    "status": "passed",
+    "uniquePayloads": 64,
+    "strictRestores": 64,
+    "passRate": "100%",
+    "exactCanonicalRequestedReadbacks": 2919,
+    "postStartupShortfalls": 0,
+    "pageErrors": 0,
+    "sourceSha256": "7f04b63c578aa8c2bec8548b917af61c6f69ba0ab6a3691fc174e72fc2aa7fb2",
+    "harnessSha256": "19dd4f4b7c6d1c366a69b15f4d8a5f132759de9fe25cb6797fa67e1527c24905",
+    "resultSha256": "b3a40489a5bc34e0c43ff61719762992ec301e8f422969f8cef9b52132ab97b9",
+    "normalizations": [
+      "legacy explicit colors without a named palette",
+      "legacy identity metadata; explicit references take precedence",
+      "legacy style/material/lighting settings",
+      "named palette is authoritative over fallback colors",
+      "supported descriptor version and optional defaults",
+      "validated reference identities and retained definitions"
+    ],
+    "appVersionIsInformational": true,
+    "mode": "STRICT",
+    "oldCliCorrection": {
+      "payloadSha256": "9fd3b450a7f58f0cb60c6e83783571dc22cea627267c9e8babca795106cf7871",
+      "before": [
+        {
+          "key": "surface.negColor",
+          "requested": "#0033a0",
+          "actual": "#153fc7"
+        },
+        {
+          "key": "surface.posColor",
+          "requested": "#f2a900",
+          "actual": "#ffba04"
+        }
+      ],
+      "normalization": "No palette id plus explicit colors becomes custom; preserve the explicit colors.",
+      "finalShortfalls": []
+    }
+  }
+}

@@ -26354,6 +26354,134 @@
     };
   }
 
+  function prepareAppearanceAutosaveRestore(raw, savedLibrary) {
+    if (!isPlainObject(raw) || raw.kind !== PRESET_KIND) throw new Error('Invalid autosaved appearance kind.');
+    if (raw.presetVersion !== PRESET_VERSION) throw new Error('Unsupported autosaved appearance schema version.');
+    if (!isPlainObject(raw.settings)) throw new Error('Autosaved appearance settings are required.');
+    const schema = new Map(listPresetSettingSchema().map(entry => [entry.key, entry]));
+    const scoped = new Set([...schema.values()].filter(entry => entry.persistScope === APPEARANCE_AUTOSAVE_PERSIST_SCOPE).map(entry => entry.key));
+    const validators = Object.fromEntries(Object.entries({ ...lookModule.fields, ...lookModule.extra, ...lookModule.cameraFields }).map(([key, entry]) => [key, entry[1]]));
+    for (const key of ['global.showAtomLabelNumbers', 'global.showAtomLabels', 'global.showAtoms', 'global.showAxes',
+      'global.showBonds', 'global.showBox', 'global.showMultiBonds', 'surface.autoIsoEnabled', 'surface.enabled']) {
+      validators[key] = value => typeof value === 'boolean';
+    }
+    const choices = { 'render.cloudType': ['points', 'cubes'], 'render.mode': ['surface', 'cloud'],
+      'view.projection': ['orthographic', 'perspective'],
+      'twoComponent.mode': Array.from(twoComponentModeSelect?.options || [], option => option.value) };
+    for (const [key, values] of Object.entries(choices)) validators[key] = value => values.includes(value);
+    validators['surface.iso'] = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+    validators['appearance.look'] = value => value === null || (isPlainObject(value) && typeof value.id === 'string' && /^[a-z0-9-]{1,80}$/.test(value.id));
+    validators['appearance.references'] = value => {
+      if (!isPlainObject(value) || Object.keys(value).some(key => !['styleRef', 'colorsRef', 'looks'].includes(key))) return false;
+      for (const axis of ['styleRef', 'colorsRef']) {
+        if (value[axis] !== null && (!isPlainObject(value[axis]) || Object.keys(value[axis]).some(key => !['kind', 'id'].includes(key)))) return false;
+      }
+      lookModule.normalizeReferenceState(value);
+      return true;
+    };
+    if (scoped.size !== Object.keys(validators).length || [...scoped].some(key => !Object.hasOwn(validators, key))) {
+      throw new Error('Appearance restore validation does not cover the current setting schema.');
+    }
+    const retired = new Set(['molecule.glossyBondRadius', 'render.cloudAlpha', 'render.cloudStride',
+      'molecule.feature.ink', 'molecule.feature.blackbody.enabled', 'molecule.feature.blackbody.coldColor',
+      'molecule.feature.blackbody.hotColor', 'molecule.opacity.atom', 'molecule.opacity.bond']);
+    const requested = {}, excluded = [];
+    for (const [key, value] of Object.entries(flattenAutosavePresetSettings(raw.settings, '', Object.create(null)))) {
+      if (scoped.has(key)) requested[key] = value;
+      else if (schema.has(key) || retired.has(key)) excluded.push({ key, reason: retired.has(key) ? 'retired legacy setting' : 'outside appearance scope' });
+      else throw new Error(`Unsupported autosaved appearance setting: ${key}`);
+    }
+    const settings = { ...requested }, normalizations = [];
+    const normalize = (key, value, reason) => {
+      if (JSON.stringify(settings[key]) !== JSON.stringify(value)) normalizations.push({ key, sourcePresent: Object.hasOwn(settings, key), from: settings[key] ?? null, to: value, reason });
+      settings[key] = value;
+    };
+    if (typeof settings['molecule.style'] === 'string') {
+      const key = settings['molecule.style'].trim().toLowerCase();
+      if (!Object.hasOwn(MOLECULE_STYLE_ALIASES, key) && !lookModule.fields['molecule.style'][1](key)) throw new Error('Invalid autosaved molecule style.');
+      normalize('molecule.style', normalizeMoleculeStyleKey(key), 'documented style alias/case');
+    }
+    if ('surface.colorScheme' in settings) normalize('surface.colorScheme', lookModule.normalizeSurfaceScheme(settings['surface.colorScheme']), 'legacy palette alias');
+    for (const [key, value] of Object.entries(settings)) {
+      if (!validators[key](value)) throw new Error(`Invalid autosaved appearance setting: ${key}`);
+    }
+    for (const key of ['global.backgroundColor', 'surface.posColor', 'surface.negColor']) {
+      if (key in settings) normalize(key, settings[key].toLowerCase(), 'canonical color case');
+    }
+    if ('global.elementColorOverrides' in settings) normalize('global.elementColorOverrides',
+      Object.fromEntries(Object.entries(settings['global.elementColorOverrides']).map(([z, color]) => [z, color.toLowerCase()])), 'canonical element color case');
+    // Old CLI exports stored explicit colors without a scheme. Keeping the
+    // startup named scheme would replace those colors during UI synchronization.
+    if (!('surface.colorScheme' in settings) && ['surface.posColor', 'surface.negColor'].some(key => key in settings)) {
+      normalize('surface.colorScheme', 'custom', 'legacy explicit colors without a named palette');
+    }
+    const palette = lookModule.surfaceColorSchemes[settings['surface.colorScheme']];
+    if (palette) {
+      normalize('surface.posColor', palette.pos, 'named palette is authoritative over fallback colors');
+      normalize('surface.negColor', palette.neg, 'named palette is authoritative over fallback colors');
+    }
+    if ('appearance.rendering' in settings) {
+      const descriptor = settings['appearance.rendering'], template = appearanceModel.legacy('basic');
+      const material = template.material;
+      const shape = descriptor.version === 2
+        ? { version: 2, geometry: template.geometry, lighting: template.lighting, effects: template.effects,
+          coloring: template.coloring, materials: { atoms: material, bonds: material, surfaces: material, bondsLinked: true } }
+        : template;
+      function validateShape(value, expected, path) {
+        if (!isPlainObject(value)) return;
+        for (const [key, child] of Object.entries(value)) {
+          const childPath = `${path}.${key}`;
+          if (!Object.hasOwn(expected, key)) throw new Error(`Unsupported autosaved appearance field: ${childPath}`);
+          if (childPath.endsWith('.atomRadii')) continue; // The model validates its numeric element/radius map.
+          if (childPath.endsWith('.byElement')) {
+            if (!isPlainObject(child) || Object.keys(child).length) throw new Error('Per-element material overrides cannot be restored.');
+          } else if (key === 'surfaceMaterial' && child !== null) validateShape(child, material, childPath);
+          else if (isPlainObject(expected[key])) validateShape(child, expected[key], childPath);
+        }
+      }
+      validateShape(descriptor, shape, 'appearance.rendering');
+      normalize('appearance.rendering', appearanceModel.normalize(descriptor), 'supported descriptor version and optional defaults');
+    } else if (['molecule.style', ...Object.keys(lookModule.extra)].some(key => key in settings)) {
+      const previous = 'molecule.style' in settings ? {} : Object.fromEntries(['molecule.style', ...Object.keys(lookModule.extra)].map(key => [key, defaultAppearancePresetEnvelope.settings[key]]));
+      normalize('appearance.rendering', appearanceModel.fromLegacy({ ...previous, ...settings }), 'legacy style/material/lighting settings');
+    } else if ('surface.materialPreset' in settings) {
+      const descriptor = appearanceModel.normalize(defaultAppearancePresetEnvelope.settings['appearance.rendering']);
+      descriptor.material = appearanceModel.surfacePreset(settings['surface.materialPreset']);
+      descriptor.surfaceMaterial = null;
+      normalize('appearance.rendering', descriptor, 'legacy surface finish to shared descriptor');
+    }
+    const complete = { ...defaultAppearancePresetEnvelope.settings, ...settings };
+    if (complete['global.showAtomLabelNumbers'] && !complete['global.showAtomLabels']) throw new Error('Atom numbers require visible atom labels.');
+    const library = [];
+    for (const item of (Array.isArray(savedLibrary) ? savedLibrary : []).slice(0, 50)) {
+      try {
+        const look = lookModule.normalizeLook(item);
+        if (look.id.startsWith('user-') && !library.some(saved => saved.id === look.id)) library.push(look);
+      } catch { /* The Looks UI also ignores invalid, unreferenced cached entries. */ }
+    }
+    const references = lookModule.createReferenceController();
+    references.setLibrary(library);
+    if ('appearance.references' in settings) {
+      const expected = lookModule.normalizeReferenceState(settings['appearance.references']);
+      references.restore(expected);
+      const actual = references.get();
+      for (const axis of ['styleRef', 'colorsRef']) {
+        if (expected[axis] && !lookModule.sameReference(expected[axis], actual[axis])) throw new Error(`The saved ${axis} look is no longer available: ${expected[axis].id}`);
+      }
+    } else {
+      const recorded = settings['appearance.look'];
+      if (recorded?.id && ![...lookModule.builtins, ...library].some(look => look.id === recorded.id)) lookModule.normalizeLook(recorded);
+      references.migrate(lookModule.settings(complete), recorded);
+    }
+    normalize('appearance.references', references.exportState(), 'validated reference identities and retained definitions');
+    if ('appearance.look' in settings) {
+      normalizations.push({ key: 'appearance.look', toKey: 'appearance.references', reason: 'legacy identity metadata; explicit references take precedence' });
+      delete settings['appearance.look'];
+    }
+    return { envelope: { kind: PRESET_KIND, presetVersion: PRESET_VERSION, settings }, requested,
+      normalizations, excluded };
+  }
+
   function cancelAppearancePresetAutosave() {
     if (!appearancePresetAutosaveTimer) return;
     clearTimeout(appearancePresetAutosaveTimer);
@@ -26379,12 +26507,28 @@
     });
   }
 
-  function importAppearancePresetEnvelope(presetLike) {
+  function importAppearancePresetEnvelope(candidate) {
     const presetApi = window.VibeMolPreset;
     if (!presetApi || typeof presetApi.import !== 'function') return null;
-    return runWithAppearancePresetAutosaveSuppressed(() => (
-      presetApi.import(buildAppearanceAutosaveImportEnvelope(presetLike), { mode: PRESET_MODE.RELAXED })
-    ));
+    return runWithAppearancePresetAutosaveSuppressed(() => {
+      const imported = presetApi.import(candidate.envelope, { mode: PRESET_MODE.STRICT, applyBuilder: false });
+      const actual = exportAppearancePresetEnvelope('Restore readback').settings;
+      function same(left, right) {
+        if (left === right) return true;
+        if (!left || !right || typeof left !== 'object' || typeof right !== 'object' || Array.isArray(left) !== Array.isArray(right)) return false;
+        if (Array.isArray(left) && left.length !== right.length) return false;
+        const keys = Object.keys(left);
+        return keys.length === Object.keys(right).length && keys.every(key => Object.hasOwn(right, key) && same(left[key], right[key]));
+      }
+      const requested = Object.keys(candidate.envelope.settings), applied = [], shortfalls = [];
+      for (const key of requested) {
+        if (Object.hasOwn(actual, key) && same(candidate.envelope.settings[key], actual[key])) applied.push(key);
+        else shortfalls.push({ key, requested: candidate.envelope.settings[key], actual: actual[key] ?? null });
+      }
+      return { ...imported, requested, applied, shortfalls, complete: shortfalls.length === 0,
+        originalRequested: Object.keys(candidate.requested), normalizations: candidate.normalizations,
+        excluded: candidate.excluded, requestedValues: candidate.envelope.settings, actualValues: actual };
+    });
   }
 
   function scheduleAppearancePresetAutosave() {
@@ -26430,9 +26574,24 @@
     } catch (error) {
       return failAppearancePresetAutosaveRestore('parse', error);
     }
+    let storedLibrary;
     try {
-      const imported = importAppearancePresetEnvelope(parsed);
+      storedLibrary = window.localStorage.getItem('vibemol.looks.v1');
+    } catch (error) {
+      return failAppearancePresetAutosaveRestore('storage-read', error);
+    }
+    let library = [];
+    try { library = JSON.parse(storedLibrary || 'null'); } catch { /* Unrelated cached library errors are handled by Looks UI. */ }
+    let candidate;
+    try {
+      candidate = prepareAppearanceAutosaveRestore(parsed, library);
+    } catch (error) {
+      return failAppearancePresetAutosaveRestore('validation', error);
+    }
+    try {
+      const imported = importAppearancePresetEnvelope(candidate);
       if (!imported || imported.ok !== true) throw new Error('Appearance importer did not report success.');
+      if (!imported.complete || imported.applied.length !== imported.requested.length) throw new Error(`Appearance restore applied ${imported.applied.length} of ${imported.requested.length} requested settings.`);
       syncAppearancePersistenceUi();
       return { status: 'restored', imported };
     } catch (error) {
@@ -26447,13 +26606,13 @@
     // Keep the original storage bytes even when later appearance edits occur.
     appearancePresetAutosaveFailure = failure;
     console.warn(reason === 'storage-read' ? 'VibeMol: appearance autosave unavailable' : 'VibeMol: autosave restore failed', error);
-    // Reading and parsing precede any mutation; the startup defaults are intact.
+    // Reading, parsing and validation precede mutation; defaults are intact.
     if (reason !== 'import') return failure;
     try {
       // This fixed startup envelope is already available. Do not call Reset:
       // that deliberate user action also deletes the saved payload.
-      const fallback = importAppearancePresetEnvelope(defaultAppearancePresetEnvelope);
-      if (!fallback || fallback.ok !== true) throw new Error('Appearance defaults importer did not report success.');
+      const fallback = importAppearancePresetEnvelope(prepareAppearanceAutosaveRestore(defaultAppearancePresetEnvelope, []));
+      if (!fallback || fallback.ok !== true || !fallback.complete) throw new Error('Appearance defaults importer did not report complete success.');
       syncAppearancePersistenceUi();
       failure.defaultsInUse = true;
     } catch (fallbackError) {
@@ -26789,6 +26948,8 @@
     finishLookChange();
   }
 
+  // Establish the default before the atomic restore; later gizmo wiring only reads it.
+  window.__showAxes__ = true;
   defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
   const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();
   switch (appearanceAutosaveRestoreResult.status) {
@@ -27571,7 +27732,6 @@
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
 
   // Axes gizmo state
-  window.__showAxes__ = true;
   if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
 
   // Apply handlers

@@ -1,12 +1,12 @@
 {
-  "group": "Issue25 PR1 startup restore reporting",
-  "baselineRun": 39167491909,
-  "baselineHead": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "group": "Issue25 PR2 validated appearance restore",
+  "baselineRun": 39186923236,
+  "baselineHead": "72bb8e41c5127bf3d12ce47a659cab8f653e5f23",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Appearance startup failure handling and persistent notice do not touch exporter implementations. Require the unchanged34/3/37 exact accepted failing workflows; #11 remains the ordinary trajectory-or-vibration second-download alternative.",
+  "reason": "Dedicated appearance autosave validation and exact requested/applied accounting; exporter implementations remain unchanged. Require the ordinary34/3/37 exact failing workflows and trajectory-or-vibration second-download #11 alternative.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,
