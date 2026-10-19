@@ -41,6 +41,16 @@ SNAPSHOT = '''() => {
     throwCount:window.__restoreProbeThrowCount,mode:VibeMolWorkbenchHost.getMode()};
 }'''
 
+LAYOUT = '''() => {
+  const measure = id => {
+    const el = document.getElementById(id), rect = el.getBoundingClientRect();
+    return {text:el.textContent,x:rect.x,right:rect.right,y:rect.y,bottom:rect.bottom,width:rect.width,
+      clientWidth:el.clientWidth,scrollWidth:el.scrollWidth,
+      visible:!!el.getClientRects().length && getComputedStyle(el).visibility!=='hidden'};
+  };
+  return {viewportWidth:innerWidth,hint:measure('hint'),notice:measure('lookRestoreStatus')};
+}'''
+
 
 def instrument(original, count):
     body = original.decode()
@@ -54,6 +64,9 @@ def instrument(original, count):
     appearanceAtRestore: exportAppearancePresetEnvelope('Restore readback').settings,
   };
 ''')
+    needle = '  function importAppearancePresetEnvelope(presetLike) {\n'
+    assert body.count(needle) == 1
+    body = body.replace(needle, needle + '    window.__restoreProbeImportCalls++;\n')
     if count:
         needle = '  function updatePubChemMetadataPanel(record) {\n'
         assert body.count(needle) == 1
@@ -76,6 +89,7 @@ def init_script(raw, read_error, theme):
       window.__restoreProbeRead = () => read.call(localStorage,key);
       window.__restoreProbeWrites = [];
       window.__restoreProbeThrowCount = 0;
+      window.__restoreProbeImportCalls = 0;
       Storage.prototype.setItem = function(k,v) {
         if (this === localStorage && k === key) __restoreProbeWrites.push({value:v,at:performance.now()});
         return write.call(this,k,v);
@@ -115,7 +129,8 @@ def run_report_matrix(browser, source, output, url):
             if not legacy and theme == 'light':
                 active += [dict(name='empty',raw=None,status='empty',count=0),
                            dict(name='study-skipped',raw='{broken',status='skipped',count=0,study=True),
-                           dict(name='valid-legacy',raw=json.dumps(valid),status='restored',count=0)]
+                           dict(name='valid-legacy',raw=json.dumps(valid),status='restored',count=0),
+                           dict(name='transient-hint-after-failure',raw='{broken',status='failed',reason='parse',count=0,transient=True)]
             for case in active:
                 label = ('legacy' if legacy else 'workbench')+'-'+theme+'-'+case['name']
                 body = instrument(original, case['count'])
@@ -146,22 +161,60 @@ def run_report_matrix(browser, source, output, url):
                         log_assert(first['result']['defaultsInUse']==defaults,first['result'],dict(defaultsInUse=defaults),label+' fallback')
                         if defaults:
                             log_assert(first['appearanceAtRestore']==first['defaults'],first['appearanceAtRestore'],first['defaults'],label+' actual defaults readback at completion')
+                        imports = page.evaluate('__restoreProbeImportCalls')
+                        expected_imports = 2 if case['reason']=='import' else 0
+                        row['startupImportCalls'] = imports
+                        log_assert(imports==expected_imports,imports,expected_imports,label+' import/fallback calls')
+                        storage = case['reason']=='storage-read'
+                        expected_hint = ('Appearance autosave unavailable. Details in Look.' if storage
+                                         else 'Restore failed; autosave paused. Details in Look.')
+                        if storage:
+                            expected_notice = 'Appearance autosave is unavailable in this browser session. Save a session to keep appearance changes.'
+                        else:
+                            outcome = ('Saved appearance could not be restored. Defaults were applied at startup.' if defaults
+                                       else 'Saved appearance could not be restored, and defaults could not be fully applied.')
+                            expected_notice = outcome+' Appearance autosave is paused for this session. Save a session to keep changes. Reload is required to retry restoration and autosave.'
+                        log_assert(first['hint']==expected_hint,first['hint'],expected_hint,label+' short hint')
                         # Exercise the real hide deadline, then all available mode-entry hints.
                         page.wait_for_function('() => performance.now()-__restoreProbe.at > __restoreProbe.hideMs+300')
                         expired = page.evaluate(SNAPSHOT);row['observations'].append(expired)
-                        log_assert('Saved appearance could not be restored' in expired['hint']
+                        log_assert(expired['hint']==expected_hint
                                    and expired['ariaHidden']=='false' and expired['hintVisible']
                                    and float(expired['opacity'])>0.99,expired,
                                    dict(visibleAfterHideDeadline=True,ariaHidden='false'),label+' hide deadline')
+                        page.set_viewport_size({'width':390,'height':850})
+                        page.evaluate('VibeMolAppearanceLooks.openStudio()')
+                        page.locator('#lookRestoreStatus').wait_for(state='visible')
+                        page.locator('#lookRestoreStatus').scroll_into_view_if_needed()
+                        page.evaluate('''async () => {
+                          await document.fonts.ready;
+                          await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));
+                        }''')
+                        narrow = page.evaluate(LAYOUT);row['narrow']=narrow
+                        for target in ['hint','notice']:
+                            box = narrow[target]
+                            bounded = box['visible'] and box['x']>=-1 and box['right']<=391 and box['y']>=-1 and box['bottom']<=851 and box['width']>0 and box['scrollWidth']<=box['clientWidth']+1
+                            log_assert(bounded,box,dict(visible=True,withinViewport=390,noHorizontalOverflow=True),label+' 390px '+target)
+                        log_assert(narrow['hint']['text']==expected_hint,narrow['hint']['text'],expected_hint,label+' 390px short hint')
+                        log_assert(narrow['notice']['text']==expected_notice,narrow['notice']['text'],expected_notice,label+' 390px full notice')
+                        page.screenshot(path=str(output/(label+'-390.png')))
+                        page.evaluate('VibeMolAppearanceLooks.closeStudio()')
+                        page.set_viewport_size({'width':1512,'height':1000})
                         for mode in ['Measure','Edit']+([] if legacy else ['Calculations'])+['Display']:
                             page.locator('#mode'+mode+'Btn').click()
                             observed = page.evaluate(SNAPSHOT);row['observations'].append(observed)
-                            notice_ok = ('Saved appearance could not be restored' in observed['hint']
-                                and 'autosave is paused' in observed['hint'] and 'Reload is required' in observed['hint']
-                                and observed['ariaHidden']=='false' and observed['hintVisible']
-                                and float(observed['opacity'])>0.99)
-                            log_assert(notice_ok, observed, dict(persistent=True,ariaHidden='false',autosavePaused=True),label+' persistent '+mode)
-                            log_assert(('Defaults were applied at startup.' in observed['hint'])==defaults,observed['hint'],dict(defaultsClaim=defaults),label+' truthful defaults')
+                            log_assert(expected_hint not in observed['hint'],observed['hint'],dict(failureHintReplaced=True),label+' replaced hint '+mode)
+                            log_assert(observed['notice']==expected_notice,observed['notice'],expected_notice,label+' durable notice '+mode)
+                        if case.get('transient'):
+                            page.locator('#modeMeasureBtn').click()
+                            page.evaluate('window.__restoreProbeTransientAt=performance.now()')
+                            posted = page.evaluate(SNAPSHOT)
+                            log_assert(posted['hint']!=expected_hint and posted['hintVisible'] and posted['ariaHidden']=='false',posted,dict(transientVisible=True),label+' transient posted')
+                            page.wait_for_function('() => performance.now()-__restoreProbeTransientAt > __restoreProbe.hideMs+300')
+                            hidden = page.evaluate(SNAPSHOT)
+                            log_assert(hidden['ariaHidden']=='true' and not hidden['hintVisible'] and float(hidden['opacity'])<0.01,hidden,dict(transientAutoHidden=True,ariaHidden='true'),label+' transient expires')
+                            log_assert(hidden['notice']==expected_notice,hidden['notice'],expected_notice,label+' durable notice after transient')
+                            row['transientHint']=[posted,hidden]
                         page.evaluate('VibeMolAppearanceLooks.openStudio()')
                         page.locator('#lookRestoreStatus').wait_for(state='visible')
                         page.evaluate('''() => {
@@ -172,7 +225,7 @@ def run_report_matrix(browser, source, output, url):
                         page.wait_for_function('() => performance.now()-__restoreProbeEditedAt > 750')
                         last = page.evaluate(SNAPSHOT);row['observations'].append(last)
                         log_assert(last['stored']==case['raw'] and not last['writes'],last,dict(originalPayload=case['raw'],writes=[]),label+' payload survives edit')
-                        log_assert(last['notice']==first['hint'].split(' • ')[0] and not last['noticeHidden'],last['notice'],first['hint'].split(' • ')[0],label+' durable Looks notice')
+                        log_assert(last['notice']==expected_notice and not last['noticeHidden'],last['notice'],expected_notice,label+' durable Looks notice')
                         log_assert(last['throwCount']==case['count'],last['throwCount'],case['count'],label+' injected faults fired')
                         page.screenshot(path=str(output/(label+'.png')))
                     elif case['name']=='valid-legacy':

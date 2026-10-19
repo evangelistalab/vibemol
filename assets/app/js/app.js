@@ -48,6 +48,7 @@
   let appearancePresetAutosaveTimer = 0;
   let appearancePresetAutosaveSuppressDepth = 0;
   let appearancePresetAutosaveFailure = null;
+  let hintMessageSticky = false;
   let defaultAppearancePresetEnvelope = null;
   /**
    * Centralized app color palette used by canvas drawing and inline style snippets.
@@ -26441,11 +26442,13 @@
 
   function failAppearancePresetAutosaveRestore(reason, error) {
     cancelAppearancePresetAutosave();
-    const failure = { status: 'failed', reason, error, defaultsInUse: false, fallbackError: null };
+    const failure = { status: 'failed', reason, error, defaultsInUse: reason !== 'import', fallbackError: null };
     // Unlike the scoped suppression depth, this latch lasts until page reload.
     // Keep the original storage bytes even when later appearance edits occur.
     appearancePresetAutosaveFailure = failure;
-    console.warn('VibeMol: autosave restore failed', error);
+    console.warn(reason === 'storage-read' ? 'VibeMol: appearance autosave unavailable' : 'VibeMol: autosave restore failed', error);
+    // Reading and parsing precede any mutation; the startup defaults are intact.
+    if (reason !== 'import') return failure;
     try {
       // This fixed startup envelope is already available. Do not call Reset:
       // that deliberate user action also deletes the saved payload.
@@ -26460,8 +26463,14 @@
     return failure;
   }
 
-  function getAppearanceRestoreFailureMessage() {
+  function getAppearanceRestoreFailureMessage({ short = false } = {}) {
     if (!appearancePresetAutosaveFailure) return '';
+    if (appearancePresetAutosaveFailure.reason === 'storage-read') {
+      return short
+        ? 'Appearance autosave unavailable. Details in Look.'
+        : 'Appearance autosave is unavailable in this browser session. Save a session to keep appearance changes.';
+    }
+    if (short) return 'Restore failed; autosave paused. Details in Look.';
     const outcome = appearancePresetAutosaveFailure.defaultsInUse
       ? 'Saved appearance could not be restored. Defaults were applied at startup.'
       : 'Saved appearance could not be restored, and defaults could not be fully applied.';
@@ -26787,7 +26796,7 @@
       console.info('VibeMol: restored autosaved appearance preset');
       break;
     case 'failed':
-      setHintMessage('', { accent: false });
+      setHintMessage(getAppearanceRestoreFailureMessage({ short: true }), { accent: false, sticky: true });
       break;
     case 'empty':
     case 'skipped':
@@ -29694,7 +29703,7 @@
     if (!hintEl || String(hintEl.textContent || '').trim().length === 0) return;
     setHintVisible(true);
     clearHintVisibilityTimer();
-    if (appearancePresetAutosaveFailure || currentMode === MODES.EDIT) return;
+    if (hintMessageSticky || currentMode === MODES.EDIT) return;
     hintVisibilityTimer = window.setTimeout(() => {
       hintVisibilityTimer = 0;
       setHintVisible(false);
@@ -29715,14 +29724,12 @@
   /**
    * Update the hint message if the hint UI element exists.
    * @param {string} message
-   * @param {{accent?: boolean}=} options
+   * @param {{accent?: boolean, sticky?: boolean}=} options
    */
   function setHintMessage(message, options = {}) {
     if (!hintEl) return;
-    const restoreFailureMessage = getAppearanceRestoreFailureMessage();
-    if (restoreFailureMessage && !String(message || '').includes(restoreFailureMessage)) {
-      message = [restoreFailureMessage, message].filter(Boolean).join(' • ');
-    }
+    // Repainting this message preserves its flag; a different message replaces it.
+    hintMessageSticky = options.sticky === true || (message === lastHintMessage && hintMessageSticky);
     lastHintMessage = message;
     hintEl.textContent = '';
     if (currentMode === MODES.EDIT && editTools) {
