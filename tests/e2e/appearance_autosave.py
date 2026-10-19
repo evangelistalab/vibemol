@@ -146,6 +146,8 @@ def run_report_matrix(browser, source, output, url):
         dict(name='out-of-range', raw=changed({'surface.opacity':2}), status='failed', reason='validation', count=0),
         dict(name='missing-reference', raw=changed({'appearance.references':{'styleRef':{'kind':'user','id':'user-missing'},'colorsRef':None,'looks':[]}}), status='failed', reason='validation', count=0),
         dict(name='future-schema', raw=changed(presetVersion=999), status='failed', reason='validation', count=0),
+        dict(name='unrecognized-setting', raw=changed({'appearance.unrecognized':True}), status='failed', reason='validation', count=0),
+        dict(name='outside-appearance-scope', raw=changed({'view.autoRotate':True}), status='failed', reason='validation', count=0),
         dict(name='silent-setter-shortfall', raw=changed({'global.showBonds':False}), status='failed', reason='import', count=0, silent=True),
     ]
     rows = []

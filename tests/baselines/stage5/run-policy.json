@@ -1,12 +1,12 @@
 {
-  "group": "Issue25 PR2 validated appearance restore",
-  "baselineRun": 39186923236,
-  "baselineHead": "72bb8e41c5127bf3d12ce47a659cab8f653e5f23",
+  "group": "Appearance registry symmetry guard",
+  "baselineRun": 39191793272,
+  "baselineHead": "b06a3d4a983aed2b3425e0b4c54e196cc26db271",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Dedicated appearance autosave validation and exact requested/applied accounting; exporter implementations remain unchanged. Require the ordinary34/3/37 exact failing workflows and trajectory-or-vibration second-download #11 alternative.",
+  "reason": "Real scoped registry import/export symmetry, exact retired-only exclusions and current-schema unknown/out-of-scope rejection. Exporter sources and ordinary34/3/37 workflow gate are unchanged.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,
