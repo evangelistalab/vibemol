@@ -7,6 +7,7 @@ The legacy import-only appearance.look key must migrate explicitly to references
 """
 import argparse
 import hashlib
+import gzip
 import json
 import re
 from pathlib import Path
@@ -66,6 +67,11 @@ def registry_symmetry(page, context, url):
         log_assert('appearance.look' in inventory['scoped'], inventory, 'legacy import-only key registered', 'legacy scope')
         log_assert(inventory['exported'] == expected, inventory, dict(exported=expected), 'every scoped key exported except explicit legacy migration')
         report['inventory'] = inventory
+        golden=json.loads(gzip.decompress((ROOT/'tests/baselines/characterize.json.gz').read_bytes()))
+        expected_api=golden['captures']['sample/light/Display']['api']['VibeMolLooks']
+        actual_api=other.evaluate('Object.keys(VibeMolLooks).sort()')
+        report['looksApi']=dict(actual=actual_api,expected=expected_api)
+        log_assert(actual_api==expected_api,actual_api,expected_api,'Looks API surface unchanged')
         # All current recipes plus a genuinely edited/custom state exercise the
         # live setters, after-import reconciliation and exporter, without mocks.
         states = other.evaluate('VibeMolLooks.builtins.map(x=>x.id)') + ['custom']
@@ -165,7 +171,8 @@ def component_mode_validation(page, context, url):
               const populated=select?Array.from(select.options,x=>({value:x.value,label:x.textContent})):null;
               if(availability==='empty') select.replaceChildren();
               const before=probe.export(), startup=probe.startup();
-              const modes=VibeMolLooks.twoComponentModes.map(mode=>{
+              const catalog=probe.schema().find(x=>x.key==='twoComponent.mode').choices;
+              const modes=catalog.map(mode=>{
                 const raw=probe.export();raw.settings['twoComponent.mode']=mode.value;
                 const candidate=probe.prepare(raw);
                 return {requested:mode.value,validated:candidate.envelope.settings['twoComponent.mode']};
@@ -173,7 +180,7 @@ def component_mode_validation(page, context, url):
               const invalid=probe.export();invalid.settings['twoComponent.mode']='unknown-component';
               let error;try {probe.prepare(invalid);} catch(e) {error=e.message;}
               return {populated,elementPresent:!!select,optionCount:select?.options.length??0,
-                catalog:VibeMolLooks.twoComponentModes, startupStatus:startup.status,
+                catalog, startupStatus:startup.status,
                 restoredMode:before.settings['twoComponent.mode'],modes,error,
                 before:before.settings,after:probe.export().settings};
             }''',availability)

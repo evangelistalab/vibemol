@@ -42,6 +42,12 @@
   let propertiesInspector = null;
   const DARK_THEME_SCENE_BG_BLEND = 0.975;
   const DEFAULT_2C_COMPONENT_MODE = 'alphaBetaPhase';
+  const TWO_COMPONENT_MODE_OPTIONS = Object.freeze([
+    ['alphaRe', 'Re(ψ^α)'], ['alphaIm', 'Im(ψ^α)'],
+    ['betaRe', 'Re(ψ^β)'], ['betaIm', 'Im(ψ^β)'],
+    ['alphaPhase', 'ψ^α (phase)'], ['betaPhase', 'ψ^β (phase)'],
+    ['alphaBetaPhase', 'ψ^α ‖ ψ^β'], ['totalBloch', 'Ψ (Bloch)'],
+  ].map(([value, label]) => Object.freeze({ value, label })));
   const DEFAULT_ISO_VALUE = 0.02;
   let trajectoryVideoController = null;
   let vibrationVideoController = null;
@@ -6659,7 +6665,7 @@
   const twoComponentModeRow = document.getElementById('twoComponentModeRow');
   const twoComponentModeSelect = document.getElementById('twoComponentModeSelect');
   if (twoComponentModeSelect) {
-    for (const mode of lookModule.twoComponentModes) {
+    for (const mode of TWO_COMPONENT_MODE_OPTIONS) {
       const option = document.createElement('option');
       option.value = mode.value;
       option.textContent = mode.label;
@@ -26201,7 +26207,7 @@
     const next = (typeof value === 'string' && value) ? value : DEFAULT_2C_COMPONENT_MODE;
     applyGlobal2CComponent(next);
     if (twoComponentModeSelect) twoComponentModeSelect.value = next;
-  });
+  }, { choices: TWO_COMPONENT_MODE_OPTIONS });
   const viewShiftBindings = [
     { axis: 'x', input: shiftX },
     { axis: 'y', input: shiftY },
@@ -26375,7 +26381,7 @@
     }
     const choices = { 'render.cloudType': ['points', 'cubes'], 'render.mode': ['surface', 'cloud'],
       'view.projection': ['orthographic', 'perspective'],
-      'twoComponent.mode': lookModule.twoComponentModes.map(mode => mode.value) };
+      'twoComponent.mode': schema.get('twoComponent.mode').choices.map(mode => mode.value) };
     for (const [key, values] of Object.entries(choices)) validators[key] = value => values.includes(value);
     validators['surface.iso'] = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
     validators['appearance.look'] = value => value === null || (isPlainObject(value) && typeof value.id === 'string' && /^[a-z0-9-]{1,80}$/.test(value.id));

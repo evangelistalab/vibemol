@@ -270,7 +270,11 @@
       const description = (typeof options.description === 'string') ? options.description : '';
       const persistScope = normalizePersistScope(options.persistScope);
       presetSettingRegistry.set(key, { get: getter, set: setter, persistScope, importOnly: !!options.importOnly });
-      presetSettingSchema.set(key, Object.freeze({ key, section, type, description, persistScope }));
+      const schema = { key, section, type, description, persistScope };
+      if (Array.isArray(options.choices)) {
+        schema.choices = Object.freeze(options.choices.map(choice => Object.freeze({ ...choice })));
+      }
+      presetSettingSchema.set(key, Object.freeze(schema));
     }
 
     function listSchema() {

@@ -100,7 +100,7 @@
         "planned": false
       }
     ],
-    "correction": "Current preparer has11 app closure reads plus raw/savedLibrary data arguments,13total. The eight 2C choices now come from the existing lookModule input; no DOM input is captured.",
+    "correction": "Current preparer has11 app closure reads plus raw/savedLibrary arguments,13total. It reads2C choices from its existing local schema map; no new constant or DOM closure input.",
     "audit": "Independent Babel binding resolution confirms11 outer app reads plus raw/savedLibrary; no DOM global/binding reads.",
     "purityLimit": "No DOM dependency remains in prepareAppearanceAutosaveRestore.",
     "previousPR36": {
@@ -145,10 +145,17 @@
     },
     "componentConstruction": {
       "status": "passed",
-      "newAppBindings": 4,
-      "newLooksBindings": 9
+      "newAppBindings": 9,
+      "newPresetBindings": 2,
+      "newLooksBindings": 0
     },
-    "domIndependentCandidate": "Local selector-absent/empty startup and16 validations passed,500 registry readbacks passed,433 JS/60 Python/checks/construction passed. Own ordinary CI pending."
+    "domIndependentCandidate": "Registry recut:500 exact readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty selector startup restores passed. Checks433JS/60Python and9app/2preset construction bindings pass. Own automatic CI pending.",
+    "rejectedCandidate": {
+      "head": "e9be70b7586df24303c85c20ec797c775cfe793d",
+      "runId": 39264968979,
+      "gateMiss": "Characterization API inventory VibeMolLooks27expected versus28actual: new enumerable twoComponentModes export.",
+      "disposition": "Failed and unmerged. No golden, API-addition exception or gate change. Re-cut through the explicitly authorized registry source."
+    }
   },
   "productionChange": "One exclusion branch: registered out-of-appearance keys now reject rather than enter excluded. No settings, rendering, exporter or registry changes.",
   "trackedAppLets": 251,
@@ -209,11 +216,11 @@
     "reason": "A tenth retired key in production must fail the independent exact composition assertion until deliberately reviewed and updated. Never import either list from the other."
   },
   "componentModeCatalog": {
-    "source": "VibeMolLooks.twoComponentModes",
+    "source": "Private TWO_COMPONENT_MODE_OPTIONS in app.js, attached as choices metadata on the existing twoComponent.mode setting schema",
     "entries": 8,
     "consumers": [
-      "prepareAppearanceAutosaveRestore",
-      "twoComponentModeSelect population"
+      "twoComponentModeSelect population",
+      "prepareAppearanceAutosaveRestore via its existing schema map"
     ],
     "manualGate": "All8 values and actual startup restore with the select absent; all8 with select emptied. Invalid value still rejects. Native populated values/labels/order unchanged."
   }

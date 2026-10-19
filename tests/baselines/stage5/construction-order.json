@@ -49,11 +49,11 @@
       "after": "a6787fc0684afbcae47fcdd0ee227ff886736bb9"
     },
     {
-      "label": "DOM-independent2C validation catalog",
+      "label": "Registry-based DOM-independent2C validation catalog",
       "before": "559698db5df26b77a4b9c46d9eb8ffa1134d192b",
       "worktree": ".",
       "consumers": [
-        "assets/app/js/appearance-looks.js"
+        "assets/app/js/preset.js"
       ],
       "expectedStatus": "passed"
     }
