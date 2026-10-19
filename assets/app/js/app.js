@@ -1158,6 +1158,7 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    workbenchBarEl: null,
     elementColorOverlay: null,
     elementColorClose: null,
     periodicTableViewport: null,
@@ -7211,6 +7212,7 @@
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
+  cacheElement('workbenchBarEl', 'workbenchBar');
   cacheElement('editAtomsMenuEl', 'editAtomsMenu');
   cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
   cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
@@ -18635,7 +18637,7 @@
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
     const toolbarBottom = workspaceEnabled
-      ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom
+      ? els.workbenchBarEl?.getBoundingClientRect().bottom
       : modeDisplayBtn?.parentElement?.getBoundingClientRect().bottom;
     const topInset = Math.max(gap, Math.ceil(toolbarBottom || 0) + gap);
     const popoverWidth = Math.max(1, Math.round(popoverRect.width || popover.offsetWidth || 320));

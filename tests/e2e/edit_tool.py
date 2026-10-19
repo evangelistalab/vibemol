@@ -192,9 +192,12 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True,args=['--use-angle=swiftshader'])
         page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
+        phase='edit-tool'
         page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
         try:
             run(page,url);visual_schemes(browser,url)
+            phase='metal-popover'
+            print('[edit-tool-phase] '+json.dumps({'phase':phase,'status':'started'},sort_keys=True),flush=True)
             # Run39279175556 and the instrumented full-sequence reproduction
             # reached31.85s in the first native Coordination pointer handler.
             # https://github.com/evangelistalab/vibemol/actions/runs/39279175556
@@ -206,7 +209,8 @@ def main():
             assert isolation['actualContextCount']==isolation['expectedContextCount'],isolation
             metal_popover_regression(browser,url);assert not errors,errors
         except Exception:
-            p.write_failure_artifacts(page,p.ARTIFACTS,'edit-tool-failure',errors,[]);raise
+            print('[edit-tool-phase] '+json.dumps({'phase':phase,'status':'failed','artifactPrefix':phase+'-failure'},sort_keys=True),flush=True)
+            p.write_failure_artifacts(page,p.ARTIFACTS,phase+'-failure',errors,[]);raise
         finally:browser.close()
 
 

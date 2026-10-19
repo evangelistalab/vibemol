@@ -3,12 +3,12 @@
   "status": "proposed fix; not merged",
   "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
   "harness": "tests/e2e/metal_popover.py",
-  "harnessSha256": "fb525bdf903f613bcea149bbd1b3796a4077a68384786f6bb221d34c640b8ec7",
+  "harnessSha256": "abb3f5aff5a613d025af8e0805e274f0eaf51d4919bf3f3c5b8b6eac5d82acf0",
   "sourceHashes": {
-    "assets/app/js/app.js": "c459e99cdb6a5c569148ffbf84e97ea50e41cd324803f686f76b9c51b38ee1ae",
+    "assets/app/js/app.js": "1043650013a0fef646f9c1acc9e7a70c4b85efc0b3d96e1b613d9a8cf8a3dd56",
     "assets/app/css/edit-ui.css": "ded935b3ef2ff14dae28080a8c26c385533d6f8c77bbf793b330c8a0ec11238d"
   },
-  "scope": "Only existing Metal position helper and Metal-specific CSS. Query/listener timing, inside pointerdown propagation, all four Metal semantics, Coordination placement and exporters unchanged.",
+  "scope": "Existing Metal position helper, Metal-specific CSS and one authorized lazy els.workbenchBarEl cache registration. A missing Workbench bar is queried again until created by the later Workbench script; a cached node is not silently replaced. Other query/listener timing, pointerdown propagation, all four Metal semantics, Coordination placement and exporters unchanged.",
   "native": {
     "cases": 28,
     "metalCommits": 112,
@@ -494,7 +494,7 @@
         "legacyNarrowStaging": true
       }
     ],
-    "role": "Complete Edit prelude and native matrix on Chromium156, with completed parent rendering context retired."
+    "role": "Previous complete Edit/native matrix measurement; the review changes only lazy bar lookup and failure attribution. Revised sequence and exact own-candidate CI are recorded separately."
   },
   "control": {
     "role": "Actual merged-main diagnostic on same engine/harness; not a merge gate",
@@ -627,8 +627,8 @@
   "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
   "sourceAudit": {
     "status": "passed",
-    "file": "ignored out/test-artifacts/issue17/main-source-audit.json",
-    "sha256": "deb28cc44d4992bdc47868c47eefbb49930aaf18723de0a9ec3cff9bff9dfeed",
+    "file": "ignored out/test-artifacts/issue17/review-update/source-audit.json",
+    "sha256": "a6b0ca29f400c3e868dbe36869de188f1713be01619b35fc589a3b15355a0c05",
     "newController": false,
     "helperAppReads": [
       "els",
@@ -692,5 +692,16 @@
       0
     ],
     "rawProof": "Ignored out/test-artifacts/issue17/lifecycle-diagnosis.json and lifecycle-repeat-result.json; original failed run and every development attempt preserved."
+  },
+  "reviewFollowups": {
+    "workbenchBar": "els.workbenchBarEl uses the established lazy memoized accessor; no new module let/controller or change to the fixed52-slot characterization inventory.",
+    "failureAttribution": {
+      "parent": "[edit-tool-phase] phase=metal-popover and metal-popover-failure.*; ordinary failures keep edit-tool-failure.*",
+      "native": "[metal-popover-failure], phase=metal-popover and metal-popover-<layout>-<theme>-<width>-native-failure.* captured from the failing native page",
+      "injectedCases": 3,
+      "allExceptionsPreserved": true
+    },
+    "compactReadiness": "Already present before this review: wait for body.dataset.wbCompact === true at320px, then presented state, then unchanged overflow comparison. Actual/expected compact state and widths log on every run. Citation: CI39129507791.",
+    "fullLocalSequence": "At review-update freeze, full Edit/native sequence is running on the revised source; original Edit/visual checks and first native cases pass. Raw completion is recorded separately; the own automatic CI remains the merge gate."
   }
 }

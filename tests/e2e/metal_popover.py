@@ -191,12 +191,14 @@ def run_matrix(browser, source, output, url, diagnostic=False):
                     check(popup.get_attribute('aria-hidden')=='true',popup.get_attribute('aria-hidden'),'true','mode suspension')
                 check(not errors,errors,[],'page errors')
             except Exception:
-                failure=dict(context=label,pageerrors=errors,navigations=navigations,
+                prefix='metal-popover-'+label+'-native-failure'
+                failure=dict(phase='metal-popover',artifactPrefix=prefix,context=label,pageerrors=errors,navigations=navigations,
                              nativeEvents=native_events,traceback=traceback.format_exc())
-                (output/(label+'-native-failure.json')).write_text(json.dumps(failure,indent=2)+'\n')
+                print('[metal-popover-failure] '+json.dumps(failure,sort_keys=True),flush=True)
+                (output/(prefix+'.json')).write_text(json.dumps(failure,indent=2)+'\n')
                 # Capture this transaction's page before closing its context;
                 # edit_tool's parent page is not evidence for a native failure.
-                write_failure_artifacts(page,output,label+'-native-failure',errors,
+                write_failure_artifacts(page,output,prefix,errors,
                                         [entry['message'] for entry in native_events])
                 report['status']='failed';report['failure']=failure
                 (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
