@@ -26388,7 +26388,8 @@
     const requested = {}, excluded = [];
     for (const [key, value] of Object.entries(flattenAutosavePresetSettings(raw.settings, '', Object.create(null)))) {
       if (scoped.has(key)) requested[key] = value;
-      else if (schema.has(key) || retired.has(key)) excluded.push({ key, reason: retired.has(key) ? 'retired legacy setting' : 'outside appearance scope' });
+      else if (retired.has(key)) excluded.push({ key, reason: 'retired legacy setting' });
+      else if (schema.has(key)) throw new Error(`Autosaved setting is outside appearance scope: ${key}`);
       else throw new Error(`Unsupported autosaved appearance setting: ${key}`);
     }
     const settings = { ...requested }, normalizations = [];

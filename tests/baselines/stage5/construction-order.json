@@ -39,6 +39,12 @@
     {
       "label": "Issue 25 PR2 validated restore and applied accounting",
       "before": "72bb8e41c5127bf3d12ce47a659cab8f653e5f23",
+      "expectedStatus": "passed",
+      "after": "7aaf3936c5c8fe8eaa10527c9f0a8618e6abfdcb"
+    },
+    {
+      "label": "Appearance registry symmetry and current-schema exclusion guard",
+      "before": "b06a3d4a983aed2b3425e0b4c54e196cc26db271",
       "worktree": ".",
       "expectedStatus": "passed"
     }

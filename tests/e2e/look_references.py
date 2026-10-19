@@ -177,7 +177,13 @@ def reference_migration(page, context, url):
         assert ids(page)==[style,colors]
         fresh=context.browser.new_context();other=fresh.new_page()
         try:
-            other.add_init_script('localStorage.setItem("vibemol.autosavePreset",'+json.dumps(json.dumps(saved['preset']))+');')
+            # The fixtureCorrection in appearance-registry.json records why a
+            # full session preset is not a valid appearance-autosave envelope.
+            # Use the real scoped exporter; retain the legacy identity payload.
+            autosave=page.evaluate('VibeMolPreset.export({persistScope:"appearanceAutosave"})')
+            autosave['settings'].pop('appearance.references')
+            autosave['settings']['appearance.look']=copy.deepcopy(saved['preset']['settings']['appearance.look'])
+            other.add_init_script('localStorage.setItem("vibemol.autosavePreset",'+json.dumps(json.dumps(autosave))+');')
             other.goto(url);other.wait_for_function('()=>window.VibeMolAppearanceLooks')
             # Capture both comparands and the resolved setting in one JS task,
             # before either assertion; retain the original readiness condition.
@@ -211,4 +217,5 @@ def reference_migration(page, context, url):
 if __name__ == '__main__':
     from helpers import run_appearance_scenarios
     from appearance_autosave import restore_reporting
-    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, restore_reporting])
+    from appearance_registry import registry_symmetry
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, registry_symmetry, restore_reporting])

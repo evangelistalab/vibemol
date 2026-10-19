@@ -1,5 +1,5 @@
 {
-  "status": "local-validation-passed-awaiting-own-CI",
+  "status": "merged PR35 at b06a3d4; own CI39191793272 independently verified",
   "issue": 25,
   "scope": "Dedicated appearance autosave candidate validation, STRICT commit, exact requested/applied accounting and downstream axes initialization. No general rollback framework or public preset API change.",
   "sourceHashes": {
@@ -208,5 +208,7 @@
       "normalization": "No palette id plus explicit colors becomes custom; preserve the explicit colors.",
       "finalShortfalls": []
     }
-  }
+  },
+  "ciRunId": 39191793272,
+  "followupContract": "tests/baselines/appearance-registry.json"
 }

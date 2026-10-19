@@ -1,0 +1,149 @@
+{
+  "scope": "Actual appearance-scoped registry, exact STRICT import/export symmetry; current-schema exclusions fail closed.",
+  "registry": {
+    "scoped": 51,
+    "exportable": 50,
+    "states": 10,
+    "exactReadbacks": 500,
+    "importOnly": {
+      "appearance.look": "Explicit legacy migration to appearance.references; absent from export by design."
+    },
+    "enumeration": "Every runtime scoped schema key must be exported or be this single named migration. Future keys are enumerated automatically."
+  },
+  "keyPolicy": {
+    "currentSchema": "Only nine named retired keys may be excluded, each reason exactly retired legacy setting. A registered out-of-scope key or wholly unrecognized key is rejected before mutation.",
+    "futureSchema": "Unsupported future presetVersion is rejected before inspecting settings. This PR does not introduce forward-schema tolerance.",
+    "publicPresetApi": "Unchanged; this stricter policy is specific to saved appearance restoration."
+  },
+  "compatibilityCensusClassification": {
+    "priorRun": "PR35 actual-startup census at7aaf393 accepted64/64 under its documented broader exclusion policy.",
+    "actualAutosaves": 40,
+    "actualAutosavesOutsideScope": 0,
+    "otherAppearanceOnlyVariants": 5,
+    "fullSessionOrCliVariants": 19,
+    "fullSessionOrCliOutsideKeys": 349,
+    "explanation": "The broad prior census included session.preset and full CLI exports, not just actual autosaves. Those19 are now intentionally rejected if placed in the appearance-autosave slot; ordinary preset/session import is unchanged. All40 real0.9.0/0.9.5 autosaves remain in scope."
+  },
+  "dependencies": {
+    "originalPlan": "Six conceptual inputs: scoped registry, Looks, appearance model, saved-look catalog, preset kind, schema version.",
+    "actualAppClosureReads": 12,
+    "dataParameters": [
+      "raw",
+      "savedLibrary"
+    ],
+    "total": 14,
+    "additionalInputs": 8,
+    "inputs": [
+      {
+        "name": "listPresetSettingSchema",
+        "role": "planned scoped registry",
+        "planned": true
+      },
+      {
+        "name": "lookModule",
+        "role": "planned Looks module",
+        "planned": true
+      },
+      {
+        "name": "appearanceModel",
+        "role": "planned appearance model",
+        "planned": true
+      },
+      {
+        "name": "savedLibrary",
+        "role": "planned saved-look catalog, now data parameter",
+        "planned": true
+      },
+      {
+        "name": "PRESET_KIND",
+        "role": "planned kind",
+        "planned": true
+      },
+      {
+        "name": "PRESET_VERSION",
+        "role": "planned supported schema version",
+        "planned": true
+      },
+      {
+        "name": "APPEARANCE_AUTOSAVE_PERSIST_SCOPE",
+        "role": "additional registry scope selector",
+        "planned": false
+      },
+      {
+        "name": "raw",
+        "role": "additional payload data parameter",
+        "planned": false
+      },
+      {
+        "name": "isPlainObject",
+        "role": "additional shape validation",
+        "planned": false
+      },
+      {
+        "name": "flattenAutosavePresetSettings",
+        "role": "additional nested legacy envelope normalization",
+        "planned": false
+      },
+      {
+        "name": "defaultAppearancePresetEnvelope",
+        "role": "additional legacy defaults/descriptor normalization",
+        "planned": false
+      },
+      {
+        "name": "normalizeMoleculeStyleKey",
+        "role": "additional documented legacy style normalization",
+        "planned": false
+      },
+      {
+        "name": "MOLECULE_STYLE_ALIASES",
+        "role": "additional documented legacy style validation",
+        "planned": false
+      },
+      {
+        "name": "twoComponentModeSelect",
+        "role": "additional read-only DOM option enumeration for twoComponent.mode",
+        "planned": false
+      }
+    ],
+    "correction": "Earlier total14 included both data parameters; it never meant14 closure reads. Seven added closure reads plus raw account for the eight total additions. Pure/legacy helpers dominate; scope selection and DOM enum inspection are validation plumbing, not normalization. No new controller or callbacks.",
+    "audit": "Babel binding-resolution audit independently confirms12 outer app reads and raw/savedLibrary parameters.",
+    "purityLimit": "twoComponentModeSelect is a read-only DOM-options input; this helper is not a reusable pure module seam. The original six-input projection omitted this validation plumbing."
+  },
+  "verification": {
+    "localRegistry": "passed500 exact key readbacks; explicit legacy migration and four policy outcomes",
+    "faultMatrixExpected": 49,
+    "ci": "Own automatic run pending; 34/3/37 ordinary conjunction unchanged.",
+    "faultMatrix": "49/49 passed;45 failed-restore cases retained exact payload bytes after edit with zero writes; no page errors",
+    "construction": "passed; zero new production bindings",
+    "unitTests": "433 JS /60 Python passed"
+  },
+  "productionChange": "One exclusion branch: registered out-of-appearance keys now reject rather than enter excluded. No settings, rendering, exporter or registry changes.",
+  "trackedAppLets": 251,
+  "historicalEvidenceUnchanged": true,
+  "fixtureCorrection": {
+    "diagnostic": "local-look-references-attempt1 on current branch; sourceSha2560570ec5405f38411ef011d64fd15bc38581eb4780f88f653c9ded4acf26868c3",
+    "logSha256": "173766fff76ffe630fd041ac5651f45921cd9075ce5e4dacd768012e1eb05a90",
+    "oldSetup": "Full VibeMolSession.export().preset placed in vibemol.autosavePreset, including registered non-appearance fields. New current-schema scope rejection correctly retains defaults.",
+    "comparands": {
+      "expectedIds": [
+        "opal",
+        "classic"
+      ],
+      "actualIds": [
+        "basic",
+        "basic"
+      ],
+      "expectedFlags": [
+        false,
+        false
+      ],
+      "actualFlags": [
+        false,
+        false
+      ]
+    },
+    "newSetup": "Use the real VibeMolPreset.export({persistScope:appearanceAutosave}) envelope, then replace explicit refs with the same legacy appearance.look composite.",
+    "unchanged": "Session/public-preset cases, both original startup identity/flags assertions, readiness, waits and all scientific baselines.",
+    "negativeCoverage": "unrecognized-setting and outside-appearance-scope in all four startup contexts; zero imports, visible notice, original bytes retained after edit."
+  }
+}
