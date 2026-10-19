@@ -45,7 +45,16 @@
     {
       "label": "Appearance registry symmetry and current-schema exclusion guard",
       "before": "b06a3d4a983aed2b3425e0b4c54e196cc26db271",
+      "expectedStatus": "passed",
+      "after": "a6787fc0684afbcae47fcdd0ee227ff886736bb9"
+    },
+    {
+      "label": "Registry-based DOM-independent2C validation catalog",
+      "before": "559698db5df26b77a4b9c46d9eb8ffa1134d192b",
       "worktree": ".",
+      "consumers": [
+        "assets/app/js/preset.js"
+      ],
       "expectedStatus": "passed"
     }
   ]

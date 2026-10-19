@@ -1,12 +1,12 @@
 {
-  "group": "Appearance registry symmetry guard",
-  "baselineRun": 39191793272,
-  "baselineHead": "b06a3d4a983aed2b3425e0b4c54e196cc26db271",
+  "group": "DOM-independent appearance mode validation",
+  "baselineRun": 39196641240,
+  "baselineHead": "559698db5df26b77a4b9c46d9eb8ffa1134d192b",
   "issue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "reason": "Real scoped registry import/export symmetry, exact retired-only exclusions and current-schema unknown/out-of-scope rejection. Exporter sources and ordinary34/3/37 workflow gate are unchanged.",
+  "reason": "Remove the validator DOM input using one existing-module2C catalog shared with selector population. Exporters and ordinary exact34/3/37 gate remain unchanged.",
   "ordinaryExpected": {
     "passed": 34,
     "failed": 3,

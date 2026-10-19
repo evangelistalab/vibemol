@@ -217,5 +217,5 @@ def reference_migration(page, context, url):
 if __name__ == '__main__':
     from helpers import run_appearance_scenarios
     from appearance_autosave import restore_reporting
-    from appearance_registry import registry_symmetry
-    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, registry_symmetry, restore_reporting])
+    from appearance_registry import component_mode_validation, registry_symmetry
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, registry_symmetry, component_mode_validation, restore_reporting])

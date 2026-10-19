@@ -26,13 +26,13 @@
   },
   "dependencies": {
     "originalPlan": "Six conceptual inputs: scoped registry, Looks, appearance model, saved-look catalog, preset kind, schema version.",
-    "actualAppClosureReads": 12,
+    "actualAppClosureReads": 11,
     "dataParameters": [
       "raw",
       "savedLibrary"
     ],
-    "total": 14,
-    "additionalInputs": 8,
+    "total": 13,
+    "additionalInputs": 7,
     "inputs": [
       {
         "name": "listPresetSettingSchema",
@@ -98,24 +98,64 @@
         "name": "MOLECULE_STYLE_ALIASES",
         "role": "additional documented legacy style validation",
         "planned": false
-      },
-      {
-        "name": "twoComponentModeSelect",
-        "role": "additional read-only DOM option enumeration for twoComponent.mode",
-        "planned": false
       }
     ],
-    "correction": "Earlier total14 included both data parameters; it never meant14 closure reads. Seven added closure reads plus raw account for the eight total additions. Pure/legacy helpers dominate; scope selection and DOM enum inspection are validation plumbing, not normalization. No new controller or callbacks.",
-    "audit": "Babel binding-resolution audit independently confirms12 outer app reads and raw/savedLibrary parameters.",
-    "purityLimit": "twoComponentModeSelect is a read-only DOM-options input; this helper is not a reusable pure module seam. The original six-input projection omitted this validation plumbing."
+    "correction": "Current preparer has11 app closure reads plus raw/savedLibrary arguments,13total. It reads2C choices from its existing local schema map; no new constant or DOM closure input.",
+    "audit": "Independent Babel binding resolution confirms11 outer app reads plus raw/savedLibrary; no DOM global/binding reads.",
+    "purityLimit": "No DOM dependency remains in prepareAppearanceAutosaveRestore.",
+    "previousPR36": {
+      "actualAppClosureReads": 12,
+      "dataArguments": 2,
+      "total": 14
+    }
   },
   "verification": {
     "localRegistry": "passed500 exact key readbacks; explicit legacy migration and four policy outcomes",
     "faultMatrixExpected": 49,
-    "ci": "Own automatic run pending; 34/3/37 ordinary conjunction unchanged.",
+    "ci": "PR36 own run39196641240 fully verified before exact-head merge559698d. This DOM-independent candidate requires its own ordinary run.",
     "faultMatrix": "49/49 passed;45 failed-restore cases retained exact payload bytes after edit with zero writes; no page errors",
     "construction": "passed; zero new production bindings",
-    "unitTests": "433 JS /60 Python passed"
+    "unitTests": "433 JS /60 Python passed",
+    "PR36": {
+      "runId": 39196641240,
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "wallSeconds": 2275,
+      "looksSeconds": 1052.87,
+      "materialPaths": [
+        "Studio",
+        "Properties"
+      ],
+      "materialTimeoutObserved": false,
+      "materialRiskOpen": true,
+      "cacheHits": 8,
+      "cacheMisses": 0
+    },
+    "componentModes": {
+      "cases": [
+        "selector absent at startup",
+        "selector emptied after population"
+      ],
+      "acceptedValuesPerCase": 8,
+      "startupRestore": "alphaPhase restored in both cases",
+      "invalidValueRejected": true,
+      "pageErrors": 0,
+      "sourceUnchanged": true
+    },
+    "componentConstruction": {
+      "status": "passed",
+      "newAppBindings": 9,
+      "newPresetBindings": 2,
+      "newLooksBindings": 0
+    },
+    "domIndependentCandidate": "Registry recut:500 exact readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty selector startup restores passed. Checks433JS/60Python and9app/2preset construction bindings pass. Own automatic CI39268791586 attempt1 on verified source head f6239f917582dad0af6283feca766d1a7ec3a42c passed the independently checked complete gate: exact34/3/37 and accepted workflows, all37 once;102 unchanged goldens twice/exact repeat;52slots across8contexts/fixed composition/all minima;433JS/60Python, WebKit and9app/2preset construction bindings. The49-case restore matrix,500 registry readbacks, unchanged27-member Looks API,16 mode validations and both real missing/empty-selector startup restores passed. Looks1879.88s with both Studio/Properties material-family paths completed; whole CI1931s,8cache hits/0misses. #11 fired at vibration after the second download; material-preset intermittent remains open.",
+    "rejectedCandidate": {
+      "head": "e9be70b7586df24303c85c20ec797c775cfe793d",
+      "runId": 39264968979,
+      "gateMiss": "Characterization API inventory VibeMolLooks27expected versus28actual: new enumerable twoComponentModes export.",
+      "disposition": "Failed and unmerged. No golden, API-addition exception or gate change. Re-cut through the explicitly authorized registry source."
+    }
   },
   "productionChange": "One exclusion branch: registered out-of-appearance keys now reject rather than enter excluded. No settings, rendering, exporter or registry changes.",
   "trackedAppLets": 251,
@@ -145,5 +185,43 @@
     "newSetup": "Use the real VibeMolPreset.export({persistScope:appearanceAutosave}) envelope, then replace explicit refs with the same legacy appearance.look composite.",
     "unchanged": "Session/public-preset cases, both original startup identity/flags assertions, readiness, waits and all scientific baselines.",
     "negativeCoverage": "unrecognized-setting and outside-appearance-scope in all four startup contexts; zero imports, visible notice, original bytes retained after edit."
+  },
+  "measurements": {
+    "strictCompatibilityCensus": {
+      "uniquePayloads": 64,
+      "composition": "24 distinct corpus variants plus40 actual autosaves generated by0.9.0/0.9.5; the corpus still includes the full-session/CLI variants.",
+      "unchanged": true,
+      "nothingDropped": true,
+      "sortedPayloadSha256SetDigest": "f568a8f7fbfff46c68b8c8e031a0458801ebbf586d491975dcd59830d0fd5164",
+      "comparison": "Pre-code final STRICT census and PR2 final actual-startup replay contain the identical64-element payload SHA256 set. Historical files/results are unchanged."
+    },
+    "separateActualAutosaveReadback": {
+      "uniquePayloads": 40,
+      "composition": "20 actual autosaves from0.9.0 and20 from0.9.5, a subset of the unchanged64-case corpus.",
+      "readbacksPerPayload": 50,
+      "exactReadbacks": 2000,
+      "purpose": "Separate current-scope/post-startup readback measurement, not a replacement or reduced STRICT census.",
+      "sortedPayloadSha256SetDigest": "d854fab9ed6407c289251dffeeb588ebc8f79ca3c52b8075b0fe9079e24e4255",
+      "runSource": "PR36 a6787fc",
+      "passed": 40
+    }
+  },
+  "retiredListTripwire": {
+    "intentionalDuplication": true,
+    "independentLists": [
+      "assets/app/js/app.js prepareAppearanceAutosaveRestore retired",
+      "tests/e2e/appearance_registry.py RETIRED"
+    ],
+    "expectedEntries": 9,
+    "reason": "A tenth retired key in production must fail the independent exact composition assertion until deliberately reviewed and updated. Never import either list from the other."
+  },
+  "componentModeCatalog": {
+    "source": "Private TWO_COMPONENT_MODE_OPTIONS in app.js, attached as choices metadata on the existing twoComponent.mode setting schema",
+    "entries": 8,
+    "consumers": [
+      "twoComponentModeSelect population",
+      "prepareAppearanceAutosaveRestore via its existing schema map"
+    ],
+    "manualGate": "All8 values and actual startup restore with the select absent; all8 with select emptied. Invalid value still rejects. Native populated values/labels/order unchanged."
   }
 }
