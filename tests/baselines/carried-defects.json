@@ -9,10 +9,18 @@
       "id": "projection",
       "issue": 3,
       "url": "https://github.com/evangelistalab/vibemol/issues/3",
-      "status": "open",
+      "status": "closed",
       "workflow": "Orthographic frustum stale after preset camera/target changes",
       "acceptedCiFailure": false,
-      "evidence": "tests/baselines/evidence/stage0/pixel-projection-proof.json"
+      "evidence": "tests/baselines/evidence/stage0/pixel-projection-proof.json",
+      "acceptedFix": {
+        "pr": 41,
+        "head": "981386f9658c670f1314f663fa3ac02d6f7daba9",
+        "merge": "9a038a99d7aa55e92ade07299fa2a685e1f8b27e",
+        "runId": 39442788498,
+        "trackedLetCount": 251,
+        "gate": "34/3/37 exact workflows,102x2/exact repeat,52slots/eight contexts/all minima,433JS/60Python,WebKit/construction"
+      }
     },
     {
       "id": "video-crop-after-export",
@@ -73,6 +81,19 @@
       "scope": "camera_depth slab compares complete pose exactly across idle OrbitControls updates; identical5.329e-15 drift on tagged/control/proposed macOS Chromium156. Comparands added, expectations unchanged.",
       "acceptedCiFailure": false,
       "standingGateUnchanged": "34/3/37; a CI failure here still stops acceptance."
+    },
+    {
+      "issue": 43,
+      "url": "https://github.com/evangelistalab/vibemol/issues/43",
+      "kind": "harness",
+      "status": "open",
+      "suite": "tests/e2e/figure.py",
+      "scope": "Fixed30000ms functional preview deadline is smaller than the41518ms long task observed on unmodified main. This does not retrospectively diagnose occurrence42.",
+      "acceptedCiFailure": false,
+      "proposal": "Design only: a shared numeric/timing assertion helper, motivated by golden float comparison, camera pose issue40 and this fixed deadline. For preview timing, propose a30s responsive-time budget and independent180s hard wall ceiling; subtract the union of wait-overlapping long-task intervals and detected descheduling gaps from missed monotonic-heartbeat intervals, without double counting or discounting prelude-only time. Preserve exact blob predicate, explicit error failure and original numeric tolerances. Report unavailable/dropped observations with an explicit tested fallback.",
+      "evidenceCollector": "tests/e2e/figure_preview_diagnostics.py",
+      "standingGateUnchanged": "34/3/37 exact accepted workflows; Figure remains required to pass.",
+      "implementationPrerequisite": "Wait for issue42 classification. If the blob genuinely never arrives for a product-state reason, a responsive-time budget is not a remedy. No deadline or shared-helper implementation in the collector PR."
     }
   ],
   "acceptedCiGate": {
@@ -82,12 +103,10 @@
   },
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
-    "orderedIssues": [
-      3
-    ],
-    "scope": "Current human-authorized next product repair. Accepted CI failures remain exactly the same three manifest workflows.",
-    "reason": "#25 and#17 are fixed/closed; the human selected#3 next. Closed test synchronization issue#21 is removed.",
-    "authority": "Direct #3 diagnosis/fix approval after accepted PR39."
+    "orderedIssues": [],
+    "scope": "The directly authorized projection repair is complete; no further production fix is released by the Figure harness follow-up.",
+    "reason": "#25,#17 and#3 are fixed/closed. #42 remains open/unclassified and#43 is a separate harness deadline proposal.",
+    "authority": "Direct PR41 merge instruction; subsequent work is Figure harness evidence and a deadline proposal only."
   },
   "closedTestIssues": [
     {
@@ -242,7 +261,7 @@
       "id": "figure-native-preview-timeout",
       "issue": 42,
       "url": "https://github.com/evangelistalab/vibemol/issues/42",
-      "status": "open; classification required before PR41 merge",
+      "status": "open; unclassified",
       "classification": "Intermittent local preview deadline failure on the candidate is established by its original failure and subsequent full-suite passes; cause unresolved. Identical tagged-base reproduction is not established, so NOT carried and not confirmed as a production regression.",
       "carried": false,
       "acceptedCiFailure": false,
@@ -313,7 +332,7 @@
       "projectionActivationAudit": "All three sources return at the start of render while figureRendering. Candidate adds a guarded normal-loop call where older sources made no call; existing explicit Figure projection delegation remains unconditional. This refutes removal of a pre-existing per-frame Figure-delegation edge, but does not explain the original timeout.",
       "resourceObservation": "Valid tagged/main checks each used one fresh browser context/page, and closed the browser afterward. No leftover test browser was found before the pair. This does not diagnose or exclude resource contention in the original historical failure.",
       "distinctFromClosedMetalContention": true,
-      "mergeDisposition": "PR41 held until classified under the direct human condition; the passing ordinary CI does not bypass this requirement.",
+      "mergeDisposition": "Direct human review excluded PR41 causation and authorized merge; PR41 merged as9a038a99. The occurrence remains open/unclassified, not carried and not an accepted CI failure.",
       "standingGateUnchanged": "34/3/37 exact accepted workflows. No timeout, assertion or accepted-failure relaxation.",
       "rawEvidence": "out/test-artifacts/issue3/figure-carry-check/ (ignored; original failure and prior prefix diagnostics remain preserved separately)",
       "originalFailure": "out/test-artifacts/issue3/figure-final/result.json and figure-final-artifacts/",
@@ -341,7 +360,14 @@
       },
       "sameInstrumentedHarnessAcrossThreeSources": true,
       "diagnosticSha256": "487a73726d2c6387b89f18f83956f58fefc7e9c8acdd7a18399fa750bbe5cbed",
-      "summarySha256": "7b0cd5dd85c5c4003b145dd0348a12b6c0db3bba0e93c53cae48cc44ca733bf1"
+      "summarySha256": "7b0cd5dd85c5c4003b145dd0348a12b6c0db3bba0e93c53cae48cc44ca733bf1",
+      "pr41EffectExclusion": {
+        "authority": "Direct human instruction after the three full-suite source checks",
+        "evidence": "normalOwnerMatricesWhilePaused=0 on tagged/main/candidate; render already returns while figureRendering on all three sources; explicit Figure projection calls unchanged",
+        "classificationUnchanged": true,
+        "noFurtherDiagnosticReplays": true
+      },
+      "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
     }
   ]
 }
