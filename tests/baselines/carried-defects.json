@@ -48,58 +48,6 @@
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/mode_consistency.py"
-    },
-    {
-      "id": "selection-metal-popover",
-      "issue": 17,
-      "url": "https://github.com/evangelistalab/vibemol/issues/17",
-      "status": "open",
-      "workflows": [
-        "Metal popover covers Coordination and Translate sibling triggers, blocking intended one-click switch",
-        "Metal bounds overflow by 8 CSS pixels at supported width390"
-      ],
-      "acceptedCiFailure": false,
-      "supportedWidthEvidence": [
-        {
-          "suite": "tests/e2e/axis_gizmo.py",
-          "diagnosticLines": [
-            147,
-            171
-          ],
-          "viewport": {
-            "width": 390,
-            "height": 844
-          }
-        },
-        {
-          "suite": "tests/e2e/build_panel.py",
-          "diagnosticLine": 107,
-          "viewport": {
-            "width": 390,
-            "height": 740
-          }
-        }
-      ],
-      "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
-      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json",
-      "historicalManualAssertionFailed": true,
-      "repairProgress": {
-        "status": "proposed fix; not merged",
-        "scope": "Metal-only outer-width constraint and placement above/below the whole selection card, preserving mode-bar clearance and inside-click propagation.",
-        "liveRegression": "tests/e2e/metal_popover.py, called by edit_tool.py within the unchanged37-suite gate",
-        "nativeMatrixExpected": 28,
-        "nativeMatrixPassed": 28,
-        "metalNativeCommits": 112,
-        "directCoordinationSwitchesAndCommits": 28,
-        "baseline": "tests/baselines/metal-popover.json",
-        "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
-        "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
-        "originalFailedRun": 39279175556,
-        "originalFailedPr": 38,
-        "lifecycleDiagnosis": "Completed parent Edit renderer competed with native preview contexts; exact full-sequence reproducer fixed by retiring that page and asserting0 background contexts. No production timing workaround or assertion/wait change.",
-        "closedContextStabilityTrials": 3,
-        "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
-      }
     }
   ],
   "otherCarriedFollowups": [
@@ -117,6 +65,14 @@
     {
       "issue": 15,
       "scope": "Four obsolete null edit slots retained and issue-backed in identity guard"
+    },
+    {
+      "issue": 40,
+      "url": "https://github.com/evangelistalab/vibemol/issues/40",
+      "kind": "harness",
+      "scope": "camera_depth slab compares complete pose exactly across idle OrbitControls updates; identical5.329e-15 drift on tagged/control/proposed macOS Chromium156. Comparands added, expectations unchanged.",
+      "acceptedCiFailure": false,
+      "standingGateUnchanged": "34/3/37; a CI failure here still stops acceptance."
     }
   ],
   "acceptedCiGate": {
@@ -127,11 +83,11 @@
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
     "orderedIssues": [
-      17
+      3
     ],
-    "scope": "Relative priority among carried product defects; closed test-synchronization issue#21 is removed. Exactly three manifest workflows are accepted.",
-    "reason": "#25 is fixed/closed after approved PR34/35. #17 is next; #21 remains a closed test-synchronization issue.",
-    "authority": "Direct human PR35 approval/merge and next-carried #17 instruction."
+    "scope": "Current human-authorized next product repair. Accepted CI failures remain exactly the same three manifest workflows.",
+    "reason": "#25 and#17 are fixed/closed; the human selected#3 next. Closed test synchronization issue#21 is removed.",
+    "authority": "Direct #3 diagnosis/fix approval after accepted PR39."
   },
   "closedTestIssues": [
     {
@@ -219,6 +175,173 @@
         "registryGuardPR": 36,
         "registryGuardRun": 39196641240
       }
+    },
+    {
+      "id": "selection-metal-popover",
+      "issue": 17,
+      "url": "https://github.com/evangelistalab/vibemol/issues/17",
+      "status": "closed",
+      "workflows": [
+        "Metal popover covers Coordination and Translate sibling triggers, blocking intended one-click switch",
+        "Metal bounds overflow by 8 CSS pixels at supported width390"
+      ],
+      "acceptedCiFailure": false,
+      "supportedWidthEvidence": [
+        {
+          "suite": "tests/e2e/axis_gizmo.py",
+          "diagnosticLines": [
+            147,
+            171
+          ],
+          "viewport": {
+            "width": 390,
+            "height": 844
+          }
+        },
+        {
+          "suite": "tests/e2e/build_panel.py",
+          "diagnosticLine": 107,
+          "viewport": {
+            "width": 390,
+            "height": 740
+          }
+        }
+      ],
+      "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
+      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json",
+      "historicalManualAssertionFailed": true,
+      "repairProgress": {
+        "status": "merged and independently verified",
+        "scope": "Metal-only outer-width constraint and placement above/below the whole selection card, preserving mode-bar clearance and inside-click propagation.",
+        "liveRegression": "tests/e2e/metal_popover.py, called by edit_tool.py within the unchanged37-suite gate",
+        "nativeMatrixExpected": 28,
+        "nativeMatrixPassed": 28,
+        "metalNativeCommits": 112,
+        "directCoordinationSwitchesAndCommits": 28,
+        "baseline": "tests/baselines/metal-popover.json",
+        "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
+        "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+        "originalFailedRun": 39279175556,
+        "originalFailedPr": 38,
+        "lifecycleDiagnosis": "Completed parent Edit renderer competed with native preview contexts; exact full-sequence reproducer fixed by retiring that page and asserting0 background contexts. No production timing workaround or assertion/wait change.",
+        "closedContextStabilityTrials": 3,
+        "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
+      },
+      "productionFixIncluded": true,
+      "closedBy": {
+        "pr": 39,
+        "head": "9dedc4a5ead5e23fbc12b0cb24040771f21e5d32",
+        "mergeCommit": "7dd342608de63f4b1570993863a5e2d42fa5eb54",
+        "ownRunId": 39330982948,
+        "gate": "34/3/37 exact accepted workflows;102x2/exact repeat;52slots/eight contexts/all minima;units/WebKit/construction;28 native Metal cases"
+      }
+    }
+  ],
+  "unclassifiedFindings": [
+    {
+      "id": "figure-native-preview-timeout",
+      "issue": 42,
+      "url": "https://github.com/evangelistalab/vibemol/issues/42",
+      "status": "open; classification required before PR41 merge",
+      "classification": "Intermittent local preview deadline failure on the candidate is established by its original failure and subsequent full-suite passes; cause unresolved. Identical tagged-base reproduction is not established, so NOT carried and not confirmed as a production regression.",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/figure.py",
+      "workflow": "First native Figure preview after the full export/error/abort prelude",
+      "predicate": "()=>document.querySelector(\"#figurePanel img\").src.startsWith(\"blob:\")",
+      "originalTimeoutMilliseconds": 30000,
+      "originalCandidate": {
+        "commit": "062dc4705fe1c42cf13a994982bc562cf1729972",
+        "appSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+        "suite": "tests/e2e/figure.py",
+        "predicate": "()=>document.querySelector(\"#figurePanel img\").src.startsWith(\"blob:\")",
+        "failure": "TimeoutError after unchanged30000ms deadline",
+        "laterFailureArtifactHadBlob": true,
+        "ordinaryCiRun": 39424024769,
+        "ordinaryCiFigureSeconds": 168.57,
+        "ordinaryCiFigureExit": 0
+      },
+      "taggedBaseCheck": {
+        "source": "tagged",
+        "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+        "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+        "browserVersion": "156.0.8078.4",
+        "harnessSha256": "cf90f32366ced96b7fe3b994523325ebae525227b02b385b102a9619cbbff9d1",
+        "fullSuite": "passed",
+        "fullSuiteSeconds": 106.68422354198992,
+        "preview": "passed",
+        "previewWaitSeconds": 2.4280872920062393,
+        "previewReadbackMilliseconds": 2427.600000023842,
+        "deadlineMilliseconds": 30000,
+        "imageSrcStartsBlob": true,
+        "cameraType": "PerspectiveCamera",
+        "normalOwnerMatricesWhilePaused": 0,
+        "browserContextsAtWait": 1,
+        "pagesAtWait": 1,
+        "browserDisconnectedAfterSuite": true,
+        "largestLongTaskMillisecondsAcrossPreludeAndWait": 2970,
+        "sourceAndShippedHarnessUnchanged": true
+      },
+      "mainCheck": {
+        "source": "main",
+        "commit": "7dd342608de63f4b1570993863a5e2d42fa5eb54",
+        "appSha256": "1043650013a0fef646f9c1acc9e7a70c4b85efc0b3d96e1b613d9a8cf8a3dd56",
+        "browserVersion": "156.0.8078.4",
+        "harnessSha256": "cf90f32366ced96b7fe3b994523325ebae525227b02b385b102a9619cbbff9d1",
+        "fullSuite": "passed",
+        "fullSuiteSeconds": 269.1619439169299,
+        "preview": "passed",
+        "previewWaitSeconds": 2.411670875037089,
+        "previewReadbackMilliseconds": 2411.7000000476837,
+        "deadlineMilliseconds": 30000,
+        "imageSrcStartsBlob": true,
+        "cameraType": "PerspectiveCamera",
+        "normalOwnerMatricesWhilePaused": 0,
+        "browserContextsAtWait": 1,
+        "pagesAtWait": 1,
+        "browserDisconnectedAfterSuite": true,
+        "largestLongTaskMillisecondsAcrossPreludeAndWait": 41518,
+        "sourceAndShippedHarnessUnchanged": true
+      },
+      "separatePreconditionFailure": {
+        "source": "tagged",
+        "targetReached": false,
+        "failure": "Page.goto full-load barrier, not the native-preview wait",
+        "elapsedMonotonicSeconds": 35.57467908295803,
+        "originalFailurePreserved": true
+      },
+      "projectionActivationAudit": "All three sources return at the start of render while figureRendering. Candidate adds a guarded normal-loop call where older sources made no call; existing explicit Figure projection delegation remains unconditional. This refutes removal of a pre-existing per-frame Figure-delegation edge, but does not explain the original timeout.",
+      "resourceObservation": "Valid tagged/main checks each used one fresh browser context/page, and closed the browser afterward. No leftover test browser was found before the pair. This does not diagnose or exclude resource contention in the original historical failure.",
+      "distinctFromClosedMetalContention": true,
+      "mergeDisposition": "PR41 held until classified under the direct human condition; the passing ordinary CI does not bypass this requirement.",
+      "standingGateUnchanged": "34/3/37 exact accepted workflows. No timeout, assertion or accepted-failure relaxation.",
+      "rawEvidence": "out/test-artifacts/issue3/figure-carry-check/ (ignored; original failure and prior prefix diagnostics remain preserved separately)",
+      "originalFailure": "out/test-artifacts/issue3/figure-final/result.json and figure-final-artifacts/",
+      "diagnosticOnly": true,
+      "candidateDiagnosticCheck": {
+        "source": "candidate",
+        "commit": "062dc4705fe1c42cf13a994982bc562cf1729972",
+        "appSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+        "browserVersion": "156.0.8078.4",
+        "harnessSha256": "cf90f32366ced96b7fe3b994523325ebae525227b02b385b102a9619cbbff9d1",
+        "fullSuite": "passed",
+        "fullSuiteSeconds": 114.46783104108181,
+        "preview": "passed",
+        "previewWaitSeconds": 2.464217083994299,
+        "previewReadbackMilliseconds": 2464.399999976158,
+        "deadlineMilliseconds": 30000,
+        "imageSrcStartsBlob": true,
+        "cameraType": "PerspectiveCamera",
+        "normalOwnerMatricesWhilePaused": 0,
+        "browserContextsAtWait": 1,
+        "pagesAtWait": 1,
+        "browserDisconnectedAfterSuite": true,
+        "largestLongTaskMillisecondsAcrossPreludeAndWait": 3432,
+        "sourceAndShippedHarnessUnchanged": true
+      },
+      "sameInstrumentedHarnessAcrossThreeSources": true,
+      "diagnosticSha256": "487a73726d2c6387b89f18f83956f58fefc7e9c8acdd7a18399fa750bbe5cbed",
+      "summarySha256": "7b0cd5dd85c5c4003b145dd0348a12b6c0db3bba0e93c53cae48cc44ca733bf1"
     }
   ]
 }

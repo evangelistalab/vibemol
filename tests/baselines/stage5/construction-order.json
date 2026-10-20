@@ -60,7 +60,23 @@
     {
       "label": "Issue17 bounded Metal popover and cue reachability",
       "before": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+      "after": "7dd342608de63f4b1570993863a5e2d42fa5eb54",
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue3 guarded normal orthographic projection owner; T04 Reset found and covered",
+      "before": "d9d7573fa18d3aa72afad4f78d9d6d62a3380f29",
       "worktree": ".",
+      "recheck": [
+        "viewState",
+        "orthographicCamera",
+        "controls",
+        "perspectiveCamera",
+        "DEFAULT_PERSPECTIVE_FOV",
+        "computeOrthographicFrustum",
+        "figureRendering",
+        "figureRenderer"
+      ],
       "expectedStatus": "passed"
     }
   ]

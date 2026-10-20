@@ -1,0 +1,803 @@
+{
+  "issue": 3,
+  "scope": "Post-release production repair; this local mechanism/framing contract does not assert merge acceptance.",
+  "base": "d9d7573fa18d3aa72afad4f78d9d6d62a3380f29",
+  "appSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+  "mechanism": "Camera/target writes can leave distance-derived orthographic extents stale on ordinary opaque frames. Existing viewport, mode-switch, orbit and split/WBOIT paths sometimes repair them; the eleven old callers were not all viewport-driven. Same-mode projection returns UI-only and cannot serve as the invalidation owner.",
+  "taggedRegression": {
+    "source": "v0.9.5-pre-refactor",
+    "cameraOnlyDistance": 30,
+    "actualHalfHeight": 19.428338208873683,
+    "expectedHalfHeight": 12.426406871192853,
+    "actualToExpected": 1.5634719199411415,
+    "liveAssertion": "assert_camera_frustum_matches_pose",
+    "outcome": "failed by the measured1.56x margin before the fix; assertion preserved"
+  },
+  "owner": {
+    "observation": "One normal render-loop call after controls.update, before depth, projected helpers and drawing. No refresh calls added to43 mutation sites.",
+    "frameGuard": "Return before Figure delegation or perspective handling; compare pose, target, CSS viewport and FOV against the last normal derivation. Observe inputs only; explicit viewport/fit calls stay unconditional.",
+    "roundingNoise": "64*Number.EPSILON*max(1,last derived viewing distance). Scale by distance, not absolute world coordinates. Test comparator unchanged.",
+    "cache": "Existing viewState owns the private stamp; sampled vectors are clones, not aliases of camera/target. No new module let or controller.",
+    "figurePolicy": "Keep figureRenderer.projection and its locked reference half-height. Figure capture still pauses normal rendering; the normal-frame guard also excludes it. Preserve explicit split/export viewport calls.",
+    "perspectivePolicy": "No aspect or perspective matrix rebuild in the normal observer. Existing explicit resize/mode/fit policies remain.",
+    "idleCounter": {
+      "sourceAppSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+      "context": "Opaque H2, fixed axis pose; counts only calls from updateActiveCameraProjection, not existing OrbitControls matrix work.",
+      "orthographicFrames": 60,
+      "perspectiveFrames": 60,
+      "additionalOwnerRebuilds": 0
+    }
+  },
+  "T04": {
+    "classification": "Second independent ordering bug found and covered",
+    "mechanism": "Reset calls projection refresh before restoring controls.target. Callback order remains unchanged; the common observer repairs that intermediate state before projected helpers/draw.",
+    "liveCase": "T04 Reset target ordering; numeric distance/frustum assertion passes on the proposed source."
+  },
+  "sourceAudit": {
+    "dependencies": {
+      "count": 8,
+      "inputs": [
+        "DEFAULT_PERSPECTIVE_FOV",
+        "computeOrthographicFrustum",
+        "controls",
+        "figureRenderer",
+        "figureRendering",
+        "orthographicCamera",
+        "perspectiveCamera",
+        "viewState"
+      ],
+      "newController": false,
+      "newModuleLets": 0
+    },
+    "trackedModuleLetLinesBefore": 251,
+    "trackedModuleLetLinesAfter": 251,
+    "allAppScopeLetBindingsBefore": 264,
+    "allAppScopeLetBindingsAfter": 264,
+    "modifiedFunctions": [
+      "applySceneCameraFit",
+      "render",
+      "updateActiveCameraProjection"
+    ],
+    "allOtherASTNodesIdenticalToD9": true,
+    "functionDeclarations": 1176
+  },
+  "constructionOrder": {
+    "standingTool": "tools/audit-construction-order.cjs; all stages pass, latest stage checks8 existing app inputs plus1 new parameter.",
+    "supplement": "Explicit lexical read-before-initialization check covers all4 new block-scoped locals too; the standing tool enumerates function-scoped locals only.",
+    "uniqueAppInputsAndNewBindings": 13,
+    "newParameterAndLocalBindings": [
+      {
+        "name": "onlyIfChanged",
+        "kind": "param",
+        "scope": "function",
+        "constructionLine": 850,
+        "reads": [
+          {
+            "line": 852,
+            "afterInitialization": true
+          },
+          {
+            "line": 864,
+            "afterInitialization": true
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "name": "fov",
+        "kind": "const",
+        "scope": "block",
+        "constructionLine": 858,
+        "reads": [
+          {
+            "line": 864,
+            "afterInitialization": true
+          },
+          {
+            "line": 868,
+            "afterInitialization": true
+          },
+          {
+            "line": 877,
+            "afterInitialization": true
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "name": "previous",
+        "kind": "const",
+        "scope": "block",
+        "constructionLine": 859,
+        "reads": [
+          {
+            "line": 863,
+            "afterInitialization": true
+          },
+          {
+            "line": 864,
+            "afterInitialization": true
+          },
+          {
+            "line": 864,
+            "afterInitialization": true
+          },
+          {
+            "line": 864,
+            "afterInitialization": true
+          },
+          {
+            "line": 864,
+            "afterInitialization": true
+          },
+          {
+            "line": 865,
+            "afterInitialization": true
+          },
+          {
+            "line": 866,
+            "afterInitialization": true
+          },
+          {
+            "line": 874,
+            "afterInitialization": true
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "name": "noise",
+        "kind": "const",
+        "scope": "block",
+        "constructionLine": 863,
+        "reads": [
+          {
+            "line": 865,
+            "afterInitialization": true
+          },
+          {
+            "line": 865,
+            "afterInitialization": true
+          },
+          {
+            "line": 866,
+            "afterInitialization": true
+          },
+          {
+            "line": 866,
+            "afterInitialization": true
+          }
+        ],
+        "status": "passed"
+      },
+      {
+        "name": "state",
+        "kind": "const",
+        "scope": "block",
+        "constructionLine": 874,
+        "reads": [
+          {
+            "line": 875,
+            "afterInitialization": true
+          },
+          {
+            "line": 876,
+            "afterInitialization": true
+          },
+          {
+            "line": 877,
+            "afterInitialization": true
+          },
+          {
+            "line": 877,
+            "afterInitialization": true
+          },
+          {
+            "line": 877,
+            "afterInitialization": true
+          },
+          {
+            "line": 877,
+            "afterInitialization": true
+          },
+          {
+            "line": 878,
+            "afterInitialization": true
+          }
+        ],
+        "status": "passed"
+      }
+    ],
+    "status": "passed; no nested activation path in the new locals"
+  },
+  "fitting": {
+    "beforeSourceCommit": "d9d7573fa18d3aa72afad4f78d9d6d62a3380f29",
+    "beforeAppSha256": "61bd1b9328073412e33aafb0b05c3208a11d4edf7f1e2ce2015fd7b5c76c13fb",
+    "golden": "tests/baselines/camera-fit-before-issue3.json.gz",
+    "goldenSha256": "87053969d852fb23c3bea993d188fa7fe85263f0f012eebb3fad8712e5f52ead",
+    "cases": 36,
+    "contexts": {
+      "workbench-wide": {
+        "width": 1512,
+        "height": 1000
+      },
+      "workbench-narrow": {
+        "width": 390,
+        "height": 850
+      }
+    },
+    "fittedStates": 144,
+    "observedImmediateAndPresentedStates": 288,
+    "afterAppSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+    "comparison": "Actual pre-change extents, matrices, pose and world/projected bounds; never derive expected fitting values from the new owner. Float-only isclose(1e-9,1e-12), exact types/ints/structure/every other leaf.",
+    "status": "passed",
+    "differences": [],
+    "maximumOrthographicSpanDelta": 2.6645352591003757e-15,
+    "maximumProjectedBoundDeltaCssPixels": 3.13915560212763e-13,
+    "maximumMatrixOrOtherFloatDelta": {
+      "path": "workbench-narrow/pubchem:recorded-benzene/perspective/presented.projectionMatrix[14]",
+      "absoluteDelta": 2.842170943040401e-14,
+      "relativeDelta": 4.510589345468517e-16
+    },
+    "collector": "tools/diagnostics/camera_fit_census.py",
+    "comparator": "tools/diagnostics/compare_camera_fit.py",
+    "recordedUncompressedSha256": "962a602d3b81bd50281d3619cd9a3c770cfe913f9f4b5e095005745d2cd28030",
+    "storage": "Deterministic gzip of the exact original recorded bytes; decompresses byte-for-byte to the pre-change recording."
+  },
+  "harnessNotes": {
+    "characterization": "The102 captures DO hold projection matrices. Their forced perspective-to-orthographic pin masked this defect class. They do not replace the unpinned ordinary API arithmetic regression.",
+    "initialFitInputs": "Bounds determine normal fit distance; the previous inline code already called computeOrthographicFrustum(aspect,distance,fov). Figure union fit deliberately uses separate locked extents.",
+    "corpusScope": "All loadable repository fixture files, release-generated geometry cases, both multi-grid assemblies, a Look paired with sample geometry and recorded PubChem benzene. Manifests/element test vectors/autosave JSON are not geometric inputs; vibration sidecar and PubChem metadata are paired with their geometry.",
+    "syntheticGrid": "Existing grid test directly installs40/30 extents after fitting. Input-only observation preserves that explicit fixture state. Tagged and final source pass the same assertions and group counts. The discarded output-invalidating prototype and its failures remain in ignored raw evidence.",
+    "slabIssue40": "Exact pose comparison fails by5.329e-15 on tagged/control/final source; target, up and zoom identical. Only comparand logging added; no expectation/readiness relaxation. Not an accepted CI failure.",
+    "navigation": "A final-grid attempt timed out at the original full-load barrier before any test assertion. Preserved separately; instrumented resumption passes with the original barrier/timeouts, no pending requests. Cause of that earlier load stall is not established."
+  },
+  "beforeEdgeInventory": {
+    "sourceHead": "d9d7573fa18d3aa72afad4f78d9d6d62a3380f29",
+    "countingRule": "Mutation operations, including chained operations separately and three-axis registry templates once. This is not43 unique writes to the live main camera: C04 is an independent preview and C13/C14/T11 are figure working clones. Plus initialization and whole-camera copy edges listed separately.",
+    "cameraPositionOperationCount": 20,
+    "targetOperationCount": 23,
+    "cameraPosition": [
+      {
+        "id": "C01",
+        "file": "assets/app/js/app.js",
+        "line": 5309,
+        "operation": ".copy(",
+        "owner": "scene fit",
+        "frustumRefresh": "derived",
+        "detail": "Explicit fit-distance frustum at5311-5316, target copied at5320; consistent by construction."
+      },
+      {
+        "id": "C02",
+        "file": "assets/app/js/app.js",
+        "line": 17185,
+        "operation": ".copy(",
+        "owner": "quaternion orbit",
+        "frustumRefresh": "derived",
+        "detail": "updateActiveCameraProjection at17188."
+      },
+      {
+        "id": "C03",
+        "file": "assets/app/js/app.js",
+        "line": 17185,
+        "operation": ".add(",
+        "owner": "quaternion orbit",
+        "frustumRefresh": "derived",
+        "detail": "Same chained position transaction as C02."
+      },
+      {
+        "id": "C04",
+        "file": "assets/app/js/app.js",
+        "line": 18433,
+        "operation": ".set(",
+        "owner": "Coordination preview",
+        "frustumRefresh": "not main camera",
+        "detail": "Lexically local PerspectiveCamera; does not write active viewState camera."
+      },
+      {
+        "id": "C05",
+        "file": "assets/app/js/app.js",
+        "line": 21786,
+        "operation": ".copy(",
+        "owner": "frame measured atoms",
+        "frustumRefresh": "derived",
+        "detail": "applySceneCameraFit at21785 already derives fit-distance frustum; direction overwrite preserves that distance."
+      },
+      {
+        "id": "C06",
+        "file": "assets/app/js/app.js",
+        "line": 21786,
+        "operation": ".addScaledVector(",
+        "owner": "frame measured atoms",
+        "frustumRefresh": "derived",
+        "detail": "Same transaction as C05."
+      },
+      {
+        "id": "C07",
+        "file": "assets/app/js/app.js",
+        "line": 24582,
+        "operation": ".copy(",
+        "owner": "axis snap",
+        "frustumRefresh": "derived",
+        "detail": "updateActiveCameraProjection at24588."
+      },
+      {
+        "id": "C08",
+        "file": "assets/app/js/app.js",
+        "line": 24582,
+        "operation": ".addScaledVector(",
+        "owner": "axis snap",
+        "frustumRefresh": "derived",
+        "detail": "Same transaction as C07."
+      },
+      {
+        "id": "C09",
+        "file": "assets/app/js/app.js",
+        "line": 26240,
+        "operation": "camera.position[axis] =",
+        "owner": "view.camera.x/y/z preset family",
+        "frustumRefresh": "missing",
+        "detail": "All three registered setters; afterApply updates controls/UI then preserves a snapshot carrying stale spans."
+      },
+      {
+        "id": "C10",
+        "file": "assets/app/js/app.js",
+        "line": 27783,
+        "operation": ".set(",
+        "owner": "Camera numeric inputs",
+        "frustumRefresh": "missing",
+        "detail": "One handler assigned to three inputs; controls.update only, no distance-based frustum derivation."
+      },
+      {
+        "id": "C11",
+        "file": "assets/app/js/app.js",
+        "line": 31428,
+        "operation": ".fromArray(",
+        "owner": "session restore",
+        "frustumRefresh": "derived",
+        "detail": "Both pose vectors assigned, then updateActiveCameraProjection at31435."
+      },
+      {
+        "id": "C12",
+        "file": "assets/app/js/view-utils.js",
+        "line": 9,
+        "operation": ".copy(",
+        "owner": "copyCameraPose helper",
+        "frustumRefresh": "derived by callers",
+        "detail": "Both setProjectionMode branches call this, then derive at11299; no other app caller."
+      },
+      {
+        "id": "C13",
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 53,
+        "operation": ".copy(",
+        "owner": "figure fit clone",
+        "frustumRefresh": "figure-specific derivation",
+        "detail": "Mutates saved camera clone, not normal live camera; explicit locked frustum at54, applied at66."
+      },
+      {
+        "id": "C14",
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 53,
+        "operation": ".addScaledVector(",
+        "owner": "figure fit clone",
+        "frustumRefresh": "figure-specific derivation",
+        "detail": "Same cloned transaction as C13."
+      },
+      {
+        "id": "C15",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 162,
+        "operation": ".copy(",
+        "owner": "OrbitControls.reset",
+        "frustumRefresh": "missing",
+        "detail": "Copies position and target, restores zoom and updates matrix using existing spans; no normal frustum derivation. No app reset caller today."
+      },
+      {
+        "id": "C16",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 284,
+        "operation": ".copy(",
+        "owner": "OrbitControls.update",
+        "frustumRefresh": "missing",
+        "detail": "Writes through position alias of scope.object.position; ordinary pan/rotate preserves radius, external pose changes may not."
+      },
+      {
+        "id": "C17",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 284,
+        "operation": ".add(",
+        "owner": "OrbitControls.update",
+        "frustumRefresh": "missing",
+        "detail": "Same transaction as C16; change listeners only update UI/session."
+      },
+      {
+        "id": "C18",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 316,
+        "operation": ".addScaledVector(",
+        "owner": "perspective zoom-to-cursor",
+        "frustumRefresh": "perspective only",
+        "detail": "Perspective branch: orthographic span derivation is not applicable."
+      },
+      {
+        "id": "C19",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 332,
+        "operation": ".sub(",
+        "owner": "orthographic zoom-to-cursor",
+        "frustumRefresh": "zoom matrix only",
+        "detail": "Zoom/matrix update at327 precedes position/target movement; no distance-based span recomputation. zoomToCursor is false by app default."
+      },
+      {
+        "id": "C20",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 332,
+        "operation": ".add(",
+        "owner": "orthographic zoom-to-cursor",
+        "frustumRefresh": "zoom matrix only",
+        "detail": "Same transaction as C19."
+      }
+    ],
+    "target": [
+      {
+        "id": "T01",
+        "file": "assets/app/js/app.js",
+        "line": 833,
+        "operation": ".set(",
+        "owner": "initial controls target",
+        "frustumRefresh": "initialization",
+        "detail": "Initial viewport setup and later mode activation establish projection."
+      },
+      {
+        "id": "T02",
+        "file": "assets/app/js/app.js",
+        "line": 5320,
+        "operation": ".copy(",
+        "owner": "scene fit",
+        "frustumRefresh": "derived",
+        "detail": "Fit-distance projection computed explicitly before target copy, without reading the old target."
+      },
+      {
+        "id": "T03",
+        "file": "assets/app/js/app.js",
+        "line": 23894,
+        "operation": ".copy(",
+        "owner": "Point camera at COM",
+        "frustumRefresh": "missing",
+        "detail": "controls.update/refreshViewUI; no frustum derivation."
+      },
+      {
+        "id": "T04",
+        "file": "assets/app/js/app.js",
+        "line": 24555,
+        "operation": ".copy(",
+        "owner": "Reset view",
+        "frustumRefresh": "wrong order",
+        "detail": "Projection refresh at24554 runs against OLD target, then this copies the restored target; no post-target refresh."
+      },
+      {
+        "id": "T05",
+        "file": "assets/app/js/app.js",
+        "line": 26245,
+        "operation": "controls.target[axis] =",
+        "owner": "view.target.x/y/z preset family",
+        "frustumRefresh": "missing",
+        "detail": "All three registered target setters; same missing observation as camera family."
+      },
+      {
+        "id": "T06",
+        "file": "assets/app/js/app.js",
+        "line": 27789,
+        "operation": ".set(",
+        "owner": "Target numeric inputs",
+        "frustumRefresh": "missing",
+        "detail": "One handler assigned to three inputs; controls.update only."
+      },
+      {
+        "id": "T07",
+        "file": "assets/app/js/app.js",
+        "line": 30974,
+        "operation": ".copy(",
+        "owner": "preserve-view rebuild",
+        "frustumRefresh": "snapshot only",
+        "detail": "camera.copy(savedCam) at30973 includes saved frustum. Valid only if saved pose/frustum were coherent; no derivation."
+      },
+      {
+        "id": "T08",
+        "file": "assets/app/js/app.js",
+        "line": 31204,
+        "operation": ".copy(",
+        "owner": "batch export restore",
+        "frustumRefresh": "snapshot only",
+        "detail": "Whole camera snapshot restored at31203, followed by preserved rebuild; no fresh derivation."
+      },
+      {
+        "id": "T09",
+        "file": "assets/app/js/app.js",
+        "line": 31430,
+        "operation": ".fromArray(",
+        "owner": "session restore",
+        "frustumRefresh": "derived",
+        "detail": "updateActiveCameraProjection at31435 follows both pose assignments."
+      },
+      {
+        "id": "T10",
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 36,
+        "operation": ".copy(",
+        "owner": "figure applyLocked",
+        "frustumRefresh": "figure-specific derivation",
+        "detail": "Whole locked camera copied on same line; figure projection runs after lock in prepare/capture."
+      },
+      {
+        "id": "T11",
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 53,
+        "operation": "target.copy(",
+        "owner": "figure fit target clone",
+        "frustumRefresh": "figure-specific derivation",
+        "detail": "Local saved.target clone; paired with explicit locked frustum policy, not normal distance-based policy."
+      },
+      {
+        "id": "T12",
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 100,
+        "operation": ".copy(",
+        "owner": "figure restore",
+        "frustumRefresh": "snapshot only",
+        "detail": "Whole saved camera including frustum copied on same line; resumes normal rendering afterward."
+      },
+      {
+        "id": "T13",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 161,
+        "operation": ".copy(",
+        "owner": "OrbitControls.reset",
+        "frustumRefresh": "missing",
+        "detail": "Same operation family as C15; matrix rebuild alone does not derive left/right/top/bottom."
+      },
+      {
+        "id": "T14",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 254,
+        "operation": ".addScaledVector(",
+        "owner": "damped pan",
+        "frustumRefresh": "missing",
+        "detail": "OrbitControls normal update; generally preserves camera-target radius by moving position afterward; no independent projection observation."
+      },
+      {
+        "id": "T15",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 258,
+        "operation": ".add(",
+        "owner": "undamped pan",
+        "frustumRefresh": "missing",
+        "detail": "OrbitControls normal update; generally preserves camera-target radius by moving position afterward; no independent projection observation."
+      },
+      {
+        "id": "T16",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 263,
+        "operation": ".sub(",
+        "owner": "target-radius centering",
+        "frustumRefresh": "missing",
+        "detail": "OrbitControls normal update; generally preserves camera-target radius by moving position afterward; no independent projection observation."
+      },
+      {
+        "id": "T17",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 264,
+        "operation": ".clampLength(",
+        "owner": "target-radius clamp",
+        "frustumRefresh": "missing",
+        "detail": "OrbitControls normal update; generally preserves camera-target radius by moving position afterward; no independent projection observation."
+      },
+      {
+        "id": "T18",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 265,
+        "operation": ".add(",
+        "owner": "target-radius uncentering",
+        "frustumRefresh": "missing",
+        "detail": "OrbitControls normal update; generally preserves camera-target radius by moving position afterward; no independent projection observation."
+      },
+      {
+        "id": "T19",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 350,
+        "operation": ".set(",
+        "owner": "cursor zoom target",
+        "frustumRefresh": "missing",
+        "detail": "One chained target mutation in zoom-to-cursor branch; no normal distance-derived span refresh."
+      },
+      {
+        "id": "T20",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 351,
+        "operation": ".transformDirection(",
+        "owner": "cursor zoom target",
+        "frustumRefresh": "missing",
+        "detail": "One chained target mutation in zoom-to-cursor branch; no normal distance-derived span refresh."
+      },
+      {
+        "id": "T21",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 352,
+        "operation": ".multiplyScalar(",
+        "owner": "cursor zoom target",
+        "frustumRefresh": "missing",
+        "detail": "One chained target mutation in zoom-to-cursor branch; no normal distance-derived span refresh."
+      },
+      {
+        "id": "T22",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 353,
+        "operation": ".add(",
+        "owner": "cursor zoom target",
+        "frustumRefresh": "missing",
+        "detail": "One chained target mutation in zoom-to-cursor branch; no normal distance-derived span refresh."
+      },
+      {
+        "id": "T23",
+        "file": "assets/vendor/js/orbit-controls.global.js",
+        "line": 370,
+        "operation": "intersectPlane(",
+        "owner": "cursor zoom target intersection",
+        "frustumRefresh": "missing",
+        "detail": "Writes target through an output argument; must not be missed by member-assignment-only scanning."
+      }
+    ],
+    "additionalMainPositionEdges": [
+      {
+        "file": "assets/app/js/app.js",
+        "line": 817,
+        "kind": "perspectiveCamera.position.set initialization",
+        "refresh": "initial resize/mode transition"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 820,
+        "kind": "orthographicCamera.position.copy initialization",
+        "refresh": "orthographic mode activation"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 24551,
+        "kind": "whole camera.copy, Reset",
+        "refresh": "snapshot then refresh against old target; T04 wrong-order edge"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 30973,
+        "kind": "whole camera.copy, preserve rebuild",
+        "refresh": "snapshot only; can propagate stale frustum"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 31203,
+        "kind": "whole camera.copy, batch restore",
+        "refresh": "snapshot only"
+      },
+      {
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 36,
+        "kind": "whole deps.camera().copy, locked figure",
+        "refresh": "figure policy"
+      },
+      {
+        "file": "assets/app/js/figure-renderer.js",
+        "line": 100,
+        "kind": "whole deps.camera().copy, figure restore",
+        "refresh": "saved snapshot"
+      }
+    ],
+    "otherIndependentCamerasExcluded": [
+      "assets/app/js/axis-gizmo.js:25 HUD camera",
+      "assets/app/js/periodic-table.js:200 Element Colors preview camera",
+      "light/shadow cameras and meshes",
+      "cloned read-only scratch vectors"
+    ],
+    "projectionCallers": [
+      {
+        "file": "assets/app/js/app.js",
+        "line": 1334,
+        "scope": "resize",
+        "code": "updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 6033,
+        "scope": "renderWboitViewportRect",
+        "code": "updateActiveCameraProjection(cssWidth, metrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 6094,
+        "scope": "renderAlphaBetaSplitWboitPass",
+        "code": "updateActiveCameraProjection(metrics.cssWidth, metrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 6115,
+        "scope": "renderAlphaBetaSplitPass",
+        "code": "updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 6125,
+        "scope": "renderAlphaBetaSplitPass",
+        "code": "updateActiveCameraProjection(cssHalfWidth, metrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 6136,
+        "scope": "renderAlphaBetaSplitPass",
+        "code": "updateActiveCameraProjection(metrics.cssWidth, metrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 11299,
+        "scope": "setProjectionMode",
+        "code": "updateActiveCameraProjection(w, h)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 17188,
+        "scope": "applyQuaternionViewOrbit",
+        "code": "updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 24554,
+        "scope": "onclick",
+        "code": "updateActiveCameraProjection(w, h)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 24588,
+        "scope": "setCameraAxisPreset",
+        "code": "updateActiveCameraProjection(w, h)"
+      },
+      {
+        "file": "assets/app/js/app.js",
+        "line": 31435,
+        "scope": "restoreSessionView",
+        "code": "updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight)"
+      }
+    ],
+    "sourceHashes": {
+      "assets/app/js/app.js": "61bd1b9328073412e33aafb0b05c3208a11d4edf7f1e2ce2015fd7b5c76c13fb",
+      "assets/app/js/view-utils.js": "56abf5c8d6f58e728cb04a5030b22bd81d342e8eb979ac34259bc9670ccec790",
+      "assets/app/js/figure-renderer.js": "849684bfd46e63bb6ed2f0e54846585d59657260cf0d1a471a81af8c85e92f74",
+      "assets/vendor/js/orbit-controls.global.js": "19bcbeb79fe9ca20d76d30263bb92375512fecb465e7224547fd74f89c713d6f"
+    }
+  },
+  "clearance": {
+    "commit": "d9d7573fa18d3aa72afad4f78d9d6d62a3380f29",
+    "unchangedInAncestry": true,
+    "disclosure": "All three popovers share12px toolbar clearance and upward fractional rounding. Build/Symmetry move4px farther when clamped at whole-pixel toolbar bounds; Metal already had12px."
+  },
+  "requiredMergeGate": {
+    "counts": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "acceptedWorkflows": [
+      "axis_gizmo.py / Escape prevents canvas focus",
+      "mode_consistency.py / selection card covers Coordinates Delete",
+      "smoke.py / #11 after second download, trajectory OR vibration"
+    ],
+    "extraFailuresOrOverperformanceStop": true,
+    "unchangedGoldens": 102,
+    "runs": 2,
+    "exactRepeat": true,
+    "identitySlots": 52,
+    "contexts": 8,
+    "fixedCompositionAndEveryMinimum": true,
+    "checksUnitsWebKitConstructionRequired": true,
+    "reportLooksSecondsAndBothMaterialFamilyPaths": true
+  },
+  "rawEvidence": "Ignored out/test-artifacts/issue3; historical tests/baselines/evidence unchanged."
+}

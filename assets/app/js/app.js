@@ -827,6 +827,7 @@
     perspectiveCamera,
     orthographicCamera,
     defaultView: null,
+    orthographicProjection: null,
   };
   let camera = viewState.camera;
   const controls = new THREE.OrbitControls(camera, renderer.domElement);
@@ -844,20 +845,37 @@
    * Width/height are CSS viewport dimensions, not drawing-buffer dimensions.
    * @param {number} width
    * @param {number} height
+   * @param {boolean} [onlyIfChanged=false] Normal-frame observation; excludes figure/perspective policies.
    */
-  function updateActiveCameraProjection(width, height) {
+  function updateActiveCameraProjection(width, height, onlyIfChanged = false) {
+    // The normal loop never derives a locked Figure view or a perspective projection.
+    if (onlyIfChanged && (figureRendering || viewState.mode !== 'orthographic')) return;
     if (figureRendering && figureRenderer) { figureRenderer.projection(width, height); return; }
     const w = Math.max(1, Number(width) || 1);
     const h = Math.max(1, Number(height) || 1);
     const aspect = w / h;
     if (viewState.mode === 'orthographic') {
+      const fov = perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV;
+      const previous = viewState.orthographicProjection;
+      // OrbitControls reconstructs the pose even when idle. Ignore only rounding
+      // noise, scaled by viewing distance rather than absolute world coordinates.
+      // Observe inputs only; explicit viewport/fit calls remain unconditional.
+      const noise = 64 * Number.EPSILON * Math.max(1, previous?.distance || 0);
+      if (onlyIfChanged && previous && previous.width === w && previous.height === h && previous.fov === fov
+        && orthographicCamera.position.distanceToSquared(previous.position) <= noise * noise
+        && controls.target.distanceToSquared(previous.target) <= noise * noise) return;
       const dist = Math.max(0.01, orthographicCamera.position.distanceTo(controls.target));
-      const frustum = computeOrthographicFrustum(aspect, dist, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
+      const frustum = computeOrthographicFrustum(aspect, dist, fov);
       orthographicCamera.left = frustum.left;
       orthographicCamera.right = frustum.right;
       orthographicCamera.top = frustum.top;
       orthographicCamera.bottom = frustum.bottom;
       orthographicCamera.updateProjectionMatrix();
+      const state = previous || { position: orthographicCamera.position.clone(), target: controls.target.clone() };
+      state.position.copy(orthographicCamera.position);
+      state.target.copy(controls.target);
+      state.width = w; state.height = h; state.fov = fov; state.distance = dist;
+      viewState.orthographicProjection = state;
       return;
     }
     perspectiveCamera.aspect = aspect;
@@ -5302,22 +5320,12 @@
    */
   function applySceneCameraFit(center, distance) {
     const dir = new THREE.Vector3(1, 1, 1).normalize();
-    const aspect = Math.max(1e-6, currentViewportMetrics.cssWidth / Math.max(1, currentViewportMetrics.cssHeight));
     perspectiveCamera.up.copy(DEFAULT_VIEW_UP);
     orthographicCamera.up.copy(DEFAULT_VIEW_UP);
     camera.up.copy(DEFAULT_VIEW_UP);
     camera.position.copy(center.clone().add(dir.multiplyScalar(distance)));
-    if (viewState.mode === 'orthographic') {
-      const frustum = computeOrthographicFrustum(aspect, distance, perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV);
-      orthographicCamera.left = frustum.left;
-      orthographicCamera.right = frustum.right;
-      orthographicCamera.top = frustum.top;
-      orthographicCamera.bottom = frustum.bottom;
-      orthographicCamera.updateProjectionMatrix();
-    } else {
-      perspectiveCamera.updateProjectionMatrix();
-    }
     controls.target.copy(center);
+    updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
     controls.update();
     cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
   }
@@ -6188,6 +6196,7 @@
     updateTrajectoryPlayback(now);
     updateVibrationPlayback(now);
     controls.update();
+    updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight, true);
     if (currentMode === MODES.CALCULATIONS) calculationsRenderer?.updateTransform(atomGroup);
     cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
     updateEditPlaneHelpers();
@@ -17687,7 +17696,8 @@
       popoverEl: els.editAdaptiveAddAtomPopoverEl,
       triggerEl: els.editAdaptiveAddAtomBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
-      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      // Match Metal's 12px toolbar clearance and the floating-popover gap.
+      topInset: workspaceEnabled ? Math.ceil(els.workbenchBarEl?.getBoundingClientRect().bottom || 0) + 12 : 12,
       gap: 12,
       defaultWidth: 360,
       defaultHeight: 420,
@@ -17774,7 +17784,8 @@
       popoverEl: els.editAdaptiveSymmetryPopoverEl,
       triggerEl: els.editAdaptiveSymmetryBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
-      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      // Match Metal's 12px toolbar clearance and the floating-popover gap.
+      topInset: workspaceEnabled ? Math.ceil(els.workbenchBarEl?.getBoundingClientRect().bottom || 0) + 12 : 12,
       gap: 12,
       defaultWidth: 220,
       defaultHeight: 460,
