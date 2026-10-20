@@ -90,9 +90,10 @@
       "suite": "tests/e2e/figure.py",
       "scope": "Fixed30000ms functional preview deadline is smaller than the41518ms long task observed on unmodified main. This does not retrospectively diagnose occurrence42.",
       "acceptedCiFailure": false,
-      "proposal": "Bound eventual blob arrival with a30s responsive-time budget excluding the union of wait-overlapping observed long tasks and an independent180s hard wall ceiling. Proposal only; current30000ms wait unchanged.",
+      "proposal": "Design only: a shared numeric/timing assertion helper, motivated by golden float comparison, camera pose issue40 and this fixed deadline. For preview timing, propose a30s responsive-time budget and independent180s hard wall ceiling; subtract the union of wait-overlapping long-task intervals and detected descheduling gaps from missed monotonic-heartbeat intervals, without double counting or discounting prelude-only time. Preserve exact blob predicate, explicit error failure and original numeric tolerances. Report unavailable/dropped observations with an explicit tested fallback.",
       "evidenceCollector": "tests/e2e/figure_preview_diagnostics.py",
-      "standingGateUnchanged": "34/3/37 exact accepted workflows; Figure remains required to pass."
+      "standingGateUnchanged": "34/3/37 exact accepted workflows; Figure remains required to pass.",
+      "implementationPrerequisite": "Wait for issue42 classification. If the blob genuinely never arrives for a product-state reason, a responsive-time budget is not a remedy. No deadline or shared-helper implementation in the collector PR."
     }
   ],
   "acceptedCiGate": {
