@@ -17687,7 +17687,8 @@
       popoverEl: els.editAdaptiveAddAtomPopoverEl,
       triggerEl: els.editAdaptiveAddAtomBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
-      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      // Match Metal's 12px toolbar clearance and the floating-popover gap.
+      topInset: workspaceEnabled ? Math.ceil(els.workbenchBarEl?.getBoundingClientRect().bottom || 0) + 12 : 12,
       gap: 12,
       defaultWidth: 360,
       defaultHeight: 420,
@@ -17774,7 +17775,8 @@
       popoverEl: els.editAdaptiveSymmetryPopoverEl,
       triggerEl: els.editAdaptiveSymmetryBtn,
       placement: workspaceEnabled ? 'bottom' : 'right',
-      topInset: workspaceEnabled ? document.getElementById('workbenchBar')?.getBoundingClientRect().bottom + 8 : 12,
+      // Match Metal's 12px toolbar clearance and the floating-popover gap.
+      topInset: workspaceEnabled ? Math.ceil(els.workbenchBarEl?.getBoundingClientRect().bottom || 0) + 12 : 12,
       gap: 12,
       defaultWidth: 220,
       defaultHeight: 460,
