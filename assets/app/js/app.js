@@ -1158,6 +1158,7 @@
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
+    workbenchBarEl: null,
     elementColorOverlay: null,
     elementColorClose: null,
     periodicTableViewport: null,
@@ -7211,6 +7212,7 @@
   const moldenGridPaddingEl = document.getElementById('moldenGridPadding');
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
+  cacheElement('workbenchBarEl', 'workbenchBar');
   cacheElement('editAtomsMenuEl', 'editAtomsMenu');
   cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
   cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
@@ -18628,26 +18630,38 @@
   function positionSelectionMetalBondingCuePopover() {
     if (!els.editSelectionMetalBondingCueButtonEl || !els.editSelectionMetalBondingCuePopoverEl) return;
     const gap = 12;
+    const popover = els.editSelectionMetalBondingCuePopoverEl;
     const triggerRect = els.editSelectionMetalBondingCueButtonEl.getBoundingClientRect();
-    const popoverRect = els.editSelectionMetalBondingCuePopoverEl.getBoundingClientRect();
+    const cueRect = els.editSelectionTranslateCueEl?.getBoundingClientRect() || triggerRect;
+    const popoverRect = popover.getBoundingClientRect();
     const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0), Math.round((document.documentElement && document.documentElement.clientWidth) || 0));
     const viewportHeight = Math.max(1, Math.round(window.innerHeight || 0), Math.round((document.documentElement && document.documentElement.clientHeight) || 0));
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionMetalBondingCuePopoverEl.offsetWidth || 320));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionMetalBondingCuePopoverEl.offsetHeight || 220));
+    const toolbarBottom = workspaceEnabled
+      ? els.workbenchBarEl?.getBoundingClientRect().bottom
+      : modeDisplayBtn?.parentElement?.getBoundingClientRect().bottom;
+    const topInset = Math.max(gap, Math.ceil(toolbarBottom || 0) + gap);
+    const popoverWidth = Math.max(1, Math.round(popoverRect.width || popover.offsetWidth || 320));
+    const naturalHeight = Math.max(popoverRect.height, popover.scrollHeight + popover.offsetHeight - popover.clientHeight);
+    const roomBelow = Math.max(0, Math.floor(viewportHeight - cueRect.bottom - 2 * gap));
+    const roomAbove = Math.max(0, Math.floor(cueRect.top - topInset - gap));
+    const below = roomBelow >= naturalHeight || roomBelow >= roomAbove;
+    const maxHeight = `${Math.max(1, below ? roomBelow : roomAbove)}px`;
+    if (popover.style.maxHeight !== maxHeight) popover.style.maxHeight = maxHeight;
+    const popoverHeight = Math.max(1, Math.ceil(popover.getBoundingClientRect().height));
     const roomRight = viewportWidth - triggerRect.right - gap;
     let left = 0;
     let top = 0;
     if (roomRight >= popoverWidth) {
       left = Math.round(triggerRect.right + gap);
-      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
     } else {
       left = Math.round(Math.max(gap, triggerRect.left - popoverWidth - gap));
-      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
     }
+    // Keep the entire selection card usable for direct sibling-cue switches.
+    top = Math.round(below ? cueRect.bottom + gap : cueRect.top - popoverHeight - gap);
     left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
-    top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    els.editSelectionMetalBondingCuePopoverEl.style.left = `${left}px`;
-    els.editSelectionMetalBondingCuePopoverEl.style.top = `${top}px`;
+    top = Math.min(Math.max(topInset, top), Math.max(topInset, viewportHeight - popoverHeight - gap));
+    popover.style.left = `${left}px`;
+    popover.style.top = `${top}px`;
   }
 
   function renderSelectionMetalBondingCuePopover() {

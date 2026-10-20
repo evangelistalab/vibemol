@@ -161,6 +161,13 @@
   display: block;
 }
 
+#editSelectionMetalBondingCuePopover {
+  box-sizing: border-box;
+  width: min(386px, calc(100vw - 24px));
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+}
+
 .editCoordinationCueHeader {
   margin: 0 0 10px;
   font-size: var(--vm-type-control-size);
