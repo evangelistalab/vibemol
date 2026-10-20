@@ -3,6 +3,7 @@
 import base64,json,math,struct,xml.etree.ElementTree as ET
 import premerge as p
 from surface_shadows import settings,settle
+from figure_preview_diagnostics import install_preview_diagnostics,wait_for_preview
 
 
 def same_view(a,b):
@@ -48,6 +49,8 @@ def compose(page, options, name=None):
 
 def run(page,url):
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolFigure')
+    # #42: retain prelude/wait long tasks and timestamped preview state on failure.
+    install_preview_diagnostics(page)
     assert p.load(page,[{'name':'first.cube','text':p.cube(-.5)},{'name':'second.cube','text':p.cube(.8)}])['ok']
     settings(page,{'surface.autoIsoEnabled':False,'surface.iso':.03})
     data,result=compose(page,{'widthIn':6.5,'dpi':300,'cols':2,'sharedIso':True,'camera':'fit'},'figure-regression.png')
@@ -96,7 +99,7 @@ def run(page,url):
     # Open from the native Panels menu; Figure starts in the right dock.
     page.locator('#workbenchPanelsBtn').click();page.locator('[data-window="figurePanel"]').click()
     panel=page.locator('#figurePanel');assert panel.is_visible()
-    page.wait_for_function('()=>document.querySelector("#figurePanel img").src.startsWith("blob:")')
+    wait_for_preview(page,p.ARTIFACTS)
     assert panel.get_attribute('data-wb-placement')=='right'
     grip=panel.get_by_role('button',name='Reorder second.cube',exact=True);grip.focus();page.keyboard.press('Alt+ArrowUp')
     assert panel.locator('.vm-figure-targets li').first.get_attribute('data-target')==targets[1]['id']
