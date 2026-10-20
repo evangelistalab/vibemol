@@ -1,6 +1,6 @@
 {
   "issue": 17,
-  "status": "proposed fix; not merged",
+  "status": "merged as7dd3426 through PR39; own exact-head conjunction verified",
   "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
   "harness": "tests/e2e/metal_popover.py",
   "harnessSha256": "abb3f5aff5a613d025af8e0805e274f0eaf51d4919bf3f3c5b8b6eac5d82acf0",
@@ -668,7 +668,39 @@
       "accepted": false,
       "oldRunNeverRetried": true
     },
-    "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
+    "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition.",
+    "acceptedCandidate": {
+      "pr": 39,
+      "head": "9dedc4a5ead5e23fbc12b0cb24040771f21e5d32",
+      "mergeCommit": "7dd342608de63f4b1570993863a5e2d42fa5eb54",
+      "runId": 39330982948,
+      "attempt": 1,
+      "candidateConjunctionVerified": true,
+      "stopReasons": [],
+      "workflowMinutes": 40.6,
+      "appearanceMaterialPresetIntermittent": {
+        "looksSeconds": 1898.82,
+        "looksMinutes": 31.647,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "cache": {
+        "status": "all eight restores verified",
+        "actualRestoreHits": 8,
+        "actualRestoreMisses": 0,
+        "featureBranchPrimeDidNotRestore": true,
+        "integrationWarmRun": 39095059338,
+        "noRetry": true,
+        "standingGateUnchanged": true,
+        "taskComplete": true
+      }
+    }
   },
   "lifecycleDiagnosis": {
     "citation": "https://github.com/evangelistalab/vibemol/actions/runs/39279175556",
@@ -702,6 +734,6 @@
       "allExceptionsPreserved": true
     },
     "compactReadiness": "Already present before this review: wait for body.dataset.wbCompact === true at320px, then presented state, then unchanged overflow comparison. Actual/expected compact state and widths log on every run. Citation: CI39129507791.",
-    "fullLocalSequence": "At review-update freeze, full Edit/native sequence is running on the revised source; original Edit/visual checks and first native cases pass. Raw completion is recorded separately; the own automatic CI remains the merge gate."
+    "fullLocalSequence": "Completed on the accepted9dedc4a5 candidate before its own automatic CI39330982948. All28 native Metal cases and zero-background-context precondition passed. Current state is merged, not pending."
   }
 }

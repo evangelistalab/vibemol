@@ -1,8 +1,98 @@
 #!/usr/bin/env python3
 """Camera depth, framing, and picking for slabs and diffuse orbital displays."""
 import math
+import json
 import premerge as p
 from surface_shadows import settings, settle
+
+
+def assert_camera_frustum_matches_pose(page, label, expected_distance):
+    """Check arithmetic after the tested mutation, without a mode flip or resize."""
+    settle(page)
+    actual=page.evaluate('''() => {
+      const c=depthCamera,t=VibeMolTesting.getCameraSnapshot().target;
+      const rect=document.getElementById('canvas').getBoundingClientRect();
+      return {type:c.type,position:c.position.toArray(),target:[t.x,t.y,t.z],
+        distance:c.position.distanceTo(new THREE.Vector3(t.x,t.y,t.z)),zoom:c.zoom,
+        left:c.left,right:c.right,top:c.top,bottom:c.bottom,
+        matrixX:c.projectionMatrix.elements[0],matrixY:c.projectionMatrix.elements[5],
+        width:rect.width,height:rect.height};
+    }''')
+    half_height=max(.01,expected_distance)*math.tan(math.pi/8)
+    half_width=half_height*actual['width']/actual['height']
+    expected=dict(distance=expected_distance,left=-half_width,right=half_width,
+        top=half_height,bottom=-half_height,matrixX=actual['zoom']/half_width,matrixY=actual['zoom']/half_height)
+    comparands=dict(case=label,actual=actual,expected=expected,actualToExpectedHalfHeight=actual['top']/half_height)
+    print('[camera-frustum] '+json.dumps(comparands),flush=True)
+    assert actual['type']=='OrthographicCamera',comparands
+    for key,value in expected.items():
+        assert math.isclose(actual[key],value,rel_tol=1e-9,abs_tol=1e-12),(key,comparands)
+    return actual
+
+
+def projection_pose_refresh(page, context, url):
+    # #3: establish a valid starting projection, then mutate ordinary pose inputs.
+    # The characterization perspective->orthographic pin must never run AFTER
+    # the tested mutation: it records matrices but otherwise masks this defect.
+    observe(page)
+    settings(page,{'view.projection':'orthographic'})
+    assert p.load(page,[{'name':'pose.xyz','text':'2\nSymmetric H2\nH -1 0 0\nH 1 0 0\n'}])['ok']
+    settle(page)
+    default_distance=page.evaluate('''()=>{
+      const t=VibeMolTesting.getCameraSnapshot().target;
+      return depthCamera.position.distanceTo(new THREE.Vector3(t.x,t.y,t.z));
+    }''')
+    def baseline():
+        settings(page,{'view.projection':'perspective'})
+        settings(page,{'view.camera.x':30,'view.camera.y':20,'view.camera.z':30,
+            'view.target.x':0,'view.target.y':0,'view.target.z':0,'view.autoRotate':False})
+        settings(page,{'view.projection':'orthographic'})
+        assert_camera_frustum_matches_pose(page,'known starting pose',math.sqrt(2200))
+    for name,change,distance in [
+        ('camera-only',{'view.camera.y':0,'view.camera.z':0},30),
+        ('target-only',{'view.target.x':10},math.sqrt(1700)),
+        ('combined',{'view.camera.y':0,'view.camera.z':0,'view.target.x':10},20),
+        ('same-mode and camera',{'view.projection':'orthographic','view.camera.y':0,'view.camera.z':0},30),
+    ]:
+        baseline();settings(page,change)
+        assert_camera_frustum_matches_pose(page,name,distance)
+    baseline()
+    page.evaluate('''()=>{for(const [id,value] of [['camY',0],['camZ',0]]){
+      const el=document.getElementById(id);el.value=value;el.dispatchEvent(new Event('input',{bubbles:true}));}}''')
+    assert_camera_frustum_matches_pose(page,'Camera numeric inputs',30)
+    page.locator('#tgtX').evaluate("e=>{e.value=10;e.dispatchEvent(new Event('input',{bubbles:true}));}")
+    assert_camera_frustum_matches_pose(page,'Target numeric input',20)
+    page.locator('#pointCameraComBtn').evaluate('e=>e.click()')
+    assert_camera_frustum_matches_pose(page,'Point camera at COM',30)
+    settings(page,{'view.target.x':10})
+    # T04 is a separate ordering bug: Reset refreshes before restoring target.
+    # The common observer must cover it before the next projected helper/draw.
+    page.locator('#viewReset').evaluate('e=>e.click()')
+    assert_camera_frustum_matches_pose(page,'T04 Reset target ordering',default_distance)
+    settings(page,{'view.camera.x':30,'view.camera.y':0,'view.camera.z':0,
+        'view.target.x':0,'view.target.y':0,'view.target.z':0})
+    assert_camera_frustum_matches_pose(page,'guard starting pose',30)
+    page.evaluate('''()=>{
+      window.projectionOwnerCalls={orthographic:0,perspective:0};
+      for(const [kind,prototype] of [['orthographic',THREE.OrthographicCamera.prototype],['perspective',THREE.PerspectiveCamera.prototype]]){
+        const original=prototype.updateProjectionMatrix;
+        prototype.updateProjectionMatrix=function(...args){
+          if(window.traceProjectionOwner && new Error().stack.includes('at updateActiveCameraProjection'))projectionOwnerCalls[kind]++;
+          return original.apply(this,args);
+        };
+      }
+    }''')
+    for projection in ['orthographic','perspective']:
+        settings(page,{'view.projection':projection})
+        calls=page.evaluate('''()=>new Promise(resolve=>{
+          projectionOwnerCalls={orthographic:0,perspective:0};window.traceProjectionOwner=true;let frames=0;
+          function tick(){if(++frames<60)requestAnimationFrame(tick);else{
+            window.traceProjectionOwner=false;resolve({frames,...projectionOwnerCalls});}}
+          requestAnimationFrame(tick);
+        })''')
+        print('[camera-projection-owner] '+json.dumps(dict(projection=projection,actual=calls,
+            expected=dict(frames=60,orthographic=0,perspective=0))),flush=True)
+        assert calls==dict(frames=60,orthographic=0,perspective=0),(projection,calls)
 
 
 def observe(page):
@@ -76,7 +166,12 @@ def slab_rotation_and_picking(page, context, url):
     page.locator('#modeDisplayBtn').evaluate('el=>el.click()')
     before=covered(page)
     settings(page,{'molecule.feature.shadows':True})
-    after=covered(page);assert before['pose']==after['pose'] and before['zoom']==after['zoom']
+    after=covered(page)
+    comparands=dict(phase='slab shadows preserve view',actualPose=after['pose'],expectedPose=before['pose'],
+        actualZoom=after['zoom'],expectedZoom=before['zoom'])
+    print('[camera-view-preservation] '+json.dumps(comparands),flush=True)
+    assert before['pose']==after['pose'],comparands
+    assert before['zoom']==after['zoom'],comparands
     for dx,dy in [(150,70),(-260,110)]:
         page.mouse.move(650,120);page.mouse.down();page.mouse.move(650+dx,120+dy,steps=8);page.mouse.up()
         covered(page)
@@ -166,6 +261,12 @@ def edit_grid_continuity(page, context, url):
             page.evaluate('''() => {const c=depthCamera;c.left=-40;c.right=40;c.top=30;c.bottom=-30;c.zoom=1;c.updateProjectionMatrix();}''')
         settle(page)
         groups=page.evaluate('() => gridSamples()')
+        grid_comparands=dict(projection=projection,shift=shift,
+            actualFrustum=page.evaluate('()=>({left:depthCamera.left,right:depthCamera.right,top:depthCamera.top,bottom:depthCamera.bottom,zoom:depthCamera.zoom})'),
+            expectedFixtureFrustum=dict(left=-40,right=40,top=30,bottom=-30,zoom=1) if projection=='orthographic' else None,
+            actualGroupCounts={key:len(value) for key,value in groups.items()},
+            expectedNonemptyGroups=['outside','before','after'] if projection=='orthographic' else ['after'])
+        print('[camera-grid-fixture] '+json.dumps(grid_comparands),flush=True)
         depth=page.evaluate('() => [depthCamera.near,depthCamera.far]')
         page.evaluate('''() => {window.gridWith=gridImage();depthScene.getObjectByName('edit-grid').material.visible=false;}''')
         settle(page)
@@ -174,7 +275,7 @@ def edit_grid_continuity(page, context, url):
         assert all(math.isclose(a,b,rel_tol=1e-8,abs_tol=1e-6) for a,b in zip(depth,without_depth)),(depth,without_depth)
         for kind in (['outside','before','after'] if projection=='orthographic' else ['after']):
             points=groups[kind]
-            assert points,(projection,shift,kind)
+            assert points,(projection,shift,kind,grid_comparands)
             deltas=page.evaluate('points => points.map(gridDelta)',points)
             assert all(delta>3 for delta in deltas),(projection,shift,kind,deltas)
         page.evaluate("() => {depthScene.getObjectByName('edit-grid').material.visible=true;}")
@@ -205,7 +306,7 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [slab_rotation_and_picking,orbital_depth,edit_grid_continuity]:
+            for run in [projection_pose_refresh,slab_rotation_and_picking,orbital_depth,edit_grid_continuity]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))

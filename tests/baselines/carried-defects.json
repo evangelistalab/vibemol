@@ -48,58 +48,6 @@
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
       "suite": "tests/e2e/mode_consistency.py"
-    },
-    {
-      "id": "selection-metal-popover",
-      "issue": 17,
-      "url": "https://github.com/evangelistalab/vibemol/issues/17",
-      "status": "open",
-      "workflows": [
-        "Metal popover covers Coordination and Translate sibling triggers, blocking intended one-click switch",
-        "Metal bounds overflow by 8 CSS pixels at supported width390"
-      ],
-      "acceptedCiFailure": false,
-      "supportedWidthEvidence": [
-        {
-          "suite": "tests/e2e/axis_gizmo.py",
-          "diagnosticLines": [
-            147,
-            171
-          ],
-          "viewport": {
-            "width": 390,
-            "height": 844
-          }
-        },
-        {
-          "suite": "tests/e2e/build_panel.py",
-          "diagnosticLine": 107,
-          "viewport": {
-            "width": 390,
-            "height": 740
-          }
-        }
-      ],
-      "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
-      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json",
-      "historicalManualAssertionFailed": true,
-      "repairProgress": {
-        "status": "proposed fix; not merged",
-        "scope": "Metal-only outer-width constraint and placement above/below the whole selection card, preserving mode-bar clearance and inside-click propagation.",
-        "liveRegression": "tests/e2e/metal_popover.py, called by edit_tool.py within the unchanged37-suite gate",
-        "nativeMatrixExpected": 28,
-        "nativeMatrixPassed": 28,
-        "metalNativeCommits": 112,
-        "directCoordinationSwitchesAndCommits": 28,
-        "baseline": "tests/baselines/metal-popover.json",
-        "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
-        "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
-        "originalFailedRun": 39279175556,
-        "originalFailedPr": 38,
-        "lifecycleDiagnosis": "Completed parent Edit renderer competed with native preview contexts; exact full-sequence reproducer fixed by retiring that page and asserting0 background contexts. No production timing workaround or assertion/wait change.",
-        "closedContextStabilityTrials": 3,
-        "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
-      }
     }
   ],
   "otherCarriedFollowups": [
@@ -117,6 +65,14 @@
     {
       "issue": 15,
       "scope": "Four obsolete null edit slots retained and issue-backed in identity guard"
+    },
+    {
+      "issue": 40,
+      "url": "https://github.com/evangelistalab/vibemol/issues/40",
+      "kind": "harness",
+      "scope": "camera_depth slab compares complete pose exactly across idle OrbitControls updates; identical5.329e-15 drift on tagged/control/proposed macOS Chromium156. Comparands added, expectations unchanged.",
+      "acceptedCiFailure": false,
+      "standingGateUnchanged": "34/3/37; a CI failure here still stops acceptance."
     }
   ],
   "acceptedCiGate": {
@@ -127,11 +83,11 @@
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
     "orderedIssues": [
-      17
+      3
     ],
-    "scope": "Relative priority among carried product defects; closed test-synchronization issue#21 is removed. Exactly three manifest workflows are accepted.",
-    "reason": "#25 is fixed/closed after approved PR34/35. #17 is next; #21 remains a closed test-synchronization issue.",
-    "authority": "Direct human PR35 approval/merge and next-carried #17 instruction."
+    "scope": "Current human-authorized next product repair. Accepted CI failures remain exactly the same three manifest workflows.",
+    "reason": "#25 and#17 are fixed/closed; the human selected#3 next. Closed test synchronization issue#21 is removed.",
+    "authority": "Direct #3 diagnosis/fix approval after accepted PR39."
   },
   "closedTestIssues": [
     {
@@ -218,6 +174,66 @@
         "strictCompatibilityPayloads": 64,
         "registryGuardPR": 36,
         "registryGuardRun": 39196641240
+      }
+    },
+    {
+      "id": "selection-metal-popover",
+      "issue": 17,
+      "url": "https://github.com/evangelistalab/vibemol/issues/17",
+      "status": "closed",
+      "workflows": [
+        "Metal popover covers Coordination and Translate sibling triggers, blocking intended one-click switch",
+        "Metal bounds overflow by 8 CSS pixels at supported width390"
+      ],
+      "acceptedCiFailure": false,
+      "supportedWidthEvidence": [
+        {
+          "suite": "tests/e2e/axis_gizmo.py",
+          "diagnosticLines": [
+            147,
+            171
+          ],
+          "viewport": {
+            "width": 390,
+            "height": 844
+          }
+        },
+        {
+          "suite": "tests/e2e/build_panel.py",
+          "diagnosticLine": 107,
+          "viewport": {
+            "width": 390,
+            "height": 740
+          }
+        }
+      ],
+      "desktopPairedEvidence": "tests/baselines/evidence/stage3/selection/overlay-geometry/comparison.json",
+      "responsivePairedEvidence": "tests/baselines/evidence/stage3/selection/manual-completed/paired-menu-comparison.json",
+      "historicalManualAssertionFailed": true,
+      "repairProgress": {
+        "status": "merged and independently verified",
+        "scope": "Metal-only outer-width constraint and placement above/below the whole selection card, preserving mode-bar clearance and inside-click propagation.",
+        "liveRegression": "tests/e2e/metal_popover.py, called by edit_tool.py within the unchanged37-suite gate",
+        "nativeMatrixExpected": 28,
+        "nativeMatrixPassed": 28,
+        "metalNativeCommits": 112,
+        "directCoordinationSwitchesAndCommits": 28,
+        "baseline": "tests/baselines/metal-popover.json",
+        "legacyNarrowFixture": "Native sidebar-collapse and stock Alt+arrow selection-card movement avoid the separately measured unopened-card/sidebar/utilities overlap. Coordination commits use a logged exposed alternative option. No force click, click-away step, CSS/event injection or utility hot-zone change. This does not claim to fix the separate selection/Coordination overlap.",
+        "base": "8a11c93c4bd833e9b79778e4a2811081686abf8b",
+        "originalFailedRun": 39279175556,
+        "originalFailedPr": 38,
+        "lifecycleDiagnosis": "Completed parent Edit renderer competed with native preview contexts; exact full-sequence reproducer fixed by retiring that page and asserting0 background contexts. No production timing workaround or assertion/wait change.",
+        "closedContextStabilityTrials": 3,
+        "requiredOwnGate": "Exact34/3/37 workflows;102 unchanged goldens twice/exact repeat;52slots/eight contexts/fixed composition/all minima;units/WebKit/construction; all28 native Metal cases and strict zero-background-context precondition."
+      },
+      "productionFixIncluded": true,
+      "closedBy": {
+        "pr": 39,
+        "head": "9dedc4a5ead5e23fbc12b0cb24040771f21e5d32",
+        "mergeCommit": "7dd342608de63f4b1570993863a5e2d42fa5eb54",
+        "ownRunId": 39330982948,
+        "gate": "34/3/37 exact accepted workflows;102x2/exact repeat;52slots/eight contexts/all minima;units/WebKit/construction;28 native Metal cases"
       }
     }
   ]
