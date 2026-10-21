@@ -2043,7 +2043,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
+    "browserCiGate": "CI requires exactly35 passing /2 failing /37 and exactly two (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card. Smoke is must-pass at both exporters with controlled early Stop and completion-during-activation evidence. Missing, extra or changed workflows stop, including36/1 over-performance. Closed test-synchronization issue21 keeps its compact-readiness wait and numeric overflow comparands. All golden, identity, construction and source gates remain required.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -2298,7 +2298,7 @@
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
-    "cacheGroups": "Each new group gets one CI run on its exact candidate: all37 suites once, current34/3/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order for extractions.",
+    "cacheGroups": "Each new candidate gets one CI run on its exact tree: all37 suites once, current35/2/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order. Historical cache conversions retain their recorded earlier counts.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
     "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack.",
@@ -3801,8 +3801,7 @@
       "passed": 35,
       "failed": 2,
       "total": 37,
-      "satisfied": false,
-      "status": "Own candidate conjunction required"
+      "status": "Required conjunction for the issue11/45 candidate; final acceptance is recorded by run ID after independent verification."
     },
     "issue11AcceptedCiFailure": false,
     "requiredExporterSites": [

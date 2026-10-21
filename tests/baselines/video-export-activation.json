@@ -74,5 +74,143 @@
     },
     "reason": "Product11 repair plus independently controlled harness45; Smoke now must pass both sites. No other failure relaxed."
   },
-  "mergeAcceptance": "Own first complete candidate gate, all37 once, both102 goldens/exact repeat,52slots/eight contexts/all minima, units/WebKit/construction and both exporter records required."
+  "mergeAcceptance": "Own first complete candidate gate, all37 once, both102 goldens/exact repeat,52slots/eight contexts/all minima, units/WebKit/construction and both exporter records required.",
+  "localValidation": {
+    "control": {
+      "exporterSha256": "3fce9afdcc5b5182a0ed2736ad42762c6463bc3673f46671ce2237478aeecf44",
+      "exactlyEqualsTaggedExporter": true,
+      "cases": [
+        {
+          "context": "workbench-light-trajectory",
+          "nativeDownloads": 3,
+          "failure": "completion during pointer final: actual selecting/hidden=false/pressed=true, expected idle/hidden=true/pressed=false"
+        },
+        {
+          "context": "workbench-light-vibration",
+          "nativeDownloads": 3,
+          "failure": "completion during pointer final: actual selecting/hidden=false/pressed=true, expected idle/hidden=true/pressed=false"
+        }
+      ]
+    },
+    "fixed": {
+      "exporterSha256": "ed4a6e27892e99d89585df0233f93c460d218afbf93a2a7bff4c6311fe391ee4",
+      "nativeRecorder": true,
+      "nativeDownloads": 48,
+      "cases": [
+        {
+          "context": "workbench-light-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-light-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-dark-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-dark-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-light-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-light-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-dark-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-dark-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        }
+      ]
+    },
+    "harnessSha256": "10a1154c7aa66de0a080c45dec458ca2d2b056b8e320ae80d0d906c3722b16ad",
+    "identicalHarnessAcrossPair": true,
+    "runtime": "Playwright1.58 with its expected Chromium145/revision1208; no browser replacement",
+    "rawArtifactDirectory": "out/test-artifacts/issue11/",
+    "nonAcceptanceAttempts": "Setup/action/polling failures and mismatched-driver attempts remain separately labelled in ignored output; they are not passing evidence.",
+    "constructionOrder": {
+      "status": "passed",
+      "newAppBindings": 0,
+      "newOrChangedExporterLocalBindings": 8,
+      "newModuleLets": 0
+    },
+    "unitNegativeControl": "All eight new JS activation regressions fail against the pre-fix exporter and pass against the candidate.",
+    "checksAndUnit": {
+      "makeCheck": "passed",
+      "jsTests": 441,
+      "pythonTests": 71
+    }
+  }
 }
