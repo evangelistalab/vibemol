@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Join every planned shard, validate raw evidence and enforce the one 34/3/37 gate."""
+"""Join every planned shard, validate raw evidence and enforce the one35/2/37 gate."""
 import argparse
 import json
 import math

@@ -1,7 +1,7 @@
 {
   "expected": {
-    "passed": 34,
-    "failed": 3,
+    "passed": 35,
+    "failed": 2,
     "total": 37
   },
   "suites": [
@@ -55,22 +55,11 @@
       "exceptionType": "TimeoutError",
       "defect": "Selection card covers Coordinates Delete",
       "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-    },
-    "tests/e2e/smoke.py": {
-      "workflow": "issue-11-stop-after-second-download",
-      "sites": [
-        "trajectory",
-        "vibration"
-      ],
-      "exceptionType": "TimeoutError",
-      "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
-      "issue": "https://github.com/evangelistalab/vibemol/issues/11",
-      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
     }
   },
-  "policy": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
+  "policy": "Authorized issue11 product repair plus independent issue45 deterministic harness repair: exactly35/2/37 and exactly axis Escape/canvas focus plus Coordinates Delete/selection-card interception. Smoke must pass both exporter completion/activation workflows, including explicit fresh Save assertions. Missing/extra/different failures, including36/1, stop. All other golden, identity, construction and source gates remain unchanged.",
   "gateEnvironment": "CI",
-  "baselineComparison": "Current restored CI34/3/37. Historical33/4/37 gates and original failed attempts retain their observed values.",
+  "baselineComparison": "35/2/37 is the prospective issue11 repair gate. Historical34/3/37 and33/4/37 results remain historical.",
   "synchronizationCorrection": {
     "issue": 21,
     "classification": "closed test-synchronization defect",
@@ -90,5 +79,23 @@
     "newUnresolvedOutsideNamedSetFails": true,
     "ordinaryGateUnchanged": true,
     "evidence": "tests/baselines/evidence/release-0.10.0/accessibility-hint-timing"
+  },
+  "videoExportRepair": {
+    "productIssue": 11,
+    "harnessIssue": 45,
+    "completionClock": "Harness holds performance.now before Start, after which both playback timestamps reset. Delta is zero until the test releases it. Rendering/input continue. No host delay can complete the recording before pointerdown.",
+    "requiredSites": [
+      "trajectory",
+      "vibration"
+    ],
+    "requiredActivationPaths": [
+      "early Stop",
+      "pointer held across completion",
+      "Space held across completion",
+      "Enter",
+      "click-only",
+      "legitimate fresh Save after completion"
+    ],
+    "evidence": "tests/baselines/video-export-activation.json"
   }
 }
