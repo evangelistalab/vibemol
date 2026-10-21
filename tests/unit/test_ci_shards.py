@@ -61,8 +61,8 @@ class BrowserJoinTests(unittest.TestCase):
             self.assertIsNone(json.loads(path.read_text())['matchesAcceptedBaseline'])
         report = self.join()
         self.assertTrue(report['matchesAcceptedBaseline'])
-        self.assertEqual((report['passed'], report['failed'], report['total']), (34, 3, 37))
-        self.assertEqual(report['issue11Workflow']['site'], 'trajectory')
+        self.assertEqual((report['passed'], report['failed'], report['total']), (35, 2, 37))
+        self.assertEqual(report['issue11Workflow'], {'status':'passed'})
         self.assertTrue(all(e['rawFailureIndependentlyVerified'] for e in report['suites']))
 
     def test_new_fourth_failure_is_reported_and_rejects_gate(self):
@@ -71,23 +71,24 @@ class BrowserJoinTests(unittest.TestCase):
             entry['exitCode'] = 1
         self.change_report('balanced-2', fail)
         report = self.join()
-        self.assertEqual((report['passed'], report['failed'], report['total']), (33, 4, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (34, 3, 37))
         self.assertFalse(report['matchesAcceptedBaseline'])
         self.assertEqual(report['unexpectedFailures'], ['tests/e2e/accessibility.py'])
 
     def test_raw_log_cannot_be_overruled_by_recorded_classification(self):
-        raw = self.paths['smoke'].parent / 'smoke/run.log'
-        raw.write_text(raw.read_text().replace("wait_for_video_idle(page, 'trajectory')", "page.locator('#trajectorySaveVideoBtn').click()"))
-        with self.assertRaisesRegex(AssertionError, 'Raw failure details differ'):
+        raw=self.paths['balanced-3'].parent/'axis_gizmo/run.log'
+        raw.write_text(raw.read_text().replace("press('Escape')", "press('Home')"))
+        with self.assertRaisesRegex(AssertionError,'Raw failure details differ'):
             self.join()
 
     def test_other_smoke_workflow_rejects_even_with_three_failing_suites(self):
         raw = self.paths['smoke'].parent / 'smoke/run.log'
-        raw.write_text(raw.read_text().replace("wait_for_video_idle(page, 'trajectory')", "page.locator('#trajectorySaveVideoBtn').click()"))
+        raw.write_text('Traceback (most recent call last):\n  File "/repo/tests/e2e/smoke.py", line 123, in main\n    assert False\nAssertionError\n')
         def update(report):
             entry = report['suites'][0]
             entry.update(browser_suite.failure_details(raw.read_text(), entry['test'], (ROOT / entry['test']).read_text()))
             entry['knownDefect'] = False
+            entry['exitCode'] = 1
         self.change_report('smoke', update)
         report = self.join()
         self.assertEqual(report['failed'], 3)
@@ -95,15 +96,15 @@ class BrowserJoinTests(unittest.TestCase):
         self.assertEqual(report['issue11Workflow']['status'], 'unexpected smoke failure')
 
     def test_missing_carried_failure_rejects_overperformance(self):
-        raw = self.paths['smoke'].parent / 'smoke/run.log'
+        raw = self.paths['balanced-3'].parent / 'axis_gizmo/run.log'
         raw.write_text('Suite passed\n')
         def passed(report):
-            entry = next(e for e in report['suites'] if e['test'] == 'tests/e2e/smoke.py')
+            entry = next(e for e in report['suites'] if e['test'] == 'tests/e2e/axis_gizmo.py')
             entry.update(exitCode=0, knownDefect=False,
                 **browser_suite.failure_details(raw.read_text(), entry['test'], (ROOT / entry['test']).read_text()))
-        self.change_report('smoke', passed)
+        self.change_report('balanced-3', passed)
         report = self.join()
-        self.assertEqual((report['passed'], report['failed'], report['total']), (35, 2, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (36, 1, 37))
         self.assertFalse(report['matchesAcceptedBaseline'])
 
     def test_missing_duplicate_unfinished_or_changed_source_shard_rejects(self):

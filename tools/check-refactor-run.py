@@ -12,12 +12,14 @@ def main():
     policy = json.loads(args.policy.read_text())
     result = json.loads(args.browser_result.read_text())
     actual_counts = {key: result[key] for key in ('passed', 'failed', 'total')}
-    expected_counts = {'passed': 34, 'failed': 3, 'total': 37}
+    repaired = policy.get('requireVideoExportCompletion', False)
+    expected_counts = {'passed': 35, 'failed': 2, 'total': 37} if repaired else {'passed': 34, 'failed': 3, 'total': 37}
+    assert policy['ordinaryExpected'] == expected_counts, (policy, expected_counts)
     actual_workflow = result.get('issue11Workflow')
     preserve_signature = policy.get('preserveExporterSignature', True)
     assert isinstance(preserve_signature, bool), policy
-    expected_workflow = policy['issue11Workflow']
-    allowed_workflows = [expected_workflow] if preserve_signature else [
+    expected_workflow = {'status': 'passed'} if repaired else policy.get('issue11Workflow')
+    allowed_workflows = [expected_workflow] if repaired or preserve_signature else [
         {'id': 'issue-11-stop-after-second-download', 'site': site}
         for site in ('trajectory', 'vibration')
     ]
@@ -39,10 +41,23 @@ def main():
     assert actual_counts == expected_counts, comparands
     assert result.get('allExecutedOnce') is True, comparands
     assert result.get('matchesAcceptedBaseline') is True, comparands
-    assert actual_workflow in allowed_workflows, (
-        'STOP: #11 differs from the applicable group policy or ceased to fire; '
-        'do not adjust the accepted set or retry', comparands)
-    print('Additional Stage 5 #11 behavior gate: passed', flush=True)
+    if repaired:
+        expected = [dict(prefix=prefix, downloads=6, naturalCompletion=True, earlyStop=True,
+                    pointerCompletion=True, spaceCompletion=True, enterActivation=True,
+                    clickOnlyActivation=True, freshSaveAssertions=4)
+                    for prefix in ('trajectory', 'vibration')]
+        actual = result.get('videoExportCompletion')
+        print(json.dumps(dict(check='both repaired exporter workflows', actual=actual, expected=expected)), flush=True)
+        assert actual_workflow == {'status': 'passed'}, comparands
+        assert actual == expected, (actual, expected)
+        expected_failures = [['tests/e2e/axis_gizmo.py','escape-canvas-focus'],
+                             ['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']]
+        assert result.get('actualFailingWorkflows') == expected_failures, result.get('actualFailingWorkflows')
+    else:
+        assert actual_workflow in allowed_workflows, (
+            'STOP: #11 differs from the applicable historical group policy or ceased to fire; '
+            'do not adjust the accepted set or retry', comparands)
+    print('Additional exporter behavior gate: passed', flush=True)
 
 
 if __name__ == '__main__':

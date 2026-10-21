@@ -9,65 +9,6 @@
     2,
     1
   ],
-  "currentBrowserBaseline": {
-    "passed": 34,
-    "failed": 3,
-    "total": 37,
-    "environment": "CI",
-    "evidence": "tests/baselines/evidence/release-0.10.0/completion/main-with-settled-harness.json.gz",
-    "comparison": "Current 34/3/37 exact three-workflow gate; 35/2 remains a stop",
-    "historicalLocalResult": {
-      "passed": 35,
-      "failed": 2,
-      "total": 37,
-      "environment": "local",
-      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
-    },
-    "provenance": "Same production tree after the separately authorized accessibility class fix; own first complete main gate",
-    "gate": {
-      "passed": 34,
-      "failed": 3,
-      "total": 37,
-      "environment": "CI",
-      "satisfied": true,
-      "status": "accepted first complete main gate 39158578780"
-    },
-    "acceptedDefects": [
-      {
-        "suite": "axis_gizmo.py",
-        "workflow": "escape-canvas-focus",
-        "exceptionType": "AssertionError",
-        "defect": "Escape interception prevents canvas focus",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
-      },
-      {
-        "suite": "mode_consistency.py",
-        "workflow": "coordinates-delete-selection-card",
-        "exceptionType": "TimeoutError",
-        "defect": "Selection card covers Coordinates Delete",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-      },
-      {
-        "suite": "smoke.py",
-        "workflow": "issue-11-stop-after-second-download",
-        "sites": [
-          "trajectory",
-          "vibration"
-        ],
-        "exceptionType": "TimeoutError",
-        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
-      }
-    ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39135895060",
-    "sourceAppSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
-    "issue11Workflow": {
-      "id": "issue-11-stop-after-second-download",
-      "site": "trajectory"
-    },
-    "vibrationExportReached": false
-  },
   "stages": [
     {
       "stage": 1,
@@ -3769,5 +3710,105 @@
       },
       "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
     }
+  },
+  "preIssue11BrowserBaseline": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/release-0.10.0/completion/main-with-settled-harness.json.gz",
+    "comparison": "Current 34/3/37 exact three-workflow gate; 35/2 remains a stop",
+    "historicalLocalResult": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "environment": "local",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    },
+    "provenance": "Same production tree after the separately authorized accessibility class fix; own first complete main gate",
+    "gate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": true,
+      "status": "accepted first complete main gate 39158578780"
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      }
+    ],
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39135895060",
+    "sourceAppSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationExportReached": false
+  },
+  "ordinaryExpected": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "environment": "CI",
+    "status": "Required composition for the authorized issue11/45 repair; own complete candidate run required",
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      }
+    ],
+    "gate": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "satisfied": false,
+      "status": "Own candidate conjunction required"
+    },
+    "issue11AcceptedCiFailure": false,
+    "requiredExporterSites": [
+      "trajectory",
+      "vibration"
+    ],
+    "evidence": "tests/baselines/video-export-activation.json"
   }
 }

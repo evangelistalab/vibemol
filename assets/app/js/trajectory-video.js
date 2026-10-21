@@ -270,6 +270,7 @@
       restoreOnStop: true,
       stopReason: '',
       savedState: null,
+      activation: null,
     };
 
     function getMode() {
@@ -729,29 +730,48 @@
       syncOverlayLayout();
     }
 
+    function activateSaveButton(event) {
+      if (event && event.preventDefault) event.preventDefault();
+      if (event && event.stopPropagation) event.stopPropagation();
+      const intent = state.activation;
+      state.activation = null;
+      const pointerClick = !!(event && (event.detail > 0 || event.pointerType));
+      // A physical click must belong to its press. Space/Enter record intent
+      // at keydown; a click-only accessibility/programmatic activation begins
+      // here and has no earlier input interval to reinterpret.
+      if (pointerClick && (!intent || intent.source !== 'pointer')) return;
+      const mode = intent && (pointerClick || intent.source === 'keyboard')
+        ? intent.mode : state.mode;
+      if (mode === EXPORT_MODES.RECORDING) {
+        if (isRecording()) stopRecording({
+          download: true,
+          restoreState: true,
+          reason: labels.stoppedEarlyReason,
+        });
+      } else if (mode === EXPORT_MODES.SELECTING) {
+        if (isSelecting()) closeCropOverlay();
+      } else if (state.mode === EXPORT_MODES.IDLE) {
+        openCropOverlay();
+      }
+    }
+
     function bindEvents() {
       if (saveBtn) {
         saveBtn.addEventListener('pointerdown', (event) => {
+          state.activation = event.button === 0 ? { source: 'pointer', mode: state.mode } : null;
           if (event && event.preventDefault) event.preventDefault();
           if (event && event.stopPropagation) event.stopPropagation();
         });
-        saveBtn.addEventListener('click', (event) => {
-          if (event && event.preventDefault) event.preventDefault();
-          if (event && event.stopPropagation) event.stopPropagation();
-          if (isRecording()) {
-            stopRecording({
-              download: true,
-              restoreState: true,
-              reason: labels.stoppedEarlyReason,
-            });
-            return;
-          }
-          if (isSelecting()) {
-            closeCropOverlay();
-            return;
-          }
-          openCropOverlay();
+        saveBtn.addEventListener('pointercancel', () => { state.activation = null; });
+        saveBtn.addEventListener('blur', () => { state.activation = null; });
+        saveBtn.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') { state.activation = null; return; }
+          if (![' ', 'Spacebar', 'Enter'].includes(event.key)) return;
+          if (event.repeat) { event.preventDefault(); return; }
+          state.activation = { source: 'keyboard', mode: state.mode };
+          event.stopPropagation();
         });
+        saveBtn.addEventListener('click', activateSaveButton);
       }
       if (cropStartBtnEl) cropStartBtnEl.addEventListener('click', () => startRecording());
       if (cropCancelBtnEl) cropCancelBtnEl.addEventListener('click', () => closeCropOverlay());

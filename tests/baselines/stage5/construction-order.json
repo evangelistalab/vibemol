@@ -78,6 +78,15 @@
         "figureRenderer"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue11 per-activation intent; no added controller dependency",
+      "before": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/trajectory-video.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }
