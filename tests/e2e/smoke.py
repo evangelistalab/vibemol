@@ -16,10 +16,12 @@ if __package__ in (None, ""):
     from assertion_contract import state_after_input
     from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
+    from video_export_activation import install_video_clock_gate, hold_video_clock, release_video_clock, early_stop_held_recording, completion_during_activation_matrix, assert_idle, click_video_control, assert_video_state
 else:
     from .assertion_contract import state_after_input
     from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from .ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
+    from .video_export_activation import install_video_clock_gate, hold_video_clock, release_video_clock, early_stop_held_recording, completion_during_activation_matrix, assert_idle, click_video_control, assert_video_state
 
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACT_DIR = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(REPO_ROOT / 'out' / 'test-artifacts'))))
@@ -530,6 +532,7 @@ def install_trajectory_video_export_stubs(page, *, media_recorder_supported: boo
         }""",
         media_recorder_supported,
     )
+    install_video_clock_gate(page)
 
 
 def get_trajectory_video_export_stub_state(page) -> dict[str, Any]:
@@ -4335,29 +4338,35 @@ def main() -> int:
             export_state = get_trajectory_video_export_stub_state(page)
             if len(export_state['downloads']) != 1:
                 raise AssertionError(f'Trajectory crop cancel unexpectedly downloaded a file: {export_state}')
+            assert_idle(page, 'trajectory', 'natural export complete and cancel preserved', 1)
             page.locator('#trajectoryFps').evaluate(
                 """(el) => {
                     el.value = '1';
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
+            hold_video_clock(page)
             page.locator('#trajectorySaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
-            page.locator('#trajectoryVideoCropStartBtn').click()
-            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'recording'""")
+            click_video_control(page, 'trajectory', 'VideoCropStartBtn')
+            assert_video_state(page, 'trajectory', 'controlled recording started', mode='recording', hidden='false')
             arm_video_stop_trace(page, 'trajectory')
-            page.locator('#trajectorySaveVideoBtn').click()
+            early_stop_held_recording(page, 'trajectory', 2)
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
             wait_for_video_idle(page, 'trajectory')
+            trajectory_downloads = completion_during_activation_matrix(page, 'trajectory', 2)
+            hold_video_clock(page)  # #45: closing must also begin before natural completion.
             page.locator('#trajectorySaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'selecting'""")
-            page.locator('#trajectoryVideoCropStartBtn').click()
-            page.wait_for_function("""() => document.getElementById('trajectoryVideoCropOverlay')?.dataset.state === 'recording'""")
+            click_video_control(page, 'trajectory', 'VideoCropStartBtn')
+            assert_video_state(page, 'trajectory', 'controlled recording started', mode='recording', hidden='false')
             page.locator('#trajectoryPanelClose').click()
+            release_video_clock(page)
+            assert_idle(page, 'trajectory', 'close discards controlled recording', trajectory_downloads)
             page.wait_for_function("""() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') === 'true'""")
             page.wait_for_timeout(100)
             export_state = get_trajectory_video_export_stub_state(page)
-            if len(export_state['downloads']) != 2:
+            if len(export_state['downloads']) != trajectory_downloads:
                 raise AssertionError(f'Trajectory close-during-record unexpectedly downloaded a file: {export_state}')
             page.keyboard.press('t')
             page.wait_for_function("""() => document.getElementById('trajectoryPanel')?.getAttribute('aria-hidden') === 'false'""")
@@ -4472,29 +4481,35 @@ def main() -> int:
             export_state = get_trajectory_video_export_stub_state(page)
             if len(export_state['downloads']) != 1:
                 raise AssertionError(f'Vibration crop cancel unexpectedly downloaded a file: {export_state}')
+            assert_idle(page, 'vibration', 'natural export complete and cancel preserved', 1)
             page.locator('#vibrationSpeed').evaluate(
                 """(el) => {
                     el.value = '1.00';
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
+            hold_video_clock(page)
             page.locator('#vibrationSaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
-            page.locator('#vibrationVideoCropStartBtn').click()
-            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'recording'""")
+            click_video_control(page, 'vibration', 'VideoCropStartBtn')
+            assert_video_state(page, 'vibration', 'controlled recording started', mode='recording', hidden='false')
             arm_video_stop_trace(page, 'vibration')
-            page.locator('#vibrationSaveVideoBtn').click()
+            early_stop_held_recording(page, 'vibration', 2)
             page.wait_for_function("""() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2""")
             wait_for_video_idle(page, 'vibration')
+            vibration_downloads = completion_during_activation_matrix(page, 'vibration', 2)
+            hold_video_clock(page)  # #45: closing must also begin before natural completion.
             page.locator('#vibrationSaveVideoBtn').click()
             page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'selecting'""")
-            page.locator('#vibrationVideoCropStartBtn').click()
-            page.wait_for_function("""() => document.getElementById('vibrationVideoCropOverlay')?.dataset.state === 'recording'""")
+            click_video_control(page, 'vibration', 'VideoCropStartBtn')
+            assert_video_state(page, 'vibration', 'controlled recording started', mode='recording', hidden='false')
             page.locator('#vibrationPanelClose').click()
+            release_video_clock(page)
+            assert_idle(page, 'vibration', 'close discards controlled recording', vibration_downloads)
             page.wait_for_function("""() => document.getElementById('vibrationPanel')?.getAttribute('aria-hidden') === 'true'""")
             page.wait_for_timeout(100)
             export_state = get_trajectory_video_export_stub_state(page)
-            if len(export_state['downloads']) != 2:
+            if len(export_state['downloads']) != vibration_downloads:
                 raise AssertionError(f'Vibration close-during-record unexpectedly downloaded a file: {export_state}')
             install_trajectory_video_export_stubs(page, media_recorder_supported=False)
             page.keyboard.press('f')

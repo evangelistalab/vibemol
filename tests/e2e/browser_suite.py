@@ -105,12 +105,15 @@ def failure_workflow(suite, log, source):
 def failure_details(log, suite=None, source=None):
     sites = re.findall(r'File "[^\"]*/tests/e2e/([^\"]+)", line (\d+), in ([^\n]+)', log)
     exceptions = re.findall(r'^([\w.]*(?:Error|Exception))(?::|$)', log, re.M)
-    return {'firstFailure': ({'suite': sites[-1][0], 'line': int(sites[-1][1]), 'function': sites[-1][2]}
+    details = {'firstFailure': ({'suite': sites[-1][0], 'line': int(sites[-1][1]), 'function': sites[-1][2]}
                              if sites else None),
             'failureCallSite': ({'suite': sites[-2][0], 'line': int(sites[-2][1]), 'function': sites[-2][2]}
                                 if len(sites) > 1 else None),
             'exceptionType': exceptions[-1].split('.')[-1] if exceptions else None,
             'failureWorkflow': failure_workflow(suite, log, source) if suite and source is not None else None}
+    if suite and pathlib.Path(suite).name == 'smoke.py':
+        details['videoExportCompletion'] = [json.loads(x) for x in re.findall(r'^\[video-export-completion\] (.+)$', log, re.M)]
+    return details
 
 
 def matches_known_defect(result, known):
@@ -150,13 +153,14 @@ def finish_report(report, manifest, aggregate=True):
     report['issue11Workflow'] = ({'status': 'not in this shard'} if smoke is None else
         smoke['failureWorkflow'] if smoke['knownDefect'] else
         {'status': 'passed' if smoke['exitCode'] == 0 else 'unexpected smoke failure'})
+    report['videoExportCompletion'] = smoke.get('videoExportCompletion', []) if smoke else []
     return gate
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--allow-known-defects', action='store_true',
-                        help='Require exactly the three filed workflows; still report them as failing.')
+                        help='Require exactly the manifest workflows; still report them as failing.')
     parser.add_argument('--shard', help='Collect one planned shard; the join, not this worker, asserts the full gate.')
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
