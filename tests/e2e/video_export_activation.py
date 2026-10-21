@@ -99,6 +99,15 @@ def wait_download_and_idle(page, prefix, downloads):
     import time
     started=time.monotonic()
     page.evaluate('() => {window.__videoWaitComparands=[];}')
+    def record():
+        try:
+            actual=video_state(page,prefix)
+            print('[video-completion-wait] '+json.dumps(dict(prefix=prefix,actual=actual,
+                  hostElapsedMs=(time.monotonic()-started)*1000,
+                  polls=page.evaluate('()=>__videoWaitComparands'),
+                  expected=dict(downloads=downloads,mode='idle',hidden='true'))),flush=True)
+        except Exception as diagnostic_error:
+            print('[video-completion-readback-error] '+str(diagnostic_error),flush=True)
     try:
         page.wait_for_function('''({prefix,downloads}) => {
           const count=(window.__trajectoryVideoExportTest || window.__nativeVideoActivation)?.downloads.length;
@@ -111,12 +120,10 @@ def wait_download_and_idle(page, prefix, downloads):
             rows.push(row);
           return row.passed;
         }''', arg=dict(prefix=prefix, downloads=downloads))
-    finally:
-        actual=video_state(page,prefix)
-        print('[video-completion-wait] '+json.dumps(dict(prefix=prefix,actual=actual,
-              hostElapsedMs=(time.monotonic()-started)*1000,
-              polls=page.evaluate('()=>__videoWaitComparands'),
-              expected=dict(downloads=downloads,mode='idle',hidden='true'))),flush=True)
+    except Exception:
+        record()
+        raise
+    record()
 
 
 def early_stop_held_recording(page, prefix, downloads, native=False):
@@ -222,13 +229,28 @@ def main():
                         # Theme is fixture state; the legacy utility hit-target
                         # overlap is outside this video-activation regression.
                         context.add_init_script('localStorage.setItem("vibemol.uiTheme",'+json.dumps(theme)+');')
-                        page=context.new_page();errors=[];downloads=[]
+                        page=context.new_page();errors=[];downloads=[];console_errors=[];requests_failed=[]
                         page.on('pageerror',lambda e:errors.append(str(e)))
                         page.on('download',lambda d:downloads.append(d))
+                        page.on('console',lambda m:console_errors.append(m.text) if m.type=='error' else None)
+                        page.on('requestfailed',lambda r:requests_failed.append(dict(url=r.url,failure=r.failure)))
                         try:
                             page.goto(url+'?appearanceStudy=1'+('&workspaceLab=0' if launch=='legacy' else ''),wait_until='commit')
+                            # Bootstrap is script readiness, not presentation.
+                            # Do not depend on a foreground animation frame to
+                            # observe globals installed by classic scripts.
                             page.wait_for_function('''launch=>window.VibeMolTesting && window.VibeMolWorkbenchHost
-                              && (launch==='legacy' || window.VibeMolWorkbench)''',arg=launch)
+                              && (launch==='legacy' || window.VibeMolWorkbench)''',arg=launch,polling=100)
+                            print('[video-native-ready] '+json.dumps(dict(context=label,actual=page.evaluate('''()=>({
+                              readyState:document.readyState,testing:!!window.VibeMolTesting,
+                              host:!!window.VibeMolWorkbenchHost,workbench:!!window.VibeMolWorkbench})'''),
+                              expected=dict(testing=True,host=True,workbench=launch=='workbench'))),flush=True)
+                            renderer=page.evaluate('''()=>{
+                              const gl=document.getElementById('canvas').getContext('webgl2');
+                              const ext=gl.getExtension('WEBGL_debug_renderer_info');
+                              return {vendor:gl.getParameter(gl.VENDOR),renderer:gl.getParameter(gl.RENDERER),
+                                unmaskedRenderer:ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : null};
+                            }''')
                             page.evaluate('async()=>{await document.fonts.ready;}')
                             actual_theme=page.evaluate('()=>document.documentElement.dataset.theme')
                             print('[video-native-theme] '+json.dumps(dict(context=label,actual=actual_theme,expected=theme)),flush=True)
@@ -273,14 +295,19 @@ def main():
                             assert len(downloads)==count==6,(len(downloads),count)
                             assert all(d.suggested_filename==prefix+'.webm' for d in downloads)
                             assert not errors,errors
-                            cases.append(dict(context=label,status='passed',nativeDownloads=len(downloads),pageErrors=errors,browserVersion=browser.version))
+                            cases.append(dict(context=label,status='passed',nativeDownloads=len(downloads),pageErrors=errors,browserVersion=browser.version,renderer=renderer))
                         except Exception:
+                            print('[video-native-load-state] '+json.dumps(dict(context=label,
+                                  actual=page.evaluate('''()=>({readyState:document.readyState,
+                                  testing:!!window.VibeMolTesting,host:!!window.VibeMolWorkbenchHost,
+                                  workbench:!!window.VibeMolWorkbench,at:performance.now()})'''),
+                                  consoleErrors=console_errors,requestsFailed=requests_failed)),flush=True)
                             try:
                                 print('[video-native-failure] '+json.dumps(dict(context=label,
                                       browserDownloads=len(downloads),actual=video_state(page,prefix))),flush=True)
                             except Exception as diagnostic_error:
                                 print('[video-native-readback-error] '+str(diagnostic_error),flush=True)
-                            write_failure_artifacts(page,out,label,errors,[])
+                            write_failure_artifacts(page,out,label,errors,console_errors)
                             failure=traceback.format_exc();print(failure,flush=True)
                             cases.append(dict(context=label,status='failed',failure=failure,nativeDownloads=len(downloads),pageErrors=errors))
                         finally:context.close()
