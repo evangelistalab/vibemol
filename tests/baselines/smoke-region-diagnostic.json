@@ -1,0 +1,274 @@
+{
+  "issue": 47,
+  "status": "unclassified",
+  "carried": false,
+  "acceptedCiFailure": false,
+  "pr46": "held at162a11f; failed CI39694044396 not rerun",
+  "diagnosticOnly": true,
+  "proof": {
+    "mainHead": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+    "mainTree": "94f6fb9129d0d27dfe510d147e694e7f80995628",
+    "cleanBeforeAndAfter": true,
+    "appSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+    "exporterSha256": "3fce9afdcc5b5182a0ed2736ad42762c6463bc3673f46671ce2237478aeecf44",
+    "smokeSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+    "harnessSha256": "6b700e0c0cd7f5d0d7558799ec636405151d308fa8cb5d8aa8562d71c3c86e05",
+    "focusedHarnessSha256": "eb596cc937b33ed5ee02400a2a73680e6b29379670d2e228817d2d2031632646",
+    "predicateInstrumenterSha256": "caa67449a7f1204c9dda046c7d72be99ecb735579dc8b81012fd5ca154608fe7",
+    "predicateMapSha256": "8c52dab0e04c01dd556df6de50cbed42a8c31d6adcdba85b733cd981d9e6528d"
+  },
+  "runtime": {
+    "suite": "smoke-region",
+    "os": "Darwin",
+    "architecture": "arm64",
+    "browserName": "chromium",
+    "browserVersion": "145.0.7632.6",
+    "rendererClass": "software",
+    "vendor": "WebKit",
+    "renderer": "WebKit WebGL",
+    "unmaskedVendor": "Google Inc. (Google)",
+    "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)",
+    "version": "WebGL 2.0 (OpenGL ES 3.0 Chromium)"
+  },
+  "focusedFusion": {
+    "sourceLines": [
+      4954,
+      4980
+    ],
+    "failures": 0
+  },
+  "wholeMain": {
+    "originalPrefixPreserved": true,
+    "executedTopLevelStatements": 1005,
+    "newRegionLines": [
+      4395,
+      5514
+    ],
+    "newRegionStatements": 301,
+    "instrumentedWaitCalls": 181,
+    "successfulWaitCalls": 180,
+    "caughtFixtureWaits": 1,
+    "unexpectedPropagatedFailures": 0,
+    "explicitlyBypassedIdleChecks": [
+      {
+        "line": 4394,
+        "prefix": "trajectory",
+        "uiCleanupRequired": false
+      },
+      {
+        "line": 4531,
+        "prefix": "vibration",
+        "uiCleanupRequired": false
+      }
+    ],
+    "diagnosticRecoveries": 0,
+    "reachedFinalRuntimeErrorCheck": true,
+    "pageErrors": [],
+    "consoleErrors": []
+  },
+  "caughtFixtureObservation": {
+    "callerLine": 4830,
+    "helper": "click_atom_to_select",
+    "helperWaitLine": 1245,
+    "assertion": "indices.length === 1 && indices[0] === target",
+    "actualSelectionCount": 0,
+    "expectedSelectionCount": 1,
+    "timeoutMs": 600,
+    "disposition": "Original helper catches the wait and uses VibeMolTesting.setEditSelectionIndices; later fixture assertions passed. This is disclosed separately from propagated test failures."
+  },
+  "sections": [
+    {
+      "label": "Post-trajectory Stop / close / unsupported",
+      "startLine": 4395,
+      "endLine": 4420,
+      "statements": 15,
+      "waitChecks": 5,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "vibration video export smoke",
+      "startLine": 4421,
+      "endLine": 4617,
+      "statements": 56,
+      "waitChecks": 18,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "new file edit smoke",
+      "startLine": 4618,
+      "endLine": 4675,
+      "statements": 12,
+      "waitChecks": 6,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment cue shows fragment ghost on undercoordinated atom",
+      "startLine": 4676,
+      "endLine": 4746,
+      "statements": 23,
+      "waitChecks": 17,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach Smart on methane resolves to Replace H",
+      "startLine": 4747,
+      "endLine": 4764,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment cue replace target keeps anchor selected and cue armed",
+      "startLine": 4765,
+      "endLine": 4807,
+      "statements": 11,
+      "waitChecks": 12,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach Smart on bare carbon resolves to Append",
+      "startLine": 4808,
+      "endLine": 4825,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach Smart on open-site ghost resolves to Append with open-site hint",
+      "startLine": 4826,
+      "endLine": 4887,
+      "statements": 38,
+      "waitChecks": 19,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 1
+    },
+    {
+      "label": "fragment attach Append keeps host hydrogens",
+      "startLine": 4888,
+      "endLine": 4905,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach explicit Replace H on methane resolves to Replace H",
+      "startLine": 4906,
+      "endLine": 4921,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach explicit Replace H falls back to Append when no host hydrogen exists",
+      "startLine": 4922,
+      "endLine": 4937,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "fragment attach explicit Replace H falls back when fragment lacks replace_h support",
+      "startLine": 4938,
+      "endLine": 4953,
+      "statements": 8,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "clicking a bond with a fusion-capable fragment enters fuse preview regardless of policy",
+      "startLine": 4954,
+      "endLine": 4971,
+      "statements": 11,
+      "waitChecks": 8,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "clicking a bond with a non-fusion fragment leaves fuse preview inactive",
+      "startLine": 4972,
+      "endLine": 4981,
+      "statements": 8,
+      "waitChecks": 5,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "grow drag onto terminal hydrogen replaces it with loaded atom",
+      "startLine": 4982,
+      "endLine": 5041,
+      "statements": 10,
+      "waitChecks": 7,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "wboit surface transparency",
+      "startLine": 5042,
+      "endLine": 5200,
+      "statements": 20,
+      "waitChecks": 11,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "wboit cloud transparency",
+      "startLine": 5201,
+      "endLine": 5282,
+      "statements": 8,
+      "waitChecks": 4,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "2c spinor labels and info",
+      "startLine": 5283,
+      "endLine": 5423,
+      "statements": 23,
+      "waitChecks": 14,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "wboit 2c alpha/beta split view",
+      "startLine": 5424,
+      "endLine": 5470,
+      "statements": 9,
+      "waitChecks": 4,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "wboit cloud 2c alpha/beta split view",
+      "startLine": 5471,
+      "endLine": 5512,
+      "statements": 7,
+      "waitChecks": 3,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    },
+    {
+      "label": "final runtime error check",
+      "startLine": 5513,
+      "endLine": 5514,
+      "statements": 2,
+      "waitChecks": 0,
+      "propagatedFailures": [],
+      "caughtHelperWaits": 0
+    }
+  ],
+  "conclusion": "No positive pre-existence reproduction: focused and full original main Smoke both passed locally with only the two authorized idle checks bypassed. PR46 CI finding47 remains unclassified. Do not infer zero latent CI defects or a product regression from this local pass; runtime and harness differ. No fix or manifest change selected.",
+  "rawArtifactDirectory": "out/test-artifacts/issue47/",
+  "collectorPreludeError": "A collector metadata error before any Fusion statement ran is preserved separately and excluded from application findings.",
+  "looksSuiteCoverage": "Not run: the Smoke region checks do not establish completion of either Looks material-family path."
+}

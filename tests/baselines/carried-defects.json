@@ -368,6 +368,44 @@
         "noFurtherDiagnosticReplays": true
       },
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
+    },
+    {
+      "id": "smoke-build-fusion-phenyl-switch",
+      "issue": 47,
+      "url": "https://github.com/evangelistalab/vibemol/issues/47",
+      "status": "open; unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "workflow": "Build query changes Fusion phenyl to Methyl while fuse preview remains active",
+      "originalCandidate": {
+        "head": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "pr": 46,
+        "ciRun": 39694044396,
+        "line": 4988,
+        "assertion": "Build palette button trial click becomes reachable within30000ms",
+        "failure": "Canvas intercepts #editAdaptiveAddAtomBtn"
+      },
+      "mainLocalDiagnostic": {
+        "head": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "browserVersion": "145.0.7632.6",
+        "focusedFusionFailures": 0,
+        "fullSmokePropagatedFailures": 0,
+        "newRegionStatements": 301,
+        "newRegionLines": [
+          4395,
+          5514
+        ],
+        "idleWaitBypasses": [
+          4394,
+          4531
+        ],
+        "caughtExistingFixtureWaits": 1,
+        "diagnosticOnly": true,
+        "baseline": "tests/baselines/smoke-region-diagnostic.json"
+      },
+      "classification": "Not reproduced on unchanged main locally; neither pre-existence nor PR46 regression established. Original failure was CI Chromium156; local diagnostic Chromium145. Existing600ms selection-fixture fallback is disclosed separately. No manifest change or production fix selected.",
+      "disposition": "PR46 remains held; failed CI not rerun."
     }
   ]
 }
