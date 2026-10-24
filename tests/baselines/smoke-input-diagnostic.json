@@ -1,0 +1,67 @@
+{
+  "issues": [
+    47,
+    48
+  ],
+  "status": "Prepared authorized CI diagnostic; no merge evidence or product fix",
+  "cases": [
+    {
+      "case": "main",
+      "source": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+      "harness": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+      "bypassIssue11": true
+    },
+    {
+      "case": "pr46-product-main-harness",
+      "source": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+      "harness": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+      "bypassIssue11": true
+    },
+    {
+      "case": "pr46-original-harness",
+      "source": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+      "harness": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+      "bypassIssue11": false
+    }
+  ],
+  "runtime": {
+    "playwright": "1.64.0",
+    "originalFailingCiBrowser": "156.0.8078.4",
+    "renderer": "Actual renderer recorded per job"
+  },
+  "preserved": {
+    "productionFiles": true,
+    "fallbackLogic": true,
+    "selectionWaitMs": 600,
+    "clickabilityWaitMs": 30000,
+    "acceptedFailureManifest": true,
+    "failedPr46RunNotRetried": 39694044396,
+    "newAssertionDeadlines": []
+  },
+  "recordings": [
+    "Native capture/bubble/post-event task with real unmodified clock and current app clock",
+    "Pointer capture and down pointers; actual canvas capture, focus, mode, Build state and selection",
+    "Expected pick and hit stack before click; exact fallback pre-repair and post-repair state",
+    "Fusion Build-button before/failure hit stacks and ancestor layout",
+    "Dynamic assertion checkpoints after each repair and within its named fixture",
+    "Dropped-event counts and blocked prerequisites; no inference from absent data"
+  ],
+  "preflights": {
+    "fallbackInstrumentationPreservesOriginalAst": true,
+    "forcedShortfallRetainsExactlyOneNativeClickAndOneExistingRepair": true,
+    "readOnlyNativeObserver": {
+      "events": 6,
+      "defaultPrevented": false,
+      "pageErrors": []
+    },
+    "mainPredicates": 237,
+    "candidatePredicates": 240
+  },
+  "collectorFiles": {
+    "tests/e2e/smoke_input_diagnostic.py": "2af3316a71771475aefe3429942d86f8864a7d2d5792d6a4bb7326ed2b1e28f5",
+    "tests/e2e/smoke_input_probe.js": "f0736f6155c2139bacb401fb66825e3f5d046480728382199bea987d60fe1d00",
+    "tools/diagnostics/instrument_smoke_predicates.cjs": "2ccb0761a223ae2b629771b3bd577c37818075af2376f996f7805402562d78d1"
+  },
+  "sharedCauseDisposition": "Pending measured input routes/state; correlation alone does not establish one product defect.",
+  "fixDisposition": "Keep repair in place until47 understood. Do not implement43 or a replacement600ms policy."
+}

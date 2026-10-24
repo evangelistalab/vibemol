@@ -405,7 +405,36 @@
         "baseline": "tests/baselines/smoke-region-diagnostic.json"
       },
       "classification": "Not reproduced on unchanged main locally; neither pre-existence nor PR46 regression established. Original failure was CI Chromium156; local diagnostic Chromium145. Existing600ms selection-fixture fallback is disclosed separately. No manifest change or production fix selected.",
-      "disposition": "PR46 remains held; failed CI not rerun."
+      "disposition": "PR46 remains held; failed CI not rerun.",
+      "sharedCauseWith48": "Hypothesis under CI measurement; no classification from co-occurrence alone."
+    }
+  ],
+  "openHarnessDefects": [
+    {
+      "id": "smoke-selection-state-repair-coverage-hole",
+      "issue": 48,
+      "url": "https://github.com/evangelistalab/vibemol/issues/48",
+      "status": "open; coverage hole established, input-miss cause unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "helper": "click_atom_to_select",
+      "mainHelperWaitLine": 1245,
+      "mainObservedCallerLine": 4830,
+      "actualSelectionCount": 0,
+      "expectedSelectionCount": 1,
+      "existingWaitMs": 600,
+      "repair": "VibeMolTesting.setEditSelectionIndices",
+      "coverage": "Assertions after repair cannot establish success of the original native click. Count dynamic checkpoints and same-fixture checks separately.",
+      "priorTraceLowerBound": {
+        "downstreamAssertionCheckpoints": 114,
+        "sameFixtureCheckpoints": 23,
+        "definition": "102 wait calls +8 Python asserts +3 explicit failure guards +final runtime guard; excludes additional nested helper/clickability guards. CI collector counts those too."
+      },
+      "fixDeferredUntilIssue47Understood": true,
+      "failLoudFixNotImplemented": true,
+      "timingPolicy": "600ms remains unchanged for evidence. Future policy belongs in shared helper43, held pending42 classification; no new threshold.",
+      "diagnostic": "tests/baselines/smoke-input-diagnostic.json"
     }
   ]
 }

@@ -270,5 +270,13 @@
   "conclusion": "No positive pre-existence reproduction: focused and full original main Smoke both passed locally with only the two authorized idle checks bypassed. PR46 CI finding47 remains unclassified. Do not infer zero latent CI defects or a product regression from this local pass; runtime and harness differ. No fix or manifest change selected.",
   "rawArtifactDirectory": "out/test-artifacts/issue47/",
   "collectorPreludeError": "A collector metadata error before any Fusion statement ran is preserved separately and excluded from application findings.",
-  "looksSuiteCoverage": "Not run: the Smoke region checks do not establish completion of either Looks material-family path."
+  "looksSuiteCoverage": "Not run: the Smoke region checks do not establish completion of either Looks material-family path.",
+  "coverageQualification": {
+    "issue": 48,
+    "clickPathValidatedAfterProgrammaticRepair": false,
+    "priorRecordedCheckpointLowerBound": 114,
+    "sameFixtureCheckpointLowerBound": 23,
+    "whyLowerBound": "The original census recorded all waits and main statements but not every nested Python/clickability guard; the CI input collector adds those counters.",
+    "noNewThreshold": true
+  }
 }
