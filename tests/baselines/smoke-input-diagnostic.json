@@ -58,8 +58,8 @@
     "candidatePredicates": 240
   },
   "collectorFiles": {
-    "tests/e2e/smoke_input_diagnostic.py": "d7d3d3b72e4eeb09732496dd54b1dfadfe549289a68ab82714c48dbd1a493704",
-    "tests/e2e/smoke_input_probe.js": "f0736f6155c2139bacb401fb66825e3f5d046480728382199bea987d60fe1d00",
+    "tests/e2e/smoke_input_diagnostic.py": "d9abf06cfae10c39d1c7051d5bde6451825bf201cea26de089d3939319376bf5",
+    "tests/e2e/smoke_input_probe.js": "1112c4d0d9929b2ae0c5df1ae8e28b8d80a23f74db021123a0c5fa3f29fb503d",
     "tools/diagnostics/instrument_smoke_predicates.cjs": "2ccb0761a223ae2b629771b3bd577c37818075af2376f996f7805402562d78d1"
   },
   "sharedCauseDisposition": "Pending measured input routes/state; correlation alone does not establish one product defect.",
@@ -91,5 +91,13 @@
     "nativeNavigation": "After a recorded failure with verified is-auto-hidden/pointer-events:none, use existing / shortcut and original helper to continue. Save original failure screenshot/HTML first.",
     "fallbackAndDeadlinesUnchanged": true,
     "notAnOrdinaryGateOrRetryOf40129183912": true
+  },
+  "regionalMeasurement": {
+    "scope": "Original first video-export setup through final runtime check, with original trajectory fixture seeded via public loader. Earlier unrelated Smoke prefix excluded.",
+    "reason": "Full-prefix continuation main/own controls hit a later molecule-ghost predicate; the original4830/Fusion pair needs a bounded regional entry.",
+    "keepOriginalAssertionsAndFallback": true,
+    "newAssertionDeadlines": [],
+    "additionalObservation": "All pointer movement/enter/leave and actual hit-at-point are recorded, plus empty-point finder return values; needed before diagnosing the new ghost precondition.",
+    "interpretation": "Separate regional-context evidence, never summed with other contexts as one full-run proof."
   }
 }

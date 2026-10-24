@@ -186,6 +186,9 @@ class Page:
         writes=isinstance(expression,str) and 'setEditSelectionIndices' in expression
         if writes:self.probe.emit('selection-api-write-before',callsite=self.probe.callsite(),requested=args,state=self.probe.snapshot())
         result=self.raw.evaluate(expression,*args,**kwargs)
+        if isinstance(expression,str) and 'onCanvas' in expression and 'pickEditHitAtClient' in expression:
+            self.probe.emit('empty-point-candidate',candidate=args,predicateReturn=result,
+                            laterSnapshot=self.probe.snapshot(args[0] if args else None))
         if writes:self.probe.emit('selection-api-write-after',callsite=self.probe.callsite(),state=self.probe.snapshot())
         if writes and self.probe.pending_fallback is None and re.search(r'setEditSelectionIndices\(\[0(?:,\s*1)?\]\)',expression) and any(f['function']=='select_two_fixture_atoms' for f in self.probe.callsite()):
             repair=dict(id=len(self.probe.repairs)+1,case=self.probe.case,mainLine=self.probe.line,
@@ -217,6 +220,8 @@ def main():
     parser.add_argument('--prepare-only',action='store_true')
     parser.add_argument('--reveal-auto-hidden',action='store_true',
                         help='After preserving a launcher failure, use the existing / shortcut to continue diagnosis; never merge evidence')
+    parser.add_argument('--video-region-only',action='store_true',
+                        help='Seed the original trajectory fixture and execute the original export/post-export region, excluding unrelated prefix cases')
     args=parser.parse_args()
     out=Path(os.environ['VIBEMOL_TEST_ARTIFACT_DIR']).resolve();out.mkdir(parents=True,exist_ok=True)
     source_file=args.harness_root.resolve()/'tests/e2e/smoke.py'
@@ -289,6 +294,10 @@ def main():
     body=next(n for n in owner.body if isinstance(n,ast.Try)).body
     stop_index=next(i for i,n in enumerate(body) if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and isinstance(n.value.func,ast.Attribute) and ast.unparse(n.value.func)=='browser.close')
     selected=body[:stop_index]
+    if args.video_region_only:
+        start=next(i for i,n in enumerate(selected) if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call)
+                   and isinstance(n.value.func,ast.Name) and n.value.func.id=='install_trajectory_video_export_stubs')
+        selected=selected[start:]
     page_errors=[];console_errors=[];executed=[];blocked=[];skip_case=False
     from playwright.sync_api import sync_playwright
     import importlib.metadata
@@ -302,6 +311,19 @@ def main():
         raw.on('console',lambda m:console_errors.append(m.text) if m.type=='error' else None)
         namespace.update(page=page,page_errors=page_errors,console_errors=console_errors,base_url=url,browser=browser)
         try:
+            if args.video_region_only:
+                probe.case='diagnostic-region-setup'
+                raw.goto(url+'?workspaceLab=0',wait_until='networkidle')
+                namespace['wait_for_ready'](page)
+                namespace['record_renderer'](page,out,'smoke-input-region')
+                text=namespace['build_fixture_trajectory_xyz']();namespace['trajectory_xyz_text']=text
+                raw.evaluate('async text=>VibeMolEmbed.loadFiles([{name:"dynamic-traj.xyz",text}])',text)
+                raw.wait_for_function("()=>!document.getElementById('trajectorySaveVideoBtn').disabled")
+                if raw.locator('#trajectoryPanel').get_attribute('aria-hidden')!='false':raw.keyboard.press('t')
+                raw.wait_for_function("()=>document.getElementById('trajectoryPanel').getAttribute('aria-hidden')==='false'")
+                probe.emit('diagnostic-region-setup',firstOriginalLine=selected[0].lineno,
+                           fixture='Original build_fixture_trajectory_xyz; native loader and panel shortcut; default existing readiness deadlines')
+                probe.case='trajectory smoke';probe.scope()
             for n in selected:
                 probe.line=n.lineno
                 stage=isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and isinstance(n.value.func,ast.Name) and n.value.func.id=='log_step'
@@ -343,6 +365,7 @@ def main():
                 unattemptedStatements=[n.lineno for n in selected if n.lineno not in set(executed+[b['line'] for b in blocked]+[f['mainLine'] for f in probe.failures])],
                 diagnosticNavigationBlocks=probe.navigation_blocks,
                 revealAutoHiddenEnabled=args.reveal_auto_hidden,
+                videoRegionOnly=args.video_region_only,
                 failures=probe.failures,selectionAttempts=probe.attempts,repairs=probe.repairs,
                 assertions=probe.assertions,coverage=probe.coverage(),bypasses=bypasses,
                 pageErrors=page_errors,consoleErrors=console_errors,droppedBrowserEvents=probe.dropped)

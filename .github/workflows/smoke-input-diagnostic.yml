@@ -79,7 +79,7 @@ jobs:
         run: |
           python tests/e2e/smoke_input_diagnostic.py --source-root out/input-source --harness-root "$HARNESS_ROOT" --source-ref "$SOURCE_REF" --harness-ref "$HARNESS_REF" --case "$DIAGNOSTIC_CASE" --prepare-only
           node tools/diagnostics/instrument_smoke_predicates.cjs "$VIBEMOL_TEST_ARTIFACT_DIR/predicates.json" "$VIBEMOL_TEST_ARTIFACT_DIR/instrumented-predicates.json"
-          python tests/e2e/smoke_input_diagnostic.py --source-root out/input-source --harness-root "$HARNESS_ROOT" --source-ref "$SOURCE_REF" --harness-ref "$HARNESS_REF" --case "$DIAGNOSTIC_CASE" $BYPASS_ISSUE11 --reveal-auto-hidden
+          python tests/e2e/smoke_input_diagnostic.py --source-root out/input-source --harness-root "$HARNESS_ROOT" --source-ref "$SOURCE_REF" --harness-ref "$HARNESS_REF" --case "$DIAGNOSTIC_CASE" $BYPASS_ISSUE11 --reveal-auto-hidden --video-region-only
       - name: Preserve all diagnostic evidence, including failures
         if: always()
         uses: actions/upload-artifact@v4

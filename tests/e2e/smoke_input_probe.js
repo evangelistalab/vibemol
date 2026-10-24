@@ -11,6 +11,7 @@
       selection: api?.getEditSelectionIndices?.(), fusePreview: api?.isFuseRingPreviewActive?.(),
       focus: node(document.activeElement), pointerLock: node(document.pointerLockElement),
       documentVisibility:document.visibilityState, documentHasFocus:document.hasFocus(),
+      menuAutoHidden:document.getElementById('displayWindowAdaptiveMenu')?.classList.contains('is-auto-hidden'),
       pointerCapture: [...captures.entries()], downPointers: [...pointers.entries()],
       canvasCapture:[...new Set([...captures.keys(),...pointers.keys()])].map(id=>({id,captured:canvas?.hasPointerCapture(id)})),
       clockHeld: !!window.__videoClockGate?.held};
@@ -25,19 +26,19 @@
     if (event.type === 'lostpointercapture') captures.delete(event.pointerId);
     if (event.type === 'pointerdown') pointers.set(event.pointerId, {buttons: event.buttons, target: node(event.target)});
     if (event.type === 'pointerup' || event.type === 'pointercancel') pointers.delete(event.pointerId);
-    if (event.type === 'pointermove' && !event.buttons) return;
     const detail = {phase, type: event.type, target: node(event.target), path: event.composedPath().slice(0,8).map(node),
       x: event.clientX, y: event.clientY, pointerId: event.pointerId, button: event.button, buttons: event.buttons,
       pointerType:event.pointerType, primary:event.isPrimary, detail:event.detail,
       key: event.key, repeat: event.repeat, defaultPrevented: event.defaultPrevented,
       eventTimeStamp: event.timeStamp, state: state()};
+    if(Number.isFinite(event.clientX)&&Number.isFinite(event.clientY))detail.hitAtPoint=node(document.elementFromPoint(event.clientX,event.clientY));
     const row = record('native-event', detail);
     // A later task is labelled as such, never presented as the event-time state.
     if (phase === 'capture' && ['pointerdown','pointerup','click','pointercancel'].includes(event.type)) {
       setTimeout(() => record('post-event-task', {eventSequence: row.sequence, type: event.type, state: state()}), 0);
     }
   };
-  for (const type of ['pointerdown','pointerup','pointermove','pointercancel','gotpointercapture','lostpointercapture','click','keydown','keyup']) {
+  for (const type of ['pointerdown','pointerup','pointermove','pointerover','pointerout','pointerenter','pointerleave','pointercancel','gotpointercapture','lostpointercapture','click','keydown','keyup']) {
     window.addEventListener(type, observe('capture'), true);
     window.addEventListener(type, observe('bubble'), false);
   }
