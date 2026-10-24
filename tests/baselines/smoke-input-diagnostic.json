@@ -3,7 +3,7 @@
     47,
     48
   ],
-  "status": "Prepared authorized CI diagnostic; no merge evidence or product fix",
+  "status": "First diagnostic collected; earlier launcher blocks original4830/Fusion pair. Explicit native-shortcut continuation prepared.",
   "cases": [
     {
       "case": "main",
@@ -58,10 +58,38 @@
     "candidatePredicates": 240
   },
   "collectorFiles": {
-    "tests/e2e/smoke_input_diagnostic.py": "2af3316a71771475aefe3429942d86f8864a7d2d5792d6a4bb7326ed2b1e28f5",
+    "tests/e2e/smoke_input_diagnostic.py": "d7d3d3b72e4eeb09732496dd54b1dfadfe549289a68ab82714c48dbd1a493704",
     "tests/e2e/smoke_input_probe.js": "f0736f6155c2139bacb401fb66825e3f5d046480728382199bea987d60fe1d00",
     "tools/diagnostics/instrument_smoke_predicates.cjs": "2ccb0761a223ae2b629771b3bd577c37818075af2376f996f7805402562d78d1"
   },
   "sharedCauseDisposition": "Pending measured input routes/state; correlation alone does not establish one product defect.",
-  "fixDisposition": "Keep repair in place until47 understood. Do not implement43 or a replacement600ms policy."
+  "fixDisposition": "Keep repair in place until47 understood. Do not implement43 or a replacement600ms policy.",
+  "firstCi": {
+    "runId": 40129183912,
+    "head": "036da9a89634ac03d1996e1adf7e38fdbec2059e",
+    "attempt": 1,
+    "controls": 3,
+    "playwright": "1.64.0",
+    "chromium": "156.0.8078.4",
+    "perControl": {
+      "primarySelectionRepairs": 7,
+      "directSelectTwoFixtureRepair": 1,
+      "firstRepairDownstreamAssertionsObservedBeforeStop": 62,
+      "firstRepairDistinctSites": 32,
+      "firstRepairSameFixtureAssertions": 17,
+      "buildBlockMainLine": 3546,
+      "buildBlockCandidateLine": 3549,
+      "parent": "adaptiveMenu is-auto-hidden",
+      "pointerEvents": "none"
+    },
+    "inputFinding": "All21 primary fallbacks follow correctly delivered Shift-clicks that toggle already-selected atom1 from[1] to[]. Helper assumes inclusion, then repairs state. No stuck pointer capture.",
+    "limit": "No original4830/Fusion live trace yet; all controls stop earlier. These counts are truncated at that stop."
+  },
+  "continuation": {
+    "changedDiagnosticOnly": true,
+    "preserveEveryOriginalLauncherFailure": true,
+    "nativeNavigation": "After a recorded failure with verified is-auto-hidden/pointer-events:none, use existing / shortcut and original helper to continue. Save original failure screenshot/HTML first.",
+    "fallbackAndDeadlinesUnchanged": true,
+    "notAnOrdinaryGateOrRetryOf40129183912": true
+  }
 }

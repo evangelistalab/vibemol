@@ -24,6 +24,7 @@ class Probe:
         self.case = 'setup'
         self.line = None
         self.assertions, self.repairs, self.failures, self.attempts = [], [], [], []
+        self.navigation_blocks = []
         self.active_selection = None
         self.pending_fallback = None
         self.sequence = 0
@@ -214,6 +215,8 @@ def main():
     parser.add_argument('--case',required=True)
     parser.add_argument('--bypass-issue11',action='store_true')
     parser.add_argument('--prepare-only',action='store_true')
+    parser.add_argument('--reveal-auto-hidden',action='store_true',
+                        help='After preserving a launcher failure, use the existing / shortcut to continue diagnosis; never merge evidence')
     args=parser.parse_args()
     out=Path(os.environ['VIBEMOL_TEST_ARTIFACT_DIR']).resolve();out.mkdir(parents=True,exist_ok=True)
     source_file=args.harness_root.resolve()/'tests/e2e/smoke.py'
@@ -253,7 +256,17 @@ def main():
         probe.scope('build');probe.flush();probe.emit('build-before',callsite=probe.callsite(),state=probe.snapshot())
         try:return original_build(page,**kwargs)
         except Exception as error:
-            probe.flush();probe.emit('build-failure',error=str(error),callsite=probe.callsite(),state=probe.snapshot());raise
+            probe.flush();state=probe.snapshot()
+            failure=probe.emit('build-failure',error=str(error),callsite=probe.callsite(),state=state)
+            hidden=state and any('is-auto-hidden' in (a.get('classes') or '') for a in state['buildAncestors']) and state['buildButton']['pointerEvents']=='none'
+            if not (args.reveal_auto_hidden and hidden):raise
+            record=dict(number=len(probe.navigation_blocks)+1,failure=failure,
+                        originalAssertionPassed=False,diagnosticOnly=True,recovery='existing / shortcut')
+            probe.navigation_blocks.append(record)
+            namespace['write_failure_artifacts'](page,out,'launcher-block-'+str(record['number']),page_errors,console_errors)
+            page.keyboard.press('/')
+            original_build(page,**kwargs)
+            probe.emit('diagnostic-navigation-recovery',record=record,state=probe.snapshot())
         finally:probe.flush();probe.emit('build-after',state=probe.snapshot());probe.scope()
     namespace['ensure_build_popover_open']=build
     def clickable(page,selector,timeout=30000):
@@ -326,6 +339,10 @@ def main():
                 fallbackLogicUnchanged=True,existingSelectionWaitMs=600,existingClickabilityWaitMs=30000,
                 newAssertionDeadlines=[],playwrightVersion=importlib.metadata.version('playwright'),browserVersion=browser.version,
                 elapsedSeconds=time.monotonic()-started,executedStatements=executed,blocked=blocked,
+                lastAttemptedLine=probe.line,
+                unattemptedStatements=[n.lineno for n in selected if n.lineno not in set(executed+[b['line'] for b in blocked]+[f['mainLine'] for f in probe.failures])],
+                diagnosticNavigationBlocks=probe.navigation_blocks,
+                revealAutoHiddenEnabled=args.reveal_auto_hidden,
                 failures=probe.failures,selectionAttempts=probe.attempts,repairs=probe.repairs,
                 assertions=probe.assertions,coverage=probe.coverage(),bypasses=bypasses,
                 pageErrors=page_errors,consoleErrors=console_errors,droppedBrowserEvents=probe.dropped)

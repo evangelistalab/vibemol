@@ -406,7 +406,17 @@
       },
       "classification": "Not reproduced on unchanged main locally; neither pre-existence nor PR46 regression established. Original failure was CI Chromium156; local diagnostic Chromium145. Existing600ms selection-fixture fallback is disclosed separately. No manifest change or production fix selected.",
       "disposition": "PR46 remains held; failed CI not rerun.",
-      "sharedCauseWith48": "Hypothesis under CI measurement; no classification from co-occurrence alone."
+      "sharedCauseWith48": "Hypothesis under CI measurement; no classification from co-occurrence alone.",
+      "firstCiDiagnostic": {
+        "run": 40129183912,
+        "earlierSameButtonInterceptionOnMainAndBothControls": true,
+        "earlierMainLine": 3546,
+        "earlierCandidateLine": 3549,
+        "actual": "Auto-hidden launcher parent disables pointer events; canvas is underneath. Original Fusion HTML has the same parent class.",
+        "notAStuckPointerCapture": true,
+        "fusionSectionNotReached": true,
+        "nativeShortcutContinuationPending": true
+      }
     }
   ],
   "openHarnessDefects": [
@@ -434,7 +444,22 @@
       "fixDeferredUntilIssue47Understood": true,
       "failLoudFixNotImplemented": true,
       "timingPolicy": "600ms remains unchanged for evidence. Future policy belongs in shared helper43, held pending42 classification; no new threshold.",
-      "diagnostic": "tests/baselines/smoke-input-diagnostic.json"
+      "diagnostic": "tests/baselines/smoke-input-diagnostic.json",
+      "firstCiObservation": {
+        "run": 40129183912,
+        "primaryRepairsAcrossControls": 21,
+        "nativeInputLanded": true,
+        "before": [
+          1
+        ],
+        "afterNativeShiftClick": [],
+        "afterRepair": [
+          1
+        ],
+        "correctProductToggle": true,
+        "original4830NotReached": true,
+        "repairRetained": true
+      }
     }
   ]
 }
