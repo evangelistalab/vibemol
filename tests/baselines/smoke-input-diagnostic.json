@@ -3,7 +3,7 @@
     47,
     48
   ],
-  "status": "First diagnostic collected; earlier launcher blocks original4830/Fusion pair. Explicit native-shortcut continuation prepared.",
+  "status": "Measured: original4830 fallback and exact Fusion switch both reproduced on unchanged main; shared product input-loss hypothesis refuted by different native event signatures. Fixes not implemented.",
   "cases": [
     {
       "case": "main",
@@ -62,7 +62,7 @@
     "tests/e2e/smoke_input_probe.js": "1112c4d0d9929b2ae0c5df1ae8e28b8d80a23f74db021123a0c5fa3f29fb503d",
     "tools/diagnostics/instrument_smoke_predicates.cjs": "2ccb0761a223ae2b629771b3bd577c37818075af2376f996f7805402562d78d1"
   },
-  "sharedCauseDisposition": "Pending measured input routes/state; correlation alone does not establish one product defect.",
+  "sharedCauseDisposition": "No shared product input-loss cause in the observed traces. Repeated Shift fallback receives canvas input and correctly toggles selection; original4830 click hits an overlaid Carboxyl row instead of canvas; Fusion targets an auto-hidden launcher with pointer-events:none. Common harness weakness is using geometric/leaf visibility without proving DOM hit eligibility.",
   "fixDisposition": "Keep repair in place until47 understood. Do not implement43 or a replacement600ms policy.",
   "firstCi": {
     "runId": 40129183912,
@@ -90,14 +90,463 @@
     "preserveEveryOriginalLauncherFailure": true,
     "nativeNavigation": "After a recorded failure with verified is-auto-hidden/pointer-events:none, use existing / shortcut and original helper to continue. Save original failure screenshot/HTML first.",
     "fallbackAndDeadlinesUnchanged": true,
-    "notAnOrdinaryGateOrRetryOf40129183912": true
+    "notAnOrdinaryGateOrRetryOf40129183912": true,
+    "completedRunId": 40130635514,
+    "controls": [
+      {
+        "role": "main",
+        "product": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "harness": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "lastAttemptedLine": 5514,
+        "unattemptedStatementCount": 0,
+        "repairCount": 9,
+        "originalAssertionCheckpoints": 694,
+        "rawAssertionCheckpoints": 696,
+        "excludedDiagnosticRecoveryChecks": 2,
+        "coverage": [
+          {
+            "repairId": 1,
+            "callerLine": 3366,
+            "case": "fragment cue Escape disarms Build, then clears selection",
+            "afterOriginalCheckpoints": 458,
+            "distinctOriginalSites": 227,
+            "sameFixtureOriginalCheckpoints": 17,
+            "passedOriginalCheckpoints": 441,
+            "kinds": {
+              "wait-predicate": 308,
+              "python-assertion": 139,
+              "clickability-guard": 11
+            }
+          },
+          {
+            "repairId": 9,
+            "callerLine": 4830,
+            "case": "fragment attach Smart on open-site ghost resolves to Append with open-site hint",
+            "afterOriginalCheckpoints": 140,
+            "distinctOriginalSites": 75,
+            "sameFixtureOriginalCheckpoints": 28,
+            "passedOriginalCheckpoints": 139,
+            "kinds": {
+              "wait-predicate": 100,
+              "python-assertion": 38,
+              "clickability-guard": 2
+            }
+          }
+        ],
+        "launcherBlocks": [
+          {
+            "callerLine": 4973,
+            "fusePreview": true,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          }
+        ],
+        "propagatedFailures": [
+          {
+            "line": 4403,
+            "case": "trajectory smoke",
+            "assertion": "download count actual3 expected2",
+            "error": "Trajectory close-during-record unexpectedly downloaded a file: {'downloads': [{'href': 'blob:trajectory-test-1', 'download': 'trajectory.webm'}, {'href': 'blob:trajectory-test-2', 'download': 'trajectory.webm'}, {'href': 'blob:trajectory-test-3', 'download': 'trajectory.webm'}], 'createdUrls': [{'href': 'blob:trajectory-test-1', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-2', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-3', 'size': 12, 'type': 'video/webm;codecs=vp9'}], 'recorderStarts': 3, 'recorderStops': 3, 'captureCalls': [{'width': 160, 'height': 90, 'fps': 12}, {'width': 784, 'height': 440, 'fps': 1}, {'width': 784, 'height': 440, 'fps': 1}]}"
+          },
+          {
+            "line": 4540,
+            "case": "vibration video export smoke",
+            "assertion": "download count actual3 expected2",
+            "error": "Vibration close-during-record unexpectedly downloaded a file: {'downloads': [{'href': 'blob:trajectory-test-1', 'download': 'vibration.webm'}, {'href': 'blob:trajectory-test-2', 'download': 'vibration.webm'}, {'href': 'blob:trajectory-test-3', 'download': 'vibration.webm'}], 'createdUrls': [{'href': 'blob:trajectory-test-1', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-2', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-3', 'size': 12, 'type': 'video/webm;codecs=vp9'}], 'recorderStarts': 3, 'recorderStops': 3, 'captureCalls': [{'width': 784, 'height': 440, 'fps': 120}, {'width': 784, 'height': 440, 'fps': 24}, {'width': 784, 'height': 440, 'fps': 24}]}"
+          }
+        ],
+        "zeroDroppedEvents": true,
+        "sourceClean": true,
+        "original4830Readback": {
+          "attempt": 25,
+          "callerLine": 4830,
+          "additive": false,
+          "point": {
+            "x": 696.649020802388,
+            "y": 549.973449539192
+          },
+          "expectedPick": {
+            "atomIndex": 1,
+            "bondSection": ""
+          },
+          "beforeSelection": [],
+          "atFallbackSelection": [],
+          "canvasHitStackBefore": [
+            "vm-catalog-list-name",
+            "BUTTON",
+            "editFragmentQuick",
+            "editAddFragmentPane",
+            "editBuildFragmentsHost",
+            "editBuildPaletteSection",
+            "editBuildPalette",
+            "editAdaptiveAddAtomPopover"
+          ],
+          "pointerCapture": [],
+          "downPointers": [],
+          "buildIntentAfterWrongClick": "add_fragment",
+          "fragmentAfterWrongClick": "carboxyl",
+          "nativeEventTypesAndPhases": [
+            "pointerdown:capture",
+            "pointerdown:bubble",
+            "pointerup:capture",
+            "pointerup:bubble",
+            "click:capture",
+            "click:bubble"
+          ],
+          "allNativeTargets": "SPAN.vm-catalog-list-name"
+        }
+      },
+      {
+        "role": "pr46-product-main-harness",
+        "product": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "harness": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "lastAttemptedLine": 5514,
+        "unattemptedStatementCount": 0,
+        "repairCount": 9,
+        "originalAssertionCheckpoints": 684,
+        "rawAssertionCheckpoints": 696,
+        "excludedDiagnosticRecoveryChecks": 12,
+        "coverage": [
+          {
+            "repairId": 1,
+            "callerLine": 3366,
+            "case": "fragment cue Escape disarms Build, then clears selection",
+            "afterOriginalCheckpoints": 448,
+            "distinctOriginalSites": 227,
+            "sameFixtureOriginalCheckpoints": 17,
+            "passedOriginalCheckpoints": 426,
+            "kinds": {
+              "wait-predicate": 298,
+              "python-assertion": 139,
+              "clickability-guard": 11
+            }
+          },
+          {
+            "repairId": 9,
+            "callerLine": 4830,
+            "case": "fragment attach Smart on open-site ghost resolves to Append with open-site hint",
+            "afterOriginalCheckpoints": 140,
+            "distinctOriginalSites": 75,
+            "sameFixtureOriginalCheckpoints": 28,
+            "passedOriginalCheckpoints": 139,
+            "kinds": {
+              "wait-predicate": 100,
+              "python-assertion": 38,
+              "clickability-guard": 2
+            }
+          }
+        ],
+        "launcherBlocks": [
+          {
+            "callerLine": 3546,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3567,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3602,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3647,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3666,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 4973,
+            "fusePreview": true,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          }
+        ],
+        "propagatedFailures": [
+          {
+            "line": 4403,
+            "case": "trajectory smoke",
+            "assertion": "download count actual3 expected2",
+            "error": "Trajectory close-during-record unexpectedly downloaded a file: {'downloads': [{'href': 'blob:trajectory-test-1', 'download': 'trajectory.webm'}, {'href': 'blob:trajectory-test-2', 'download': 'trajectory.webm'}, {'href': 'blob:trajectory-test-3', 'download': 'trajectory.webm'}], 'createdUrls': [{'href': 'blob:trajectory-test-1', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-2', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-3', 'size': 12, 'type': 'video/webm;codecs=vp9'}], 'recorderStarts': 3, 'recorderStops': 3, 'captureCalls': [{'width': 160, 'height': 90, 'fps': 12}, {'width': 784, 'height': 440, 'fps': 1}, {'width': 784, 'height': 440, 'fps': 1}]}"
+          },
+          {
+            "line": 4540,
+            "case": "vibration video export smoke",
+            "assertion": "download count actual3 expected2",
+            "error": "Vibration close-during-record unexpectedly downloaded a file: {'downloads': [{'href': 'blob:trajectory-test-1', 'download': 'vibration.webm'}, {'href': 'blob:trajectory-test-2', 'download': 'vibration.webm'}, {'href': 'blob:trajectory-test-3', 'download': 'vibration.webm'}], 'createdUrls': [{'href': 'blob:trajectory-test-1', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-2', 'size': 12, 'type': 'video/webm;codecs=vp9'}, {'href': 'blob:trajectory-test-3', 'size': 12, 'type': 'video/webm;codecs=vp9'}], 'recorderStarts': 3, 'recorderStops': 3, 'captureCalls': [{'width': 784, 'height': 440, 'fps': 120}, {'width': 784, 'height': 440, 'fps': 24}, {'width': 784, 'height': 440, 'fps': 24}]}"
+          }
+        ],
+        "zeroDroppedEvents": true,
+        "sourceClean": true,
+        "original4830Readback": {
+          "attempt": 25,
+          "callerLine": 4830,
+          "additive": false,
+          "point": {
+            "x": 696.6490208023879,
+            "y": 549.973449539192
+          },
+          "expectedPick": {
+            "atomIndex": 1,
+            "bondSection": ""
+          },
+          "beforeSelection": [],
+          "atFallbackSelection": [],
+          "canvasHitStackBefore": [
+            "vm-catalog-list-name",
+            "BUTTON",
+            "editFragmentQuick",
+            "editAddFragmentPane",
+            "editBuildFragmentsHost",
+            "editBuildPaletteSection",
+            "editBuildPalette",
+            "editAdaptiveAddAtomPopover"
+          ],
+          "pointerCapture": [],
+          "downPointers": [],
+          "buildIntentAfterWrongClick": "add_fragment",
+          "fragmentAfterWrongClick": "carboxyl",
+          "nativeEventTypesAndPhases": [
+            "pointerdown:capture",
+            "pointerdown:bubble",
+            "pointerup:capture",
+            "pointerup:bubble",
+            "click:capture",
+            "click:bubble"
+          ],
+          "allNativeTargets": "SPAN.vm-catalog-list-name"
+        }
+      },
+      {
+        "role": "pr46-original-harness",
+        "product": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "harness": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "lastAttemptedLine": 3688,
+        "unattemptedStatementCount": 511,
+        "repairCount": 8,
+        "originalAssertionCheckpoints": 319,
+        "rawAssertionCheckpoints": 329,
+        "excludedDiagnosticRecoveryChecks": 10,
+        "coverage": [
+          {
+            "repairId": 1,
+            "callerLine": 3369,
+            "case": "fragment cue Escape disarms Build, then clears selection",
+            "afterOriginalCheckpoints": 83,
+            "distinctOriginalSites": 45,
+            "sameFixtureOriginalCheckpoints": 17,
+            "passedOriginalCheckpoints": 64,
+            "kinds": {
+              "wait-predicate": 64,
+              "python-assertion": 13,
+              "clickability-guard": 6
+            }
+          },
+          {
+            "repairId": 8,
+            "callerLine": 3369,
+            "case": "fragment cue Escape disarms Build, then clears selection",
+            "afterOriginalCheckpoints": 70,
+            "distinctOriginalSites": 45,
+            "sameFixtureOriginalCheckpoints": 4,
+            "passedOriginalCheckpoints": 64,
+            "kinds": {
+              "wait-predicate": 51,
+              "python-assertion": 13,
+              "clickability-guard": 6
+            }
+          }
+        ],
+        "launcherBlocks": [
+          {
+            "callerLine": 3549,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3570,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3605,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3650,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          },
+          {
+            "callerLine": 3669,
+            "fusePreview": false,
+            "pointerEvents": "none",
+            "hit": "canvas",
+            "pointerCapture": []
+          }
+        ],
+        "propagatedFailures": [
+          {
+            "line": 3688,
+            "case": "add molecule smoke",
+            "assertion": "ghostKind actual empty expected molecule; previewVisible actualfalse expectedtrue",
+            "error": "Page.wait_for_function: Timeout 30000ms exceeded."
+          }
+        ],
+        "zeroDroppedEvents": true,
+        "sourceClean": true
+      }
+    ]
   },
   "regionalMeasurement": {
     "scope": "Original first video-export setup through final runtime check, with original trajectory fixture seeded via public loader. Earlier unrelated Smoke prefix excluded.",
-    "reason": "Full-prefix continuation main/own controls hit a later molecule-ghost predicate; the original4830/Fusion pair needs a bounded regional entry.",
+    "reason": "Attempt to bypass unrelated prefix molecule-ghost stop in own-harness control; full-prefix main and product/mainharness controls separately completed both original target sites.",
     "keepOriginalAssertionsAndFallback": true,
     "newAssertionDeadlines": [],
     "additionalObservation": "All pointer movement/enter/leave and actual hit-at-point are recorded, plus empty-point finder return values; needed before diagnosing the new ghost precondition.",
-    "interpretation": "Separate regional-context evidence, never summed with other contexts as one full-run proof."
-  }
+    "interpretation": "Separate regional-context evidence, never summed with other contexts as one full-run proof.",
+    "runId": 40132402681,
+    "outcome": "No target coverage in any control; collector setup omitted original frame-2 positioning. First post-export restoration expects2/2 but actual frame1/2. Collector-context failure, not a product finding. Not retried.",
+    "lastMainLine": 4356,
+    "lastCandidateLine": 4359,
+    "unattemptedStatementsMain": 316,
+    "unattemptedStatementsCandidate": 328
+  },
+  "coverageDefinition": "Dynamic original wait invocations, Python asserts/explicit failure guards and explicit clickability guards after repair; poll iterations are not separate checks. Extra native-shortcut recovery checks are excluded. Distinct-site count is separate. Subsequent sections do not prove the repaired native click.",
+  "counts": {
+    "original4830PerCompleteControl": {
+      "downstreamOriginalCheckpoints": 140,
+      "distinctOriginalSites": 75,
+      "sameFixtureOriginalCheckpoints": 28,
+      "passedOriginalCheckpoints": 139,
+      "kinds": {
+        "waitPredicates": 100,
+        "pythonAssertionsOrFailureGuards": 38,
+        "clickabilityGuards": 2
+      },
+      "excludedExtraRecoveryChecks": 2
+    },
+    "firstRepairOnMain": {
+      "downstreamOriginalCheckpoints": 458,
+      "distinctOriginalSites": 227,
+      "sameFixtureOriginalCheckpoints": 17
+    },
+    "meaning": "Later checks cannot establish the repaired native click. Counts are invocations and separate distinct sites, not a claim that every later section depends on the same selection. Original600ms check is unchanged."
+  },
+  "mechanisms": {
+    "shiftFallback": {
+      "observedIn": "All three controls in40129183912 and40130635514",
+      "wantedLeftAtom": 0,
+      "firstGeometricPick": 1,
+      "selectionBeforeAdditiveClick": [
+        1
+      ],
+      "selectionAfterNativePointerup": [],
+      "selectionAfterRepair": [
+        1
+      ],
+      "pointerdownUpClickReachCanvas": true,
+      "cause": "Two-atom helper validates cardinality rather than atom identity, then repeatedly Shift-clicks already-selected atom1. Product toggle is correct; inclusion expectation and repair conceal it.",
+      "productContract": "assets/app/js/edit-tools.js additive selection toggles existing members."
+    },
+    "original4830": {
+      "observedIn": "Main and PR46product/mainharness controls40130635514",
+      "before": [],
+      "expected": [
+        1
+      ],
+      "afterNativeClick": [],
+      "afterRepair": [
+        1
+      ],
+      "nativeTarget": ".vm-catalog-list-name under #editFragmentQuick inside #editAdaptiveAddAtomPopover",
+      "actualClick": "Carboxyl catalog entry; arms add_fragment rather than selecting an atom",
+      "geometricPickIgnoresDomOverlay": true,
+      "stuckPointerCapture": false
+    },
+    "fusion47": {
+      "observedIn": "Exact original Fusion-to-Methyl switch on unchangedmain and PR46product/mainharness40130635514",
+      "mainLine": 4973,
+      "pr46Line": 4988,
+      "fusePreview": true,
+      "ancestorClass": "adaptiveMenu is-auto-hidden",
+      "buttonPointerEvents": "none",
+      "buttonPointHit": "canvas",
+      "stuckPointerCapture": false,
+      "source": "display-ui.css intentionally disables pointer events on auto-hidden launcher; helper checks leaf hidden/display and attempts trial click without revealing ancestor.",
+      "nativeContinuation": "Original failure retained, then existing / shortcut opens Build successfully.",
+      "classification": "Pre-existing harness launcher-readiness defect; not introduced by PR46 exporter change. Open/unfixed/not accepted."
+    }
+  },
+  "remainingFindings": [
+    {
+      "runId": 40130635514,
+      "controls": [
+        "main",
+        "pr46-product-main-harness"
+      ],
+      "lines": [
+        4403,
+        4540
+      ],
+      "assertions": "Trajectory and vibration close-during-record each expect2 downloads, actually3",
+      "classification": "Measured on unchangedmain; relation to completion-before-activation harness45 remains unproven by this collector. Not accepted, not repaired."
+    },
+    {
+      "runId": 40130635514,
+      "control": "pr46-original-harness",
+      "line": 3688,
+      "assertion": "Molecule ghost after movement: intent=add_molecule, ghostKind=\"\" versus molecule, catalogVoidPreviewVisible=false versus true",
+      "classification": "Unclassified prefix failure;511 later statements unattempted on this control. Separate main-harness controls reached both target sites. No regression conclusion from missing observations."
+    }
+  ],
+  "rawArchives": [
+    {
+      "runId": 40130635514,
+      "sha256": "a292e5ec287086d4f7344f3be3c75a2979aef6b1d30a12a21150f026ae11f3ef",
+      "bytes": 11631357,
+      "path": "out/test-artifacts/issue48/ci-40130635514/immutable-evidence.tar.gz"
+    },
+    {
+      "runId": 40132402681,
+      "sha256": "dc1ba9a929d0e623fed62e212cea38a4f69532eabb974fe9b4e2845169212ca3",
+      "bytes": 1306719,
+      "path": "out/test-artifacts/issue48/ci-40132402681/immutable-evidence.tar.gz"
+    }
+  ],
+  "assessmentScriptSha256": "8710afe0e3652c644f5988a614dd2e55046bbebfc6cd877a337246f4bc7cc547",
+  "currentCollectorFiles": {
+    "tests/e2e/smoke_input_diagnostic.py": "d9abf06cfae10c39d1c7051d5bde6451825bf201cea26de089d3939319376bf5",
+    "tests/e2e/smoke_input_probe.js": "1112c4d0d9929b2ae0c5df1ae8e28b8d80a23f74db021123a0c5fa3f29fb503d",
+    "tools/diagnostics/instrument_smoke_predicates.cjs": "2ccb0761a223ae2b629771b3bd577c37818075af2376f996f7805402562d78d1"
+  },
+  "disposition": "PR46held at162a11f; failed39694044396not retried. No production change, fallback removal, threshold/helper43 implementation or manifest change. Main/control diagnostic assertions remain failures. Await human disposition from measured region findings."
 }
