@@ -1,0 +1,425 @@
+{
+  "pr": 49,
+  "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+  "base": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+  "status": "held; first complete ordinary gate miss",
+  "issue": 50,
+  "issueUrl": "https://github.com/evangelistalab/vibemol/issues/50",
+  "ordinary": {
+    "runId": 40138904806,
+    "counts": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "all37Once": true,
+    "accepted": false,
+    "failureWorkflowKeys": [
+      {
+        "suite": "tests/e2e/axis_gizmo.py",
+        "workflow": {
+          "id": "escape-canvas-focus"
+        }
+      },
+      {
+        "suite": "tests/e2e/smoke.py",
+        "workflow": null
+      },
+      {
+        "suite": "tests/e2e/mode_consistency.py",
+        "workflow": {
+          "id": "coordinates-delete-selection-card"
+        }
+      }
+    ],
+    "selection": {
+      "before": [],
+      "atom": 0,
+      "additive": false,
+      "actual": [
+        0
+      ],
+      "expected": [
+        0
+      ]
+    },
+    "callerLine": 3539,
+    "helperLine": 1291,
+    "waitMs": 600,
+    "playwright": "1.64.1",
+    "chromium": "156.0.8078.4",
+    "workflowSeconds": 1992.0,
+    "workflowMinutes": 33.2,
+    "looks": {
+      "suiteCompleted": true,
+      "seconds": 1935.04,
+      "paths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "timeoutObserved": false,
+      "coverage": "both completed"
+    },
+    "units": {
+      "js": [
+        "433"
+      ],
+      "python": [
+        "70"
+      ]
+    },
+    "construction": "passed",
+    "characterization": "102twice; exact serialized repeat; unchanged comparator",
+    "identityContexts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 408,
+            "DOM replacement": 5353,
+            "session restore": 1,
+            "panel transition": 1115
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 5,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 4,
+          "observedModeChecks": 404
+        }
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 408,
+            "DOM replacement": 5468,
+            "session restore": 1,
+            "panel transition": 1109
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 5,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 4,
+          "observedModeChecks": 404
+        }
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 9,
+            "DOM replacement": 3282,
+            "session restore": 1,
+            "panel transition": 830
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 4,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 3,
+          "observedModeChecks": 6
+        }
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 9,
+            "DOM replacement": 3398,
+            "session restore": 1,
+            "panel transition": 816
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 4,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 3,
+          "observedModeChecks": 6
+        }
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 412,
+            "DOM replacement": 5651,
+            "session restore": 1,
+            "panel transition": 1149
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 5,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 4,
+          "observedModeChecks": 408
+        }
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 408,
+            "DOM replacement": 5472,
+            "session restore": 1,
+            "panel transition": 1112
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 39,
+            "mode switch": 5,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 4,
+          "observedModeChecks": 404
+        }
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 9,
+            "DOM replacement": 3289,
+            "session restore": 1,
+            "panel transition": 843
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 4,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 3,
+          "observedModeChecks": 6
+        }
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "exercise": {
+          "checksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 9,
+            "DOM replacement": 3400,
+            "session restore": 1,
+            "panel transition": 827
+          },
+          "minimumChecksByReason": {
+            "presented checkpoint": 32,
+            "mode switch": 4,
+            "panel transition": 2,
+            "DOM replacement": 1,
+            "session restore": 1
+          },
+          "explicitModeChecks": 3,
+          "observedModeChecks": 6
+        }
+      }
+    ],
+    "cache": {
+      "restoreHits": 0,
+      "restoreMisses": 8,
+      "hitJobs": [],
+      "missJobs": [
+        "Browser suites (balanced-1)",
+        "Browser suites (balanced-2)",
+        "Browser suites (balanced-3)",
+        "Browser suites (looks)",
+        "Browser suites (smoke)",
+        "Characterization (1)",
+        "Characterization (2)",
+        "WebKit Properties interactions"
+      ],
+      "playwrightVersions": [
+        "1.64.1"
+      ]
+    }
+  },
+  "diagnostic": {
+    "runId": 40138888119,
+    "status": "diagnostic incomplete; not accepted and not ordinary merge evidence",
+    "playwright": "1.64.0",
+    "chromium": "156.0.8078.4",
+    "nativeSelections": 20,
+    "repairs": 0,
+    "launcherRecoveries": 0,
+    "scopedReadbacks": [
+      {
+        "case": "fragment cue Escape disarms Build, then clears selection",
+        "passedCheckpoints": 15,
+        "nativeSelectionAttempts": 2,
+        "callerLines": [
+          3370,
+          3370
+        ]
+      },
+      {
+        "case": "fragment attach Smart on open-site ghost resolves to Append with open-site hint",
+        "passedCheckpoints": 44,
+        "nativeSelectionAttempts": 2,
+        "callerLines": [
+          4834,
+          4870
+        ]
+      },
+      {
+        "case": "clicking a bond with a non-fusion fragment leaves fuse preview inactive",
+        "passedCheckpoints": 9,
+        "nativeSelectionAttempts": 0,
+        "callerLines": []
+      },
+      {
+        "case": "grow-add can be followed immediately by atom selection",
+        "passedCheckpoints": 16,
+        "nativeSelectionAttempts": 1,
+        "callerLines": [
+          3539
+        ]
+      }
+    ],
+    "failedAssertions": 2,
+    "blockedStatements": 20,
+    "knownExporterFindings": [
+      {
+        "case": "trajectory smoke",
+        "line": 4407,
+        "actualDownloads": 3,
+        "expectedDownloads": 2
+      },
+      {
+        "case": "vibration video export smoke",
+        "line": 4544,
+        "actualDownloads": 3,
+        "expectedDownloads": 2
+      }
+    ],
+    "sameCase": {
+      "ordinaryRun": 40138904806,
+      "callerLine": 3539,
+      "helperLine": 1291,
+      "expected": [
+        0
+      ],
+      "ordinaryFinalReadback": [
+        0
+      ],
+      "ordinaryTimedOutMs": 600,
+      "diagnosticNativePointerupSelection": [
+        0
+      ],
+      "diagnosticPredicateReadback": [
+        0
+      ],
+      "diagnosticPointerupAtMs": 508027.9,
+      "diagnosticPredicateAtMs": 508297.9,
+      "diagnosticPointerupToPredicateMs": 270.0,
+      "limit": "This successful separate execution cannot establish when state changed or RAF polling ran in the ordinary failed occurrence. No long-task/deadline trace from that occurrence; mechanism remains unclassified."
+    }
+  },
+  "limit": "The ordinary failed occurrence has no last-poll/frame/long-task timeline. Matching final state does not locate the change relative to the600ms deadline. Diagnostic source matches, but Playwright versions differ, so no driver/timing mechanism or pure nondeterminism is classified.",
+  "disposition": {
+    "harnessRepairImplemented": true,
+    "productionChanges": false,
+    "selectionRepairRemoved": true,
+    "ordinaryGatePassed": false,
+    "diagnosticValidatorPassed": false,
+    "merge": false,
+    "pr46Rebased": false,
+    "pr46Head": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+    "newThreshold": false,
+    "retry": false,
+    "helper43": "design-only, pending42; not implemented"
+  },
+  "rawArchives": [
+    {
+      "runId": 40138904806,
+      "bytes": 89099211,
+      "sha256": "673942c3701c4ec3ab6e40ef4bac447f3743fb60bc461fc3b5244d3fa1a98507"
+    },
+    {
+      "runId": 40138888119,
+      "bytes": 1381418,
+      "sha256": "127ac921a86ddd6e95c87f6774a8ee966b3fb203862650f33196aaaec6f134c5"
+    }
+  ]
+}

@@ -368,6 +368,47 @@
         "noFurtherDiagnosticReplays": true
       },
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
+    },
+    {
+      "id": "smoke-grow-add-selection-deadline",
+      "issue": 50,
+      "url": "https://github.com/evangelistalab/vibemol/issues/50",
+      "status": "open; unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "workflow": "grow-add can be followed immediately by atom selection",
+      "ordinary": {
+        "runId": 40138904806,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "callerLine": 3539,
+        "helperLine": 1291,
+        "waitMs": 600,
+        "before": [],
+        "expected": [
+          0
+        ],
+        "finalActual": [
+          0
+        ],
+        "exception": "TimeoutError",
+        "playwright": "1.64.1"
+      },
+      "diagnostic": {
+        "runId": 40138888119,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "nativePointerupSelection": [
+          0
+        ],
+        "predicateReadback": [
+          0
+        ],
+        "pointerupToPredicateMilliseconds": 270,
+        "playwright": "1.64.0"
+      },
+      "classification": "The ordinary failed occurrence has no last-poll/frame/long-task timeline. Matching final state does not locate the change relative to the600ms deadline. Diagnostic source matches, but Playwright versions differ, so no driver/timing mechanism or pure nondeterminism is classified.",
+      "baseline": "tests/baselines/smoke-native-input-repair-stop.json",
+      "disposition": "PR49 andPR46 held; no retry, timeout/policy change or accepted-set change."
     }
   ],
   "openHarnessDefects": [
@@ -463,7 +504,13 @@
       },
       "sharedCauseWith47": "No shared product input-loss cause in the observed traces. Repeated Shift fallback receives canvas input and correctly toggles selection; original4830 click hits an overlaid Carboxyl row instead of canvas; Fusion targets an auto-hidden launcher with pointer-events:none. Common harness weakness is using geometric/leaf visibility without proving DOM hit eligibility.",
       "ciRun": 40130635514,
-      "fixDisposition": "No fix in this diagnostic; native fallback still repairs, failure evidence retained.47 mechanism now understood; PR46disposition and harness repair remain separate decisions."
+      "fixDisposition": "No fix in this diagnostic; native fallback still repairs, failure evidence retained.47 mechanism now understood; PR46disposition and harness repair remain separate decisions.",
+      "repairCandidate": {
+        "pr": 49,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "status": "held on separate unclassified50",
+        "baseline": "tests/baselines/smoke-native-input-repair-stop.json"
+      }
     },
     {
       "id": "smoke-build-fusion-phenyl-switch",
@@ -533,6 +580,12 @@
           "classification": "Pre-existing harness launcher-readiness defect; not introduced by PR46 exporter change. Open/unfixed/not accepted."
         },
         "baseline": "tests/baselines/smoke-input-diagnostic.json"
+      },
+      "repairCandidate": {
+        "pr": 49,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "status": "held on separate unclassified50",
+        "baseline": "tests/baselines/smoke-native-input-repair-stop.json"
       }
     }
   ]
