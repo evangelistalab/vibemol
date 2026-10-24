@@ -1,0 +1,64 @@
+{
+  "issues": [
+    47,
+    48
+  ],
+  "scope": "Harness only: native click preconditions, exact toggle semantics and no selection-state repair",
+  "diagnosticCitations": [
+    {
+      "runId": 40129183912,
+      "head": "036da9a89634ac03d1996e1adf7e38fdbec2059e"
+    },
+    {
+      "runId": 40130635514,
+      "head": "bf13c234825b9ede17e419863be38ee3228e7f93"
+    }
+  ],
+  "oldExpectationInvalidated": "Geometric picking and leaf hidden/display do not establish pointer eligibility. Shift-click toggles a selected atom rather than guaranteeing inclusion.",
+  "sourceControl": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+  "productionChanges": [],
+  "repairs": [
+    "Dismiss Build catalog before native atom selection; move pointer then assert canvas is topmost",
+    "Compute exact additive selection by symmetric difference against before-selection",
+    "Reveal auto-hidden launcher with native movement and require pointer eligibility before trial click",
+    "Remove click_atom_to_select repair and select_two_fixture_atoms nonempty selection injection; require requested atom identities"
+  ],
+  "timing": {
+    "existingSelectionWaitMs": 600,
+    "newThresholds": [],
+    "helper43": "Design-only; not implemented"
+  },
+  "oldRepairCoverage": {
+    "downstreamCheckpoints": 140,
+    "distinctSites": 75,
+    "sameFixture": 28
+  },
+  "standingDiagnostic": {
+    "workflow": ".github/workflows/smoke-input-diagnostic.yml",
+    "entry": "tests/e2e/smoke_input_diagnostic.py",
+    "validation": "tools/diagnostics/validate_smoke_input.py",
+    "ordinaryMergeGate": false,
+    "preservesAllOriginalAssertions": true,
+    "navigationRecoveryDisabledForRepairValidation": true,
+    "knownOtherFindings": "Two old close-during-record assertions actual3/expected2 remain explicitly failed diagnostic observations; never counted as ordinary passes",
+    "stop": "Any other failure, repair, navigation recovery, missing target case or incomplete execution fails input validation"
+  },
+  "mainGate": "34/3/37 with existing axis, mode and Smoke11 composition; PR46 later moves Smoke to must-pass separately",
+  "candidateVerification": "Own automatic CI plus frozen-head bypassed-input CI pending",
+  "localPreflight": {
+    "browser": "145.0.7632.6",
+    "autoHiddenLauncherRevealedNatively": true,
+    "openCatalogDismissed": true,
+    "twoNativeIdentities": [
+      0,
+      1
+    ],
+    "additiveToggleContract": "Existing edit-tools unit replace/add/toggle cases pass; synthetic selected-center experiment retained separately",
+    "forcedMissFailedWithoutRepair": true,
+    "forcedMissException": "TimeoutError('Page.wait_for_function: Timeout 600ms exceeded.')",
+    "fallbackHandlers": 0,
+    "pageErrors": []
+  },
+  "sourceAudit": "Only ensure_build_popover_open, click_atom_to_select and select_two_fixture_atoms ASTs differ; every other original Smoke function/assertion/top-level statement is exact. Production tree unchanged.",
+  "checks": "make check passed; existing unit suite passed (66Python), plus4 diagnostic validation contract tests passed"
+}
