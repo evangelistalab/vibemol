@@ -87,6 +87,24 @@
         "assets/app/js/trajectory-video.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue52 data-driven Escape owner",
+      "before": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/edit-tool-ui.js",
+        "assets/app/js/workbench.js",
+        "assets/app/js/axis-gizmo.js",
+        "assets/app/js/calculations-picker.js",
+        "assets/app/js/edit-ui.js",
+        "assets/app/js/properties-inspector.js",
+        "assets/app/js/style-studio.js",
+        "assets/app/js/scene-outliner.js",
+        "assets/app/js/trajectory-video.js",
+        "src/components/VmListPopover.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

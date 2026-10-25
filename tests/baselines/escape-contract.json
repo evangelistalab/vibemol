@@ -1,0 +1,283 @@
+{
+  "issue": 52,
+  "status": "candidate; gate composition authorization and own complete ordinary run required",
+  "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+  "contract": "docs/maintenance/axis-escape-contract.md",
+  "canonicalTables": [
+    "assets/app/js/app.js:ESCAPE_LADDER",
+    "assets/app/js/edit-tool-ui.js:EDIT_ESCAPE_LADDER"
+  ],
+  "levels": 7,
+  "editBranches": 3,
+  "modes": [
+    "display",
+    "measurement",
+    "edit",
+    "calculations"
+  ],
+  "origins": [
+    "axis",
+    "scene",
+    "control",
+    "field",
+    "filter"
+  ],
+  "levelModeOriginCases": 140,
+  "editStateCases": 160,
+  "repeatedPressSequences": 3,
+  "failureDoesNotFallThrough": true,
+  "providerCount": 31,
+  "providers": {
+    "draft.slider": [
+      "assets/app/js/app.js"
+    ],
+    "draft.atom-operator": [
+      "assets/app/js/app.js"
+    ],
+    "draft.molecule-operator": [
+      "assets/app/js/app.js"
+    ],
+    "figure.cancel": [
+      "assets/app/js/app.js"
+    ],
+    "help.close": [
+      "assets/app/js/app.js"
+    ],
+    "appearance-reset.close": [
+      "assets/app/js/app.js"
+    ],
+    "element-colors.close": [
+      "assets/app/js/app.js"
+    ],
+    "edit.perform": [
+      "assets/app/js/app.js"
+    ],
+    "studio.close": [
+      "assets/app/js/app.js"
+    ],
+    "legacy-window.close": [
+      "assets/app/js/app.js"
+    ],
+    "symmetry.cancel-preview": [
+      "assets/app/js/app.js"
+    ],
+    "mode.calculations-clear": [
+      "assets/app/js/app.js"
+    ],
+    "mode.calculations-exit": [
+      "assets/app/js/app.js"
+    ],
+    "mode.measure-clear": [
+      "assets/app/js/app.js"
+    ],
+    "mode.outliner-reset": [
+      "assets/app/js/app.js"
+    ],
+    "axis.focus-canvas": [
+      "assets/app/js/axis-gizmo.js"
+    ],
+    "calculations-picker.close": [
+      "assets/app/js/calculations-picker.js"
+    ],
+    "draft.selection-position": [
+      "assets/app/js/edit-ui.js"
+    ],
+    "panel.properties": [
+      "assets/app/js/properties-inspector.js"
+    ],
+    "draft.outliner-rename": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "menu.outliner": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "panel.arithmetic": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "panel.style-studio": [
+      "assets/app/js/style-studio.js"
+    ],
+    "activation.cancel": [
+      "assets/app/js/trajectory-video.js"
+    ],
+    "menu.overflow": [
+      "assets/app/js/workbench.js"
+    ],
+    "menu.panels": [
+      "assets/app/js/workbench.js"
+    ],
+    "menu.window-options": [
+      "assets/app/js/workbench.js"
+    ],
+    "focus.exit": [
+      "assets/app/js/workbench.js"
+    ],
+    "panel.workbench": [
+      "assets/app/js/workbench.js"
+    ],
+    "draft.list": [
+      "src/components/VmListPopover.js"
+    ],
+    "panel.list": [
+      "src/components/VmListPopover.js"
+    ]
+  },
+  "dependencies": {
+    "resolveEscapeDecision": {
+      "appClosureReads": [
+        "ESCAPE_LADDER"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 2,
+      "totalInputs": 3
+    },
+    "executeEscapeDecision": {
+      "appClosureReads": [],
+      "globalModuleReads": [],
+      "dataParameters": 2,
+      "totalInputs": 2
+    },
+    "hasVisibleEscapeModalTarget": {
+      "appClosureReads": [],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 1
+    },
+    "offerModalEscapes": {
+      "appClosureReads": [
+        "closeHelp",
+        "figureComposer",
+        "figureRendering",
+        "isAppearanceResetPopoverOpen",
+        "isHelpOpen",
+        "periodicTableController",
+        "setAppearanceResetPopoverOpen"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 8
+    },
+    "offerEditEscape": {
+      "appClosureReads": [
+        "MODES",
+        "getEditToolState",
+        "handleEditToolEscape",
+        "hasVisibleEscapeModalTarget",
+        "isHelpOpen"
+      ],
+      "globalModuleReads": [
+        "window.VibeMolEditToolUi"
+      ],
+      "dataParameters": 1,
+      "totalInputs": 7
+    },
+    "offerLegacyPanelEscapes": {
+      "appClosureReads": [
+        "ESCAPABLE_NON_EDIT_WINDOW_ORDER",
+        "MODES",
+        "cancelSymmetryPreview",
+        "closeNonEditWindows",
+        "displayWindowsController",
+        "hideSymmetryPopover",
+        "isSymmetryPopoverOpen",
+        "styleStudio",
+        "symmetryPanelController",
+        "workspaceEnabled"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 11
+    },
+    "offerModeEscapes": {
+      "appClosureReads": [
+        "MODES",
+        "calculationsModel",
+        "clearEditSelection",
+        "editSel",
+        "measurementRecord",
+        "setMode",
+        "syncCalculations",
+        "updateEditSelectionVisuals",
+        "updateSelectedHalos"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 10
+    },
+    "offerOutlinerEscape": {
+      "appClosureReads": [
+        "clearOutlinerSelectionToActive",
+        "isFocusInsideOutliner",
+        "sceneGraphController"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 4
+    },
+    "collectEscapeContext": {
+      "appClosureReads": [
+        "ESCAPE_LADDER",
+        "canvas",
+        "currentMode",
+        "offerEditEscape",
+        "offerLegacyPanelEscapes",
+        "offerModalEscapes",
+        "offerModeEscapes",
+        "offerOutlinerEscape"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 9
+    },
+    "handleApplicationEscape": {
+      "appClosureReads": [
+        "collectEscapeContext",
+        "executeEscapeDecision",
+        "resolveEscapeDecision"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 4
+    }
+  },
+  "moduleLetCount": 251,
+  "newController": false,
+  "newPublicApi": false,
+  "newRuntimeModule": false,
+  "localNative": {
+    "cases": 25,
+    "passed": true,
+    "pageerrors": [],
+    "note": "Local functional checks are not a causal CI comparison or merge gate; pinned CI diagnostic separately required."
+  },
+  "construction": {
+    "passed": true,
+    "appBindings": 54,
+    "consumerBindings": 25,
+    "introducedAppBindings": [
+      "ESCAPE_LADDER",
+      "resolveEscapeDecision",
+      "executeEscapeDecision",
+      "hasVisibleEscapeModalTarget",
+      "offerModalEscapes",
+      "offerEditEscape",
+      "offerLegacyPanelEscapes",
+      "offerModeEscapes",
+      "offerOutlinerEscape",
+      "collectEscapeContext",
+      "handleApplicationEscape"
+    ]
+  },
+  "units": {
+    "js": 459,
+    "python": 98,
+    "passed": true
+  },
+  "smokeRisk": "trajectory-video adds only an Escape action offer for existing activation cancellation; recording/activation handlers unchanged. Both exporter completion records and all activation readbacks remain mandatory in own ordinary gate.",
+  "ordinaryGate": {
+    "manifestUnchanged": true,
+    "pendingHumanCompositionAuthorization": true,
+    "complete": false
+  },
+  "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth"
+}

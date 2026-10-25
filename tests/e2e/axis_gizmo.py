@@ -6,6 +6,13 @@ from workflow_contract import native_keypress, workflow_step
 import os
 import premerge as p
 from surface_shadows import settings, settle
+from escape_contract import escape_regression
+
+
+# Observe before the app's window-capture owner, without claiming the event.
+ESCAPE_OBSERVER = '''window.addEventListener('keydown', event => {
+  if(event.key==='Escape' && window.__axisEscapeProbe) __axisEscapeProbe.event=event;
+}, {capture:true});'''
 
 
 def pose(page):
@@ -138,7 +145,6 @@ def run(page,url):
         buildArmed:document.getElementById('canvas').classList.contains('vm-build-armed')});
       const probe={before:state(),rootKeydownSeen:false,state,event:null};
       window.__axisEscapeProbe=probe;
-      window.addEventListener('keydown',event=>{probe.event=event;},{capture:true,once:true});
       document.getElementById('axisGizmo').addEventListener('keydown',()=>{probe.rootKeydownSeen=true;},{once:true});
     }''')
     escape_trigger=native_keypress(page,'Escape')
@@ -185,16 +191,20 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True,args=['--use-angle='+os.environ.get('VIBEMOL_TEST_ANGLE','swiftshader')])
         page=browser.new_page(viewport={'width':1440,'height':1000});errors=[]
+        page.add_init_script(ESCAPE_OBSERVER)
         page.on('pageerror',lambda e:errors.append(str(e)))
         page.on('dialog',lambda d:d.dismiss())
         try:
             run(page,url);assert not errors,errors
+            page.close()  # Retire its renderer before the next native context.
             touch=browser.new_context(viewport={'width':390,'height':844},has_touch=True)
             phone=touch.new_page();phone.goto(url+'?appearanceStudy=1');phone.wait_for_function('()=>window.VibeMolWorkbench')
             before=pose(phone);axis_button(phone,'z',-1).tap();assert_pose(phone,'z',-1,before)
             touch.close();print('[axis gizmo] touch: passed',flush=True)
+            escape_regression(browser,url)
         except Exception:
-            p.write_failure_artifacts(page,p.ARTIFACTS,'axis-gizmo-failure',errors,[]);raise
+            if not page.is_closed():p.write_failure_artifacts(page,p.ARTIFACTS,'axis-gizmo-failure',errors,[])
+            raise
         finally:browser.close()
 
 if __name__=='__main__':main()

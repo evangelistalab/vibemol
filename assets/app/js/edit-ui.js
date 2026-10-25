@@ -37,6 +37,10 @@
         input.setAttribute('aria-invalid', String(!input.value.trim() || !Number.isFinite(Number(input.value))));
       });
       input.addEventListener('change', () => commit(input));
+      input.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.selection-position', !!editing && editing.input === input,
+          () => { editing = null; sync(undefined, true); input.blur(); });
+      });
       input.addEventListener('keydown', event => {
         if (event.key !== 'Escape' && event.key !== 'Enter') return;
         event.preventDefault(); event.stopPropagation();

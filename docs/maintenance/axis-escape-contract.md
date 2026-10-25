@@ -1,7 +1,7 @@
-# Axis Escape ordering proposal — issue #52
+# Axis Escape ordering contract — issue #52
 
-This is the mechanism and proposed contract before a product fix. No production
-handler is changed here. Issue #4 was a CI prerequisite umbrella; #52 owns axis
+This contract describes the canonical data in `ESCAPE_LADDER` and the shared
+`EDIT_ESCAPE_LADDER`. The generated tables below are checked against that data. Issue #4 was a CI prerequisite umbrella; #52 owns axis
 Escape and #53 owns the unrelated Coordinates collision. Fix them in separate PRs.
 
 ## Measured mechanism
@@ -14,51 +14,68 @@ performed, but the axis widget's `onEscape -> canvas.focus()` never runs.
 Workbench capture, the Edit ladder, and the axis keyboard owner already exist on
 `v0.9.5-pre-refactor`. This is not a missing widget Escape handler.
 
-## Intended precedence to implement
+## Data-driven precedence
 
-Escape resolves one winning consumer, rather than depending on listener order.
-The axis fix must express this decision explicitly; simply moving a listener or
-letting the same event fall through to another Edit handler is insufficient.
-Higher-priority dismissal does **not** also clear selection or return axis focus.
+Every key press starts at level 1 with newly collected current availability.
+Nothing caches the previous winner or carries a ladder position to the next
+press. A level matches only if its applicability predicate is true. An active
+Edit mode with no placement, armed Build or Transform selection therefore
+**declines level 4**; Focus, panel dismissal or axis focus may then win. If no
+level applies, the app leaves the event unclaimed and executes zero actions.
 
-| Priority | Applicable state | Winning action and focus |
+After selection, one winning action runs. False/throw is failure, not decline:
+it surfaces without trying a lower action. For an Edit action from the axis,
+returning canvas focus is completion of that same action, not a second winner.
+Modal/browser-native UI retains its own ownership; a native dialog that consumes
+the key does not deliver it to the page. Existing target-owned draft/activation
+cancellation is offered explicitly to the table rather than preempted by a
+background tool action. Each offered action has exactly one owner.
+
+Level 7 is an actual conditional fallback, not a catch-all consume: outliner
+focus can clear an explicit layer selection while retaining the active layer;
+Measure clears a nonempty measurement selection; Calculations clears selected
+atoms, otherwise returns to Display. Display and empty Edit scene focus have no
+fallback action and decline. Axis scope reaches level 6 before scene shortcuts,
+so Measure/Calculations axis Escape retains their mode and selections.
+
+<!-- escape-ladder:start -->
+| Level | Consumer | Applicability/actions in priority order |
 | --- | --- | --- |
-| 1 | Browser/native modal, active Figure export, or focus owned by an application modal | Native/modal owner handles Escape; Figure cancels its capture. Do not run background Edit actions. |
-| 2 | An open Workbench command menu | Close the active menu (existing order: overflow, Panels, window-options); restore that menu's return focus. |
-| 3 | An editable field owns a draft | The field cancels its own draft. Build search is the existing exception: it is a filter, so the Edit ladder remains eligible. |
-| 4 | Edit has a cancellable creation, armed Build, or Transform selection | Execute exactly one Edit action: cancel provisional placement, otherwise disarm Build while retaining selection, otherwise clear Transform selection. If the event originated in the axis widget, also return focus to canvas **as the completion of this same action**, not as a second consumer. Do not dismiss Focus/panels too. |
-| 5 | No Edit action won and Workbench Focus is active | Exit Focus and restore the Focus button, as today. |
-| 6 | No earlier consumer won and focus belongs to a dismissible panel | Close that panel and use its existing focus-return contract. |
-| 7 | No earlier consumer won and an axis endpoint owns focus | Return focus to canvas. Do not activate background mode shortcuts. |
-| 8 | Ordinary scene focus, no earlier consumer | Existing mode fallback below. |
+| 1 | Modal or active capture | figure.cancel → help.close → appearance-reset.close → element-colors.close → calculations-picker.close |
+| 2 | Close the active command menu | menu.overflow → menu.panels → menu.window-options → menu.outliner |
+| 3 | Cancel an owned field or activation draft | draft.list → draft.selection-position → draft.slider → draft.atom-operator → draft.molecule-operator → draft.outliner-rename → activation.cancel · origins: field, control |
+| 4 | One applicable Edit action, otherwise decline | edit.perform · modes: edit · origins: axis, scene, control, filter |
+| 5 | Exit Focus, otherwise dismiss an applicable panel | focus.exit → panel.workbench → panel.list → panel.properties → panel.style-studio → panel.arithmetic → symmetry.cancel-preview → studio.close → legacy-window.close |
+| 6 | Return axis focus to the canvas | axis.focus-canvas · origins: axis |
+| 7 | Applicable ordinary mode fallback, otherwise decline | mode.outliner-reset — Clear an explicit outliner selection; retain active layer [control] → mode.measure-clear — Clear a nonempty measurement selection; retain mode [measurement] → mode.calculations-clear — Clear selected calculation atoms; retain mode [calculations] → mode.calculations-exit — With no calculation atoms selected, return to Display [calculations] · origins: scene, control, filter |
 
-This is a proposed explicit order, not a claim that today's scattered handlers
-already implement every combination. Application modal handling remains owned by
-its modal; the axis change must not become a rewrite of every Escape path.
-
-| Mode | Escape from axis after higher-priority consumers | Ordinary scene fallback |
+| Edit branch | Required current state | Action |
 | --- | --- | --- |
-| Display | Canvas focus; preserve mode, camera and selection | Existing window/outliner dismissal; no mode change merely for Escape. |
-| Measure | Canvas focus; do not clear measurement selection through a background shortcut | Clear the current measurement selection, retaining Measure mode. |
-| Edit | At most one cancel/disarm/clear action as above, then canvas focus; with none active, canvas focus | The same one-action Edit ladder. |
-| Calculations | Canvas focus; preserve Subspace selection and Calculations mode | Clear selected calculation atoms; if none, return to Display. |
-
-The Measure/Calculations distinction preserves the axis widget's existing scoped
-keyboard behavior; their scene shortcuts must not start firing merely because
-Edit's routing is repaired. The Edit ladder already deliberately applies to
-non-form controls and must remain effective when an axis button has focus.
+| cancel | placing | Cancel provisional placement; retain Build |
+| transform | build | Disarm Build; retain selection |
+| clear | selected | Clear Transform selection |
+<!-- escape-ladder:end -->
 
 ## Regression assertions and remaining questions
+
+The checker enumerates every level × four modes × five focus origins, plus
+every Edit sub-ladder state. Applicable cases have one winner/one action; fully
+inapplicable cases have none, never a fabricated no-op. Two- and three-press
+sequences exercise modal→menu→Edit and cancel→disarm→clear from fresh state.
 
 Assert actual/expected active element, Edit action and invocation count, atom IDs,
 Build state, mode and camera pose. Cover all four modes, each Edit ladder rung,
 open menus, editable drafts, Focus, and a second Escape. No double cancellation
-or clear may occur. Verify legacy canvas focusability separately: only Workbench
-currently sets canvas.tabIndex, and the ordinary suite aborts before its later
-legacy coverage. That gap must not be called a pass.
+or clear may occur. App startup now owns canvas focusability in both interfaces;
+the legacy native cases verify it separately. The old ordinary suite aborted
+before its later legacy coverage; that gap was not a pass.
 
-No new controller is proposed. Keep any decision helper pure and explicit;
-count real closure dependencies before implementation and require <15 and the
-construction-order audit. The accepted set remains exactly the two existing
+There is no new controller or module state. The stateless arbiter uses current
+offers from the existing owners; all 31 action types have exactly one source
+provider. The checker reports every new helper's app closure reads, global
+module reads and data parameters and requires each total to stay below 15. The
+largest helper has 11 total inputs. The inverse construction audit covers the
+app and every changed provider, including providers loaded after app startup.
+The accepted set remains exactly the two existing
 workflow keys until a separately authorized product-fix PR deliberately changes
 its expected composition.

@@ -336,6 +336,9 @@
       const activeEdit = { rowIndex, columnKey, column, cellEl, inputEl };
       state.activeEdit = activeEdit;
       setEditStateSnapshot(activeEdit);
+      inputEl.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.list', state.activeEdit === activeEdit, () => { cancelInlineEdit(); });
+      });
       inputEl.addEventListener('keydown', (event) => {
         if (state.activeEdit !== activeEdit) return;
         if (event.key === 'Enter') {
@@ -605,6 +608,9 @@
       activateRow(rowIndex);
     });
 
+    bodyEl.addEventListener('vm-escape-offers', event => {
+      event.detail.offer('panel.list', typeof onRequestClose === 'function' && bodyEl.getClientRects().length > 0, () => { onRequestClose(); });
+    });
     bodyEl.addEventListener('keydown', (event) => {
       if (state.activeEdit) return;
       if (event.key === 'ArrowUp') {

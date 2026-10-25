@@ -100,7 +100,10 @@
     }
     remove.onclick=()=>{model.removeOrbitals(deps.getRecord(),model.selectedIds(deps.getRecord()));deps.onChange();};
     document.addEventListener('pointerdown',e=>{if(isOpen()&&!popup.contains(e.target))close();},true);
-    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&isOpen()){e.preventDefault();e.stopImmediatePropagation();close();}},true);
+    document.addEventListener('vm-escape-offers',event=>{
+      event.detail.offer('calculations-picker.close',isOpen(),()=>{close();});
+    });
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!e.vmEscapeDecision&&isOpen()){e.preventDefault();e.stopImmediatePropagation();close();}},true);
     popup.addEventListener('keydown',e=>{if(e.altKey&&e.key==='Home')reposition();});
     global.addEventListener('resize',reposition);
     return Object.freeze({show,close,sync,isOpen,reposition});
