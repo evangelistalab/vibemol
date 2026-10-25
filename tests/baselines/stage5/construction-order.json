@@ -106,6 +106,15 @@
         "assets/app/js/looks-ui.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue53 local Coordinates selection-card avoidance",
+      "before": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
+      "worktree": ".",
+      "recheck": [
+        "els"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

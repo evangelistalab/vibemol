@@ -1,0 +1,164 @@
+{
+  "issue": 53,
+  "status": "isolated local fix; guard removed to a separate PR; own37/0 gate follows accepted52",
+  "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+  "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
+  "knowinglyExtendsFragmentation": true,
+  "placementPolicyAudit": "docs/maintenance/coordinates-placement-policy.md",
+  "dependencyInputs": {
+    "closure": [
+      "els"
+    ],
+    "geometryParameters": [
+      "left",
+      "top",
+      "width",
+      "height",
+      "minLeft",
+      "viewportWidth",
+      "viewportHeight"
+    ],
+    "total": 8
+  },
+  "newModuleLetCount": 0,
+  "trackedModuleLets": 251,
+  "construction": {
+    "passed": true,
+    "appBindings": 19,
+    "note": "Initial direct late coordsPanel closure failed; original lookup now fills an early null-initialized els field. Failed audit preserved."
+  },
+  "geometryCases": 7,
+  "nativeModeSuite": {
+    "passed": true,
+    "presentedCardBeforeDelete": true,
+    "legacyCardBefore": {
+      "x": 908,
+      "y": 73
+    },
+    "legacyCardAfter": {
+      "x": 908,
+      "y": 340.671875
+    },
+    "originalAssertionsPreserved": true
+  },
+  "initialOverlapPreflight": {
+    "source": "unchanged main d635abf",
+    "browser": "145.0.7632.6",
+    "profiles": [
+      "coordinates-selection",
+      "build-selection",
+      "metal-selection"
+    ],
+    "widths": [
+      1512,
+      1024,
+      390
+    ],
+    "layouts": [
+      "Workbench",
+      "legacy"
+    ],
+    "cases": 18,
+    "collisionPairs": [
+      [
+        "coordsPanel",
+        "displayWindowAdaptiveMenu"
+      ],
+      [
+        "coordsPanel",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "coordsPanel",
+        "toolbar"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editAdaptiveAddAtomPopover"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "toolbar"
+      ],
+      [
+        "editAddAtomOperatorPanel",
+        "toolbar"
+      ],
+      [
+        "editSelectionMetalBondingCuePopover",
+        "toolbar"
+      ],
+      [
+        "editSelectionTranslateCue",
+        "toolbar"
+      ]
+    ],
+    "pairCount": 10,
+    "additionalPairCount": 9,
+    "scrollClippingRespected": true,
+    "pointerTransparentShellsIncludeInteractiveChildren": true,
+    "notExhaustive": true
+  },
+  "guard": {
+    "separatePr": true,
+    "blocksLocalFix": false,
+    "inventoryIssue": 55,
+    "authorizedPairs": 12,
+    "authorizedSignatures": 112,
+    "addedSignatures": 28,
+    "coverageComplete": false,
+    "classificationCounts": {
+      "intentional": 0,
+      "unreachable": 0,
+      "suspected defect": 12
+    },
+    "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls"
+  },
+  "ordinaryGate": {
+    "manifestUnchanged": true,
+    "complete": false,
+    "expected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "intentionallyEmptyAcceptedSet": true,
+    "armedAfterAccepted52": false
+  },
+  "units": {
+    "js": 459,
+    "python": 98,
+    "passed": true
+  },
+  "pinnedCiDiagnostic": {
+    "runId": 40222091876,
+    "attempt": 1,
+    "head": "130a64effc73da6c433b9b5ed62d5bfac0207f62",
+    "tree": "8421762730d32ce15dd5a854e9bc84a51cf1f740",
+    "independentlyVerifiedCollection": true,
+    "playwright": "1.64.1",
+    "chromium": "156.0.8078.4",
+    "sameHarness": true,
+    "casesPerSource": 18,
+    "controlPairs": 10,
+    "candidatePairs": 9,
+    "removedPairs": [
+      [
+        "coordsPanel",
+        "editSelectionTranslateCue"
+      ]
+    ],
+    "newPairs": [],
+    "completeGuard": false,
+    "mergeGateEvidence": false,
+    "looksMaterialPaths": "not covered"
+  }
+}

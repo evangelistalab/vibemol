@@ -1,6 +1,7 @@
 # Coordinates placement audit — issue #53
 
-Mechanism and design input only, before a product fix. Issue #52 is separate.
+Issue #52 is separate. The local #53 rule below knowingly extends the fragmented
+placement behavior documented here; it does not implement a shared policy.
 
 ## Existing shared behavior
 
@@ -81,3 +82,35 @@ child) to own its native click point and retain stable atom-ID/bond assertions,
 first-click inline editing, Undo/Redo, Enter/Space and Workbench coverage. No
 production placement rule or accepted-set change is included in the classifier
 PR.
+
+## Local rule and open guard findings
+
+For an automatically placed selection card, retain its preferred location unless
+it intersects the visible Coordinates rectangle plus 12px clearance. Try the four
+adjacent placements, keeping the other coordinate unchanged, and choose the
+nearest clear candidate inside the existing viewport/sidebar bounds. A manually
+placed card stays pinned; an active position edit retains its existing freeze.
+No fit leaves the obstruction observable rather than pushing controls offscreen
+or silently changing another surface. That case requires a broader product
+decision. The original Coordinates lookup populates `els.coordsPanelEl` at its
+existing site; an early caller sees null instead of reading a late lexical
+binding. The local helper has one closure input plus seven geometry parameters.
+
+## Updated policy recommendation and separate guard
+
+The earlier recommendation favored a local rule for this defect rather than a
+shared placement subsystem. The subsequent inspection and strict measurement
+change that recommendation: nine of nine initial pairs were suspected defects,
+and clipped-intersection run40230711618 found three more pairs plus additional
+occluded targets. Twelve bespoke avoidance rules would extend the fragmentation
+this audit identified. A shared inter-surface policy is now **justified but not
+scheduled**. Evaluate it alongside the0.11 declarative-controls work; do not build
+it in this repair. [#55](https://github.com/evangelistalab/vibemol/issues/55) holds
+the inventory and the change in recommendation.
+
+The strict discovery guard and its explicitly authorized twelve-pair/112-target
+latent baseline will ship in their own PR. Its surface coverage remains
+incomplete; its preparation does not block this local fix. Those latent
+allowances are not accepted ordinary-suite failures. This PR removes only the
+Coordinates accepted workflow after52 and requires37/0/37 with an intentionally
+empty accepted set; matcher/join machinery stays.

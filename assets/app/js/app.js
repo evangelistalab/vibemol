@@ -1224,6 +1224,7 @@
   // are queried lazily again; a cached node is never silently replaced.
   const els = {
     workbenchBarEl: null,
+    coordsPanelEl: null,
     elementColorOverlay: null,
     elementColorClose: null,
     periodicTableViewport: null,
@@ -6365,7 +6366,7 @@
   const vibrationPanelBtn = els.vibrationPanelBtn = document.getElementById('vibrationPanelBtn');
   const sidePanel = document.getElementById('sidePanel');
   const sideClose = document.getElementById('sideClose');
-  const coordsPanel = document.getElementById('coordsPanel');
+  const coordsPanel = (els.coordsPanelEl = document.getElementById('coordsPanel'));
   const coordsPanelTitle = document.getElementById('coordsPanelTitle');
   const coordsUnitsBtn = document.getElementById('coordsUnitsBtn');
   const coordsPanelClose = document.getElementById('coordsPanelClose');
@@ -19000,6 +19001,35 @@
       label: selection.length === 1 ? 'Position (Å)' : 'Center of mass (Å)' };
   }
 
+  function positionSelectionCueOutsideCoordinates(left, top, width, height, minLeft, viewportWidth, viewportHeight) {
+    const position = { left, top };
+    const panel = els.coordsPanelEl;
+    if (!panel || panel.getAttribute('aria-hidden') !== 'false') return position;
+    const obstacle = panel.getBoundingClientRect();
+    if (!obstacle.width || !obstacle.height || getComputedStyle(panel).visibility === 'hidden') return position;
+    const gap = 12;
+    const overlaps = candidate => candidate.left < obstacle.right + gap
+      && candidate.left + width > obstacle.left - gap
+      && candidate.top < obstacle.bottom + gap
+      && candidate.top + height > obstacle.top - gap;
+    if (!overlaps(position)) return position;
+    // Deliberately local (#53), not a shared inter-surface placement policy.
+    // See docs/maintenance/coordinates-placement-policy.md. Keep the preferred
+    // anchor's other axis, and choose the nearest in-bounds clear alternative.
+    const candidates = [
+      { left: obstacle.left - width - gap, top },
+      { left: obstacle.right + gap, top },
+      { left, top: obstacle.bottom + gap },
+      { left, top: obstacle.top - height - gap },
+    ].filter(candidate => candidate.left >= minLeft && candidate.top >= gap
+      && candidate.left + width <= viewportWidth - gap
+      && candidate.top + height <= viewportHeight - gap && !overlaps(candidate));
+    candidates.sort((a, b) => Math.hypot(a.left - left, a.top - top) - Math.hypot(b.left - left, b.top - top));
+    // An impossible fit must stay visible to the overlap guard, not silently
+    // push a control offscreen or replace a user's manually placed surface.
+    return candidates[0] || position;
+  }
+
   function renderEditSelectionTranslateCue() {
     if (!els.editSelectionTranslateCueEl) return;
     if (currentMode !== MODES.EDIT) {
@@ -19151,6 +19181,11 @@
     left = Math.max(margin, Math.min(maxLeft, left));
     if (top < margin) top = Math.round(bounds.maxY + cueGap);
     if (top + badgeHeight > viewportHeight - margin) top = Math.max(margin, viewportHeight - badgeHeight - margin);
+    if (!els.editSelectionTranslateCueEl.hasAttribute('data-vm-floating-moved')) {
+      const position = positionSelectionCueOutsideCoordinates(left, top, badgeWidth, badgeHeight, minLeft, viewportWidth, viewportHeight);
+      left = position.left;
+      top = position.top;
+    }
     els.editSelectionTranslateCueEl.style.left = `${left}px`;
     els.editSelectionTranslateCueEl.style.top = `${top}px`;
     els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
