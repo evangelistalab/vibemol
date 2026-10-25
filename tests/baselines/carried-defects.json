@@ -91,7 +91,14 @@
       "issue": 53,
       "splitFromUmbrella": 4,
       "mechanismReport": "docs/maintenance/coordinates-placement-policy.md",
-      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts"
+      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts",
+      "localRuleDecision": {
+        "knowinglyExtendsFragmentation": true,
+        "sharedPolicyImplemented": false,
+        "audit": "docs/maintenance/coordinates-placement-policy.md",
+        "record": "tests/baselines/coordinates-placement.json",
+        "status": "candidate; no accepted-set change; additional overlaps pending"
+      }
     }
   ],
   "otherCarriedFollowups": [

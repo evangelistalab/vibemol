@@ -87,6 +87,15 @@
         "assets/app/js/trajectory-video.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Issue53 local Coordinates selection-card avoidance",
+      "before": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+      "worktree": ".",
+      "recheck": [
+        "els"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

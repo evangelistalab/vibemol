@@ -1,6 +1,7 @@
 # Coordinates placement audit — issue #53
 
-Mechanism and design input only, before a product fix. Issue #52 is separate.
+Issue #52 is separate. The local #53 rule below knowingly extends the fragmented
+placement behavior documented here; it does not implement a shared policy.
 
 ## Existing shared behavior
 
@@ -81,3 +82,33 @@ child) to own its native click point and retain stable atom-ID/bond assertions,
 first-click inline editing, Undo/Redo, Enter/Space and Workbench coverage. No
 production placement rule or accepted-set change is included in the classifier
 PR.
+
+## Local rule and open guard findings
+
+For an automatically placed selection card, retain its preferred location unless
+it intersects the visible Coordinates rectangle plus 12px clearance. Try the four
+adjacent placements, keeping the other coordinate unchanged, and choose the
+nearest clear candidate inside the existing viewport/sidebar bounds. A manually
+placed card stays pinned; an active position edit retains its existing freeze.
+No fit leaves the obstruction observable rather than pushing controls offscreen
+or silently changing another surface. That case requires a broader product
+decision. The original Coordinates lookup populates `els.coordsPanelEl` at its
+existing site; an early caller sees null instead of reading a late lexical
+binding. The local helper has one closure input plus seven geometry parameters.
+
+The initial overlap preflight samples three actual opening profiles in both
+interfaces at 1512, 1024 and 390px, with fresh storage and no manual placement.
+It pairs simultaneously visible surfaces and records every enabled target's
+rectangle, stacking/hit order and center ownership. Centers clipped by a scroll
+container are excluded as unavailable targets, not reported as occluded controls.
+It does not use the floating-shell clones. This is an initial subset, not a claim
+of exhaustive coverage of all 28 registered shells or their possible pairs.
+
+On unchanged main `d635abf`, this subset finds ten obstructed pairs: the known
+Coordinates/Selection pair and nine additional pairs. Build/Selection occurs at
+1024px in Workbench; the remaining additional pairs occur with the legacy sidebar
+open at 390px. Those observations are not a new accepted-failure list. The full
+zero-overlap guard cannot be presented as passing or weakened to hide them. The
+raw rectangles, hit stacks and screenshots are retained under ignored
+`out/test-artifacts/issue53/inventory-control-v3/`; the preliminary count uses local
+Chromium145 and still needs the pinned CI measurement before final disposition.

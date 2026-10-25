@@ -1,0 +1,127 @@
+{
+  "issue": 53,
+  "status": "local fix prepared; broader overlap findings and full guard catalog require disposition before PR",
+  "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+  "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
+  "knowinglyExtendsFragmentation": true,
+  "placementPolicyAudit": "docs/maintenance/coordinates-placement-policy.md",
+  "dependencyInputs": {
+    "closure": [
+      "els"
+    ],
+    "geometryParameters": [
+      "left",
+      "top",
+      "width",
+      "height",
+      "minLeft",
+      "viewportWidth",
+      "viewportHeight"
+    ],
+    "total": 8
+  },
+  "newModuleLetCount": 0,
+  "trackedModuleLets": 251,
+  "construction": {
+    "passed": true,
+    "appBindings": 19,
+    "note": "Initial direct late coordsPanel closure failed; original lookup now fills an early null-initialized els field. Failed audit preserved."
+  },
+  "geometryCases": 7,
+  "nativeModeSuite": {
+    "passed": true,
+    "presentedCardBeforeDelete": true,
+    "legacyCardBefore": {
+      "x": 908,
+      "y": 73
+    },
+    "legacyCardAfter": {
+      "x": 908,
+      "y": 340.671875
+    },
+    "originalAssertionsPreserved": true
+  },
+  "initialOverlapPreflight": {
+    "source": "unchanged main d635abf",
+    "browser": "145.0.7632.6",
+    "profiles": [
+      "coordinates-selection",
+      "build-selection",
+      "metal-selection"
+    ],
+    "widths": [
+      1512,
+      1024,
+      390
+    ],
+    "layouts": [
+      "Workbench",
+      "legacy"
+    ],
+    "cases": 18,
+    "collisionPairs": [
+      [
+        "coordsPanel",
+        "displayWindowAdaptiveMenu"
+      ],
+      [
+        "coordsPanel",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "coordsPanel",
+        "toolbar"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editAdaptiveAddAtomPopover"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "toolbar"
+      ],
+      [
+        "editAddAtomOperatorPanel",
+        "toolbar"
+      ],
+      [
+        "editSelectionMetalBondingCuePopover",
+        "toolbar"
+      ],
+      [
+        "editSelectionTranslateCue",
+        "toolbar"
+      ]
+    ],
+    "pairCount": 10,
+    "additionalPairCount": 9,
+    "scrollClippingRespected": true,
+    "pointerTransparentShellsIncludeInteractiveChildren": true,
+    "notExhaustive": true
+  },
+  "guard": {
+    "complete": false,
+    "acceptedCollisions": [],
+    "knownPairAllowList": false,
+    "ordinaryIntegrationHeld": true,
+    "reason": "Initial subset already finds additional existing collisions; do not silently baseline them or claim complete28-shell coverage."
+  },
+  "ordinaryGate": {
+    "manifestUnchanged": true,
+    "complete": false
+  },
+  "units": {
+    "js": 459,
+    "python": 98,
+    "passed": true
+  },
+  "pinnedCiDiagnostic": "pending separate source-paired measurement; diagnostic supplies no acceptance"
+}

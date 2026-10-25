@@ -7,8 +7,15 @@ on:
       - 'tests/e2e/mode_consistency.py'
       - 'tests/e2e/workflow_contract.py'
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Evidence collection only; never ordinary merge-gate acceptance
+        type: choice
+        default: coordinates
+        options: [coordinates, placement]
 jobs:
   coordinates-region:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'placement'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -29,3 +36,31 @@ jobs:
         with:
           name: coordinates-region-diagnostic
           path: out/test-artifacts/coordinates-region/
+  placement-inventory:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'placement'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Use ordinary CI's exact toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Measure unchanged main and the isolated local fix with one harness
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/coords-control" out/test-artifacts/placement-inventory
+          git archive d635abf11b66cd180288b76a1c25f4f12dfa3852 index.html assets src | tar -x -C "$RUNNER_TEMP/coords-control"
+          PYTHONPATH=tests/e2e python -c 'import json; from pathlib import Path; from ci_evidence import artifact_identity; Path("out/test-artifacts/placement-inventory/identity.json").write_text(json.dumps(artifact_identity(), indent=2)+"\n")'
+          python tests/e2e/surface_collisions.py --source-root "$RUNNER_TEMP/coords-control" --out out/test-artifacts/placement-inventory/control --diagnostic
+          python tests/e2e/surface_collisions.py --out out/test-artifacts/placement-inventory/candidate --diagnostic
+      - name: Preserve all obstructed targets, screenshots and actual hit order
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: placement-inventory-diagnostic
+          path: out/test-artifacts/placement-inventory/
