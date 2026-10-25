@@ -30,6 +30,7 @@ run('lookup not initialized: no early binding read',args,null,{left:908,top:73})
 run('closed Coordinates',args,panel(766,68,422,260,false),{left:908,top:73});
 run('clear preferred position',args,panel(312,500,422,260),{left:908,top:73});
 run('legacy interception: nearest clear position is below',args,panel(766,68,422,260),{left:908,top:340});
+run('left dock: only clear adjacent side is right',[500,73,280,155,312,1200,1000],panel(312,56,300,944),{left:624,top:73});
 run('right dock: prefer clear left side',[1200,73,280,155,312,1512,1000],panel(1000,56,512,944),{left:708,top:73});
 run('lower panel: clear position above',[908,800,280,155,312,1200,1000],panel(766,760,422,240),{left:908,top:593});
 run('full obstruction: do not silently leave viewport',[12,73,280,155,12,390,450],panel(0,0,390,450),{left:12,top:73});

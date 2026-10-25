@@ -27,7 +27,7 @@
     "appBindings": 19,
     "note": "Initial direct late coordsPanel closure failed; original lookup now fills an early null-initialized els field. Failed audit preserved."
   },
-  "geometryCases": 7,
+  "geometryCases": 8,
   "nativeModeSuite": {
     "passed": true,
     "presentedCardBeforeDelete": true,
