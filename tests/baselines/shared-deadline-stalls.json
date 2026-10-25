@@ -1,0 +1,92 @@
+{
+  "scope": "Diagnostic half of43 only; budget half remains held",
+  "base": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+  "runtime": "tests/e2e/stall_diagnostics.js",
+  "sites": [
+    {
+      "formerFile": "tests/e2e/smoke.py",
+      "formerLine": 1245,
+      "formerBudgetMs": 600,
+      "site": "smoke.native-selection",
+      "owner": "state_after_input"
+    },
+    {
+      "formerFile": "tests/e2e/smoke.py",
+      "formerLine": 1326,
+      "formerBudgetMs": 750,
+      "site": "smoke.select-two-first",
+      "owner": "state_after_input"
+    },
+    {
+      "formerFile": "tests/e2e/smoke.py",
+      "formerLine": 1298,
+      "formerBudgetMs": 750,
+      "site": "smoke.select-two-additive",
+      "owner": "state_after_input"
+    },
+    {
+      "formerFile": "tests/e2e/smoke.py",
+      "formerLine": 1750,
+      "formerBudgetMs": 750,
+      "site": "smoke.startup-single-selection",
+      "owner": "state_after_input"
+    },
+    {
+      "formerFile": "tests/e2e/smoke.py",
+      "formerLine": 3424,
+      "formerBudgetMs": 5000,
+      "site": "smoke.native-clipboard",
+      "owner": "state_after_input"
+    },
+    {
+      "formerFile": "tests/e2e/presented_state_probe.py",
+      "formerLine": 21,
+      "formerBudgetMs": 100,
+      "site": "presented-state.false-control",
+      "owner": "deadline_diagnostics"
+    }
+  ],
+  "interval": "Intersection of completed longtask entries with [native activation timestamp,min(completed input,unchanged deadline)]. Negative control has a browser anchor immediately before the original wait RPC, with explicit alignment uncertainty.",
+  "duration": "Union of clipped intervals; overlapping or duplicate entries are not double-counted. Host readback delay cannot extend a completed input window.",
+  "deadline": "Existing async timeout callback records actual observation time, scheduled deadline and lateness. Native mode has no timeout timer: it asserts the completed native event. No duplicate750ms timer is restored. A later snapshot is never claimed as exact deadline state.",
+  "missing": "observerError/droppedLongTasks/waitStartedBeforeObserver and null disposition expose unknown data; renderer descheduling may produce no longtask.",
+  "acceptance": "Original predicate/budget/native completion expression remains exact. All stall durations are diagnostic only: never subtracted, never extending the budget, never changing pass/fail.",
+  "tests": {
+    "node": 459,
+    "python": 82,
+    "meaningfulCases": [
+      "wrong completed-event value cannot be repaired later",
+      "late correct input fails despite observed longtasks",
+      "union clipping/deadline crossings",
+      "late host readback excludes post-completion work",
+      "unsupported/dropped/missing observations report unknown",
+      "observer install/readback failure preserves original wait outcome/exception",
+      "real Chromium preflight deliberately creates a longtask; all browsers retired before Smoke"
+    ]
+  },
+  "sourceAudit": {
+    "status": "passed",
+    "base": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+    "noProductionChange": true,
+    "appLets": 251,
+    "acceptedFailureSetUnchanged": true,
+    "goldensExact": true,
+    "figureBytesExact": true,
+    "smokeOnlyAttributionSiteMetadata": true,
+    "axisAndCoordinatesOriginalAssertionsAndActionsExact": true,
+    "negativeControlPredicatesAndBudgetsExact": true,
+    "numericToleranceFunctionExact": true,
+    "budgetsUnchanged": [
+      600,
+      5000,
+      100
+    ],
+    "noReintroduced750Timers": true,
+    "gate": "35/2/37 onlyaxis/mode",
+    "newControllerDependencies": 0,
+    "newModuleLets": 0,
+    "nativeAndAsyncAcceptanceExpressionExact": true,
+    "noStallDiscount": true
+  },
+  "ordinaryGate": "Own first35/2/37 required; onlyaxis/mode,102x2/exactrepeat,52slots/eightcontexts/allminima,units/WebKit/construction. No43budget or42classification change."
+}

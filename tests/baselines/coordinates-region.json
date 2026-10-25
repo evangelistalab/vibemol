@@ -1,0 +1,94 @@
+{
+  "runId": 40203023318,
+  "head": "3a9af1c7cddeb5a3a5b7dc9ce42be211437c464d",
+  "status": "independently verified diagnostic; not merge evidence",
+  "cases": [
+    {
+      "case": "legacy-row-actions",
+      "assertions": 22,
+      "bypasses": 1,
+      "allOriginalChecksPassed": true,
+      "pageErrors": []
+    },
+    {
+      "case": "legacy-orbital-context",
+      "assertions": 19,
+      "bypasses": 0,
+      "allOriginalChecksPassed": true,
+      "pageErrors": []
+    },
+    {
+      "case": "workbench-row-actions",
+      "assertions": 21,
+      "bypasses": 0,
+      "allOriginalChecksPassed": true,
+      "pageErrors": []
+    }
+  ],
+  "nativeFailures": [
+    {
+      "case": "legacy-row-actions",
+      "line": 104,
+      "selector": "#coordsContent [data-atom-index=\"1\"] [data-coords-action=\"delete\"]",
+      "exceptionType": "TimeoutError",
+      "state": {
+        "target": {
+          "id": "",
+          "x": 1153,
+          "y": 207.890625,
+          "width": 28,
+          "height": 28,
+          "zIndex": "auto",
+          "pointerEvents": "auto",
+          "moved": null
+        },
+        "selectionCard": {
+          "id": "editSelectionTranslateCue",
+          "x": 908,
+          "y": 73,
+          "width": 280,
+          "height": 154.78125,
+          "zIndex": "34",
+          "pointerEvents": "none",
+          "moved": null
+        },
+        "coordinates": {
+          "id": "coordsPanel",
+          "x": 766,
+          "y": 68,
+          "width": 422,
+          "height": 260.671875,
+          "zIndex": "24",
+          "pointerEvents": "auto",
+          "moved": null
+        },
+        "targetVisible": true,
+        "targetEnabled": true,
+        "targetOwnsHit": false,
+        "cardOwnsHit": true,
+        "interceptorId": "editSelectionPosition",
+        "selection": [
+          0,
+          2
+        ],
+        "actualHit": "editSelectionPosition"
+      },
+      "assertionsBeforeFailure": 10,
+      "nativeFailureRemainsFailed": true
+    }
+  ],
+  "dynamicAssertionsHiddenBehindLegacyFailure": 52,
+  "caveat": "Later cases use independent fresh contexts. No bypassed native click is a pass; ordinary full gate remains separate.",
+  "toolchain": {
+    "python": "3.12.15",
+    "playwright": "1.64.1",
+    "chromium": "156.0.8078.4"
+  },
+  "archive": {
+    "bytes": 465118,
+    "sha256": "ddc928ed623bd8a062121eda398c13840b69b3c86ff2dc89ffd1eda101a996f1",
+    "allFilesReopened": 12
+  },
+  "productSourceSha256": "8a1da1662e2781e11666819c7fa9a20ed053acf6c13bbf4430bc879cb6a28ccf",
+  "sameProductAndRegionHarnessInFinalCandidate": true
+}

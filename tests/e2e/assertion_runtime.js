@@ -1,11 +1,12 @@
-(function (config, read) {
+(function (config, read, observeStalls) {
   const now = performance.now.bind(performance);
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
   const state = {contract: 'shared-assertion', mode: config.mode, label: config.label,
-    expected: config.expected, budgetMs: config.budgetMs, received: false, complete: false,
+    expected: config.expected, site: config.site, budgetMs: config.budgetMs, received: false, complete: false,
     initial: null, actual: null, current: null, error: null};
   let timer = null, observer = null, resolve = null;
   const promise = new Promise(done => { resolve = done; });
+  const stalls = observeStalls();
   function value() {
     try {
       const actual = read(config.arg);
@@ -17,12 +18,15 @@
   function row() {
     state.current = value();
     const elapsed = state.observedAt == null ? null : state.observedAt - state.eventTimestamp;
-    return {...state, elapsedMs: elapsed, passed: state.received && state.complete && state.targetMatches
+    const diagnostics = stalls.finish({startedAtMs: state.eventTimestamp, timeoutMs: config.budgetMs,
+      completedAtMs: state.observedAt, deadlineSample: state.deadlineSample});
+    return {...state, stalls: diagnostics, elapsedMs: elapsed, passed: state.received && state.complete && state.targetMatches
       && state.trusted && !state.error && same(state.actual,config.expected) && same(state.current,config.expected)
       && Number.isFinite(elapsed) && elapsed >= 0 && elapsed <= config.budgetMs
       && (!config.requireTransition || !same(state.initial,config.expected))};
   }
   function dispose() {
+    stalls.dispose();
     clearTimeout(timer);
     observer?.disconnect();
     window.removeEventListener(config.event, capture, true);
@@ -34,6 +38,9 @@
     state.actual = actual;
     state.observedAt = now();
     state.via = via;
+    if (via === 'deadline') state.deadlineSample = {observedAtMs: state.observedAt,
+      scheduledAtMs: state.eventTimestamp + config.budgetMs,
+      latenessMs: state.observedAt - state.eventTimestamp - config.budgetMs, actual};
     clearTimeout(timer);observer?.disconnect();
     resolve();
   }
@@ -69,7 +76,7 @@
   }
   window.addEventListener(config.event,capture,true);
   window.addEventListener(config.event,bubble,false);
-  return {dispose, inspect() {
+  return {dispose, snapshot: row, inspect() {
     if (!state.received || config.mode === 'native') return row();
     return promise.then(row);
   }};

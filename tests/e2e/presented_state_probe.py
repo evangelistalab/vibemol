@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError
 from helpers import wait_for_presented_state
-from assertion_contract import budget_ms
+from assertion_contract import budget_ms, deadline_diagnostics
 
 
 def main():
@@ -19,7 +19,9 @@ def main():
         try:
             # This bounded negative control deliberately can NEVER pass. The
             # actual app-state probes use timeout=0, without timeout retries.
-            wait_for_presented_state(page, '() => false', timeout=budget_ms('false-presented-control'))
+            with deadline_diagnostics(page,label='false presented-state negative control',
+                    policy='false-presented-control',site='presented-state.false-control'):
+                wait_for_presented_state(page, '() => false', timeout=budget_ms('false-presented-control'))
         except TimeoutError:
             false_rejected = True
         assert false_rejected, 'A false presented-state predicate was accepted'

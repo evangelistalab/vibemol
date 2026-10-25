@@ -26,7 +26,7 @@
       "id": "video-crop-after-export",
       "issue": 11,
       "url": "https://github.com/evangelistalab/vibemol/issues/11",
-      "status": "fix candidate; complete gate required",
+      "status": "closed; fixed and merged by PR46 after complete35/2/37 gate",
       "workflow": "Delayed Stop after second trajectory OR vibration download reopens crop selection",
       "acceptedCiFailure": false,
       "suite": "tests/e2e/smoke.py",
@@ -36,32 +36,62 @@
         "status": "refuted",
         "reason": "Vibration pair are authoritative; trajectory export reads record/master; shared exporter owns state.mode and never calls getPlaybackState",
         "evidence": "docs/stage5-seam-design.md",
-        "productDefectStillOpen": true
+        "productDefectStillOpen": false,
+        "productDefectOpenAtRefutation": true
       },
       "fix": {
         "scope": "Retain per-activation intent across completion for pointer, Space and Enter; click-only activation is atomic at click dispatch. A fresh subsequent Save remains functional.",
         "evidence": "tests/baselines/video-export-activation.json",
         "independentHarnessIssue": 45,
-        "requiredGate": "35/2/37 exact other two workflows, both exporter completion records, unchanged goldens/identity/units/WebKit/construction"
+        "requiredGate": "35/2/37 exact other two workflows, both exporter completion records, unchanged goldens/identity/units/WebKit/construction",
+        "completedGateRun": 40154406166
+      },
+      "carried": false,
+      "completedGate": {
+        "pr": 46,
+        "head": "e62e10ca9a757c66f4765cd4d46270c2e54c604e",
+        "runId": 40154406166,
+        "attempt": 1,
+        "merge": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+        "passed": 35,
+        "failed": 2,
+        "total": 37,
+        "bothExportersCompleted": true,
+        "activationReadbacks": 58,
+        "nativeInputReceipts": 21,
+        "construction": "8exporter consumer bindings/0newapp bindings;passed",
+        "goldens": "102twice/exactrepeat",
+        "identity": "52slots/eightcontexts/allminima",
+        "units": "450JS/80Python;WebKitpassed",
+        "postMergeBaselineRun": 40157081954,
+        "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
       }
     },
     {
       "id": "axis-gizmo-escape",
-      "trackingIssue": 4,
-      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "trackingIssue": 52,
+      "url": "https://github.com/evangelistalab/vibemol/issues/52",
       "status": "open",
       "workflow": "Escape interception prevents canvas focus",
       "acceptedCiFailure": true,
-      "suite": "tests/e2e/axis_gizmo.py"
+      "suite": "tests/e2e/axis_gizmo.py",
+      "issue": 52,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/axis-escape-contract.md",
+      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities"
     },
     {
       "id": "coordinates-delete-selection-card",
-      "trackingIssue": 4,
-      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "trackingIssue": 53,
+      "url": "https://github.com/evangelistalab/vibemol/issues/53",
       "status": "open",
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
-      "suite": "tests/e2e/mode_consistency.py"
+      "suite": "tests/e2e/mode_consistency.py",
+      "issue": 53,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/coordinates-placement-policy.md",
+      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts"
     }
   ],
   "otherCarriedFollowups": [
@@ -100,22 +130,44 @@
       "evidenceCollector": "tests/e2e/figure_preview_diagnostics.py",
       "standingGateUnchanged": "34/3/37 exact accepted workflows; Figure remains required to pass.",
       "implementationPrerequisite": "Wait for issue42 classification. If the blob genuinely never arrives for a product-state reason, a responsive-time budget is not a remedy. No deadline or shared-helper implementation in the collector PR.",
-      "smokeSubset": "Direct human50 separately authorized shared numeric and measured Smoke event-receipt helper; PR49 merged. Figure responsive-time/heartbeat deadline extension remains design-only pending42."
+      "smokeSubset": "Direct human50 separately authorized shared numeric and measured Smoke event-receipt helper; PR49 merged. Figure responsive-time/heartbeat deadline extension remains design-only pending42.",
+      "diagnosticHalf": "Authorized now: tests/e2e/stall_diagnostics.js observes all six former short-deadline sites through their shared owners; logs raw longtasks, union overlap duration, deadline crossings, actual timestamps/lateness, drops and observer errors. Changes no budget or acceptance.",
+      "budgetHalf": "Held. No stall time is excluded or discounted, and no budget is raised. Figure deadline implementation remains untouched pending42 classification."
     },
     {
       "issue": 45,
       "url": "https://github.com/evangelistalab/vibemol/issues/45",
       "kind": "harness",
-      "status": "fix candidate; complete gate required",
+      "status": "closed; fixed and merged by PR46 after complete35/2/37 gate",
       "acceptedCiFailure": false,
       "suite": "tests/e2e/smoke.py",
       "scope": "781.4ms host gap allowed export completion BEFORE pointerdown. Separate from product11 completion DURING an activation. Fixed by holding the shared app clock before Start until the test-controlled input boundary.",
-      "evidence": "tests/baselines/video-export-activation.json"
+      "evidence": "tests/baselines/video-export-activation.json",
+      "carried": false,
+      "completedGate": {
+        "pr": 46,
+        "head": "e62e10ca9a757c66f4765cd4d46270c2e54c604e",
+        "runId": 40154406166,
+        "attempt": 1,
+        "merge": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+        "passed": 35,
+        "failed": 2,
+        "total": 37,
+        "bothExportersCompleted": true,
+        "activationReadbacks": 58,
+        "nativeInputReceipts": 21,
+        "construction": "8exporter consumer bindings/0newapp bindings;passed",
+        "goldens": "102twice/exactrepeat",
+        "identity": "52slots/eightcontexts/allminima",
+        "units": "450JS/80Python;WebKitpassed",
+        "postMergeBaselineRun": 40157081954,
+        "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
+      }
     }
   ],
   "acceptedCiGate": {
-    "passed": 34,
-    "failed": 3,
+    "passed": 35,
+    "failed": 2,
     "total": 37
   },
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
@@ -328,7 +380,7 @@
       "id": "smoke-grow-add-selection-deadline",
       "issue": 50,
       "url": "https://github.com/evangelistalab/vibemol/issues/50",
-      "status": "closed by harness PR49; measured observation/precondition contract repaired",
+      "status": "closed; post-click polling race structurally removed by synchronizing the assertion on completed native input",
       "carried": false,
       "acceptedCiFailure": false,
       "suite": "tests/e2e/smoke.py",
@@ -363,7 +415,7 @@
       },
       "classification": "No seconds-late selection observed. State is set within native pointerup in all5 samples. Original timeout not reproduced; its exact missed poll remains unknown. Repair removes post-event RAF observation as a prerequisite without increasing600ms or accepting late/missing input.",
       "baseline": "tests/baselines/selection-arrival.json",
-      "disposition": "Replacement PR49 candidate must prove its own complete gate; PR46 stays held until harness lands.",
+      "disposition": "Closed by structural event-boundary assertion in mergedPR49/aef7e63, accepted by40151630268, retained through PR46/40154406166.42 remains open because its failing mechanism has not been removed or classified.",
       "measurement": {
         "runId": 40149272378,
         "samples": 5,
@@ -398,7 +450,17 @@
         "gate": "complete34/3/37, exact accepted keys; no accepted set change",
         "summary": "tests/baselines/smoke-native-input-ci.json"
       },
-      "originalMissedPoll": "Exact cause remains unknown; not reproduced in5 timed samples. New native-event receipt removes dependence on a later poll without raising600ms."
+      "originalMissedPoll": "Exact cause remains unknown; not reproduced in5 timed samples. New native-event receipt removes dependence on a later poll without raising600ms.",
+      "closureRationale": {
+        "mechanism": "The helper is armed before native input, captures the authoritative selection in window pointerup bubble after app handlers, and requires received/complete/trusted/target plus actual and current exact expected values. It asserts that captured completed-event receipt; it does not poll for a later state change.",
+        "structuralRemoval": "No post-click RAF/state-change wait remains. A host readback delayed beyond600ms cannot time out an already completed event; conversely a wrong event-boundary value cannot be repaired by a later correct state. Missing/wrong/late native input still fails the unchanged600ms event-timestamp budget.",
+        "regressionTests": [
+          "native receipt reads completed input without waiting for a frame",
+          "a later correct value cannot repair a wrong completed-event receipt",
+          "observed long tasks do not extend or discount the original input budget"
+        ],
+        "historicalLimit": "The original failed occurrence had no arrival timeline and its exact missed poll remains unexplained. Closure is based on removal of that race by construction, not on five unreproduced samples."
+      }
     }
   ],
   "historicalIssue21Classification": {

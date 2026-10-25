@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Six-direction camera gizmo: hit targets, state isolation, exports and responsive input."""
 import math
+import json
+from workflow_contract import native_keypress, workflow_step
 import os
 import premerge as p
 from surface_shadows import settings, settle
@@ -127,7 +129,26 @@ def run(page,url):
     page.keyboard.press('Space');assert_pose(page,'x',-1,before)
     page.keyboard.press('End');before=pose(page);page.keyboard.press('Enter');assert_pose(page,'z',-1,before)
     assert page.locator('#axisGizmo [tabindex="0"]').count()==1
-    page.keyboard.press('Escape');assert page.locator('#canvas').evaluate('el=>el===document.activeElement')
+    # Observe the existing failure before changing either Escape owner. No
+    # listener below prevents/defaults/stops the event or changes app state.
+    page.evaluate('''()=>{
+      const state=()=>({focus:document.activeElement?.id,
+        selection:VibeMolTesting.getEditSelectionIndices().slice(),
+        edit:document.getElementById('modeEditBtn').getAttribute('aria-checked'),
+        buildArmed:document.getElementById('canvas').classList.contains('vm-build-armed')});
+      const probe={before:state(),rootKeydownSeen:false,state,event:null};
+      window.__axisEscapeProbe=probe;
+      window.addEventListener('keydown',event=>{probe.event=event;},{capture:true,once:true});
+      document.getElementById('axisGizmo').addEventListener('keydown',()=>{probe.rootKeydownSeen=true;},{once:true});
+    }''')
+    escape_trigger=native_keypress(page,'Escape')
+    escape_readback=page.evaluate('''()=>({before:__axisEscapeProbe.before,after:__axisEscapeProbe.state(),
+      rootKeydownSeen:__axisEscapeProbe.rootKeydownSeen,defaultPrevented:__axisEscapeProbe.event?.defaultPrevented,
+      actual:document.activeElement?.id,expected:'canvas'})''')
+    print('[axis-escape] '+json.dumps(escape_readback),flush=True)
+    with workflow_step(__file__,'escape-canvas-focus','axis-endpoint.escape.canvas-focus',
+                       {**escape_readback,'trigger':escape_trigger}):
+        assert page.locator('#canvas').evaluate('el=>el===document.activeElement')
     button.click();page.keyboard.press('m')
     assert page.locator('#modeMeasureBtn').get_attribute('aria-checked')=='true', 'Ordinary app shortcuts remain usable after an axis click'
     # The gizmo is drawn in the actual canvas (PNG/WebM), not only a DOM overlay.
