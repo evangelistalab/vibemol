@@ -52,7 +52,18 @@
     "stop": "Any unknown failure, repair, navigation recovery or missing target case fails. Only the exact source-hashed6/14/20 exporter remainder after the two already-measured close-count failures may remain blocked; report globalCoverageComplete:false. These statements are NOT passes and ordinary Smoke is unchanged."
   },
   "mainGate": "34/3/37 with existing axis, mode and Smoke11 composition; PR46 later moves Smoke to must-pass separately",
-  "candidateVerification": "Replacement candidate own first ordinary CI and bypassed native-input diagnostic pending. Failed83d5ba6 runs40138904806/40138888119 remain failed and immutable.",
+  "candidateVerification": {
+    "status": "merged after own full conjunction",
+    "head": "53282d8fa7c820f5fda7160eed3696f0b01aa2f5",
+    "ordinaryRun": 40151630268,
+    "inputRun": 40151626637,
+    "merge": "aef7e63b4a637417850016c67a022925197c0e1c",
+    "summary": "tests/baselines/smoke-native-input-ci.json",
+    "previousFailedRuns": [
+      40138904806,
+      40138888119
+    ]
+  },
   "localPreflight": {
     "browser": "145.0.7632.6",
     "autoHiddenLauncherRevealedNatively": true,
@@ -68,7 +79,7 @@
     "pageErrors": []
   },
   "sourceAudit": "Production/index/assets/src, goldens, accepted-set manifests and joins unchanged. Smoke changes limited to native preconditions/identities, event receipt and removing duplicate selection/clipboard repairs. Numeric helper substitution retains original parameters; Figure timeout unchanged.",
-  "checks": "442 JS/75 Python units; make check; shared contract includes missing, wrong, late and Promise-valued reader failures. Real locked-browser contract runs before the product prefix in CI.",
+  "checks": "Accepted53282d8:442JS/75Python/checks/WebKit/construction. Own raw gate:34/3/37,102x2 exact repeat,52x8/all minima. No diagnostic supplies merge acceptance.",
   "knownBlockedExporterRemainder": [
     {
       "case": "trajectory smoke",

@@ -1,0 +1,235 @@
+{
+  "productIssue": 11,
+  "harnessIssue": 45,
+  "productMechanism": "The shared click handler used live mode rather than the action begun by pointer/key press. Natural completion during the press changed recording to idle, so click reopened selection.",
+  "harnessMechanism": "A preserved781.4ms gap between recording readback and pointerdown allowed completion before the test press. Pointerdown intent alone cannot repair that test.",
+  "historicalEvidence": [
+    "tests/baselines/evidence/browser-ci-followup/native-video-results.json",
+    "tests/baselines/evidence/browser-ci-followup/smoke-video-state-events.jsonl"
+  ],
+  "overlayOwner": "trajectory-video.js syncOverlayLayout projects controller state.mode into data-state and aria-hidden",
+  "sharedCompletionRoute": "Both endpoint callbacks -> resolveAdvance -> pendingStopAfterRender -> copyFrameAfterRender -> stopRecording -> recorder.onstop -> finalizeExport -> idle; only the endpoint policy differs.",
+  "refutedMirrorHypothesisPreserved": true,
+  "activationStarts": {
+    "pointer": "pointerdown",
+    "Space": "initial keydown, native click at keyup",
+    "Enter": "initial keydown, native click in that activation",
+    "clickOnly": "click-handler entry, consumed synchronously; physical clicks without recorded press are ignored"
+  },
+  "completionGateProof": {
+    "appClock": "render reads performance.now and passes it to both playback owners",
+    "start": "Recording sequence resets lastStepMs to0 before any subsequent render",
+    "hold": "Every render receives the identical fixed timestamp; after initialization both trajectory and vibration deltas are0",
+    "consequence": "No natural endpoint or recorder completion can precede pointerdown regardless of elapsed host time",
+    "release": "After early-Stop click, or between press and release for completion-during-activation",
+    "renderingContinues": true,
+    "noSleepRetryOrLongClip": true
+  },
+  "handlerDependencies": [
+    "state",
+    "EXPORT_MODES",
+    "isRecording",
+    "stopRecording",
+    "labels",
+    "isSelecting",
+    "closeCropOverlay",
+    "openCropOverlay"
+  ],
+  "dependencyCount": 8,
+  "newControllerDependencies": 0,
+  "newModuleLets": 0,
+  "harness": "tests/e2e/video_export_activation.py",
+  "requiredComparands": {
+    "closed": {
+      "mode": "idle",
+      "hidden": "true",
+      "pressed": "false"
+    },
+    "freshSave": {
+      "mode": "selecting",
+      "hidden": "false",
+      "pressed": "true"
+    }
+  },
+  "requiredContexts": [
+    "workbench/light",
+    "workbench/dark",
+    "legacy/light",
+    "legacy/dark"
+  ],
+  "requiredSites": [
+    "trajectory",
+    "vibration"
+  ],
+  "gateChange": {
+    "before": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "after": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37
+    },
+    "reason": "Product11 repair plus independently controlled harness45; Smoke now must pass both sites. No other failure relaxed."
+  },
+  "mergeAcceptance": "Own first complete candidate gate, all37 once, both102 goldens/exact repeat,52slots/eight contexts/all minima, units/WebKit/construction and both exporter records required.",
+  "localValidation": {
+    "control": {
+      "exporterSha256": "3fce9afdcc5b5182a0ed2736ad42762c6463bc3673f46671ce2237478aeecf44",
+      "exactlyEqualsTaggedExporter": true,
+      "cases": [
+        {
+          "context": "workbench-light-trajectory",
+          "nativeDownloads": 3,
+          "failure": "completion during pointer final: actual selecting/hidden=false/pressed=true, expected idle/hidden=true/pressed=false"
+        },
+        {
+          "context": "workbench-light-vibration",
+          "nativeDownloads": 3,
+          "failure": "completion during pointer final: actual selecting/hidden=false/pressed=true, expected idle/hidden=true/pressed=false"
+        }
+      ]
+    },
+    "fixed": {
+      "exporterSha256": "ed4a6e27892e99d89585df0233f93c460d218afbf93a2a7bff4c6311fe391ee4",
+      "nativeRecorder": true,
+      "nativeDownloads": 48,
+      "cases": [
+        {
+          "context": "workbench-light-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-light-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-dark-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "workbench-dark-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-light-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-light-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-dark-trajectory",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        },
+        {
+          "context": "legacy-dark-vibration",
+          "status": "passed",
+          "nativeDownloads": 6,
+          "pageErrors": [],
+          "browserVersion": "145.0.7632.6",
+          "renderer": {
+            "vendor": "WebKit",
+            "renderer": "WebKit WebGL",
+            "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (LLVM 10.0.0) (0x0000C0DE)), SwiftShader driver)"
+          }
+        }
+      ]
+    },
+    "harnessSha256": "10a1154c7aa66de0a080c45dec458ca2d2b056b8e320ae80d0d906c3722b16ad",
+    "identicalHarnessAcrossPair": true,
+    "runtime": "Playwright1.58 with its expected Chromium145/revision1208; no browser replacement",
+    "rawArtifactDirectory": "out/test-artifacts/issue11/",
+    "nonAcceptanceAttempts": "Setup/action/polling failures and mismatched-driver attempts remain separately labelled in ignored output; they are not passing evidence.",
+    "constructionOrder": {
+      "status": "passed",
+      "newAppBindings": 0,
+      "newOrChangedExporterLocalBindings": 8,
+      "newModuleLets": 0
+    },
+    "unitNegativeControl": "All eight new JS activation regressions fail against the pre-fix exporter and pass against the candidate.",
+    "checksAndUnit": {
+      "makeCheck": "passed",
+      "jsTests": 441,
+      "pythonTests": 71
+    }
+  },
+  "rebasedCandidate": {
+    "base": "aef7e63b4a637417850016c67a022925197c0e1c",
+    "heldOriginalHead": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+    "exporterBytesUnchanged": true,
+    "exporterSha256": "ed4a6e27892e99d89585df0233f93c460d218afbf93a2a7bff4c6311fe391ee4",
+    "harnessRepair": {
+      "pr": 49,
+      "ordinaryRun": 40151630268,
+      "inputRun": 40151626637
+    },
+    "ordinaryGate": "Own first new35/2/37 required; only axis/mode accepted, BOTH exporters must pass; old failed39694044396 is not retried",
+    "localChecks": {
+      "jsTests": 450,
+      "pythonTests": 80,
+      "makeCheck": "passed"
+    },
+    "historicalNativeProofUnchanged": true,
+    "toolchain": "Same shared lock as accepted main:Playwright1.64.1/Python3.12.15; no local native matrix rerun"
+  }
+}

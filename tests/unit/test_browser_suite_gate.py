@@ -24,17 +24,18 @@ class WorkflowGateTests(unittest.TestCase):
         return bool(known) and GATE.matches_known_defect(self.result(suite, log, source), known)
 
     def test_completed_ci_workflows_and_both_issue11_sites(self):
-        for suite in ('axis_gizmo.py', 'mode_consistency.py', 'smoke.py'):
+        for suite in ('axis_gizmo.py', 'mode_consistency.py'):
             log = (EVIDENCE / 'ci-38141289409' / suite.replace('.py', '.log')).read_text()
             with self.subTest(suite=suite):
                 self.assertTrue(self.accepted(suite, log))
         for path, site in [('ci-38141289409/smoke.log', 'trajectory'), ('smoke.log', 'vibration')]:
             log = (EVIDENCE / path).read_text()
-            self.assertTrue(self.accepted('smoke.py', log))
-            self.assertEqual(self.result('smoke.py', log)['failureWorkflow']['site'], site)
+            self.assertFalse(self.accepted('smoke.py', log))
+            historical_source='\n'.join("page.locator('#"+p+"SaveVideoBtn').click()\npage.wait_for_function(\"() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2\")\nwait_for_video_idle(page, '"+p+"')" for p in ['trajectory','vibration'])
+            self.assertEqual(self.result('smoke.py', log,historical_source)['failureWorkflow']['site'], site)
 
     def test_line_shifts_are_diagnostic_only(self):
-        for suite in ('axis_gizmo.py', 'mode_consistency.py', 'smoke.py'):
+        for suite in ('axis_gizmo.py', 'mode_consistency.py'):
             log = (EVIDENCE / 'ci-38141289409' / suite.replace('.py', '.log')).read_text()
             shifted = re.sub(r'line (\d+)', lambda m: 'line ' + str(int(m[1]) + 123), log)
             source = '\n' * 123 + (ROOT / 'tests/e2e' / suite).read_text()
@@ -85,7 +86,8 @@ class WorkflowGateTests(unittest.TestCase):
     def test_exception_and_passing_status_are_not_absorbed(self):
         log = (EVIDENCE / 'ci-38141289409/smoke.log').read_text()
         result = self.result('smoke.py', log)
-        known = MANIFEST['knownDefects']['tests/e2e/smoke.py']
+        known = dict(workflow='issue-11-stop-after-second-download',exceptionType='TimeoutError',sites=['trajectory','vibration'])
+        self.assertNotIn('tests/e2e/smoke.py',MANIFEST['knownDefects'])
         self.assertFalse(GATE.matches_known_defect({**result, 'exceptionType': 'AssertionError'}, known))
         self.assertFalse(GATE.matches_known_defect({**result, 'exitCode': 0}, known))
 

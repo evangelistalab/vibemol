@@ -9,65 +9,6 @@
     2,
     1
   ],
-  "currentBrowserBaseline": {
-    "passed": 34,
-    "failed": 3,
-    "total": 37,
-    "environment": "CI",
-    "evidence": "tests/baselines/evidence/release-0.10.0/completion/main-with-settled-harness.json.gz",
-    "comparison": "Current 34/3/37 exact three-workflow gate; 35/2 remains a stop",
-    "historicalLocalResult": {
-      "passed": 35,
-      "failed": 2,
-      "total": 37,
-      "environment": "local",
-      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
-    },
-    "provenance": "Same production tree after the separately authorized accessibility class fix; own first complete main gate",
-    "gate": {
-      "passed": 34,
-      "failed": 3,
-      "total": 37,
-      "environment": "CI",
-      "satisfied": true,
-      "status": "accepted first complete main gate 39158578780"
-    },
-    "acceptedDefects": [
-      {
-        "suite": "axis_gizmo.py",
-        "workflow": "escape-canvas-focus",
-        "exceptionType": "AssertionError",
-        "defect": "Escape interception prevents canvas focus",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
-      },
-      {
-        "suite": "mode_consistency.py",
-        "workflow": "coordinates-delete-selection-card",
-        "exceptionType": "TimeoutError",
-        "defect": "Selection card covers Coordinates Delete",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-      },
-      {
-        "suite": "smoke.py",
-        "workflow": "issue-11-stop-after-second-download",
-        "sites": [
-          "trajectory",
-          "vibration"
-        ],
-        "exceptionType": "TimeoutError",
-        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
-      }
-    ],
-    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39135895060",
-    "sourceAppSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
-    "issue11Workflow": {
-      "id": "issue-11-stop-after-second-download",
-      "site": "trajectory"
-    },
-    "vibrationExportReached": false
-  },
   "stages": [
     {
       "stage": 1,
@@ -2102,7 +2043,7 @@
     "audit": "tests/baselines/evidence/characterization-portability/pre-change-differences.json",
     "findings": "32 one- or four-ULP float leaves; maximum relative difference 7.82384323679457e-16; no real cross-platform difference found. The other 918 raw added leaves are the approved module API additions.",
     "captureHome": "Two independent GitHub CI Ubuntu jobs capture v0.9.5-pre-refactor twice each; raw repeat captures must be exactly identical.",
-    "browserCiGate": "CI requires exactly 34 passing / 3 failing / 37 and exactly three (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card; #11 trajectory OR vibration idle wait after the second download. Missing, extra or changed workflows stop, including35/2 over-performance. #21 is a closed test-synchronization issue; its original overflow comparison and comparand logging remain. Diagnostic39129507791 invalidated the fixed-sleep expectation; state readiness replaces the sleep, without a production change. All golden, identity, construction and source gates remain required.",
+    "browserCiGate": "CI requires exactly35 passing /2 failing /37 and exactly two (suite, workflow) keys: axis Escape/canvas focus; Coordinates Delete intercepted by the selection card. Smoke is must-pass at both exporters with controlled early Stop and completion-during-activation evidence. Missing, extra or changed workflows stop, including36/1 over-performance. Closed test-synchronization issue21 keeps its compact-readiness wait and numeric overflow comparands. All golden, identity, construction and source gates remain required.",
     "recordingEvidence": "tests/baselines/evidence/characterization-portability/ci-recording-comparison.json",
     "captureProvenance": {
       "os": "Linux",
@@ -2357,7 +2298,7 @@
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
-    "cacheGroups": "Each new group gets one CI run on its exact candidate: all37 suites once, current34/3/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order for extractions.",
+    "cacheGroups": "Each new candidate gets one CI run on its exact tree: all37 suites once, current35/2/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order. Historical cache conversions retain their recorded earlier counts.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
     "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack.",
@@ -3769,5 +3710,104 @@
       },
       "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
     }
+  },
+  "preIssue11BrowserBaseline": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37,
+    "environment": "CI",
+    "evidence": "tests/baselines/evidence/release-0.10.0/completion/main-with-settled-harness.json.gz",
+    "comparison": "Current 34/3/37 exact three-workflow gate; 35/2 remains a stop",
+    "historicalLocalResult": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "environment": "local",
+      "evidence": "tests/baselines/evidence/browser-repair/browser-results.json"
+    },
+    "provenance": "Same production tree after the separately authorized accessibility class fix; own first complete main gate",
+    "gate": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37,
+      "environment": "CI",
+      "satisfied": true,
+      "status": "accepted first complete main gate 39158578780"
+    },
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      }
+    ],
+    "ciRunUrl": "https://github.com/evangelistalab/vibemol/actions/runs/39135895060",
+    "sourceAppSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+    "issue11Workflow": {
+      "id": "issue-11-stop-after-second-download",
+      "site": "trajectory"
+    },
+    "vibrationExportReached": false
+  },
+  "ordinaryExpected": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "currentBrowserBaseline": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "environment": "CI",
+    "status": "Required composition for the authorized issue11/45 repair; own complete candidate run required",
+    "acceptedDefects": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      }
+    ],
+    "gate": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37,
+      "status": "Required conjunction for the issue11/45 candidate; final acceptance is recorded by run ID after independent verification."
+    },
+    "issue11AcceptedCiFailure": false,
+    "requiredExporterSites": [
+      "trajectory",
+      "vibration"
+    ],
+    "evidence": "tests/baselines/video-export-activation.json"
   }
 }
