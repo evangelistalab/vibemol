@@ -36,17 +36,12 @@ SNAP=r'''() => {
   const row=e.closest('[data-atom-index],[data-row-index]');
   if(row&&e.hasAttribute('data-edit-field'))return '[data-atom-index='+JSON.stringify(row.getAttribute('data-atom-index'))+'] [data-edit-field='+JSON.stringify(e.getAttribute('data-edit-field'))+']';
   if(e.hasAttribute('data-metal-bonding-choice'))return '[data-metal-bonding-choice='+JSON.stringify(e.getAttribute('data-metal-bonding-choice'))+']';
-  const parts=[];for(let n=e;n&&n!==ownerFor(e);n=n.parentElement){
-   if(n.id){parts.unshift('#'+CSS.escape(n.id));break;}
-   const peers=[...n.parentElement.children].filter(x=>x.tagName===n.tagName);
-   parts.unshift(n.tagName.toLowerCase()+':nth-of-type('+(peers.indexOf(n)+1)+')');
-  }
-  return parts.join(' > ');
+  return null; // An unidentified control fails closed; never key on DOM position.
  };
  const ownerFor=e=>e.closest(selectors);
  const label=e=>e.id||e.getAttribute('data-vm-floating-panel')||e.className;
  const roots=[...document.querySelectorAll(selectors)].filter(visible);
- const result={surfaces:roots.map(e=>({id:label(e),rect:rect(e),zIndex:getComputedStyle(e).zIndex,moved:e.getAttribute('data-vm-floating-moved')})),targets:[],collisions:[],pairs:[]};
+ const result={surfaces:roots.map(e=>({id:label(e),rect:rect(e),zIndex:getComputedStyle(e).zIndex,moved:e.getAttribute('data-vm-floating-moved')})),targets:[],collisions:[],pairs:[],identityErrors:[]};
  for(let i=0;i<roots.length;i++)for(let j=i+1;j<roots.length;j++)if(!roots[i].contains(roots[j])&&!roots[j].contains(roots[i]))result.pairs.push([label(roots[i]),label(roots[j])].sort());
  for(const owner of roots)for(const target of owner.querySelectorAll('button,input,select,textarea,[role="button"],[role="tab"],[data-vm-drag-handle]')){
   if(target.disabled||!visible(target)||getComputedStyle(target).pointerEvents==='none'||target.closest(selectors)!==owner)continue;
@@ -54,6 +49,8 @@ SNAP=r'''() => {
   if(x<0||y<0||x>=innerWidth||y>=innerHeight||!unclipped(target,x,y))continue;
   const hit=document.elementFromPoint(x,y),other=hit?.closest(selectors);
   const row={surface:label(owner),targetSelector:selector(target),targetText:target.textContent.trim().slice(0,120),target:target.id||target.getAttribute('aria-label')||target.getAttribute('data-coords-action')||target.tagName,rect:rect(target),center:{x,y},hit:hit?.id||hit?.className||null,hitSurface:other?label(other):null,ownsHit:!!hit&&(hit===target||target.contains(hit)),zIndex:getComputedStyle(owner).zIndex};
+  row.selectorMatches=row.targetSelector ? owner.querySelectorAll(row.targetSelector).length : 0;
+  if(row.selectorMatches!==1)result.identityErrors.push({...row,attributes:Object.fromEntries([...target.attributes].map(a=>[a.name,a.value]))});
   result.targets.push(row);
   if(!row.ownsHit&&other&&other!==owner&&!owner.contains(other)&&!other.contains(owner))result.collisions.push({...row,hitStack:document.elementsFromPoint(x,y).slice(0,8).map(e=>({id:e.id,tag:e.tagName,classes:e.className,zIndex:getComputedStyle(e).zIndex}))});
  }
@@ -81,6 +78,8 @@ with p.run_http_server(ROOT) as url,p.sync_playwright() as pw:
     wait_for_presented_state(page,'()=>true')
     row=dict(context=name,legacy=legacy,width=width,profile=profile,**page.evaluate(SNAP),pageerrors=errors)
     report['cases'].append(row);page.screenshot(path=str(OUT/(name+'.png')))
+    print('[surface-identities] '+json.dumps(dict(context=name,actual=row['identityErrors'],expected=[])),flush=True)
+    assert not row['identityErrors'],row['identityErrors']
     print(json.dumps(dict(context=name,surfaces=len(row['surfaces']),pairs=len(row['pairs']),targets=len(row['targets']),collisions=len(row['collisions']))),flush=True)
    except Exception as e:report['errors'].append(dict(context=name,error=str(e)));raise
    finally:context.close();(OUT/'report.json').write_text(json.dumps(report,indent=2)+'\n')
