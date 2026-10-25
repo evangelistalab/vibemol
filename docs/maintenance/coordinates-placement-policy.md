@@ -110,5 +110,9 @@ Coordinates/Selection pair and nine additional pairs. Build/Selection occurs at
 open at 390px. Those observations are not a new accepted-failure list. The full
 zero-overlap guard cannot be presented as passing or weakened to hide them. The
 raw rectangles, hit stacks and screenshots are retained under ignored
-`out/test-artifacts/issue53/inventory-control-v3/`; the preliminary count uses local
-Chromium145 and still needs the pinned CI measurement before final disposition.
+`out/test-artifacts/issue53/inventory-control-v3/`; the local count was confirmed by source-paired diagnostic40222091876 on
+Chromium156/Playwright1.64.1. Both trees used the same harness:10 pairs before,
+9 after, only Coordinates/Selection removed, no new pair. The collector measures
+center ownership; full clipped-intersection sampling and28-shell coverage remain
+held with the additional existing collisions. A green collection job is not a
+passing zero-overlap guard or an ordinary merge gate.
