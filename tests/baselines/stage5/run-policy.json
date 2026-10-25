@@ -1,19 +1,19 @@
 {
-  "group": "Issue52 explicit Escape applicability and focus completion",
-  "baselineRun": 39481666710,
-  "baselineHead": "a8a3087c10e8c95585193bb80cef56f7b21942a2",
-  "reason": "Direct human authorizes exactly35/2/37 to36/1/37 by removing only repaired Axis Escape52. Coordinates53 remains byte-identical. Any different result stops; both exporter records and all other gates remain mandatory.",
+  "group": "Issue53 local Coordinates click clearance; intentionally empty accepted set",
+  "baselineRun": 40237309034,
+  "baselineHead": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
+  "reason": "Direct human authorizes36/1/37 to37/0/37 by removing only repaired Coordinates53 after accepted52. The accepted set is intentionally empty; any different result stops. Both exporters and every other gate remain mandatory.",
   "ordinaryExpected": {
-    "passed": 36,
-    "failed": 1,
+    "passed": 37,
+    "failed": 0,
     "total": 37
   },
   "preserveExporterSignature": false,
-  "baselineIntegration": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+  "baselineIntegration": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
   "requireVideoExportCompletion": true,
   "historicalIssue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "acceptancePhase": "issue52"
+  "acceptancePhase": "issue53"
 }

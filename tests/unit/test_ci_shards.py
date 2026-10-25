@@ -62,7 +62,7 @@ class BrowserJoinTests(unittest.TestCase):
             self.assertIsNone(json.loads(path.read_text())['matchesAcceptedBaseline'])
         report = self.join()
         self.assertTrue(report['matchesAcceptedBaseline'])
-        self.assertEqual((report['passed'], report['failed'], report['total']), (36, 1, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (37, 0, 37))
         self.assertEqual(report['issue11Workflow'], {'status':'passed'})
         self.assertTrue(all(e['rawFailureIndependentlyVerified'] for e in report['suites']))
 
@@ -72,13 +72,15 @@ class BrowserJoinTests(unittest.TestCase):
             entry['exitCode'] = 1
         self.change_report('balanced-2', fail)
         report = self.join()
-        self.assertEqual((report['passed'], report['failed'], report['total']), (35, 2, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (36, 1, 37))
         self.assertFalse(report['matchesAcceptedBaseline'])
         self.assertEqual(report['unexpectedFailures'], ['tests/e2e/accessibility.py'])
 
     def test_raw_log_cannot_be_overruled_by_recorded_classification(self):
-        raw=self.paths['balanced-2'].parent/'mode_consistency/run.log'
-        raw.write_text(raw.read_text().replace('"command": "delete"', '"command": "copy"'))
+        def forge(report):
+            entry=next(e for e in report['suites'] if e['test']=='tests/e2e/mode_consistency.py')
+            entry['failureWorkflow']={'id':'coordinates-delete-selection-card'}
+        self.change_report('balanced-2',forge)
         with self.assertRaisesRegex(AssertionError,'Raw failure details differ'):
             self.join()
 
@@ -92,21 +94,22 @@ class BrowserJoinTests(unittest.TestCase):
             entry['exitCode'] = 1
         self.change_report('smoke', update)
         report = self.join()
-        self.assertEqual(report['failed'], 2)
+        self.assertEqual(report['failed'], 1)
         self.assertFalse(report['matchesAcceptedBaseline'])
         self.assertEqual(report['issue11Workflow']['status'], 'unexpected smoke failure')
 
-    def test_missing_carried_failure_rejects_overperformance(self):
-        raw = self.paths['balanced-2'].parent / 'mode_consistency/run.log'
-        raw.write_text('Suite passed\n')
-        def passed(report):
-            entry = next(e for e in report['suites'] if e['test'] == 'tests/e2e/mode_consistency.py')
-            entry.update(exitCode=0, knownDefect=False,
-                **browser_suite.failure_details(raw.read_text(), entry['test'], (ROOT / entry['test']).read_text()))
-        self.change_report('balanced-2', passed)
-        report = self.join()
-        self.assertEqual((report['passed'], report['failed'], report['total']), (37, 0, 37))
+    def test_formerly_accepted_coordinates_workflow_is_now_rejected(self):
+        raw=self.paths['balanced-2'].parent/'mode_consistency/run.log'
+        raw.write_text(marked_log('mode_consistency.py'))
+        def fail(report):
+            entry=next(e for e in report['suites'] if e['test']=='tests/e2e/mode_consistency.py')
+            entry.update(exitCode=1,knownDefect=False,
+                **browser_suite.failure_details(raw.read_text(),entry['test'],(ROOT/entry['test']).read_text()))
+        self.change_report('balanced-2',fail)
+        report=self.join()
+        self.assertEqual((report['passed'],report['failed'],report['total']),(36,1,37))
         self.assertFalse(report['matchesAcceptedBaseline'])
+        self.assertEqual(report['unexpectedFailures'],['tests/e2e/mode_consistency.py'])
 
     def test_missing_duplicate_unfinished_or_changed_source_shard_rejects(self):
         original = self.paths['smoke'].read_text()

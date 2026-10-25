@@ -1,7 +1,7 @@
 {
   "releaseLine": "0.9.x",
   "productionFixesAllowedInRefactor": false,
-  "rule": "Current authorized issue52 candidate requires exactly36/1/37 with only Coordinates Delete/selection-card interception accepted. Axis Escape52 is must-pass and acceptedCiFailure:false.35/2,37/0 or any missing/extra/different workflow stops. Smoke must complete both exporters. Counts are pre-authorized, never adjusted to CI observations; goldens/identity/units/WebKit/construction are unchanged.",
+  "rule": "Current authorized issue53 candidate requires exactly37/0/37. The accepted set is intentionally empty. Axis52 is closed; Coordinates53 is must-pass with its own regression/tagged reproduction. Matcher/join machinery stays. Any failing workflow, omitted/repeated suite or other arithmetic stops; never adjust expectations to observed CI. Both exporters, goldens, identity, units, WebKit and construction remain mandatory.",
   "taggedBase": "v0.9.5-pre-refactor",
   "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "carriedDefects": [
@@ -68,26 +68,12 @@
       }
     },
     {
-      "id": "axis-gizmo-escape",
-      "trackingIssue": 52,
-      "url": "https://github.com/evangelistalab/vibemol/issues/52",
-      "status": "fix candidate; tagged reproduction and own complete36/1/37 gate required",
-      "workflow": "Escape interception prevents canvas focus",
-      "acceptedCiFailure": false,
-      "suite": "tests/e2e/axis_gizmo.py",
-      "issue": 52,
-      "splitFromUmbrella": 4,
-      "mechanismReport": "docs/maintenance/axis-escape-contract.md",
-      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities",
-      "fixRecord": "tests/baselines/escape-contract.json"
-    },
-    {
       "id": "coordinates-delete-selection-card",
       "trackingIssue": 53,
       "url": "https://github.com/evangelistalab/vibemol/issues/53",
-      "status": "open",
+      "status": "fix candidate; own complete first-pass37/0/37 required",
       "workflow": "Selection card covers Coordinates Delete",
-      "acceptedCiFailure": true,
+      "acceptedCiFailure": false,
       "suite": "tests/e2e/mode_consistency.py",
       "issue": 53,
       "splitFromUmbrella": 4,
@@ -100,7 +86,7 @@
         "inventoryIssue": 55,
         "audit": "docs/maintenance/coordinates-placement-policy.md",
         "record": "tests/baselines/coordinates-placement.json",
-        "status": "isolated local-fix preparation; own37/0 gate only after accepted52"
+        "status": "isolated repair after accepted52; guard separate and nonblocking; own37/0 conjunction required"
       }
     }
   ],
@@ -176,16 +162,18 @@
     }
   ],
   "acceptedCiGate": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 37,
+    "failed": 0,
     "total": 37
   },
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {
-    "orderedIssues": [],
-    "scope": "The directly authorized projection repair is complete; no further production fix is released by the Figure harness follow-up.",
-    "reason": "#25,#17 and#3 are fixed/closed. #42 remains open/unclassified and#43 is a separate harness deadline proposal.",
-    "authority": "Direct PR41 merge instruction; subsequent work is Figure harness evidence and a deadline proposal only."
+    "orderedIssues": [
+      53
+    ],
+    "scope": "Complete directly authorized53 local fix, then independent strict guard. Shared placement policy is justified but not scheduled; evaluate alongside0.11 declarative controls.",
+    "reason": "25/17/3/11/45/52 fixed;42 remains open/unclassified;43 Figure budget remains held. Latent surface risks are not accepted ordinary failures.",
+    "authority": "Direct human52/53/guard instructions."
   },
   "closedTestIssues": [
     {
@@ -603,6 +591,23 @@
         "ownRunId": 39330982948,
         "gate": "34/3/37 exact accepted workflows;102x2/exact repeat;52slots/eight contexts/all minima;units/WebKit/construction;28 native Metal cases"
       }
+    },
+    {
+      "id": "axis-gizmo-escape",
+      "trackingIssue": 52,
+      "url": "https://github.com/evangelistalab/vibemol/issues/52",
+      "status": "closed; PR54 merged after complete corrected first-pass36/1/37",
+      "workflow": "Escape interception prevents canvas focus",
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/axis_gizmo.py",
+      "issue": 52,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/axis-escape-contract.md",
+      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities",
+      "fixRecord": "tests/baselines/escape-contract.json",
+      "pr": 54,
+      "runId": 40237309034,
+      "merge": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982"
     }
   ],
   "unclassifiedFindings": [
@@ -719,5 +724,7 @@
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
     }
   ],
-  "openHarnessDefects": []
+  "openHarnessDefects": [],
+  "acceptedSetIntentionallyEmpty": true,
+  "activeGateConsistencyGuard": "Unit assertion compares all active manifest/risk/ledger/run-policy count records and explicit empty-set intent; closes the stale ledger acceptedCiGate35/2 left during52."
 }

@@ -1,7 +1,7 @@
 {
   "issue": 53,
-  "status": "isolated local fix; guard removed to a separate PR; own37/0 gate follows accepted52",
-  "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+  "status": "authorized37/0/37 candidate on accepted52; guard separate and nonblocking",
+  "base": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
   "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
   "knowinglyExtendsFragmentation": true,
   "placementPolicyAudit": "docs/maintenance/coordinates-placement-policy.md",
@@ -123,7 +123,7 @@
     "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls"
   },
   "ordinaryGate": {
-    "manifestUnchanged": true,
+    "manifestUnchanged": false,
     "complete": false,
     "expected": {
       "passed": 37,
@@ -131,7 +131,7 @@
       "total": 37
     },
     "intentionallyEmptyAcceptedSet": true,
-    "armedAfterAccepted52": false
+    "armedAfterAccepted52": true
   },
   "units": {
     "js": 459,

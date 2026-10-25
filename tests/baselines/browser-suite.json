@@ -1,7 +1,7 @@
 {
   "expected": {
-    "passed": 36,
-    "failed": 1,
+    "passed": 37,
+    "failed": 0,
     "total": 37
   },
   "suites": [
@@ -43,17 +43,10 @@
     "tests/e2e/workbench_consistency.py",
     "tests/e2e/workbench_bar.py"
   ],
-  "knownDefects": {
-    "tests/e2e/mode_consistency.py": {
-      "workflow": "coordinates-delete-selection-card",
-      "exceptionType": "TimeoutError",
-      "defect": "Selection card covers Coordinates Delete",
-      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-    }
-  },
-  "policy": "Direct human issue52 authorization: exactly36/1/37, only Coordinates Delete/selection-card interception. Axis Escape is must-pass with its own tagged reproduction and native regression. Remove only the repaired workflow; any other count or failing workflow, including35/2 or37/0, stops. Smoke must pass both exporters and all activation records. All golden, identity, construction, unit and WebKit requirements remain unchanged.",
+  "knownDefects": {},
+  "policy": "Direct human issue53 authorization: exactly37/0/37; remove only Coordinates Delete after accepted52. The accepted set is intentionally empty. Matcher/join machinery stays; any missing, extra or different failure or any other arithmetic stops. Smoke must complete both exporters; goldens/identity/units/WebKit/construction unchanged.",
   "gateEnvironment": "CI",
-  "baselineComparison": "Current issue52 candidate requires36/1/37. Previous35/2/37,34/3/37 and33/4/37 results remain historical. The subsequent issue53 step is separately authorized37/0/37, not acceptance for issue52.",
+  "baselineComparison": "Current issue53 candidate requires37/0/37 with intentionally empty accepted set. Accepted52 run40237309034 was36/1/37; older35/2,34/3 and33/4 observations remain historical.",
   "synchronizationCorrection": {
     "issue": 21,
     "classification": "closed test-synchronization defect",
@@ -91,5 +84,6 @@
       "legitimate fresh Save after completion"
     ],
     "evidence": "tests/baselines/video-export-activation.json"
-  }
+  },
+  "acceptedSetIntentionallyEmpty": true
 }

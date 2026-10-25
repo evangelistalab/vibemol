@@ -1,6 +1,6 @@
 {
   "issue": 52,
-  "status": "corrected candidate after rejected32/5/37; own first new-tree ordinary gate36/1/37 required",
+  "status": "closed; PR54 merged b2eb6ca from complete first corrected gate40237309034",
   "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
   "contract": "docs/maintenance/axis-escape-contract.md",
   "canonicalTables": [
@@ -274,12 +274,26 @@
   "ordinaryGate": {
     "manifestUnchanged": false,
     "pendingHumanCompositionAuthorization": false,
-    "complete": false,
+    "complete": true,
     "expected": {
       "passed": 36,
       "failed": 1,
       "total": 37
-    }
+    },
+    "runId": 40237309034,
+    "attempt": 1,
+    "head": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
+    "integrationCommit": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
+    "counts": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "all37Once": true,
+    "allRequiredConjunctionsPassed": true,
+    "looksSeconds": 1688.9,
+    "bothMaterialFamilyPathsCompleted": true,
+    "workflowSeconds": 1743
   },
   "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth",
   "pinnedDiagnostic": {
@@ -301,24 +315,6 @@
     "construction": "54app/25consumer bindings",
     "mergeGateEvidence": false,
     "looksMaterialPaths": "not covered"
-  },
-  "taggedReproduction": {
-    "runId": 40227225248,
-    "attempt": 1,
-    "tag": "v0.9.5-pre-refactor",
-    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
-    "candidateAppSha256": "55e0b6b29ea4f0e58b55a38d03024d099236e6b04e57dae844539f8c1efaaecd",
-    "harnessSha256": "f4c18cd9965328fa0b604d5addcce2ad425a6473c467df7063c44424d922ad63",
-    "chromium": "156.0.8078.4",
-    "playwright": "1.64.1",
-    "taggedFocus": "viewAxisNegZBtn",
-    "candidateFocus": "canvas",
-    "editActionsPerSource": 1,
-    "taggedSelection": [],
-    "candidateSelection": [],
-    "pageerrors": [],
-    "diagnosticOnly": true,
-    "independentlyVerified": true
   },
   "manifestDiff": {
     "phase": "issue52",
@@ -479,7 +475,18 @@
     "decline": "No placement, Build intent or concrete selection means level4 has no offer and falls through before execution.",
     "diagnosisReportBeforeCode": true
   },
-  "currentLocalNative": {
+  "ordinaryNative": {
+    "runId": 40237309034,
+    "passed": true,
+    "cases": 62,
+    "sourceSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
+    "all32SelectionTargetCases": true,
+    "realFieldOwnerReadbacks": true,
+    "pageerrors": [],
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1"
+  },
+  "preMergeLocalNative": {
     "casesCollected": 62,
     "pageerrors": [],
     "sourceSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
@@ -493,5 +500,40 @@
     },
     "ownOrdinaryMustRunFullCorrected62CaseMatrix": true
   },
-  "currentAppSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce"
+  "fixedCandidateAppSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
+  "initialTaggedReproduction": {
+    "runId": 40227225248,
+    "attempt": 1,
+    "tag": "v0.9.5-pre-refactor",
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "55e0b6b29ea4f0e58b55a38d03024d099236e6b04e57dae844539f8c1efaaecd",
+    "harnessSha256": "f4c18cd9965328fa0b604d5addcce2ad425a6473c467df7063c44424d922ad63",
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "taggedFocus": "viewAxisNegZBtn",
+    "candidateFocus": "canvas",
+    "editActionsPerSource": 1,
+    "taggedSelection": [],
+    "candidateSelection": [],
+    "pageerrors": [],
+    "diagnosticOnly": true,
+    "independentlyVerified": true
+  },
+  "taggedReproduction": {
+    "runId": 40237333216,
+    "attempt": 1,
+    "head": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
+    "independentlyVerified": true,
+    "diagnosticOnly": true,
+    "mergeGateEvidence": false,
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
+    "taggedFocus": "viewAxisNegZBtn",
+    "candidateFocus": "canvas",
+    "editActionsPerSource": 1,
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "pageerrors": []
+  },
+  "immutableCiArchiveSha256": "07f8a7506d01f16020964ba4fe2a70736b8bbda6360238b78bbe305c4071dd07"
 }

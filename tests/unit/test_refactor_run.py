@@ -92,11 +92,11 @@ class RefactorRunPolicy(unittest.TestCase):
 
     def test_current_group_uses_ordinary_site_policy(self):
         policy = json.loads((ROOT/'tests/baselines/stage5/run-policy.json').read_text())
-        self.assertEqual(policy['group'], 'Issue52 explicit Escape applicability and focus completion')
-        self.assertEqual(policy['acceptancePhase'],'issue52')
+        self.assertEqual(policy['group'], 'Issue53 local Coordinates click clearance; intentionally empty accepted set')
+        self.assertEqual(policy['acceptancePhase'],'issue53')
         self.assertIs(policy['preserveExporterSignature'], False)
         self.assertIs(policy['requireVideoExportCompletion'], True)
-        self.assertEqual(policy['ordinaryExpected'], dict(passed=36, failed=1, total=37))
+        self.assertEqual(policy['ordinaryExpected'], dict(passed=37, failed=0, total=37))
 
     def test_repair_requires_both_complete_exporter_records(self):
         self.assertEqual(self.invoke(repaired=True).returncode, 0)
