@@ -336,6 +336,9 @@
       const activeEdit = { rowIndex, columnKey, column, cellEl, inputEl };
       state.activeEdit = activeEdit;
       setEditStateSnapshot(activeEdit);
+      inputEl.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.list', state.activeEdit === activeEdit, () => { cancelInlineEdit(); });
+      });
       inputEl.addEventListener('keydown', (event) => {
         if (state.activeEdit !== activeEdit) return;
         if (event.key === 'Enter') {
@@ -605,6 +608,11 @@
       activateRow(rowIndex);
     });
 
+    (rootEl || bodyEl).addEventListener('vm-escape-offers', event => {
+      // Committed controls in the header/filter are panel-owned too. A live
+      // inline draft offers level3 first; plain field focus is not a draft.
+      event.detail.offer('panel.list', typeof onRequestClose === 'function' && (rootEl || bodyEl).getClientRects().length > 0, () => { onRequestClose(); });
+    });
     bodyEl.addEventListener('keydown', (event) => {
       if (state.activeEdit) return;
       if (event.key === 'ArrowUp') {

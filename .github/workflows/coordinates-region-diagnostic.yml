@@ -7,8 +7,15 @@ on:
       - 'tests/e2e/mode_consistency.py'
       - 'tests/e2e/workflow_contract.py'
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Diagnostic only; never ordinary merge-gate evidence
+        type: choice
+        default: coordinates
+        options: [coordinates, escape, escape-reproduction]
 jobs:
   coordinates-region:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'coordinates'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -29,3 +36,78 @@ jobs:
         with:
           name: coordinates-region-diagnostic
           path: out/test-artifacts/coordinates-region/
+  escape-contract:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'escape'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Use the ordinary CI toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Install the ordinary pinned audit tooling
+        run: npm install --prefix "$RUNNER_TEMP/construction-audit" --no-save --ignore-scripts @babel/parser@7.24.4 @babel/traverse@7.24.1
+      - name: Check the private table and construction order
+        env:
+          VIBEMOL_BABEL_ROOT: ${{ runner.temp }}/construction-audit/node_modules/@babel
+        run: |
+          mkdir -p out/test-artifacts/escape-diagnostic
+          VIBEMOL_ESCAPE_CONTRACT_REPORT=out/test-artifacts/escape-diagnostic/table.json node tools/check-escape-contract.cjs
+          node tools/audit-construction-order.cjs tests/baselines/stage5/construction-order.json out/test-artifacts/escape-diagnostic/construction.json
+          PYTHONPATH=tests/e2e python -c 'import json; from pathlib import Path; from ci_evidence import artifact_identity; Path("out/test-artifacts/escape-diagnostic/identity.json").write_text(json.dumps(artifact_identity(), indent=2)+"\n")'
+      - name: Native Escape, Edit and Workbench integration
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python - <<'PY'
+          import json,os,subprocess,sys
+          from pathlib import Path
+          root=Path('out/test-artifacts/escape-diagnostic');results=[]
+          for suite in ['axis_gizmo','edit_tool','workbench']:
+              output=root/suite;output.mkdir(parents=True,exist_ok=True)
+              with (output/'run.log').open('w') as log:
+                  run=subprocess.run([sys.executable,'tests/e2e/'+suite+'.py'],env=dict(os.environ,VIBEMOL_TEST_ARTIFACT_DIR=str(output)),stdout=log,stderr=subprocess.STDOUT)
+              results.append(dict(suite=suite,exitCode=run.returncode))
+              print(json.dumps(results[-1]),flush=True)
+              (root/'results.json').write_text(json.dumps(results,indent=2)+'\n')
+          sys.exit(int(any(row['exitCode'] for row in results)))
+          PY
+      - name: Preserve every comparand and failed assertion
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escape-contract-diagnostic
+          path: out/test-artifacts/escape-diagnostic/
+  escape-reproduction:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'escape-reproduction'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Ordinary pinned toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Same native Escape trigger on tagged base and candidate
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/escape-tagged"
+          git archive v0.9.5-pre-refactor index.html assets src | tar -x -C "$RUNNER_TEMP/escape-tagged"
+          python tests/e2e/escape_reproduction.py --tagged-root "$RUNNER_TEMP/escape-tagged" --out out/test-artifacts/escape-reproduction
+      - name: Preserve original failure and repaired comparands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escape-tagged-reproduction
+          path: out/test-artifacts/escape-reproduction/

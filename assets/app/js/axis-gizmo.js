@@ -95,6 +95,9 @@
       root.addEventListener(event, e => e.stopPropagation());
     }
     root.addEventListener('contextmenu', e => { e.preventDefault(); e.stopPropagation(); });
+    root.addEventListener('vm-escape-offers', event => {
+      event.detail.offer('axis.focus-canvas', root.contains(event.detail.target), () => { onEscape(); });
+    });
     const navigationKeys = ['ArrowRight', 'ArrowDown', 'ArrowLeft', 'ArrowUp', 'Home', 'End', 'Enter', ' ', 'Escape'];
     root.addEventListener('keyup', e => { if (navigationKeys.includes(e.key)) e.stopPropagation(); });
     root.addEventListener('keydown', e => {
@@ -106,7 +109,9 @@
       if (e.key === 'Home') next = 0;
       if (e.key === 'End') next = 5;
       if (next !== null) { e.preventDefault(); buttons[next].focus({ preventScroll: true }); }
-      if (e.key === 'Escape') { e.preventDefault(); onEscape(); }
+      // Standalone gizmos retain their local handler. The full app has already
+      // resolved this event through its explicit policy before target phase.
+      if (e.key === 'Escape' && !e.vmEscapeDecision) { e.preventDefault(); onEscape(); }
     });
 
     function draw() {

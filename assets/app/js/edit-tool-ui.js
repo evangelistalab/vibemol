@@ -21,8 +21,15 @@
     return { build, name, badge, hint };
   }
 
+  // Canonical Edit sub-ladder, shared by hints and the application arbiter.
+  const EDIT_ESCAPE_LADDER = Object.freeze([
+    { id: 'cancel', when: 'placing', description: 'Cancel provisional placement; retain Build' },
+    { id: 'transform', when: 'build', description: 'Disarm Build; retain selection' },
+    { id: 'clear', when: 'selected', description: 'Clear Transform selection' },
+  ].map(Object.freeze));
+
   function escapeAction(state) {
-    return state.placing ? 'cancel' : state.build ? 'transform' : state.selected ? 'clear' : null;
+    return EDIT_ESCAPE_LADDER.find(row => !!state[row.when])?.id || null;
   }
 
   // Tool intent is workspace interaction state, not a scientific preset. A

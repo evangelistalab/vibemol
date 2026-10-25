@@ -757,6 +757,10 @@
 
     function bindEvents() {
       if (saveBtn) {
+        saveBtn.addEventListener('vm-escape-offers', event => {
+          event.detail.offer('activation.cancel', !!state.activation,
+            () => { state.activation = null; });
+        });
         saveBtn.addEventListener('pointerdown', (event) => {
           state.activation = event.button === 0 ? { source: 'pointer', mode: state.mode } : null;
           if (event && event.preventDefault) event.preventDefault();

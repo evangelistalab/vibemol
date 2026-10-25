@@ -35,6 +35,9 @@
         setOpen(false);
       }
     });
+    panel.addEventListener('vm-escape-offers', event => {
+      event.detail.offer('panel.style-studio', isOpen() && panel.getClientRects().length > 0, () => { setOpen(false); });
+    });
     panel.addEventListener('keyup', event => event.stopPropagation());
     return Object.freeze({ isOpen, setOpen });
   }

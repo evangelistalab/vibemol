@@ -21,7 +21,6 @@
   const body = document.body;
   body.classList.add('vm-workbench');
   const canvas = document.getElementById('canvas');
-  canvas.tabIndex = 0; canvas.setAttribute('aria-label', 'Molecule viewport');
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
   if (narrow) host.setSidebarCollapsed(true);
 
@@ -607,21 +606,17 @@
     if (!menu.hidden && !menu.contains(event.target) && !menuReturn?.contains(event.target)) closeMenu();
     if (!panelsMenu.hidden && !panelsMenu.contains(event.target) && !panelsButton.contains(event.target)) closePanelsMenu();
   });
-  document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape') return;
-    if (!overflowMenu.hidden) { closeOverflow(true); event.preventDefault(); event.stopImmediatePropagation(); }
-    else if (!panelsMenu.hidden) { closePanelsMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
-    else if (!menu.hidden) { closeMenu(true); event.preventDefault(); event.stopImmediatePropagation(); }
-    // Let coordinate/operator fields cancel their own draft first. Build search
-    // is a filter: Escape there still cancels placement or disarms the tool.
-    else if ((!event.target.closest?.('input, select, textarea, [contenteditable="true"]')
-      || event.target.closest?.('#editAdaptiveAddAtomPopover')) && host.editToolEscape(event)) { event.stopImmediatePropagation(); }
-    else if (focus) { setFocus(false); focusButton.focus(); event.preventDefault(); event.stopImmediatePropagation(); }
-    else if (!event.target.closest('input, select, textarea, [contenteditable="true"]')) {
-      const id = event.target.closest('[data-wb-panel]')?.dataset.wbPanel;
-      if (byId.has(id)) { close(id); event.preventDefault(); event.stopImmediatePropagation(); }
-    }
-  }, true);
+  document.addEventListener('vm-escape-offers', event => {
+    const context = event.detail;
+    context.offer('menu.overflow', !overflowMenu.hidden, () => { closeOverflow(true); });
+    context.offer('menu.panels', !panelsMenu.hidden, () => { closePanelsMenu(true); });
+    context.offer('menu.window-options', !menu.hidden, () => { closeMenu(true); });
+    context.offer('focus.exit', focus, () => { setFocus(false); focusButton.focus(); });
+    const id = context.target?.closest('[data-wb-panel]')?.dataset.wbPanel;
+    const item = byId.get(id);
+    const applicable = !!item && open(item) && item.root.getClientRects().length > 0;
+    context.offer('panel.workbench', applicable, () => { close(id); });
+  });
   menu.addEventListener('keydown', event => event.stopPropagation());
   document.addEventListener('vm-floating-drag', event => {
     const id = event.target.dataset.wbPanel; if (!byId.has(id) || compact()) return;

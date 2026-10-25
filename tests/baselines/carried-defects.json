@@ -1,7 +1,7 @@
 {
   "releaseLine": "0.9.x",
   "productionFixesAllowedInRefactor": false,
-  "rule": "Current post-release#11/#45 repair requires35/2/37 with only axis Escape/canvas focus and Coordinates Delete/selection-card interception. Smoke must pass both exporter completion/activation paths.36/1 or any missing/extra/different failure stops. Historical refactor gates and failed evidence retain their actual values; other golden/identity/construction gates are unchanged.",
+  "rule": "Current authorized issue52 candidate requires exactly36/1/37 with only Coordinates Delete/selection-card interception accepted. Axis Escape52 is must-pass and acceptedCiFailure:false.35/2,37/0 or any missing/extra/different workflow stops. Smoke must complete both exporters. Counts are pre-authorized, never adjusted to CI observations; goldens/identity/units/WebKit/construction are unchanged.",
   "taggedBase": "v0.9.5-pre-refactor",
   "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "carriedDefects": [
@@ -71,14 +71,15 @@
       "id": "axis-gizmo-escape",
       "trackingIssue": 52,
       "url": "https://github.com/evangelistalab/vibemol/issues/52",
-      "status": "open",
+      "status": "fix candidate; tagged reproduction and own complete36/1/37 gate required",
       "workflow": "Escape interception prevents canvas focus",
-      "acceptedCiFailure": true,
+      "acceptedCiFailure": false,
       "suite": "tests/e2e/axis_gizmo.py",
       "issue": 52,
       "splitFromUmbrella": 4,
       "mechanismReport": "docs/maintenance/axis-escape-contract.md",
-      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities"
+      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities",
+      "fixRecord": "tests/baselines/escape-contract.json"
     },
     {
       "id": "coordinates-delete-selection-card",

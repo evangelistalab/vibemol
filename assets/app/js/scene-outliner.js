@@ -664,6 +664,9 @@
         input.setAttribute('aria-label', 'Rename');
         input.addEventListener('click', (event) => event.stopPropagation());
         input.addEventListener('dblclick', (event) => event.stopPropagation());
+        input.addEventListener('vm-escape-offers', event => {
+          event.detail.offer('draft.outliner-rename', !!outlinerRenameState, () => { cancelOutlinerRename(); });
+        });
         input.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
             event.preventDefault();
@@ -863,8 +866,12 @@
         if (event.target && cubeLayerContextMenuEl.contains(event.target)) return;
         closeCubeLayerContextMenu();
       });
+      document.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('menu.outliner', !!cubeLayerContextMenuEl && !cubeLayerContextMenuEl.hidden,
+          () => { closeCubeLayerContextMenu(); });
+      });
       window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') closeCubeLayerContextMenu();
+        if (event.key === 'Escape' && !event.vmEscapeDecision) closeCubeLayerContextMenu();
       });
       const onAnchorChange = event => {
         if (event.target?.nodeType && menu.contains(event.target)) return;
@@ -919,8 +926,12 @@
         if (event.target && combinePopoverEl.contains(event.target)) return;
         closeCombinePopover();
       });
+      document.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('panel.arithmetic', event.detail.origin !== 'axis' && !!combinePopoverEl && !combinePopoverEl.hidden,
+          () => { closeCombinePopover(); });
+      });
       window.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && combinePopoverEl && !combinePopoverEl.hidden) closeCombinePopover();
+        if (event.key === 'Escape' && !event.vmEscapeDecision && combinePopoverEl && !combinePopoverEl.hidden) closeCombinePopover();
       });
       const onAnchorChange = event => {
         if (event.target?.nodeType && popover.contains(event.target)) return;

@@ -130,6 +130,9 @@
       $(tab === 'object' ? 'inspectorObjectTab' : 'inspectorLookTab').focus();
     });
     panel.addEventListener('keydown', event => { event.stopPropagation(); if (event.key === 'Escape' && !event.defaultPrevented) { event.preventDefault(); setOpen(false); } });
+    panel.addEventListener('vm-escape-offers', event => {
+      event.detail.offer('panel.properties', isOpen() && panel.getClientRects().length > 0, () => { setOpen(false); });
+    });
     panel.addEventListener('keyup', event => event.stopPropagation());
     function sync() {
       pending = false;

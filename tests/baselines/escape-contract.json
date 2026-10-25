@@ -1,0 +1,497 @@
+{
+  "issue": 52,
+  "status": "corrected candidate after rejected32/5/37; own first new-tree ordinary gate36/1/37 required",
+  "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
+  "contract": "docs/maintenance/axis-escape-contract.md",
+  "canonicalTables": [
+    "assets/app/js/app.js:ESCAPE_LADDER",
+    "assets/app/js/edit-tool-ui.js:EDIT_ESCAPE_LADDER"
+  ],
+  "levels": 7,
+  "editBranches": 3,
+  "modes": [
+    "display",
+    "measurement",
+    "edit",
+    "calculations"
+  ],
+  "origins": [
+    "axis",
+    "scene",
+    "control",
+    "field",
+    "filter"
+  ],
+  "levelModeOriginCases": 224,
+  "editStateCases": 1024,
+  "repeatedPressSequences": 3,
+  "failureDoesNotFallThrough": true,
+  "providerCount": 32,
+  "providers": {
+    "draft.slider": [
+      "assets/app/js/app.js"
+    ],
+    "draft.atom-operator": [
+      "assets/app/js/app.js"
+    ],
+    "draft.molecule-operator": [
+      "assets/app/js/app.js"
+    ],
+    "figure.cancel": [
+      "assets/app/js/app.js"
+    ],
+    "help.close": [
+      "assets/app/js/app.js"
+    ],
+    "appearance-reset.close": [
+      "assets/app/js/app.js"
+    ],
+    "element-colors.close": [
+      "assets/app/js/app.js"
+    ],
+    "edit.perform": [
+      "assets/app/js/app.js"
+    ],
+    "studio.close": [
+      "assets/app/js/app.js"
+    ],
+    "legacy-window.close": [
+      "assets/app/js/app.js"
+    ],
+    "symmetry.cancel-preview": [
+      "assets/app/js/app.js"
+    ],
+    "mode.calculations-clear": [
+      "assets/app/js/app.js"
+    ],
+    "mode.calculations-exit": [
+      "assets/app/js/app.js"
+    ],
+    "mode.measure-clear": [
+      "assets/app/js/app.js"
+    ],
+    "mode.outliner-reset": [
+      "assets/app/js/app.js"
+    ],
+    "axis.focus-canvas": [
+      "assets/app/js/axis-gizmo.js"
+    ],
+    "calculations-picker.close": [
+      "assets/app/js/calculations-picker.js"
+    ],
+    "draft.selection-position": [
+      "assets/app/js/edit-ui.js"
+    ],
+    "draft.look-name": [
+      "assets/app/js/looks-ui.js"
+    ],
+    "panel.properties": [
+      "assets/app/js/properties-inspector.js"
+    ],
+    "draft.outliner-rename": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "menu.outliner": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "panel.arithmetic": [
+      "assets/app/js/scene-outliner.js"
+    ],
+    "panel.style-studio": [
+      "assets/app/js/style-studio.js"
+    ],
+    "activation.cancel": [
+      "assets/app/js/trajectory-video.js"
+    ],
+    "menu.overflow": [
+      "assets/app/js/workbench.js"
+    ],
+    "menu.panels": [
+      "assets/app/js/workbench.js"
+    ],
+    "menu.window-options": [
+      "assets/app/js/workbench.js"
+    ],
+    "focus.exit": [
+      "assets/app/js/workbench.js"
+    ],
+    "panel.workbench": [
+      "assets/app/js/workbench.js"
+    ],
+    "draft.list": [
+      "src/components/VmListPopover.js"
+    ],
+    "panel.list": [
+      "src/components/VmListPopover.js"
+    ]
+  },
+  "dependencies": {
+    "resolveEscapeDecision": {
+      "appClosureReads": [
+        "ESCAPE_LADDER"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 2,
+      "totalInputs": 3
+    },
+    "executeEscapeDecision": {
+      "appClosureReads": [],
+      "globalModuleReads": [],
+      "dataParameters": 2,
+      "totalInputs": 2
+    },
+    "hasVisibleEscapeModalTarget": {
+      "appClosureReads": [],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 1
+    },
+    "offerModalEscapes": {
+      "appClosureReads": [
+        "closeHelp",
+        "figureComposer",
+        "figureRendering",
+        "isAppearanceResetPopoverOpen",
+        "isHelpOpen",
+        "periodicTableController",
+        "setAppearanceResetPopoverOpen"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 8
+    },
+    "offerEditEscape": {
+      "appClosureReads": [
+        "MODES",
+        "getEditToolState",
+        "handleEditToolEscape",
+        "hasVisibleEscapeModalTarget",
+        "isHelpOpen"
+      ],
+      "globalModuleReads": [
+        "window.VibeMolEditToolUi"
+      ],
+      "dataParameters": 1,
+      "totalInputs": 7
+    },
+    "offerLegacyPanelEscapes": {
+      "appClosureReads": [
+        "ESCAPABLE_NON_EDIT_WINDOW_ORDER",
+        "MODES",
+        "cancelSymmetryPreview",
+        "closeNonEditWindows",
+        "displayWindowsController",
+        "hideSymmetryPopover",
+        "isSymmetryPopoverOpen",
+        "styleStudio",
+        "symmetryPanelController",
+        "workspaceEnabled"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 11
+    },
+    "offerModeEscapes": {
+      "appClosureReads": [
+        "MODES",
+        "calculationsModel",
+        "clearEditSelection",
+        "editSel",
+        "measurementRecord",
+        "setMode",
+        "syncCalculations",
+        "updateEditSelectionVisuals",
+        "updateSelectedHalos"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 10
+    },
+    "offerOutlinerEscape": {
+      "appClosureReads": [
+        "clearOutlinerSelectionToActive",
+        "isFocusInsideOutliner",
+        "sceneGraphController"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 4
+    },
+    "collectEscapeContext": {
+      "appClosureReads": [
+        "ESCAPE_LADDER",
+        "canvas",
+        "currentMode",
+        "offerEditEscape",
+        "offerLegacyPanelEscapes",
+        "offerModalEscapes",
+        "offerModeEscapes",
+        "offerOutlinerEscape"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 9
+    },
+    "handleApplicationEscape": {
+      "appClosureReads": [
+        "collectEscapeContext",
+        "executeEscapeDecision",
+        "resolveEscapeDecision"
+      ],
+      "globalModuleReads": [],
+      "dataParameters": 1,
+      "totalInputs": 4
+    }
+  },
+  "moduleLetCount": 251,
+  "newController": false,
+  "newPublicApi": false,
+  "newRuntimeModule": false,
+  "construction": {
+    "passed": true,
+    "appBindings": 54,
+    "consumerBindings": 26,
+    "introducedAppBindings": [
+      "ESCAPE_LADDER",
+      "resolveEscapeDecision",
+      "executeEscapeDecision",
+      "hasVisibleEscapeModalTarget",
+      "offerModalEscapes",
+      "offerEditEscape",
+      "offerLegacyPanelEscapes",
+      "offerModeEscapes",
+      "offerOutlinerEscape",
+      "collectEscapeContext",
+      "handleApplicationEscape"
+    ]
+  },
+  "units": {
+    "js": 459,
+    "python": 101,
+    "passed": true
+  },
+  "smokeRisk": "trajectory-video adds only an Escape action offer for existing activation cancellation; recording/activation handlers unchanged. Both exporter completion records and all activation readbacks remain mandatory in own ordinary gate.",
+  "ordinaryGate": {
+    "manifestUnchanged": false,
+    "pendingHumanCompositionAuthorization": false,
+    "complete": false,
+    "expected": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    }
+  },
+  "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth",
+  "pinnedDiagnostic": {
+    "runId": 40220367858,
+    "attempt": 1,
+    "head": "caf50aa9d31434d6c65d42c1350868a7ba0e8c86",
+    "tree": "ae9c770a6e1e09fd559b00853eec4319510edaf2",
+    "passed": true,
+    "independentlyVerified": true,
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "tableCases": 300,
+    "nativeCases": 25,
+    "suites": [
+      "axis_gizmo.py",
+      "edit_tool.py",
+      "workbench.py"
+    ],
+    "construction": "54app/25consumer bindings",
+    "mergeGateEvidence": false,
+    "looksMaterialPaths": "not covered"
+  },
+  "taggedReproduction": {
+    "runId": 40227225248,
+    "attempt": 1,
+    "tag": "v0.9.5-pre-refactor",
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "55e0b6b29ea4f0e58b55a38d03024d099236e6b04e57dae844539f8c1efaaecd",
+    "harnessSha256": "f4c18cd9965328fa0b604d5addcce2ad425a6473c467df7063c44424d922ad63",
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "taggedFocus": "viewAxisNegZBtn",
+    "candidateFocus": "canvas",
+    "editActionsPerSource": 1,
+    "taggedSelection": [],
+    "candidateSelection": [],
+    "pageerrors": [],
+    "diagnosticOnly": true,
+    "independentlyVerified": true
+  },
+  "manifestDiff": {
+    "phase": "issue52",
+    "before": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37
+    },
+    "after": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "removedSuite": "tests/e2e/axis_gizmo.py",
+    "removedEntry": {
+      "workflow": "escape-canvas-focus",
+      "exceptionType": "AssertionError",
+      "defect": "Escape interception prevents canvas focus",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+    },
+    "retainedSuite": "tests/e2e/mode_consistency.py",
+    "retainedEntryByteIdentical": true,
+    "retainedEntrySha256": "225fb48f71664ef4d04c82a54515430d18162e2ca4455ef14c3c6d41fcd75df0",
+    "source": "direct human authorization in chat; only52removed; any other actual result stops"
+  },
+  "totalMatrixCases": 1248,
+  "focusFixtureContract": "tests/baselines/escape-focus-fixtures.json",
+  "focusKinds": [
+    "canvas",
+    "axis button",
+    "editable text field",
+    "form control"
+  ],
+  "focusFixtures": [
+    {
+      "id": "canvas",
+      "kind": "canvas",
+      "origin": "scene",
+      "selector": "#canvas"
+    },
+    {
+      "id": "axis-endpoint",
+      "kind": "axis button",
+      "origin": "axis",
+      "selector": "#viewAxisNegZBtn"
+    },
+    {
+      "id": "look-name-draft",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": "#lookNameInput",
+      "draft": "draft.look-name"
+    },
+    {
+      "id": "orbitals-energy-committed",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": "#moldenEnergyFilter",
+      "draft": null
+    },
+    {
+      "id": "coordinates-inline-draft",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": ".coordsCellEditor",
+      "draft": "draft.list"
+    },
+    {
+      "id": "build-search-filter",
+      "kind": "editable text field",
+      "origin": "filter",
+      "selector": "#editBuildSearch"
+    },
+    {
+      "id": "native-select",
+      "kind": "form control",
+      "origin": "field",
+      "selector": "#lookPreset"
+    },
+    {
+      "id": "panel-button",
+      "kind": "form control",
+      "origin": "control",
+      "selector": "#styleStudioClose"
+    }
+  ],
+  "selectionTargetKinds": [
+    "atoms",
+    "transform",
+    "bondCenter"
+  ],
+  "initialLocalFocusedSuites": [
+    {
+      "suite": "axis_gizmo",
+      "exitCode": 0,
+      "seconds": 81.005420375
+    },
+    {
+      "suite": "edit_tool",
+      "exitCode": 0,
+      "seconds": 328.410476375
+    },
+    {
+      "suite": "workbench",
+      "exitCode": 0,
+      "seconds": 29.176200583000025
+    }
+  ],
+  "initialOwnershipObserverFollowup": {
+    "productionUnchanged": true,
+    "localCases": 25,
+    "passed": true,
+    "note": "Additional native defaultPrevented/propagation readbacks added after the pinned diagnostic. Own full gate must include this strengthened harness; no completed suite rerun for acceptance."
+  },
+  "initialLocalNative": {
+    "cases": 25,
+    "passed": true,
+    "pageerrors": [],
+    "note": "Local functional checks are not a causal CI comparison or merge gate; pinned CI diagnostic separately required."
+  },
+  "previousEnumeration": {
+    "levelModeOriginCases": 140,
+    "editStateCases": 160,
+    "total": 300,
+    "nativeCases": 25,
+    "limitation": "Abstract origins and fabricated action offers; no real name-form/live-energy owner or bond-only cleanup cell."
+  },
+  "rejectedFirstOrdinary": {
+    "runId": 40227837227,
+    "attempt": 1,
+    "head": "df88b84af8a131c9de546347bf67c55bba3d72cd",
+    "passed": 32,
+    "failed": 5,
+    "total": 37,
+    "expected": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "unexpectedSuites": [
+      "smoke.py",
+      "style_studio.py",
+      "transform_selection.py",
+      "edit_picking.py"
+    ],
+    "held": true,
+    "merged": false,
+    "exporterCompletion": "not covered; Smoke stopped at Orbitals before either exporter",
+    "looksSeconds": 1898.42,
+    "bothMaterialFamilyPathsCompleted": true,
+    "workflowSeconds": 2759,
+    "archiveSha256": "30674dcc99cd8ef5c767e96f0080706a8a856040a4767ecb4e9b00088386b308"
+  },
+  "contractCorrections": {
+    "nameForm": "Register existing field cancel before parent dismissal.",
+    "orbitals": "Committed live field has no draft; panel close applicability cannot blanket-exclude fields. Root ownership includes the header/filter.",
+    "editClear": "Bond-center target existed. onSelectionChanged clears it before aggregate changed flag sees it; assert pre/post target state instead. False/throw remains observable and never falls through after mutation.",
+    "decline": "No placement, Build intent or concrete selection means level4 has no offer and falls through before execution.",
+    "diagnosisReportBeforeCode": true
+  },
+  "currentLocalNative": {
+    "casesCollected": 62,
+    "pageerrors": [],
+    "sourceSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
+    "servedSha256": "1913563fb8518b5f3580a384ff66d53a55619f3a8fc4abb15f8c31b4b343072d",
+    "matrixPassed": false,
+    "collectorFailure": "All62 key/action/state checks ran; final shell readback addressed #viewPanel rather than the actual #sidePanel. Failed log/report retained. Selector corrected, no product change.",
+    "focusedFinalShellReadback": {
+      "passed": true,
+      "sourceSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce",
+      "sameServedSource": true
+    },
+    "ownOrdinaryMustRunFullCorrected62CaseMatrix": true
+  },
+  "currentAppSha256": "e1d03c601769a039da3cd9a786042d2128cbd543c3c705b09062ccb74fd8d6ce"
+}

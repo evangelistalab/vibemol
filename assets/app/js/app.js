@@ -683,6 +683,8 @@
   // --- Three.js scene setup ---
   const canvas = document.getElementById('canvas');
   const canvasEl = canvas;
+  canvas.tabIndex = 0;
+  canvas.setAttribute('aria-label', 'Molecule viewport');
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
   let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;
   renderer.setPixelRatio(1);
@@ -1172,6 +1174,51 @@
 
   // --- Mode system + shortcut routing ---
   const MODES = Object.freeze({ DISPLAY: 'display', EDIT: 'edit', MEASURE: 'measurement', CALCULATIONS: 'calculations' });
+
+  // Canonical order. Availability is collected anew for every key press.
+  // Providers only offer actions; registration order never chooses a winner.
+  const ESCAPE_LADDER = Object.freeze([
+    { level: 1, id: 'capture', description: 'Modal or active capture', actions: ['figure.cancel', 'help.close', 'appearance-reset.close', 'element-colors.close', 'calculations-picker.close'] },
+    { level: 2, id: 'menu', description: 'Close the active command menu', actions: ['menu.overflow', 'menu.panels', 'menu.window-options', 'menu.outliner'] },
+    { level: 3, id: 'draft', description: 'Cancel an owned field or activation draft', actions: ['draft.look-name', 'draft.list', 'draft.selection-position', 'draft.slider', 'draft.atom-operator', 'draft.molecule-operator', 'draft.outliner-rename', 'activation.cancel'], origins: ['field', 'control'] },
+    { level: 4, id: 'edit', description: 'One applicable Edit action, otherwise decline', actions: ['edit.perform'], modes: ['edit'], origins: ['axis', 'scene', 'control', 'filter'], subLadder: 'EDIT_ESCAPE_LADDER', completion: 'axis-focus' },
+    { level: 5, id: 'container', description: 'Exit Focus, otherwise dismiss an applicable panel', actions: ['focus.exit', 'panel.workbench', 'panel.list', 'panel.properties', 'panel.style-studio', 'panel.arithmetic', 'symmetry.cancel-preview', 'studio.close', 'legacy-window.close'] },
+    { level: 6, id: 'axis', description: 'Return axis focus to the canvas', actions: ['axis.focus-canvas'], origins: ['axis'] },
+    { level: 7, id: 'mode', description: 'Applicable ordinary mode fallback, otherwise decline', actions: [{ id: 'mode.outliner-reset', origins: ['control'], description: 'Clear an explicit outliner selection; retain active layer' }, { id: 'mode.measure-clear', modes: ['measurement'], description: 'Clear a nonempty measurement selection; retain mode' }, { id: 'mode.calculations-clear', modes: ['calculations'], description: 'Clear selected calculation atoms; retain mode' }, { id: 'mode.calculations-exit', modes: ['calculations'], description: 'With no calculation atoms selected, return to Display' }], origins: ['scene', 'control', 'filter'] },
+  ].map(row => Object.freeze({ ...row, actions: Object.freeze(row.actions),
+    ...(row.modes ? { modes: Object.freeze(row.modes) } : {}),
+    ...(row.origins ? { origins: Object.freeze(row.origins) } : {}) })));
+
+  function resolveEscapeDecision(context, ladder = ESCAPE_LADDER) {
+    for (const row of ladder) {
+      if (row.modes && !row.modes.includes(context.mode)) continue;
+      if (row.origins && !row.origins.includes(context.origin)) continue;
+      for (const item of row.actions) {
+        const action = typeof item === 'string' ? { id: item } : item;
+        if (action.modes && !action.modes.includes(context.mode)) continue;
+        if (action.origins && !action.origins.includes(context.origin)) continue;
+        const id = action.id, offer = context.actions[id];
+        if (offer?.applicable === true) return { level: row.level, consumer: row.id,
+          action: id, detail: offer.detail || null, completion: row.completion || null };
+      }
+    }
+    return null;
+  }
+
+  function executeEscapeDecision(context, decision) {
+    if (!decision) return false;
+    const offer = context.actions[decision.action];
+    if (!offer || typeof offer.run !== 'function') throw new Error('Escape winner has no action: ' + decision.action);
+    // False/throw is an action failure, never permission to try a lower level.
+    if (offer.run() === false) throw new Error('Escape action failed: ' + decision.action);
+    if (decision.completion === 'axis-focus' && context.origin === 'axis') {
+      const focus = context.actions['axis.focus-canvas'];
+      if (!focus?.applicable || typeof focus.run !== 'function') throw new Error('Missing axis focus completion');
+      focus.run();
+    }
+    return true;
+  }
+
   let currentMode = MODES.DISPLAY;
   // DOM cache registration stays at each original wiring point. Missing nodes
   // are queried lazily again; a cached node is never silently replaced.
@@ -6932,6 +6979,10 @@
         this.valueInput.select();
       });
       this.valueInput.addEventListener('keydown', (evt) => this.handleValueKeyDown(evt));
+      this.valueInput.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.slider', this.isEditing && !this.valueInput.disabled,
+          () => { this.handleValueKeyDown(event.detail.event); });
+      });
       this.valueInput.addEventListener('blur', () => this.commitValueInput({ revert: false }));
       this.syncUi({ formatInput: true });
     }
@@ -14596,10 +14647,11 @@
     editToolUi?.sync();
   }
 
-  function handleEditToolEscape(event) {
+  function handleEditToolEscape(event, action) {
     if (currentMode !== MODES.EDIT) return false;
-    if (isHelpOpen() || event?.target?.closest?.('[aria-modal="true"]')) return false;
-    const action = window.VibeMolEditToolUi.escapeAction(getEditToolState());
+    if (isHelpOpen() || hasVisibleEscapeModalTarget(event)) return false;
+    if (action === undefined) action = window.VibeMolEditToolUi.escapeAction(getEditToolState());
+    if (!action) return false;
     if (action === 'cancel') {
       if (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
       clearMoleculePlacementPreview({ restoreCatalogPreview: false });
@@ -14610,8 +14662,13 @@
     } else if (action === 'transform') {
       chooseEditTool('transform');
     } else {
+      // Clearing atom selection notifies its owner even when the atom list was
+      // empty. That callback can clear a bond-center selection before the shared
+      // helper counts it, so its changed flag is not this action's result.
+      if (!getEditToolState().selected) return false;
       if (addAtomOperatorSession?.source === 'selection') finalizeAddAtomOperatorSession({ announce: false });
-      if (!clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true })) return false;
+      clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
+      if (getEditToolState().selected) throw new Error('Escape selection cleanup incomplete');
     }
     event?.preventDefault();
     updateEditToolboxUi({ syncSearch: false });
@@ -16796,6 +16853,10 @@
       inputEl.addEventListener('input', () => applyAddAtomOperatorInput(axis, inputEl));
       inputEl.addEventListener('change', () => applyAddAtomOperatorInput(axis, inputEl, { syncOnly: true }));
       inputEl.addEventListener('blur', () => updateAddAtomOperatorUi());
+      inputEl.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.atom-operator', !!addAtomOperatorSession,
+          () => { finalizeAddAtomOperatorSession({ commit: false, announce: false }); });
+      });
       inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -16836,6 +16897,12 @@
         updateMoleculePlacementOperatorUi();
       });
       inputEl.addEventListener('blur', () => updateMoleculePlacementOperatorUi());
+      inputEl.addEventListener('vm-escape-offers', event => {
+        event.detail.offer('draft.molecule-operator', moleculePlaceActive, () => {
+          clearMoleculePlacementPreview(); updateEditToolboxUi({ syncSearch: false });
+          setHintMessage('Canceled molecule placement.');
+        });
+      });
       inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
@@ -24656,10 +24723,6 @@
   // Note: Esc handling removed per request. Use on-screen UI to close dialogs.
 
   // Display mode bindings
-  bind('down', MODES.CALCULATIONS, 'Escape', () => {
-    if(calculationsModel.selectedIds(measurementRecord()).length){calculationsModel.setSelectedAtoms(measurementRecord(),[]);syncCalculations();updateSelectedHalos();}
-    else setMode(MODES.DISPLAY);
-  });
   bind('down', MODES.CALCULATIONS, 'e', () => setMode(MODES.EDIT));
   bind('down', MODES.CALCULATIONS, 'm', () => setMode(MODES.MEASURE));
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
@@ -24786,12 +24849,6 @@
   bind('down', MODES.EDIT, 'x', () => axisDown('x'));
   bind('down', MODES.EDIT, 'y', () => axisDown('y'));
   bind('down', MODES.EDIT, 'z', () => axisDown('z'));
-  bind('down', MODES.EDIT, 'Escape', (e) => {
-    const cleared = clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
-    if (!cleared) return;
-    if (e && typeof e.preventDefault === 'function') e.preventDefault();
-    setHintMessage('Selection cleared.');
-  });
 
   // Measurement mode bindings
   bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
@@ -24803,7 +24860,6 @@
   bind('down', MODES.MEASURE, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
   bind('down', MODES.MEASURE, 'f', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIBRATION_PANEL); });
   // Esc clears current measurement selection (but does not change mode)
-  bind('down', MODES.MEASURE, 'Escape', () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
 
   // App default starts in display mode.
   setMode(MODES.DISPLAY);
@@ -24866,9 +24922,103 @@
     return true;
   }
 
+  function hasVisibleEscapeModalTarget(event) {
+    const modal = event?.target?.closest?.('[aria-modal="true"]');
+    return !!modal && modal.getClientRects().length > 0;
+  }
+
+  function offerModalEscapes(context) {
+    context.offer('figure.cancel', figureRendering, () => { figureComposer.cancel(); });
+    context.offer('help.close', isHelpOpen(), () => { closeHelp(); });
+    context.offer('appearance-reset.close', isAppearanceResetPopoverOpen(), () => { setAppearanceResetPopoverOpen(false); });
+    context.offer('element-colors.close', periodicTableController.isVisible(), () => { periodicTableController.setOpen(false); });
+  }
+
+  function offerEditEscape(context) {
+    const applicable = context.mode === MODES.EDIT && !isHelpOpen() && !hasVisibleEscapeModalTarget(context.event);
+    const action = applicable ? window.VibeMolEditToolUi.escapeAction(getEditToolState()) : null;
+    context.offer('edit.perform', !!action, () => handleEditToolEscape(context.event, action), action);
+  }
+
+  function offerLegacyPanelEscapes(context) {
+    const ordinaryOrigin = context.origin !== 'axis';
+    context.offer('studio.close', !workspaceEnabled && ordinaryOrigin && !!styleStudio?.isOpen(),
+      () => { styleStudio.setOpen(false); });
+    const open = !workspaceEnabled && ordinaryOrigin
+      && displayWindowsController.listOpenWindowIds(ESCAPABLE_NON_EDIT_WINDOW_ORDER).length > 0;
+    context.offer('legacy-window.close', !!open,
+      () => { closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER); });
+    context.offer('symmetry.cancel-preview', context.mode === MODES.EDIT && context.origin !== 'axis'
+      && isSymmetryPopoverOpen() && (!workspaceEnabled || !!symmetryPanelController.getPreviewState()),
+      () => { if (workspaceEnabled) cancelSymmetryPreview(); else hideSymmetryPopover({ restore: true }); });
+  }
+
+  function offerModeEscapes(context) {
+    const record = measurementRecord();
+    const selected = context.mode === MODES.CALCULATIONS ? calculationsModel.selectedIds(record).length : 0;
+    context.offer('mode.calculations-clear', context.mode === MODES.CALCULATIONS && selected > 0,
+      () => { calculationsModel.setSelectedAtoms(record, []); syncCalculations(); updateSelectedHalos(); });
+    context.offer('mode.calculations-exit', context.mode === MODES.CALCULATIONS && selected === 0,
+      () => { setMode(MODES.DISPLAY); });
+    context.offer('mode.measure-clear', context.mode === MODES.MEASURE && editSel.length > 0,
+      () => { clearEditSelection(); updateSelectedHalos(); updateEditSelectionVisuals(); });
+  }
+
+  function offerOutlinerEscape(context) {
+    // The legacy helper name says 'to active'; its actual command clears the
+    // explicit selection while retaining the active layer/context.
+    const applicable = isFocusInsideOutliner() && sceneGraphController.getSelection().length > 0;
+    context.offer('mode.outliner-reset', applicable,
+      () => { clearOutlinerSelectionToActive(); });
+  }
+
+  function collectEscapeContext(event) {
+    const target = event.target instanceof Element ? event.target : document.activeElement;
+    const filter = target?.closest('#editAdaptiveAddAtomPopover')
+      && (target.matches('input[type="search"]') || /Search$/.test(target.id));
+    const origin = target?.closest('#axisGizmo') ? 'axis' : target === canvas ? 'scene'
+      : filter ? 'filter' : target?.closest('input, select, textarea, [contenteditable="true"]') ? 'field' : 'control';
+    const context = { mode: currentMode, origin, event, target, actions: Object.create(null) };
+    context.offer = (id, applicable, run, detail = null) => {
+      if (!ESCAPE_LADDER.some(row => row.actions.some(action => (typeof action === 'string' ? action : action.id) === id))) throw new Error('Unknown Escape action provider: ' + id);
+      if (Object.hasOwn(context.actions, id)) throw new Error('Duplicate Escape action provider: ' + id);
+      context.actions[id] = { applicable: !!applicable, run, detail };
+    };
+    offerModalEscapes(context);
+    offerEditEscape(context);
+    offerLegacyPanelEscapes(context);
+    offerModeEscapes(context);
+    offerOutlinerEscape(context);
+    // Synchronous providers expose current private availability and an action;
+    // the data table, never provider registration order, resolves priority.
+    (target || document).dispatchEvent(new CustomEvent('vm-escape-offers', { bubbles: true, detail: context }));
+    return context;
+  }
+
+  function handleApplicationEscape(event) {
+    if (event.key !== 'Escape' || event.defaultPrevented) return;
+    // Per-event ownership only. No decision or ladder position survives a key.
+    event.vmEscapeDecision = { status: 'resolving' };
+    try {
+      const context = collectEscapeContext(event);
+      const decision = resolveEscapeDecision(context);
+      event.vmEscapeDecision = decision || { status: 'declined' };
+      if (!decision) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      executeEscapeDecision(context, decision);
+    } catch (error) {
+      // A provider/action failure is observable and cannot run a lower consumer.
+      event.vmEscapeDecision = { status: 'failed' };
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      throw error;
+    }
+  }
+
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
-    if (e.defaultPrevented) return;
+    if (e.defaultPrevented || e.key === 'Escape') return;
     // Let native clipboard events run without triggering the plain C/V panels.
     // Modified variants (for example Cmd+Shift+C) also belong to the browser.
     if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(normKey(e))) return;
@@ -24878,42 +25028,14 @@
       toggleHelp(document.activeElement || helpBtn || null);
       return;
     }
-    if (isHelpOpen()) {
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        closeHelp();
-        return;
-      }
-      if (e.key === 'Tab') {
-        handleHelpOverlayKeydown(e);
-        if (e.defaultPrevented) return;
-      }
+    if (isHelpOpen() && e.key === 'Tab') {
+      handleHelpOverlayKeydown(e);
+      if (e.defaultPrevented) return;
     }
-    if (e.key === 'Escape' && isAppearanceResetPopoverOpen()) {
-      e.preventDefault();
-      setAppearanceResetPopoverOpen(false);
-      return;
-    }
-    if (e.key === 'Escape' && periodicTableController.isVisible()) {
-      e.preventDefault();
-      periodicTableController.setOpen(false);
-      return;
-    }
-    if (e.key === 'Escape' && styleStudio?.isOpen() && !workspaceEnabled) {
-      e.preventDefault();
-      styleStudio.setOpen(false);
-      return;
-    }
-    if (e.key === 'Escape' && currentMode === MODES.EDIT && handleEditToolEscape(e)) return;
     if (currentMode === MODES.EDIT && addAtomOperatorSession) {
       if (e.key === 'Enter' && !isTypingInInput()) {
         e.preventDefault();
         finalizeAddAtomOperatorSession({ commit: true, announce: false });
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        finalizeAddAtomOperatorSession({ commit: false, announce: false });
         return;
       }
     }
@@ -24922,13 +25044,6 @@
       if (e.key === 'Enter' && !isTypingInInput()) {
         e.preventDefault();
         commitMoleculePlacement();
-        return;
-      }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        clearMoleculePlacementPreview();
-        updateEditToolboxUi({ syncSearch: false });
-        setHintMessage('Canceled molecule placement.');
         return;
       }
     }
@@ -24940,27 +25055,6 @@
       if (!isTypingInInput()) {
         e.preventDefault();
         selectAllEditAtoms();
-        return;
-      }
-    }
-    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSelectionFragmentCueArmed() && addFusePreviewState) {
-      e.preventDefault();
-      clearFuseRingPreview();
-      updateEditToolboxUi({ syncSearch: false });
-      setHintMessage('Canceled fuse-ring placement.');
-      return;
-    }
-    if (e.key === 'Escape' && currentMode === MODES.EDIT && isSymmetryPopoverOpen()
-      && (!workspaceEnabled || symmetryPanelController.getPreviewState())) {
-      e.preventDefault();
-      if (workspaceEnabled) cancelSymmetryPreview();
-      else hideSymmetryPopover({ restore: true });
-      return;
-    }
-    if (e.key === 'Escape' && !workspaceEnabled) {
-      const closed = closeNonEditWindows(ESCAPABLE_NON_EDIT_WINDOW_ORDER);
-      if (closed) {
-        e.preventDefault();
         return;
       }
     }
@@ -31898,6 +31992,10 @@
       }),
     });
   }
+
+  // All application bindings exist before the Escape owner is exposed. Window
+  // capture precedes target/document phases by DOM semantics, not registration.
+  window.addEventListener('keydown', handleApplicationEscape, true);
 
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 

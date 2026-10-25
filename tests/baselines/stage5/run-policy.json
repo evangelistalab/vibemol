@@ -1,11 +1,11 @@
 {
-  "group": "Issue11 activation intent and issue45 deterministic Smoke input",
+  "group": "Issue52 explicit Escape applicability and focus completion",
   "baselineRun": 39481666710,
   "baselineHead": "a8a3087c10e8c95585193bb80cef56f7b21942a2",
-  "reason": "Direct human authorization: remove repaired Smoke#11 from accepted failures in this PR before its first CI. Require35/2/37 with the same other two workflows, and both exporter completion/activation records.",
+  "reason": "Direct human authorizes exactly35/2/37 to36/1/37 by removing only repaired Axis Escape52. Coordinates53 remains byte-identical. Any different result stops; both exporter records and all other gates remain mandatory.",
   "ordinaryExpected": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 36,
+    "failed": 1,
     "total": 37
   },
   "preserveExporterSignature": false,
@@ -14,5 +14,6 @@
   "historicalIssue11Workflow": {
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
-  }
+  },
+  "acceptancePhase": "issue52"
 }

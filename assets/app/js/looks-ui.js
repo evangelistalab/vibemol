@@ -188,6 +188,10 @@
     $('lookNameCancel').onclick = () => { $('lookNameForm').hidden = true; naming = null; $('lookSave').focus(); };
     $('lookNameConfirm').onclick = () => run(saveName);
     $('lookNameInput').onkeydown = event => { if (['Enter','Escape'].includes(event.key)) { event.preventDefault(); event.stopPropagation(); if (event.key === 'Enter') run(saveName); else $('lookNameCancel').click(); } };
+    $('lookNameForm').addEventListener('vm-escape-offers', event => {
+      event.detail.offer('draft.look-name', naming !== null && !$('lookNameForm').hidden,
+        () => { $('lookNameCancel').click(); });
+    });
     $('lookUndo').onclick = () => run(() => { if (!undoState) return; deps.restoreUndo(undoState); undoState = null; transaction = null; sync(); status('Previous appearance restored.'); });
     $('lookRevert').onclick = () => { edit('revert', 'change', () => deps.resetReference()); status(`${state().label} appearance restored.`); };
     $('lookRevert').setAttribute('data-tooltip', 'Discard edits to the selected style and color scheme. Undo restores the previous appearance.');
