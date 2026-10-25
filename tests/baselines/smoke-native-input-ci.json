@@ -1,0 +1,289 @@
+{
+  "status": "complete conjunction passed; eligible for exact-head merge",
+  "ordinaryRun": 40151630268,
+  "inputRun": 40151626637,
+  "head": "53282d8fa7c820f5fda7160eed3696f0b01aa2f5",
+  "tree": "4e536063c367680ad2d9a34fe69b1c1ff0a57c51",
+  "expectedAndActual": {
+    "passed": 34,
+    "failed": 3,
+    "total": 37
+  },
+  "allFailedWorkflowsReviewed": true,
+  "goldens": "102twice/exact repeat/unchanged",
+  "identities": "52slots/eightcontexts/all minima; WB47+5/legacy48+4",
+  "looksSeconds": 1057.16,
+  "bothMaterialPaths": {
+    "Studio": true,
+    "Properties": true
+  },
+  "appearanceMaterialPreset": "No timeout in this completed run; both paths covered; intermittent risk remains open",
+  "workflowMinutes": 38.61666666666667,
+  "cache": {
+    "restoreHits": 8,
+    "restoreMisses": 0,
+    "hitJobs": [
+      "Browser suites (balanced-1)",
+      "Browser suites (balanced-2)",
+      "Browser suites (balanced-3)",
+      "Browser suites (looks)",
+      "Browser suites (smoke)",
+      "Characterization (1)",
+      "Characterization (2)",
+      "WebKit Properties interactions"
+    ],
+    "missJobs": [],
+    "playwrightVersions": [
+      "1.64.1"
+    ]
+  },
+  "units": {
+    "js": 442,
+    "python": 75
+  },
+  "construction": "passed",
+  "productChanges": false,
+  "appLets": 251,
+  "originalFailureNotReplayed": true,
+  "merge": "aef7e63b4a637417850016c67a022925197c0e1c",
+  "archive": {
+    "source": "ci-40151630268",
+    "archive": "ci-40151630268-immutable.tar.gz",
+    "bytes": 88197411,
+    "sha256": "3a72b200c92bdeab6a253e6cfea63e05e5c142b97e6c57f69b801b873b0a3e52",
+    "allFilesReopened": 468
+  },
+  "inputArchive": {
+    "source": "ci-40151626637",
+    "archive": "ci-40151626637-immutable.tar.gz",
+    "bytes": 1557718,
+    "sha256": "ecbcb0207801d6227d5e7c54082491b890a27d2c860857f6cdea7ff15f6d91da",
+    "allFilesReopened": 22
+  },
+  "identityContexts": [
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "light",
+      "nodeCount": 52,
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 412,
+          "DOM replacement": 5654,
+          "session restore": 1,
+          "panel transition": 1149
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 408
+      }
+    },
+    {
+      "run": 1,
+      "launch": "workbench",
+      "theme": "dark",
+      "nodeCount": 52,
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5472,
+          "session restore": 1,
+          "panel transition": 1109
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "light",
+      "nodeCount": 52,
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3292,
+          "session restore": 1,
+          "panel transition": 852
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 1,
+      "launch": "legacy",
+      "theme": "dark",
+      "nodeCount": 52,
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3402,
+          "session restore": 1,
+          "panel transition": 851
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "light",
+      "nodeCount": 52,
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5352,
+          "session restore": 1,
+          "panel transition": 1115
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 2,
+      "launch": "workbench",
+      "theme": "dark",
+      "nodeCount": 52,
+      "composition": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5465,
+          "session restore": 1,
+          "panel transition": 1112
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      }
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "light",
+      "nodeCount": 52,
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2988,
+          "session restore": 1,
+          "panel transition": 781
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    },
+    {
+      "run": 2,
+      "launch": "legacy",
+      "theme": "dark",
+      "nodeCount": 52,
+      "composition": {
+        "live": 48,
+        "knownAbsent": 4
+      },
+      "exercise": {
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3402,
+          "session restore": 1,
+          "panel transition": 832
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    }
+  ]
+}

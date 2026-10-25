@@ -212,5 +212,24 @@
       "jsTests": 441,
       "pythonTests": 71
     }
+  },
+  "rebasedCandidate": {
+    "base": "aef7e63b4a637417850016c67a022925197c0e1c",
+    "heldOriginalHead": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+    "exporterBytesUnchanged": true,
+    "exporterSha256": "ed4a6e27892e99d89585df0233f93c460d218afbf93a2a7bff4c6311fe391ee4",
+    "harnessRepair": {
+      "pr": 49,
+      "ordinaryRun": 40151630268,
+      "inputRun": 40151626637
+    },
+    "ordinaryGate": "Own first new35/2/37 required; only axis/mode accepted, BOTH exporters must pass; old failed39694044396 is not retried",
+    "localChecks": {
+      "jsTests": 450,
+      "pythonTests": 80,
+      "makeCheck": "passed"
+    },
+    "historicalNativeProofUnchanged": true,
+    "toolchain": "Same shared lock as accepted main:Playwright1.64.1/Python3.12.15; no local native matrix rerun"
   }
 }
