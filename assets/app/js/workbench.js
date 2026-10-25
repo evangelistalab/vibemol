@@ -614,7 +614,7 @@
     context.offer('focus.exit', focus, () => { setFocus(false); focusButton.focus(); });
     const id = context.target?.closest('[data-wb-panel]')?.dataset.wbPanel;
     const item = byId.get(id);
-    const applicable = context.origin !== 'field' && !!item && open(item) && item.root.getClientRects().length > 0;
+    const applicable = !!item && open(item) && item.root.getClientRects().length > 0;
     context.offer('panel.workbench', applicable, () => { close(id); });
   });
   menu.addEventListener('keydown', event => event.stopPropagation());

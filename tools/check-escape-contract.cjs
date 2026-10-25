@@ -26,7 +26,11 @@ const levels=plain(policy.levels),edit=plain(policy.edit);
 assert.deepEqual(levels.map(x=>[x.level,x.id]),[[1,'capture'],[2,'menu'],[3,'draft'],[4,'edit'],[5,'container'],[6,'axis'],[7,'mode']]);
 assert.deepEqual(edit.map(x=>[x.id,x.when]),[['cancel','placing'],['transform','build'],['clear','selected']]);
 assert.equal(levels[3].subLadder,'EDIT_ESCAPE_LADDER');
-const modes=['display','measurement','edit','calculations'],origins=['axis','scene','control','field','filter'];
+const modes=['display','measurement','edit','calculations'];
+const focusContract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/escape-focus-fixtures.json'),'utf8'));
+const focusFixtures=focusContract.fixtures,origins=[...new Set(focusFixtures.map(f=>f.origin))];
+assert.equal(focusFixtures.length,8);assert.deepEqual([...new Set(focusFixtures.map(f=>f.kind))].sort(),focusContract.categories.slice().sort());
+assert.equal(new Set(focusFixtures.map(f=>f.id)).size,8);
 const ids=levels.flatMap(r=>r.actions.map(x=>typeof x==='string'?x:x.id));assert.equal(new Set(ids).size,ids.length);
 // Every offered action must be declared; every declaration must have an owner.
 const providers=new Map();
@@ -49,43 +53,51 @@ assert([...providers.values()].every(files=>files.length===1),'Escape action has
 let matrixCases=0,declines=0,actions=0,completions=0;
 const matrix=[];
 // Independent contract eligibility oracle, not the policy's own filter code.
-function expected(row,mode,origin){
- if(row.level===3)return ['control','field'].includes(origin);
+function expected(row,mode,fixture){
+ const {origin}=fixture;
+ if(row.level===3)return !!fixture.draft || origin==='control';
  if(row.level===4)return mode==='edit'&&origin!=='field';
  if(row.level===6)return origin==='axis';
  if(row.level===7)return origin==='control'||(['scene','filter'].includes(origin)&&['measurement','calculations'].includes(mode));
  return true;
 }
-function actionId(row,mode,origin){
- if(row.level===3)return origin==='control'?'activation.cancel':'draft.list';
+function actionId(row,mode,fixture){
+ const {origin}=fixture;
+ if(row.level===3)return fixture.draft || (origin==='control'?'activation.cancel':null);
  if(row.level===7)return origin==='control'?'mode.outliner-reset':mode==='measurement'?'mode.measure-clear':mode==='calculations'?'mode.calculations-exit':'mode.outliner-reset';
  return typeof row.actions[0]==='string'?row.actions[0]:row.actions[0].id;
 }
-for(const row of levels)for(const mode of modes)for(const origin of origins){
- const id=actionId(row,mode,origin),called=[],focused=[];
- const context={mode,origin,actions:{[id]:{applicable:true,detail:row.level===4?'clear':null,run:()=>{called.push(id);}}}};
+for(const row of levels)for(const mode of modes)for(const fixture of focusFixtures){
+ const {origin}=fixture;
+ const id=actionId(row,mode,fixture),called=[],focused=[];
+ const context={mode,origin,actions:id?{[id]:{applicable:true,detail:row.level===4?'clear':null,run:()=>{called.push(id);}}}:{}};
  if(row.level===4&&origin==='axis')context.actions['axis.focus-canvas']={applicable:true,run:()=>focused.push('canvas')};
- const chosen=policy.choose(context);const applies=expected(row,mode,origin);
+ const chosen=policy.choose(context);const applies=expected(row,mode,fixture);
  // An inapplicable Edit row may still legitimately fall through to axis focus.
  const axisFallback=!applies&&row.level===4&&origin==='axis';
  assert.equal(chosen?.level??null,applies?row.level:axisFallback?6:null,JSON.stringify({row:row.level,mode,origin}));
  policy.execute(context,chosen);
  assert.equal(called.length,applies?1:0);assert.equal(focused.length,(applies&&row.level===4&&origin==='axis')||axisFallback?1:0);
- matrix.push({level:row.level,mode,origin,winner:chosen?.level??null,actions:applies?called.length:axisFallback?focused.length:0});
+ matrix.push({level:row.level,mode,focus:fixture.id,focusKind:fixture.kind,origin,winner:chosen?.level??null,actions:applies?called.length:axisFallback?focused.length:0});
  matrixCases++;actions+=called.length;completions+=focused.length;if(!chosen)declines++;
 }
 // Every Edit sub-branch across every mode/origin, including empty state.
-let editCases=0;
-for(const mode of modes)for(const origin of origins)for(let flags=0;flags<8;flags++){
- const state={placing:!!(flags&4),build:!!(flags&2),selected:!!(flags&1)};
+let editCases=0;const editMatrix=[];
+for(const mode of modes)for(const fixture of focusFixtures)for(let flags=0;flags<32;flags++){
+ const {origin}=fixture;
+ const targets={atoms:!!(flags&1),transform:!!(flags&2),bondCenter:!!(flags&4)};
+ const state={placing:!!(flags&16),build:!!(flags&8),selected:Object.values(targets).some(Boolean)};
  const desired=state.placing?'cancel':state.build?'transform':state.selected?'clear':null;
  assert.equal(policy.editAction(state),desired);
- const calls=[],focus=[];const context={mode,origin,actions:{'edit.perform':{applicable:!!desired,detail:desired,run:()=>calls.push(desired)}}};
+ const calls=[],focus=[],drafts=[];const context={mode,origin,actions:{'edit.perform':{applicable:!!desired,detail:desired,run:()=>calls.push(desired)}}};
+ if(fixture.draft)context.actions[fixture.draft]={applicable:true,run:()=>drafts.push(fixture.draft)};
  if(origin==='axis')context.actions['axis.focus-canvas']={applicable:true,run:()=>focus.push('canvas')};
  const decision=policy.choose(context);policy.execute(context,decision);
- const eligible=mode==='edit'&&origin!=='field'&&!!desired;
+ const eligible=mode==='edit'&&origin!=='field'&&!fixture.draft&&!!desired;
  assert.equal(calls.length,eligible?1:0);
- assert.equal(decision?.level??null,eligible?4:origin==='axis'?6:null);
+ assert.equal(decision?.level??null,fixture.draft?3:eligible?4:origin==='axis'?6:null);
+ assert.equal(drafts.length,fixture.draft?1:0);
+ editMatrix.push({mode,focus:fixture.id,focusKind:fixture.kind,origin,placing:state.placing,build:state.build,targets,winner:decision?.level??null,action:decision?.action??null});
  editCases++;
 }
 // Deep state is read afresh on every press. No cached decision or carried index.
@@ -143,6 +155,7 @@ traverse(parser.parse(fs.readFileSync(path.join(root,'assets/app/js/app.js'),'ut
  }
 });
 assert.equal(Object.keys(dependencies).length,helpers.length,'Complete helper dependency inventory');
-const report={passed:true,hashes,dependencies,actionProviders:Object.fromEntries(providers),logicalActions:matrixCases-declines,levels:levels.length,editBranches:edit.length,modes,origins,matrixCases,editCases,declines,actions,completions,repeatedPressSequences:3,failureDoesNotFallThrough:true,matrix};
+assert.equal(matrixCases,224);assert.equal(editCases,1024);
+const report={passed:true,hashes,dependencies,focusFixtures,focusCategories:focusContract.categories,selectionTargetKinds:focusContract.selectionTargets,totalMatrixCases:matrixCases+editCases,previousMatrixCases:300,actionProviders:Object.fromEntries(providers),logicalActions:matrixCases-declines,levels:levels.length,editBranches:edit.length,modes,origins,matrixCases,editCases,declines,actions,completions,repeatedPressSequences:3,failureDoesNotFallThrough:true,matrix,editMatrix};
 const target=process.env.VIBEMOL_ESCAPE_CONTRACT_REPORT;if(target){fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,JSON.stringify(report,null,2)+'\n');}
-console.log('[escape-contract] '+JSON.stringify({...report,matrix:undefined}));
+console.log('[escape-contract] '+JSON.stringify({...report,matrix:undefined,editMatrix:undefined}));

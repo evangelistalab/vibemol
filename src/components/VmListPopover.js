@@ -608,8 +608,10 @@
       activateRow(rowIndex);
     });
 
-    bodyEl.addEventListener('vm-escape-offers', event => {
-      event.detail.offer('panel.list', typeof onRequestClose === 'function' && bodyEl.getClientRects().length > 0, () => { onRequestClose(); });
+    (rootEl || bodyEl).addEventListener('vm-escape-offers', event => {
+      // Committed controls in the header/filter are panel-owned too. A live
+      // inline draft offers level3 first; plain field focus is not a draft.
+      event.detail.offer('panel.list', typeof onRequestClose === 'function' && (rootEl || bodyEl).getClientRects().length > 0, () => { onRequestClose(); });
     });
     bodyEl.addEventListener('keydown', (event) => {
       if (state.activeEdit) return;

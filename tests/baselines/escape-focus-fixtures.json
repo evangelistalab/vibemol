@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "categories": [
+    "canvas",
+    "axis button",
+    "editable text field",
+    "form control"
+  ],
+  "fixtures": [
+    {
+      "id": "canvas",
+      "kind": "canvas",
+      "origin": "scene",
+      "selector": "#canvas"
+    },
+    {
+      "id": "axis-endpoint",
+      "kind": "axis button",
+      "origin": "axis",
+      "selector": "#viewAxisNegZBtn"
+    },
+    {
+      "id": "look-name-draft",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": "#lookNameInput",
+      "draft": "draft.look-name"
+    },
+    {
+      "id": "orbitals-energy-committed",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": "#moldenEnergyFilter",
+      "draft": null
+    },
+    {
+      "id": "coordinates-inline-draft",
+      "kind": "editable text field",
+      "origin": "field",
+      "selector": ".coordsCellEditor",
+      "draft": "draft.list"
+    },
+    {
+      "id": "build-search-filter",
+      "kind": "editable text field",
+      "origin": "filter",
+      "selector": "#editBuildSearch"
+    },
+    {
+      "id": "native-select",
+      "kind": "form control",
+      "origin": "field",
+      "selector": "#lookPreset"
+    },
+    {
+      "id": "panel-button",
+      "kind": "form control",
+      "origin": "control",
+      "selector": "#styleStudioClose"
+    }
+  ],
+  "selectionTargets": [
+    "atoms",
+    "transform",
+    "bondCenter"
+  ],
+  "previous": {
+    "levelCases": 140,
+    "editCases": 160,
+    "total": 300,
+    "nativeCases": 25,
+    "limitations": "Five abstract origins, fabricated offers and a single selected boolean; no real field-owner or bond-only cleanup contract."
+  },
+  "countScope": "Pure table combinations. Native owner and actual cleanup readbacks are separate; table enumeration alone does not prove integration."
+}

@@ -1180,7 +1180,7 @@
   const ESCAPE_LADDER = Object.freeze([
     { level: 1, id: 'capture', description: 'Modal or active capture', actions: ['figure.cancel', 'help.close', 'appearance-reset.close', 'element-colors.close', 'calculations-picker.close'] },
     { level: 2, id: 'menu', description: 'Close the active command menu', actions: ['menu.overflow', 'menu.panels', 'menu.window-options', 'menu.outliner'] },
-    { level: 3, id: 'draft', description: 'Cancel an owned field or activation draft', actions: ['draft.list', 'draft.selection-position', 'draft.slider', 'draft.atom-operator', 'draft.molecule-operator', 'draft.outliner-rename', 'activation.cancel'], origins: ['field', 'control'] },
+    { level: 3, id: 'draft', description: 'Cancel an owned field or activation draft', actions: ['draft.look-name', 'draft.list', 'draft.selection-position', 'draft.slider', 'draft.atom-operator', 'draft.molecule-operator', 'draft.outliner-rename', 'activation.cancel'], origins: ['field', 'control'] },
     { level: 4, id: 'edit', description: 'One applicable Edit action, otherwise decline', actions: ['edit.perform'], modes: ['edit'], origins: ['axis', 'scene', 'control', 'filter'], subLadder: 'EDIT_ESCAPE_LADDER', completion: 'axis-focus' },
     { level: 5, id: 'container', description: 'Exit Focus, otherwise dismiss an applicable panel', actions: ['focus.exit', 'panel.workbench', 'panel.list', 'panel.properties', 'panel.style-studio', 'panel.arithmetic', 'symmetry.cancel-preview', 'studio.close', 'legacy-window.close'] },
     { level: 6, id: 'axis', description: 'Return axis focus to the canvas', actions: ['axis.focus-canvas'], origins: ['axis'] },
@@ -14662,8 +14662,13 @@
     } else if (action === 'transform') {
       chooseEditTool('transform');
     } else {
+      // Clearing atom selection notifies its owner even when the atom list was
+      // empty. That callback can clear a bond-center selection before the shared
+      // helper counts it, so its changed flag is not this action's result.
+      if (!getEditToolState().selected) return false;
       if (addAtomOperatorSession?.source === 'selection') finalizeAddAtomOperatorSession({ announce: false });
-      if (!clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true })) return false;
+      clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
+      if (getEditToolState().selected) throw new Error('Escape selection cleanup incomplete');
     }
     event?.preventDefault();
     updateEditToolboxUi({ syncSearch: false });
@@ -24936,7 +24941,7 @@
   }
 
   function offerLegacyPanelEscapes(context) {
-    const ordinaryOrigin = context.origin !== 'axis' && context.origin !== 'field';
+    const ordinaryOrigin = context.origin !== 'axis';
     context.offer('studio.close', !workspaceEnabled && ordinaryOrigin && !!styleStudio?.isOpen(),
       () => { styleStudio.setOpen(false); });
     const open = !workspaceEnabled && ordinaryOrigin

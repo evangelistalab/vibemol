@@ -23,8 +23,18 @@ window.addEventListener('keydown', event => {
 EXPOSE = '''  window.__escapeContract = {
     table: ESCAPE_LADDER, resolve: resolveEscapeDecision, execute: executeEscapeDecision,
     records: [], actions: [], completions: [],
+    setSelectionTargets: mask => {
+      clearEditSelectionsOnEmptyClick();
+      setEditAtomSelection(mask & 1 ? [0] : []);
+      setTransformSelection(mask & 2 ? [1] : []);
+      if (mask & 4) {
+        const atoms=volumes[currentIndex].vol.atoms;
+        bondCenterSelectionState=normalizeBondCenterSelectionIds(ensureAtomId(atoms[0]),ensureAtomId(atoms[1]));
+      }
+    },
     state: () => ({mode:currentMode, focus:document.activeElement?.id || '',
       edit:getEditToolState(), selection:(currentMode===MODES.MEASURE ? editSel : window.VibeMolTesting.getEditSelectionIndices()).slice(),
+      targets:{atoms:getEditAtomSelection(),transform:transformSelectionIndices.slice(),bondCenter:bondCenterSelectionState},
       camera:window.VibeMolTesting.getCameraSnapshot(),
       help:isHelpOpen(), focusMode:window.VibeMolWorkbench?.snapshot().focus || false}),
   };
@@ -57,7 +67,7 @@ def observed_source():
                       servedSha256=hashlib.sha256(served.encode()).hexdigest())
 
 
-def press(page, report, label, action, *, detail=None, selection=None, mode=None, focus=None):
+def press(page, report, label, action, *, detail=None, selection=None, mode=None, focus=None, targets=None):
     before=page.evaluate('()=>__escapeContract.state()')
     page.evaluate('()=>{__escapeContract.records=[];__escapeContract.actions=[];__escapeContract.completions=[];window.__escapeNativeEvent=null;window.__escapeReachedBubble=false;}')
     page.keyboard.press('Escape')
@@ -71,6 +81,7 @@ def press(page, report, label, action, *, detail=None, selection=None, mode=None
     decision=actual['records'][0]['decision']
     if detail is not None:check(decision and decision['detail']==detail,decision,detail,label+' Edit branch')
     if selection is not None:check(actual['after']['selection']==selection,actual['after']['selection'],selection,label+' selection')
+    if targets is not None:check(actual['after']['targets']==targets,actual['after']['targets'],targets,label+' concrete selection targets')
     if mode is not None:check(actual['after']['mode']==mode,actual['after']['mode'],mode,label+' mode')
     if focus is not None:check(actual['after']['focus']==focus,actual['after']['focus'],focus,label+' focus')
     if before['mode']==actual['after']['mode']:
@@ -130,6 +141,20 @@ def escape_regression(browser,url):
                         press(page,report,('legacy' if legacy else 'Workbench')+'/'+mode+'/'+origin,action,
                               detail='clear' if mode=='edit' else None,selection=expected_selection,
                               mode=expected_mode,focus='canvas')
+                # Exercise real cleanup against every combination of the three
+                # authoritative selection targets, not a fabricated success
+                # callback behind one generic selected=true flag.
+                for origin in ['axis','scene']:
+                    for mask in range(8):
+                        prepare(page,'edit')
+                        page.evaluate('mask=>__escapeContract.setSelectionTargets(mask)',mask)
+                        before=page.evaluate('()=>__escapeContract.state()')
+                        check(before['edit']['selected']==bool(mask),before['targets'],bool(mask),'selection target setup '+str(mask))
+                        page.locator('#viewAxisNegZBtn' if origin=='axis' else '#canvas').focus()
+                        action='edit.perform' if mask else 'axis.focus-canvas' if origin=='axis' else None
+                        press(page,report,('legacy' if legacy else 'Workbench')+'/selection-targets/'+origin+'/'+str(mask),action,
+                              detail='clear' if mask else None,selection=[],mode='edit',focus='canvas',
+                              targets=dict(atoms=[],transform=[],bondCenter=None))
                 # Empty Edit must decline, then axis focus may win. Scene has no fabricated no-op.
                 prepare(page,'edit');page.locator('#viewAxisNegZBtn').focus()
                 press(page,report,'empty Edit axis declines to focus','axis.focus-canvas',selection=[],mode='edit',focus='canvas')
@@ -156,6 +181,33 @@ def escape_regression(browser,url):
                     prepare(page,'edit');page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0])')
                     page.locator('#workbenchPanelsBtn').click()
                     press(page,report,'Panels menu beats Edit','menu.panels',selection=[0],mode='edit')
+                if legacy:
+                    # Actual field-owner dispatch. The name form owns a draft;
+                    # a native select has no draft and may reach its panel.
+                    prepare(page,'display')
+                    page.locator('#displayInspectorBtn').click();page.locator('#styleStudioBtn').click()
+                    page.locator('#lookSave').click();page.locator('#lookNameInput').fill('Uncommitted Escape name')
+                    press(page,report,'Looks text draft retains Studio','draft.look-name',mode='display',focus='lookSave')
+                    actual=dict(studio=page.locator('#styleStudio').is_visible(),form=page.locator('#lookNameForm').is_visible())
+                    check(actual==dict(studio=True,form=False),actual,dict(studio=True,form=False),'name draft before parent dismissal')
+                    page.locator('#lookPreset').focus()
+                    press(page,report,'native select without draft dismisses Studio','panel.style-studio',mode='display')
+                    check(not page.locator('#styleStudio').is_visible(),page.locator('#styleStudio').is_visible(),False,'committed form control parent dismissal')
+                # The Orbitals threshold is a live value, not a cancellable
+                # inline draft. Escape must reach the owning panel even when
+                # focus remains in its header rather than its table body.
+                prepare(page,'display')
+                check(p.load(page,[{'name':'escape-orbitals.molden','text':p.MOLDEN}])['ok'],True,True,'load Orbitals focus fixture')
+                if not legacy:page.evaluate("()=>VibeMolWorkbench.open('moldenInspector')")
+                page.locator('#moldenEnergyFilter').focus();page.locator('#moldenEnergyFilter').fill('')
+                press(page,report,'committed Orbitals energy field closes panel','panel.list' if legacy else 'panel.workbench',mode='display')
+                actual=dict(open=page.locator('#moldenInspector').evaluate("el=>el.classList.contains('open')"),ariaHidden=page.locator('#moldenInspector').get_attribute('aria-hidden'))
+                check(actual==dict(open=False,ariaHidden='true'),actual,dict(open=False,ariaHidden='true'),'Orbitals live field parent dismissal')
+                if legacy:
+                    page.locator('#viewPanelBtn').click();page.locator('#camX').focus()
+                    press(page,report,'committed legacy Camera field closes its window','legacy-window.close',mode='display')
+                    actual=dict(open=page.locator('#sidePanel').evaluate("el=>el.classList.contains('open')"),ariaHidden=page.locator('#sidePanel').get_attribute('aria-hidden'))
+                    check(actual==dict(open=False,ariaHidden='true'),actual,dict(open=False,ariaHidden='true'),'legacy committed field does not fabricate a draft')
                 check(not report['pageerrors'],report['pageerrors'],[],'native Escape page errors')
             except Exception:
                 p.write_failure_artifacts(page,output,'escape-contract-failure',report['pageerrors'],[])

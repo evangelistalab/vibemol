@@ -43,7 +43,7 @@ so Measure/Calculations axis Escape retains their mode and selections.
 | --- | --- | --- |
 | 1 | Modal or active capture | figure.cancel → help.close → appearance-reset.close → element-colors.close → calculations-picker.close |
 | 2 | Close the active command menu | menu.overflow → menu.panels → menu.window-options → menu.outliner |
-| 3 | Cancel an owned field or activation draft | draft.list → draft.selection-position → draft.slider → draft.atom-operator → draft.molecule-operator → draft.outliner-rename → activation.cancel · origins: field, control |
+| 3 | Cancel an owned field or activation draft | draft.look-name → draft.list → draft.selection-position → draft.slider → draft.atom-operator → draft.molecule-operator → draft.outliner-rename → activation.cancel · origins: field, control |
 | 4 | One applicable Edit action, otherwise decline | edit.perform · modes: edit · origins: axis, scene, control, filter |
 | 5 | Exit Focus, otherwise dismiss an applicable panel | focus.exit → panel.workbench → panel.list → panel.properties → panel.style-studio → panel.arithmetic → symmetry.cancel-preview → studio.close → legacy-window.close |
 | 6 | Return axis focus to the canvas | axis.focus-canvas · origins: axis |
@@ -80,3 +80,36 @@ Direct human authorization now requires36/1/37 for this PR, removing only Axis
 Escape52 from acceptance. The Coordinates53 entry remains byte-identical. Any
 other count or failing workflow stops; the later37/0/37 authorization does not
 apply to this PR.
+
+## Corrected field ownership and action-result diagnosis
+
+The first candidate's ordinary run40227837227 returned32/5/37 against the
+authorized36/1/37 and remains rejected. Smoke stopped at Orbitals before either
+exporter: that run supplies no exporter-completion coverage.
+
+The name form had a local Escape cancel but no level3 offer. Capture closed
+Studio before its field handler. It now offers its existing cancel action.
+Orbitals' energy threshold is already applied, with no draft. The field origin
+was excluded from Workbench dismissal while the list offer listened only inside
+the table body, excluding the header input. Panel ownership now covers the
+whole shell after any applicable draft; the legacy generic window owner also
+accepts a committed field after the draft level declines. Plain field focus is not itself a draft.
+
+The selection suites did have a target: a bond-center selection. Clearing even
+an empty atom selection calls onSelectionChanged, which clears the bond center.
+The subsequent change counter returns false because that center is already
+gone. Source execution records selected:true→false and center:present→null while
+the old handler returned false. The correction checks an existing target before
+cleanup and an empty selection afterward. A real action failure still surfaces
+and never falls through after mutation. Empty Edit declines before execution.
+
+The old300 pure-table cases were140 level/mode/origin plus160 Edit flag cases:
+fabricated offers and one selected boolean. The revised8 concrete focus holders
+span canvas, axis button, editable text and form control:224 level/mode/focus
+cases plus1024 cases over all32 placement/Build/atom/transform/bond-center
+combinations,1248 total. The separate62-case native matrix exercises actual
+name/live-energy/select owners and every selection-target combination in both
+interfaces. The old field/control labels existed; these real owner paths and
+the distinct bond-only target did not. Do not claim native coverage of every
+abstract table cell. The corrected candidate must reach both exporter completion
+records in its own ordinary run and satisfy the authorized36/1/37 composition.

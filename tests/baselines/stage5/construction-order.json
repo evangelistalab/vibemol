@@ -102,7 +102,8 @@
         "assets/app/js/style-studio.js",
         "assets/app/js/scene-outliner.js",
         "assets/app/js/trajectory-video.js",
-        "src/components/VmListPopover.js"
+        "src/components/VmListPopover.js",
+        "assets/app/js/looks-ui.js"
       ],
       "expectedStatus": "passed"
     }
