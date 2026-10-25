@@ -80,6 +80,7 @@ def coordinate_row_actions(page):
     deleted_id = before['atoms'][1]['id']
     delete_readback=page.evaluate('''()=>{
       const target=document.querySelector('#coordsContent [data-atom-index="1"] [data-coords-action="delete"]');
+      if(!target)return {targetMissing:true,expected:'Coordinates row1 Delete'};
       const rect=target.getBoundingClientRect(),x=rect.x+rect.width/2,y=rect.y+rect.height/2;
       const box=element=>{const r=element.getBoundingClientRect(),s=getComputedStyle(element);
         return {id:element.id,x:r.x,y:r.y,width:r.width,height:r.height,zIndex:s.zIndex,

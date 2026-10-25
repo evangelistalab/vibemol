@@ -38,19 +38,22 @@ def state_after_input(page, reader, expected, *, label, policy='native-selection
     checked = False
     def check():
         nonlocal checked
+        readback_started = time.monotonic()
         result = page.evaluate('receipt=>receipt.inspect()', receipt)
+        result['readbackQueryElapsedMs'] = (time.monotonic()-readback_started)*1000
         checked = True
         print('[shared-assertion] ' + json.dumps(result), flush=True)
         assert result['passed'], result
         return result
     try:
         yield check
-    except BaseException:
+    except BaseException as original_error:
         if not checked:
             # A failed input action must also leave attribution. Read only;
             # never await a late arrival or replace the original exception.
             with suppress(Exception):
                 result = page.evaluate('receipt=>receipt.snapshot()', receipt)
+                result['inputActionError'] = dict(exception=type(original_error).__name__,error=str(original_error))
                 print('[shared-assertion] ' + json.dumps(result), flush=True)
         raise
     finally:
@@ -88,11 +91,13 @@ def deadline_diagnostics(page, *, label, policy, site):
         report.update(outcome=outcome,anchorCallElapsedMs=(started-anchor_started)*1000,
                       waitElapsedMs=(time.monotonic()-started)*1000)
         if error: report.update(error)
+        readback_started = time.monotonic()
         try:
             if receipt is not None:
                 report['browser'] = page.evaluate('receipt=>receipt.finish()', receipt)
         except Exception as diagnostic_error:
             report['readbackError'] = str(diagnostic_error)
+        report['readbackQueryElapsedMs'] = (time.monotonic()-readback_started)*1000
         print('[shared-deadline] ' + json.dumps(report),flush=True)
         if receipt is not None:
             with suppress(Exception): page.evaluate('receipt=>receipt.dispose()', receipt)
