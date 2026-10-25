@@ -2,8 +2,8 @@
 import json
 import os
 from pathlib import Path
-from playwright.sync_api import sync_playwright
-from assertion_contract import state_after_input
+from playwright.sync_api import sync_playwright, TimeoutError
+from assertion_contract import state_after_input, deadline_diagnostics, budget_ms
 
 
 def main():
@@ -13,10 +13,24 @@ def main():
         page=browser.new_page()
         try:
             page.set_content('<canvas id="canvas" width="200" height="100"></canvas><div id="state"></div>')
+            false_rejected=False
+            try:
+                with deadline_diagnostics(page,label='contract original timeout',policy='false-presented-control',
+                        site='presented-state.false-control') as negative:
+                    page.wait_for_function('()=>false',timeout=budget_ms('false-presented-control'))
+            except TimeoutError:
+                false_rejected=True
+            assert false_rejected and negative['outcome']=='failed' and negative['timeoutMs']==100
+            assert negative['browser']['observerError'] is None,negative
             page.evaluate('''() => {
                 window.model=[];window.pasted=false;
                 requestAnimationFrame=()=>{throw new Error('Contract must not wait for RAF')};
-                document.getElementById('canvas').addEventListener('pointerup',()=>{model=[0]});
+                document.getElementById('canvas').addEventListener('pointerup',()=>{
+                    // Deliberate test-only stall, far below the unchanged600ms
+                    // input budget. Prove real long-task delivery, not a mock.
+                    const end=performance.now()+80;while(performance.now()<end){}
+                    model=[0];
+                });
                 window.addEventListener('keydown',event=>{
                     if(event.key.toLowerCase()==='v' && (event.ctrlKey || event.metaKey)) {
                         event.preventDefault();
@@ -27,6 +41,8 @@ def main():
             with state_after_input(page,'()=>model.slice()',[0],label='contract native') as check:
                 page.mouse.click(30,30)
                 native=check()
+            assert native['stalls']['hadLongTaskOverlap'] is True,native
+            assert native['stalls']['longTaskOverlapMs']>0,native
             missing_failed=False
             try:
                 with state_after_input(page,'()=>model.slice()',[0],label='contract missing native') as check:
@@ -39,6 +55,7 @@ def main():
                 page.keyboard.press('Control+v')
                 asynchronous=check()
             result=dict(native=native,asynchronous=asynchronous,missingNativeRejected=missing_failed,
+                        negativeControl=negative,falseStateStillRejected=false_rejected,
                         noPollingFrame=True,browser=browser.version)
             (out/'result.json').write_text(json.dumps(result,indent=2)+'\n')
             print('[assertion-contract-probe] '+json.dumps(result),flush=True)

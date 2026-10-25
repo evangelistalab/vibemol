@@ -8,41 +8,53 @@
       "line": 1245,
       "originalMs": 600,
       "expression": "'(payload) => {\\n                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())\\n                  ? window.VibeMolTesting.getEditSelectionIndices()\\n                  : [];\\n                const target = Number(payload.atomIndex);\\n                if (!payload.additive) return indices.length === 1 && indices[0] === target;\\n                return indices.includes(target);\\n            }'",
-      "disposition": "Keep600ms; native event receipt records exact selection at completed pointerup, measured138.7\u2013264.8ms. No later RAF observation deadline."
+      "disposition": "Keep600ms; native event receipt records exact selection at completed pointerup, measured138.7\u2013264.8ms. No later RAF observation deadline.",
+      "stallAttributionSite": "smoke.native-selection",
+      "activeDiagnosticOwner": "state_after_input"
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1326,
       "originalMs": 750,
       "expression": "page",
-      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner.",
+      "stallAttributionSite": "smoke.select-two-first",
+      "activeDiagnosticOwner": "state_after_input"
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1298,
       "originalMs": 750,
       "expression": "'() => {\\n                        return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1;\\n                    }'",
-      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner.",
+      "stallAttributionSite": "smoke.select-two-additive",
+      "activeDiagnosticOwner": "state_after_input"
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1750,
       "originalMs": 750,
       "expression": "'() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1'",
-      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner.",
+      "stallAttributionSite": "smoke.startup-single-selection",
+      "activeDiagnosticOwner": "state_after_input"
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 3424,
       "originalMs": 5000,
       "expression": "'() => {\\n                        const exported = window.VibeMolStructure.exportActive();\\n                        return exported.volume.atoms.length === 4\\n                          && Array.isArray(exported.volume.bonds)\\n                          && exported.volume.bonds.length === 2;\\n                    }'",
-      "disposition": "Keep5000ms; shared helper starts at actual native paste activation, observes DOM-backed arrival, logs exact atoms/bonds comparands, removes API copy/paste repair."
+      "disposition": "Keep5000ms; shared helper starts at actual native paste activation, observes DOM-backed arrival, logs exact atoms/bonds comparands, removes API copy/paste repair.",
+      "stallAttributionSite": "smoke.native-clipboard",
+      "activeDiagnosticOwner": "state_after_input"
     },
     {
       "file": "tests/e2e/presented_state_probe.py",
       "line": 21,
       "originalMs": 100,
-      "disposition": "Keep100ms as named false-presented-control policy; intentionally false predicate must still time out."
+      "disposition": "Keep100ms as named false-presented-control policy; intentionally false predicate must still time out.",
+      "stallAttributionSite": "presented-state.false-control",
+      "activeDiagnosticOwner": "deadline_diagnostics"
     }
   ],
   "extraFixedSleeps": "Two100ms post-close sleeps exist separately; they are not the100ms false-predicate deadline and are unchanged during measurement.",
@@ -79,5 +91,13 @@
     "timing": "Native event or DOM-backed receipt; missing/wrong/late input fails. No polling frame, sleep, retry, or state repair.",
     "realBrowserContract": "tests/e2e/assertion_contract_probe.py closes its browser before Smoke",
     "figure": "No Figure policy change"
+  },
+  "stallAttribution": {
+    "runtime": "tests/e2e/stall_diagnostics.js",
+    "shape": "Figure-compatible prelude/wait/deadlineSample/readback/longTasks/longTasksCrossingDeadline/droppedLongTasks/observerError, plus union-clipped longTaskOverlapMs and hadLongTaskOverlap",
+    "windows": "Selection starts at native event timestamp and ends at completed event or unchanged deadline, whichever comes first. Clipboard uses actual native activation and its unchanged5000ms deadline. Removed750ms duplicates share the exact native receipt; no duplicate timer is reintroduced.",
+    "missingData": "Unsupported/dropped/pre-observer data produces unknown overlap disposition, not an assertion that no stall occurred. Renderer descheduling can produce no longtask. Delayed observations are never exact deadline snapshots.",
+    "policy": "Diagnostic only. Original budgets, predicates, numeric tolerances and pass/fail logic unchanged; no responsive-time discount or retries.",
+    "budgetHalf43": "held"
   }
 }

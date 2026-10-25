@@ -1,0 +1,56 @@
+{
+  "issue": 4,
+  "actualIssueTitle": "[Refactor prerequisite] CI34/3/37 by workflow before cache groups",
+  "scope": "Historical prerequisite umbrella, not one product defect. After11/45 repair the two remaining accepted workflows are independent.",
+  "noProductionFix": true,
+  "gateUnchanged": "35/2/37 onlyaxis/mode",
+  "axis": {
+    "suite": "tests/e2e/axis_gizmo.py",
+    "workflow": "escape-canvas-focus",
+    "sourceChain": [
+      "axis test ends its projection/mode loops in Edit with atom0 selected, focuses the -Z endpoint, then presses Escape",
+      "workbench.js document capture invokes host.editToolEscape for non-form controls before target handlers",
+      "app.js handleEditToolEscape resolves Transform selection via the established Edit Escape ladder and returns true",
+      "workbench capture calls stopImmediatePropagation; axis-gizmo.js target keydown/onEscape never gets that event",
+      "axis onEscape callback in app.js would focus canvas if reached"
+    ],
+    "predictedReadback": {
+      "beforeSelection": [
+        0
+      ],
+      "afterSelection": [],
+      "rootKeydownSeen": false,
+      "actualFocus": "viewAxisNegZBtn",
+      "expectedFocus": "canvas"
+    },
+    "contractRisk": "Do not bypass or double-execute cancel/disarm/clear ordering merely to satisfy the focus assertion. A fix must preserve the ladder and compose widget focus return with it.",
+    "observation": "[axis-escape] emitted before unchanged assertion"
+  },
+  "coordinates": {
+    "suite": "tests/e2e/mode_consistency.py",
+    "workflow": "coordinates-delete-selection-card",
+    "sourceChain": [
+      "legacy coordinate_row_actions opens Coordinates then programmatically selects atoms0,2 before clicking atom1 Delete",
+      "renderEditSelectionTranslateCue anchors only to projected selection plus viewport/toolbar bounds; it does not avoid the open Coordinates rectangle",
+      "unmoved legacy selection tools use z-index34 and interactive .vm-selection-card; unmoved Coordinates motionPanel uses z-index24",
+      "floating-panels active z override is applied with manual placement; neither surface was moved in the preserved failure HTML",
+      "the selection card, rather than the Coordinates Delete target, owns the pointer point; Playwright refuses to click through it"
+    ],
+    "existingEvidence": {
+      "runId": 40154406166,
+      "artifact": "browser-suite-balanced-2/browser-suite/mode_consistency/mode-consistency.html/png",
+      "selectionInlinePosition": {
+        "left": 908,
+        "top": 73
+      },
+      "bothUnmoved": true,
+      "sourceZIndices": {
+        "selection": 34,
+        "coordinates": 24
+      }
+    },
+    "coverageLimit": "First failure is in legacy. The later Workbench coordinate-row pass has not been reached by this suite; do not claim its result.",
+    "observation": "[coordinates-delete-hit] will record rectangles, z-order, selection and hit-stack before the unchanged native click"
+  },
+  "nativeReadbackStatus": "To be measured by the collector candidate own ordinary run; predictions are source-derived, not yet claimed observed."
+}

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Coordinate permissions and orbital context in the original interface."""
 import math
+import json
 import premerge as p
 from surface_shadows import settings, settle
 
@@ -77,6 +78,21 @@ def coordinate_row_actions(page):
     page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0,2])')
     before = page.evaluate('()=>VibeMolStructure.exportActive().volume')
     deleted_id = before['atoms'][1]['id']
+    delete_readback=page.evaluate('''()=>{
+      const target=document.querySelector('#coordsContent [data-atom-index="1"] [data-coords-action="delete"]');
+      const rect=target.getBoundingClientRect(),x=rect.x+rect.width/2,y=rect.y+rect.height/2;
+      const box=element=>{const r=element.getBoundingClientRect(),s=getComputedStyle(element);
+        return {id:element.id,x:r.x,y:r.y,width:r.width,height:r.height,zIndex:s.zIndex,
+          pointerEvents:s.pointerEvents,moved:element.getAttribute('data-vm-floating-moved'),
+          floatingZ:element.style.getPropertyValue('--vm-floating-z')};};
+      const hit=document.elementFromPoint(x,y),card=document.getElementById('editSelectionTranslateCue');
+      return {workbench:document.body.classList.contains('vm-workbench'),selection:VibeMolTesting.getEditSelectionIndices(),
+        target:box(target),coordinates:box(document.getElementById('coordsPanel')),selectionCard:box(card),
+        center:{x,y},actualHit:hit?.id||hit?.className,expected:'Coordinates row1 Delete or its child',
+        targetOwnsHit:target===hit||target.contains(hit),cardOwnsHit:card.contains(hit),
+        hitStack:document.elementsFromPoint(x,y).slice(0,8).map(e=>({id:e.id,tag:e.tagName,className:e.className}))};
+    }''')
+    print('[coordinates-delete-hit] '+json.dumps(delete_readback),flush=True)
     page.locator('#coordsContent [data-atom-index="1"] [data-coords-action="delete"]').click()
     after = page.evaluate('()=>VibeMolStructure.exportActive().volume')
     assert after['atoms'] == [atom for atom in before['atoms'] if atom['id'] != deleted_id]

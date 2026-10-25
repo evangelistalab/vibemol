@@ -98,6 +98,7 @@ check:
 	node --check tests/e2e/smoke_input_probe.js
 	node --check tests/e2e/selection_arrival_probe.js
 	node --check tests/e2e/assertion_runtime.js
+	node --check tests/e2e/stall_diagnostics.js
 	node --check tools/diagnostics/instrument_smoke_predicates.cjs
 	python3 -m py_compile tools/diagnostics/camera_fit_census.py tools/diagnostics/compare_camera_fit.py
 	git diff --check

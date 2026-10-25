@@ -1237,7 +1237,8 @@ def trigger_selection_tool(page) -> None:
     )
 
 
-def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> None:
+def click_atom_to_select(page, x: float, y: float, additive: bool = False, *,
+                         deadline_site: str = 'smoke.native-selection') -> None:
     # #48: a geometric pick can be behind the open catalog. Dismiss it before
     # checking native input; never repair selection after a missed click.
     ensure_build_popover_closed(page)
@@ -1287,7 +1288,7 @@ def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> No
     expected = sorted(expected)
     with state_after_input(page,
             '()=>VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)', expected,
-            label='native atom selection') as check:
+            label='native atom selection',site=deadline_site) as check:
         if additive:
             page.keyboard.down('Shift')
         try:
@@ -1328,7 +1329,8 @@ def select_two_fixture_atoms(page) -> None:
     # do not retry failed clicks or inject [0]/[0,1] as a repair.
     for atom_index, additive, expected in [(0, False, [0]), (1, True, [0, 1])]:
         x, y = find_atom_click_point(page, atom_index)
-        click_atom_to_select(page, x, y, additive=additive)
+        click_atom_to_select(page, x, y, additive=additive,
+            deadline_site='smoke.select-two-first' if atom_index==0 else 'smoke.select-two-additive')
         actual = page.evaluate(
             '()=>VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)'
         )
@@ -1742,7 +1744,7 @@ def main() -> int:
             page.wait_for_timeout(360)
             atom2_x, atom2_y = project_active_atom(page, 1)
 
-            click_atom_to_select(page, atom1_x, atom1_y)
+            click_atom_to_select(page, atom1_x, atom1_y,deadline_site='smoke.startup-single-selection')
             # Exact native selection is already asserted by click_atom_to_select;
             # no duplicate750ms wait or direct API repair follows it.
             move_probe = page.evaluate(
@@ -3407,7 +3409,7 @@ def main() -> int:
                           bondsArray:Array.isArray(volume.bonds)}; }""",
                     {'atoms':4,'bonds':2,'bondsArray':True}, label='native clipboard paste',
                     policy='native-clipboard',event='keydown',selector=None,key='v',
-                    asynchronous=True,require_transition=True) as check:
+                    asynchronous=True,require_transition=True,site='smoke.native-clipboard') as check:
                 page.keyboard.press(copy_paste_shortcut + 'V')
                 check()
 

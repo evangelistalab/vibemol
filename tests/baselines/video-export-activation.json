@@ -223,13 +223,15 @@
       "ordinaryRun": 40151630268,
       "inputRun": 40151626637
     },
-    "ordinaryGate": "Own first new35/2/37 required; only axis/mode accepted, BOTH exporters must pass; old failed39694044396 is not retried",
+    "ordinaryGate": "Completed own first40154406166 attempt1:35/2/37 exactaxis/mode;BOTH exporters and fullSmoke passed; mergedcc38c87. Old39694044396 remains failed, never retried.",
     "localChecks": {
       "jsTests": 450,
       "pythonTests": 80,
       "makeCheck": "passed"
     },
     "historicalNativeProofUnchanged": true,
-    "toolchain": "Same shared lock as accepted main:Playwright1.64.1/Python3.12.15; no local native matrix rerun"
+    "toolchain": "Same shared lock as accepted main:Playwright1.64.1/Python3.12.15; no local native matrix rerun",
+    "completedRun": 40154406166,
+    "mergedAs": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d"
   }
 }
