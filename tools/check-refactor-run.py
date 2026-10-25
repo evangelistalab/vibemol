@@ -13,7 +13,18 @@ def main():
     result = json.loads(args.browser_result.read_text())
     actual_counts = {key: result[key] for key in ('passed', 'failed', 'total')}
     repaired = policy.get('requireVideoExportCompletion', False)
-    expected_counts = {'passed': 35, 'failed': 2, 'total': 37} if repaired else {'passed': 34, 'failed': 3, 'total': 37}
+    phases = {
+        'issue11': (35, 2, [['tests/e2e/axis_gizmo.py', 'escape-canvas-focus'],
+                            ['tests/e2e/mode_consistency.py', 'coordinates-delete-selection-card']]),
+        'issue52': (36, 1, [['tests/e2e/mode_consistency.py', 'coordinates-delete-selection-card']]),
+        'issue53': (37, 0, []),  # Intentionally empty; the matcher/join stays.
+    }
+    phase = policy.get('acceptancePhase', 'issue11')
+    assert phase in phases, ('Unknown pre-authorized acceptance phase', phase)
+    passed, failed, expected_failures = phases[phase]
+    expected_counts = dict(passed=passed, failed=failed, total=37) if repaired else {'passed': 34, 'failed': 3, 'total': 37}
+    print(json.dumps(dict(check='pre-authorized gate arithmetic', phase=phase,
+        actual=policy['ordinaryExpected'], expected=expected_counts), sort_keys=True), flush=True)
     assert policy['ordinaryExpected'] == expected_counts, (policy, expected_counts)
     actual_workflow = result.get('issue11Workflow')
     preserve_signature = policy.get('preserveExporterSignature', True)
@@ -50,8 +61,9 @@ def main():
         print(json.dumps(dict(check='both repaired exporter workflows', actual=actual, expected=expected)), flush=True)
         assert actual_workflow == {'status': 'passed'}, comparands
         assert actual == expected, (actual, expected)
-        expected_failures = [['tests/e2e/axis_gizmo.py','escape-canvas-focus'],
-                             ['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']]
+        print(json.dumps(dict(check='pre-authorized failure composition',
+            actual=result.get('actualFailingWorkflows'), expected=expected_failures,
+            intentionallyEmpty=phase=='issue53'), sort_keys=True), flush=True)
         assert result.get('actualFailingWorkflows') == expected_failures, result.get('actualFailingWorkflows')
     else:
         assert actual_workflow in allowed_workflows, (

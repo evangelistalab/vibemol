@@ -1930,7 +1930,7 @@
   ],
   "knownDefectConstraints": {
     "projection": "https://github.com/evangelistalab/vibemol/issues/3; camera pin masks the 0.9.x defect, so ordinary preset batches need separate verification.",
-    "axisGizmo": "Preserve the 0.9.2/0.9.3 capture-phase Escape ladder: menu/field precedence, cancel provisional placement, disarm Build without dropping selection, clear Transform selection, then allow Focus/panel dismissal. Repair focus handoff without removing interception.",
+    "axisGizmo": "Issue52 is an authorized product repair: explicit applicable Escape ladder plus axis focus completion; must-pass, no longer accepted. Own tagged reproduction, regression and complete36/1/37 gate required.",
     "modeConsistency": "Selection card overlays Coordinates Delete in legacy mode; preserve the failing assertion. Separate 0.9.x defect batch.",
     "videoCrop": "#11 https://github.com/evangelistalab/vibemol/issues/11: click-time Save/Stop branch reopens crop selection after trajectory/vibration completion. Do not fix in the refactor; schedule after 0.10.0 or in parallel on 0.9.x. Figure path gets one probe only.",
     "selectionPopover": "Issue #17: Metal popover covers adjacent Coordination/Translate cues; separately positioned from mode-consistency card. Tagged responsive 390px also overflows by 8px. No production fix in refactor.",
@@ -2257,44 +2257,23 @@
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",
     "lineNumbers": "diagnostic only; never acceptance keys",
-    "smokeScope": "Only wait_for_video_idle after the second download for trajectory or vibration, issue #11",
-    "perRunSiteEvidence": "browser-results.json issue11Workflow and each failureWorkflow.site",
-    "reRunForThisCorrection": true,
     "acceptedWorkflows": [
-      {
-        "suite": "axis_gizmo.py",
-        "workflow": "escape-canvas-focus",
-        "exceptionType": "AssertionError",
-        "defect": "Escape interception prevents canvas focus",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
-      },
       {
         "suite": "mode_consistency.py",
         "workflow": "coordinates-delete-selection-card",
         "exceptionType": "TimeoutError",
         "defect": "Selection card covers Coordinates Delete",
         "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-      },
-      {
-        "suite": "smoke.py",
-        "workflow": "issue-11-stop-after-second-download",
-        "sites": [
-          "trajectory",
-          "vibration"
-        ],
-        "exceptionType": "TimeoutError",
-        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
-        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
       }
     ],
     "expected": {
-      "passed": 34,
-      "failed": 3,
+      "passed": 36,
+      "failed": 1,
       "total": 37
     },
-    "overPerformance": "35/2/37 is a stop: an accepted failure is missing",
-    "authority": "Direct human synchronization correction after diagnostic39129507791; own new harness and unchanged5c gates required"
+    "authority": "Direct human issue52 authorization: remove only Axis Escape; exact36/1/37 regardless of CI outcome.",
+    "firstAutomaticCandidateRunOnly": true,
+    "overPerformance": "37/0/37 stops during issue52; only the separately authorized issue53 PR may use37/0/37."
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
@@ -2314,11 +2293,11 @@
     ],
     "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here.",
     "currentBrowserGate": {
-      "passed": 34,
-      "failed": 3,
+      "passed": 36,
+      "failed": 1,
       "total": 37
     },
-    "humanCorrection": "Direct human removed closed test-synchronization issue#21 from accepted failures and restored34/3/37. Missing accepted failures, including35/2 over-performance, still stop. Diagnostic evidence does not substitute for a merge gate.",
+    "humanCorrection": "Direct human issue52 repair authorization removes only Axis Escape, requiring36/1/37. Any other count or workflow stops; diagnostic evidence cannot supply a merge gate.",
     "cacheOnlyRestrictionScope": "The let-to-els/line-neutral limitation applies to historical Stage3 cache conversions. The direct human separately authorizes Stage4 and Stage5 real controller extractions under their accepted seams, with preserved behavior and construction-order gate."
   },
   "editTool320Diagnostic": {
@@ -3771,11 +3750,40 @@
     "vibrationExportReached": false
   },
   "ordinaryExpected": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 36,
+    "failed": 1,
     "total": 37
   },
   "currentBrowserBaseline": {
+    "passed": 36,
+    "failed": 1,
+    "total": 37,
+    "environment": "CI",
+    "status": "Required issue52 candidate composition; not an observed result",
+    "acceptedDefects": [
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      }
+    ],
+    "gate": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37,
+      "status": "Own complete first-pass issue52 conjunction required"
+    },
+    "issue11AcceptedCiFailure": false,
+    "requiredExporterSites": [
+      "trajectory",
+      "vibration"
+    ],
+    "evidence": "tests/baselines/video-export-activation.json",
+    "issue52AcceptedCiFailure": false
+  },
+  "preIssue52BrowserBaseline": {
     "passed": 35,
     "failed": 2,
     "total": 37,
@@ -3809,5 +3817,47 @@
       "vibration"
     ],
     "evidence": "tests/baselines/video-export-activation.json"
+  },
+  "historicalGateAcceptancePolicyBeforeIssue52": {
+    "identity": "suite and workflow",
+    "lineNumbers": "diagnostic only; never acceptance keys",
+    "smokeScope": "Only wait_for_video_idle after the second download for trajectory or vibration, issue #11",
+    "perRunSiteEvidence": "browser-results.json issue11Workflow and each failureWorkflow.site",
+    "reRunForThisCorrection": true,
+    "acceptedWorkflows": [
+      {
+        "suite": "axis_gizmo.py",
+        "workflow": "escape-canvas-focus",
+        "exceptionType": "AssertionError",
+        "defect": "Escape interception prevents canvas focus",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+      },
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      },
+      {
+        "suite": "smoke.py",
+        "workflow": "issue-11-stop-after-second-download",
+        "sites": [
+          "trajectory",
+          "vibration"
+        ],
+        "exceptionType": "TimeoutError",
+        "defect": "Issue #11: delayed Stop after export opens a new crop selection, after the second download",
+        "issue": "https://github.com/evangelistalab/vibemol/issues/11",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/smoke.log"
+      }
+    ],
+    "expected": {
+      "passed": 34,
+      "failed": 3,
+      "total": 37
+    },
+    "overPerformance": "35/2/37 is a stop: an accepted failure is missing",
+    "authority": "Direct human synchronization correction after diagnostic39129507791; own new harness and unchanged5c gates required"
   }
 }

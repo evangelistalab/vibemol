@@ -1,7 +1,7 @@
 {
   "expected": {
-    "passed": 35,
-    "failed": 2,
+    "passed": 36,
+    "failed": 1,
     "total": 37
   },
   "suites": [
@@ -44,12 +44,6 @@
     "tests/e2e/workbench_bar.py"
   ],
   "knownDefects": {
-    "tests/e2e/axis_gizmo.py": {
-      "workflow": "escape-canvas-focus",
-      "exceptionType": "AssertionError",
-      "defect": "Escape interception prevents canvas focus",
-      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
-    },
     "tests/e2e/mode_consistency.py": {
       "workflow": "coordinates-delete-selection-card",
       "exceptionType": "TimeoutError",
@@ -57,9 +51,9 @@
       "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
     }
   },
-  "policy": "Authorized issue11 product repair plus independent issue45 deterministic harness repair: exactly35/2/37 and exactly axis Escape/canvas focus plus Coordinates Delete/selection-card interception. Smoke must pass both exporter completion/activation workflows, including explicit fresh Save assertions. Missing/extra/different failures, including36/1, stop. All other golden, identity, construction and source gates remain unchanged.",
+  "policy": "Direct human issue52 authorization: exactly36/1/37, only Coordinates Delete/selection-card interception. Axis Escape is must-pass with its own tagged reproduction and native regression. Remove only the repaired workflow; any other count or failing workflow, including35/2 or37/0, stops. Smoke must pass both exporters and all activation records. All golden, identity, construction, unit and WebKit requirements remain unchanged.",
   "gateEnvironment": "CI",
-  "baselineComparison": "35/2/37 is the prospective issue11 repair gate. Historical34/3/37 and33/4/37 results remain historical.",
+  "baselineComparison": "Current issue52 candidate requires36/1/37. Previous35/2/37,34/3/37 and33/4/37 results remain historical. The subsequent issue53 step is separately authorized37/0/37, not acceptance for issue52.",
   "synchronizationCorrection": {
     "issue": 21,
     "classification": "closed test-synchronization defect",

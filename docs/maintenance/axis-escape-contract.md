@@ -76,6 +76,7 @@ provider. The checker reports every new helper's app closure reads, global
 module reads and data parameters and requires each total to stay below 15. The
 largest helper has 11 total inputs. The inverse construction audit covers the
 app and every changed provider, including providers loaded after app startup.
-The accepted set remains exactly the two existing
-workflow keys until a separately authorized product-fix PR deliberately changes
-its expected composition.
+Direct human authorization now requires36/1/37 for this PR, removing only Axis
+Escape52 from acceptance. The Coordinates53 entry remains byte-identical. Any
+other count or failing workflow stops; the later37/0/37 authorization does not
+apply to this PR.

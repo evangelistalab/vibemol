@@ -12,10 +12,10 @@ on:
         description: Diagnostic only; never ordinary merge-gate evidence
         type: choice
         default: coordinates
-        options: [coordinates, escape]
+        options: [coordinates, escape, escape-reproduction]
 jobs:
   coordinates-region:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'escape'
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'coordinates'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -85,3 +85,29 @@ jobs:
         with:
           name: escape-contract-diagnostic
           path: out/test-artifacts/escape-diagnostic/
+  escape-reproduction:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'escape-reproduction'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Ordinary pinned toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Same native Escape trigger on tagged base and candidate
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/escape-tagged"
+          git archive v0.9.5-pre-refactor index.html assets src | tar -x -C "$RUNNER_TEMP/escape-tagged"
+          python tests/e2e/escape_reproduction.py --tagged-root "$RUNNER_TEMP/escape-tagged" --out out/test-artifacts/escape-reproduction
+      - name: Preserve original failure and repaired comparands
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: escape-tagged-reproduction
+          path: out/test-artifacts/escape-reproduction/

@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RefactorRunPolicy(unittest.TestCase):
-    def invoke(self, preserve_signature=True, repaired=False, **changes):
+    def invoke(self, preserve_signature=True, repaired=False, acceptance_phase="issue11", **changes):
         report = dict(passed=34, failed=3, total=37, allExecutedOnce=True,
                       matchesAcceptedBaseline=True,
                       issue11Workflow=dict(id='issue-11-stop-after-second-download', site='trajectory'))
@@ -22,6 +22,10 @@ class RefactorRunPolicy(unittest.TestCase):
                 videoExportCompletion=[dict(prefix=p, downloads=6, naturalCompletion=True, earlyStop=True,
                     pointerCompletion=True, spaceCompletion=True, enterActivation=True,
                     clickOnlyActivation=True, freshSaveAssertions=4) for p in ['trajectory','vibration']])
+        if repaired and acceptance_phase=='issue52':
+            report.update(passed=36,failed=1,actualFailingWorkflows=[['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']])
+        if repaired and acceptance_phase=='issue53':
+            report.update(passed=37,failed=0,actualFailingWorkflows=[])
         report.update(changes)
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'result.json'
@@ -32,7 +36,8 @@ class RefactorRunPolicy(unittest.TestCase):
             policy['issue11Workflow'] = dict(id='issue-11-stop-after-second-download', site='trajectory')
             policy['preserveExporterSignature'] = preserve_signature
             policy['requireVideoExportCompletion'] = repaired
-            policy['ordinaryExpected'] = dict(passed=35 if repaired else 34, failed=2 if repaired else 3, total=37)
+            policy['acceptancePhase']=acceptance_phase
+            policy['ordinaryExpected'] = dict(passed={'issue11':35,'issue52':36,'issue53':37}[acceptance_phase],failed={'issue11':2,'issue52':1,'issue53':0}[acceptance_phase],total=37) if repaired else dict(passed=34,failed=3,total=37)
             policy_path = Path(folder)/'policy.json'
             policy_path.write_text(json.dumps(policy))
             return subprocess.run([
@@ -87,10 +92,11 @@ class RefactorRunPolicy(unittest.TestCase):
 
     def test_current_group_uses_ordinary_site_policy(self):
         policy = json.loads((ROOT/'tests/baselines/stage5/run-policy.json').read_text())
-        self.assertEqual(policy['group'], 'Issue11 activation intent and issue45 deterministic Smoke input')
+        self.assertEqual(policy['group'], 'Issue52 explicit Escape applicability and focus completion')
+        self.assertEqual(policy['acceptancePhase'],'issue52')
         self.assertIs(policy['preserveExporterSignature'], False)
         self.assertIs(policy['requireVideoExportCompletion'], True)
-        self.assertEqual(policy['ordinaryExpected'], dict(passed=35, failed=2, total=37))
+        self.assertEqual(policy['ordinaryExpected'], dict(passed=36, failed=1, total=37))
 
     def test_repair_requires_both_complete_exporter_records(self):
         self.assertEqual(self.invoke(repaired=True).returncode, 0)
@@ -108,6 +114,22 @@ class RefactorRunPolicy(unittest.TestCase):
                         dict(issue11Workflow={'id':'issue-11-stop-after-second-download','site':'trajectory'}),
                         dict(actualFailingWorkflows=[]),dict(allExecutedOnce=False),dict(matchesAcceptedBaseline=False)]:
             result=self.invoke(repaired=True,**changes)
+            self.assertNotEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_issue52_exact_authorized_composition(self):
+        self.assertEqual(self.invoke(repaired=True,acceptance_phase='issue52').returncode,0)
+        for change in [dict(passed=35,failed=2),dict(passed=37,failed=0),dict(total=38),
+                       dict(actualFailingWorkflows=[['tests/e2e/axis_gizmo.py','escape-canvas-focus']]),
+                       dict(actualFailingWorkflows=[]),dict(allExecutedOnce=False)]:
+            result=self.invoke(repaired=True,acceptance_phase='issue52',**change)
+            self.assertNotEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_issue53_intentionally_empty_composition_keeps_gate_machinery(self):
+        self.assertEqual(self.invoke(repaired=True,acceptance_phase='issue53').returncode,0)
+        for change in [dict(passed=36,failed=1),dict(passed=35,failed=2),
+                       dict(actualFailingWorkflows=[['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']]),
+                       dict(videoExportCompletion=[]),dict(matchesAcceptedBaseline=False)]:
+            result=self.invoke(repaired=True,acceptance_phase='issue53',**change)
             self.assertNotEqual(result.returncode,0,result.stdout+result.stderr)
 
 
