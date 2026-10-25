@@ -41,7 +41,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.15'
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -62,12 +62,15 @@ jobs:
           echo "HARNESS_REF=$HARNESS_REF" >> "$GITHUB_ENV"
       - name: Match the original failing CI runtime
         run: |
-          python -m pip install -r api/requirements.txt 'playwright==1.64.0'
+          python -m pip install -r api/requirements-ci.lock
           npm install --prefix "$RUNNER_TEMP/input-audit" --no-save --ignore-scripts @babel/parser@7.24.4 @babel/traverse@7.24.1 @babel/generator@7.24.4 @babel/types@7.24.0
+      - name: Resolve the locked Playwright version
+        id: playwright
+        run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-${{ runner.arch }}-playwright-1.64.0-chromium
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
       - name: Install Chromium and operating-system dependencies
         run: python -m playwright install --with-deps chromium
       - name: Collect original assertions and native input routes

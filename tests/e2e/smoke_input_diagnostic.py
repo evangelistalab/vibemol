@@ -218,6 +218,7 @@ def main():
     parser.add_argument('--case',required=True)
     parser.add_argument('--bypass-issue11',action='store_true')
     parser.add_argument('--prepare-only',action='store_true')
+    parser.add_argument('--selection-arrival',action='store_true',help='Observe the authoritative grow-add selection write; preserve the original600ms assertion')
     parser.add_argument('--reveal-auto-hidden',action='store_true',
                         help='After preserving a launcher failure, use the existing / shortcut to continue diagnosis; never merge evidence')
     parser.add_argument('--video-region-only',action='store_true',
@@ -231,6 +232,9 @@ def main():
     assert source.encode()==expected_source,'Harness differs from its frozen source'
     assert subprocess.check_output(['git','rev-parse','HEAD'],cwd=args.source_root,text=True).strip()==args.source_ref
     assert subprocess.check_output(['git','status','--porcelain'],cwd=args.source_root,text=True)==''
+    if args.selection_arrival:
+        from selection_arrival_diagnostic import run
+        return run(args,out,source,checkout)
     predicates=sorted({n.args[0].value for n in ast.walk(original) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='wait_for_function' and n.args and isinstance(n.args[0],ast.Constant) and isinstance(n.args[0].value,str)})
     # Include the additional video helper when the original candidate imports it.
     video=args.harness_root/'tests/e2e/video_export_activation.py'

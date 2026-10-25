@@ -1,0 +1,71 @@
+{
+  "ordinaryControlRun": 40138904806,
+  "harnessControl": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+  "originalSmokeSha256": "f0432301030f09d3fd30cc1d199f081468e20e09acccc291077679f0651c1145",
+  "sixDeadlineSites": [
+    {
+      "file": "tests/e2e/smoke.py",
+      "line": 1245,
+      "originalMs": 600,
+      "expression": "'(payload) => {\\n                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())\\n                  ? window.VibeMolTesting.getEditSelectionIndices()\\n                  : [];\\n                const target = Number(payload.atomIndex);\\n                if (!payload.additive) return indices.length === 1 && indices[0] === target;\\n                return indices.includes(target);\\n            }'",
+      "disposition": "Unchanged until authoritative arrival distribution; original failures preserved"
+    },
+    {
+      "file": "tests/e2e/smoke.py",
+      "line": 1326,
+      "originalMs": 750,
+      "expression": "page",
+      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+    },
+    {
+      "file": "tests/e2e/smoke.py",
+      "line": 1298,
+      "originalMs": 750,
+      "expression": "'() => {\\n                        return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1;\\n                    }'",
+      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+    },
+    {
+      "file": "tests/e2e/smoke.py",
+      "line": 1750,
+      "originalMs": 750,
+      "expression": "'() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1'",
+      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+    },
+    {
+      "file": "tests/e2e/smoke.py",
+      "line": 3424,
+      "originalMs": 5000,
+      "expression": "'() => {\\n                        const exported = window.VibeMolStructure.exportActive();\\n                        return exported.volume.atoms.length === 4\\n                          && Array.isArray(exported.volume.bonds)\\n                          && exported.volume.bonds.length === 2;\\n                    }'",
+      "disposition": "Native clipboard readiness; consolidate in shared helper without broad acceptance of missing arrival"
+    },
+    {
+      "file": "tests/e2e/presented_state_probe.py",
+      "line": 21,
+      "originalMs": 100,
+      "disposition": "Intentional false-predicate negative control; must still reject false, not a measured product-arrival budget"
+    }
+  ],
+  "extraFixedSleeps": "Two100ms post-close sleeps exist separately; they are not the100ms false-predicate deadline and are unchanged during measurement.",
+  "measurement": {
+    "workers": 5,
+    "activationsPerWorker": 1,
+    "sourcePrefix": "Complete original Smoke prefix through grow-add selection; no replacement fixture",
+    "authoritativeSignal": "Existing editToolState.editAtomSelectionIndices setter, after original write, with lower/upper monotonic bounds",
+    "otherSignals": [
+      "Native event timestamps/capture/bubble",
+      "Original onSelectionChanged duration",
+      "Original600ms wait polls and host elapsed time",
+      "Frames and long tasks"
+    ],
+    "budgetChosen": null,
+    "ordinary600Unchanged": true,
+    "noProductionChanges": true,
+    "sharedLock": "api/requirements-ci.lock",
+    "runtime": {
+      "playwright": "1.64.1",
+      "python": "3.12.15"
+    },
+    "missingReceiptsNeverCountAsFastSamples": true
+  },
+  "figure43": "Deadline policy remains held pending42; no Figure rerun or behavior change"
+}

@@ -1,0 +1,7 @@
+# Shared ordinary-CI/diagnostic toolchain. Resolved set from ordinary run40138904806.
+# Update deliberately; the diagnostic records this file's SHA256 and pip freeze.
+-r requirements.txt
+playwright==1.64.1
+pyee==14.0.0
+greenlet==3.5.6
+typing-extensions==4.16.0
