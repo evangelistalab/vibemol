@@ -139,3 +139,24 @@ still incomplete; the112 signatures are not a global surface inventory.
 
 The shared policy remains justified but not scheduled. The Floating UI experiment
 is closed, and the current local rule and strict baseline are unchanged.
+
+## Strict guard: explicitly authorized latent baseline
+
+The guard samples actual clipped interactive rectangles and intersections, then
+uses DOM hit order. Center-only sampling remains historical diagnostic evidence;
+it does not supply guard acceptance. Its baseline enumerates12 unordered pairs,
+13 covering/covered directions and112 exact target signatures. The first84 are
+retained; exactly28 observations from failed run40230711618 were added under the
+direct human expansion. There is no count-only or wildcard allowance.
+
+Inspection classifies all12 as suspected defects (0 intentional,0 unreachable);
+[#55](https://github.com/evangelistalab/vibemol/issues/55) links separate issues
+#56–67 and lists every direction/target. These are latent risks, not accepted
+ordinary failures. The ordinary accepted set is intentionally empty after53,
+and none of these signatures can excuse a failing ordinary workflow.
+
+The baseline shrinks freely and grows or re-adds targets only with new human
+authorization. The independent pinned authority/hash and predecessor-subset
+check enforce this. Three profiles across two layouts and three widths are
+18 declared contexts. That scope is checked exactly, but the broader28-shell
+surface coverage is **still incomplete**. This baseline is not exhaustive.

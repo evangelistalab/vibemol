@@ -1,0 +1,28 @@
+name: Strict surface-overlap diagnostic
+on:
+  workflow_dispatch:
+jobs:
+  strict-overlap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Use ordinary CI's pinned toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Exact baseline and strict clipped intersections
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python tools/check-surface-baseline.py
+          python tests/e2e/surface_collisions.py --out out/test-artifacts/surface-overlap --sampling intersections
+      - name: Preserve every readback, including unapproved collisions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: strict-surface-overlap
+          path: out/test-artifacts/surface-overlap/

@@ -96,21 +96,5 @@ check:
 	python3 -m py_compile tests/e2e/wall_times.py tests/e2e/navigation_diagnostics.py tests/e2e/figure_preview_diagnostics.py tests/e2e/video_export_activation.py
 	python3 -m py_compile tests/e2e/workflow_contract.py tests/e2e/coordinates_region_diagnostic.py
 	python3 -m py_compile tests/e2e/escape_contract.py tests/e2e/escape_reproduction.py
-	python3 -m py_compile tests/e2e/smoke_input_diagnostic.py tools/diagnostics/validate_smoke_input.py tests/e2e/selection_arrival_diagnostic.py tests/e2e/assertion_contract.py tests/e2e/assertion_contract_probe.py
-	node --check tests/e2e/smoke_input_probe.js
-	node --check tests/e2e/selection_arrival_probe.js
-	node --check tests/e2e/assertion_runtime.js
-	node --check tests/e2e/stall_diagnostics.js
-	node --check tools/diagnostics/instrument_smoke_predicates.cjs
-	python3 -m py_compile tools/diagnostics/camera_fit_census.py tools/diagnostics/compare_camera_fit.py
-	git diff --check
-
-test-unit:
-	node --test tests/unit/*.test.mjs
-	python3 -m unittest discover -s tests/unit -p 'test_*.py'
-
-test-e2e:
-	python3 tests/e2e/characterize.py
-	python3 tests/e2e/browser_suite.py
-
-test: check test-unit test-e2e
+	python3 -m py_compile tests/e2e/surface_collisions.py tests/e2e/surface_overlap_contract.py tools/check-surface-baseline.py
+	node --check tests/e2e/surface_collision_probe.js

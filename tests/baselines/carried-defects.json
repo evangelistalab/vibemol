@@ -881,5 +881,36 @@
   "openHarnessDefects": [],
   "acceptedSetIntentionallyEmpty": true,
   "activeGateConsistencyGuard": "Unit assertion compares all active manifest/risk/ledger/run-policy count records and explicit empty-set intent; closes the stale ledger acceptedCiGate35/2 left during52.",
-  "unclassifiedNavigationObservations": "tests/baselines/navigation-load-observations.json; two new goto(load) failures in PR69 run40263180674; neither carried nor accepted. Request/lifecycle observation required before rerun; no navigation budget change."
+  "unclassifiedNavigationObservations": "tests/baselines/navigation-load-observations.json; two new goto(load) failures in PR69 run40263180674; neither carried nor accepted. Request/lifecycle observation required before rerun; no navigation budget change.",
+  "latentSurfaceRisks": {
+    "category": "latent surface-pair risks; not accepted ordinary failures",
+    "inventoryIssue": 55,
+    "inventoryUrl": "https://github.com/evangelistalab/vibemol/issues/55",
+    "classificationCounts": {
+      "intentional": 0,
+      "unreachable": 0,
+      "suspected defect": 12
+    },
+    "baseline": "tests/baselines/surface-overlap-baseline.json",
+    "authority": "tests/baselines/surface-overlap-authority.json",
+    "acceptedCiFailures": [],
+    "rule": "Twelve explicit pairs /13directions /112 exact targets, including exactly28 newly human-authorized signatures. Shrink freely; all later growth/re-addition requires human authorization. These are latent risks, never accepted ordinary failures.",
+    "issues": [
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64,
+      65,
+      66,
+      67
+    ],
+    "surfaceCoverageComplete": false,
+    "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls",
+    "sourceRun": 40230711618
+  }
 }
