@@ -1,9 +1,10 @@
 {
   "issues": [
     47,
-    48
+    48,
+    50
   ],
-  "scope": "Harness only: native click preconditions, exact toggle semantics and no selection-state repair",
+  "scope": "Harness only: native click preconditions, exact toggle semantics, measured event-boundary assertions, no selection/clipboard-state repair",
   "diagnosticCitations": [
     {
       "runId": 40129183912,
@@ -12,21 +13,28 @@
     {
       "runId": 40130635514,
       "head": "bf13c234825b9ede17e419863be38ee3228e7f93"
+    },
+    {
+      "runId": 40149272378,
+      "head": "52056d5eff382aefd6cd33d5ce8aa3dcd1123177"
     }
   ],
-  "oldExpectationInvalidated": "Geometric picking and leaf hidden/display do not establish pointer eligibility. Shift-click toggles a selected atom rather than guaranteeing inclusion.",
+  "oldExpectationInvalidated": "Geometric picking and leaf hidden/display do not establish pointer eligibility. Shift-click toggles a selected atom rather than guaranteeing inclusion. Run40149272378 records authoritative selection inside pointerup; a later600ms RAF wait can spend hundreds of milliseconds observing already-correct state.",
   "sourceControl": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
   "productionChanges": [],
   "repairs": [
     "Dismiss Build catalog before native atom selection; move pointer then assert canvas is topmost",
     "Compute exact additive selection by symmetric difference against before-selection",
     "Reveal auto-hidden launcher with native movement and require pointer eligibility before trial click",
-    "Remove click_atom_to_select repair and select_two_fixture_atoms nonempty selection injection; require requested atom identities"
+    "Remove click_atom_to_select repair and select_two_fixture_atoms nonempty selection injection; require requested atom identities",
+    "Replace600ms RAF observation with exact completed-native-event receipt under unchanged600ms budget",
+    "Remove remaining startup750ms repair; native clipboard5000ms observation is fail-loud, with no API copy/paste fallback"
   ],
   "timing": {
     "existingSelectionWaitMs": 600,
     "newThresholds": [],
-    "helper43": "Design-only; not implemented"
+    "helper43": "Shared numeric/Smoke timing helper authorized by50 and implemented from arrival data; Figure extension still held pending42",
+    "measurement": "tests/baselines/selection-arrival.json"
   },
   "oldRepairCoverage": {
     "downstreamCheckpoints": 140,
@@ -41,10 +49,10 @@
     "preservesAllOriginalAssertions": true,
     "navigationRecoveryDisabledForRepairValidation": true,
     "knownOtherFindings": "Two old close-during-record assertions actual3/expected2 remain explicitly failed diagnostic observations; never counted as ordinary passes",
-    "stop": "Any other failure, repair, navigation recovery, missing target case or incomplete execution fails input validation"
+    "stop": "Any unknown failure, repair, navigation recovery or missing target case fails. Only the exact source-hashed6/14/20 exporter remainder after the two already-measured close-count failures may remain blocked; report globalCoverageComplete:false. These statements are NOT passes and ordinary Smoke is unchanged."
   },
   "mainGate": "34/3/37 with existing axis, mode and Smoke11 composition; PR46 later moves Smoke to must-pass separately",
-  "candidateVerification": "Own automatic CI plus frozen-head bypassed-input CI pending",
+  "candidateVerification": "Replacement candidate own first ordinary CI and bypassed native-input diagnostic pending. Failed83d5ba6 runs40138904806/40138888119 remain failed and immutable.",
   "localPreflight": {
     "browser": "145.0.7632.6",
     "autoHiddenLauncherRevealedNatively": true,
@@ -59,6 +67,89 @@
     "fallbackHandlers": 0,
     "pageErrors": []
   },
-  "sourceAudit": "Only ensure_build_popover_open, click_atom_to_select and select_two_fixture_atoms ASTs differ; every other original Smoke function/assertion/top-level statement is exact. Production tree unchanged.",
-  "checks": "make check passed; existing unit suite passed (66Python), plus4 diagnostic validation contract tests passed"
+  "sourceAudit": "Production/index/assets/src, goldens, accepted-set manifests and joins unchanged. Smoke changes limited to native preconditions/identities, event receipt and removing duplicate selection/clipboard repairs. Numeric helper substitution retains original parameters; Figure timeout unchanged.",
+  "checks": "442 JS/75 Python units; make check; shared contract includes missing, wrong, late and Promise-valued reader failures. Real locked-browser contract runs before the product prefix in CI.",
+  "knownBlockedExporterRemainder": [
+    {
+      "case": "trajectory smoke",
+      "sha256": "4760d76bd85a768596639295e2d7673978ccf10b22b4b2c0890e1539a4bbbc5a"
+    },
+    {
+      "case": "trajectory smoke",
+      "sha256": "5755895570e9ccc1345714b0f1ae56c8771045a896b7fe6dec955fe258cb188f"
+    },
+    {
+      "case": "trajectory smoke",
+      "sha256": "48841566a51c5fe14a672e65e9e7efcef0fac228468972d4b8d3a41d4a710d52"
+    },
+    {
+      "case": "trajectory smoke",
+      "sha256": "96ae9e5242e9e62b6a369762012c3b0174fcd6a846c75069854f94be1133a7a6"
+    },
+    {
+      "case": "trajectory smoke",
+      "sha256": "4760d76bd85a768596639295e2d7673978ccf10b22b4b2c0890e1539a4bbbc5a"
+    },
+    {
+      "case": "trajectory smoke",
+      "sha256": "85e7af9266e132c635784bad2b712a11e3186a78a5d4bbbd9d0bdc2b1ae69dc6"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "48841566a51c5fe14a672e65e9e7efcef0fac228468972d4b8d3a41d4a710d52"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "0531d666c22773b08100e6566564a7f9f52e697191e3bedc14cc4b7373787130"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "65ffbe6014a52d560f42ffd59a485f87b0987a3d08fc53db3bd8b1d4524781ae"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "de7aae7b759f191d6d0dbe7be9ad6f9cdb53bf6c1704114c5626b6d9438c51c7"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "cdf22812b0fbaa88bf7db4a7621434e1f81dc09efdc9ea8bb8a0c7e0176121fd"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "0f147b15433717ca6848d1c35123e7af6160c0352cedcf167be5f4442bf7f369"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "a85e5d4cdd0c582322f939583e38e0c299101451b6e15de9c45212896417d261"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "5755895570e9ccc1345714b0f1ae56c8771045a896b7fe6dec955fe258cb188f"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "6d17ce0f1a74219ab9a6591a6b94dc002b00726e14d137a0db970e94646b6a92"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "244de3b14f337e6478b2ad945ad0de786bf27c53938065fcc0262095b2cad6ee"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "bfe34002cf372f01878978db975be8f3d0918e7c0ff7209da48757618fc410aa"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "1d159658136da35d936d9619879313039d062c003ac00c3aea2581f4dce9924b"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "4864d7663957ca46af649d759b178432f08cc00ae3b5162b8283bde5d5596d18"
+    },
+    {
+      "case": "vibration video export smoke",
+      "sha256": "0ff9a8fcf806f832f4cfc07acf5716309a9a15db818e3a1c9fdfaa29ffc27f41"
+    }
+  ],
+  "validationScope": "Complete native-input scope; known exporter assertions and exactly their20 original dependent statements remain explicitly failed/blocked, never ordinary passes."
 }

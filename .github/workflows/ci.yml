@@ -67,6 +67,11 @@ jobs:
       # The install skips cached binaries but still installs Linux dependencies.
       - name: Install Playwright Chromium
         run: python -m playwright install --with-deps chromium
+      - name: Shared assertion contract with the real browser
+        if: matrix.shard == 'smoke'
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/assertion-contract-probe
+        run: python tests/e2e/assertion_contract_probe.py
       - name: Collect assigned browser suites (aggregate gate runs in join)
         run: python tests/e2e/browser_suite.py --shard "${{ matrix.shard }}"
       - name: Upload shard evidence

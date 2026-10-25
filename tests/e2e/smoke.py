@@ -13,9 +13,11 @@ from playwright.sync_api import sync_playwright
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    from assertion_contract import state_after_input
     from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 else:
+    from .assertion_contract import state_after_input
     from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from .ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 
@@ -1280,32 +1282,20 @@ def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> No
     else:
         expected = {hit_atom_index}
     expected = sorted(expected)
-    if additive:
-        page.keyboard.down('Shift')
-    try:
-        page.mouse.click(x, y)
-    finally:
+    with state_after_input(page,
+            '()=>VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)', expected,
+            label='native atom selection') as check:
         if additive:
-            page.keyboard.up('Shift')
-    try:
-        page.wait_for_function(
-            """(payload) => {
-                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())
-                  ? window.VibeMolTesting.getEditSelectionIndices()
-                  : [];
-                const actual = indices.slice().sort((a, b) => a - b);
-                return JSON.stringify(actual) === JSON.stringify(payload.expected);
-            }""",
-            arg={'expected': expected},
-            timeout=600,
-        )
-    finally:
-        actual = page.evaluate(
-            '()=>window.VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)'
-        )
+            page.keyboard.down('Shift')
+        try:
+            page.mouse.click(x, y)
+        finally:
+            if additive:
+                page.keyboard.up('Shift')
+        result = check()
         print('[smoke-selection-result] ' + json.dumps(dict(
             before=before_selection, atom=hit_atom_index, additive=additive,
-            actual=actual, expected=expected)), flush=True)
+            actual=result['actual'], expected=expected)), flush=True)
 
 
 def select_two_fixture_atoms(page) -> None:
@@ -1750,23 +1740,8 @@ def main() -> int:
             atom2_x, atom2_y = project_active_atom(page, 1)
 
             click_atom_to_select(page, atom1_x, atom1_y)
-            try:
-                page.wait_for_function(
-                    """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1""",
-                    timeout=750,
-                )
-            except Exception:
-                direct_selected = page.evaluate(
-                    """() => {
-                        if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
-                        return window.VibeMolTesting.setEditSelectionIndices([0]);
-                    }"""
-                )
-                if not (isinstance(direct_selected, dict) and int(direct_selected.get('count', -1)) == 1):
-                    raise
-            page.wait_for_function(
-                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
-            )
+            # Exact native selection is already asserted by click_atom_to_select;
+            # no duplicate750ms wait or direct API repair follows it.
             move_probe = page.evaluate(
                 """(payload) => {
                     if (!window.VibeMolTesting || typeof window.VibeMolTesting.performSelectionMoveDrag !== 'function') return null;
@@ -3423,37 +3398,15 @@ def main() -> int:
                 }"""
             )
             page.keyboard.press(copy_paste_shortcut + 'C')
-            page.keyboard.press(copy_paste_shortcut + 'V')
-            try:
-                page.wait_for_function(
-                    r"""() => {
-                        const exported = window.VibeMolStructure.exportActive();
-                        return exported.volume.atoms.length === 4
-                          && Array.isArray(exported.volume.bonds)
-                          && exported.volume.bonds.length === 2;
-                    }""",
-                    timeout=5000,
-                )
-            except Exception:
-                page.evaluate(
-                    """() => {
-                        if (!window.VibeMolTesting) return;
-                        if (typeof window.VibeMolTesting.copyEditSelectionToClipboard === 'function') {
-                            window.VibeMolTesting.copyEditSelectionToClipboard();
-                        }
-                        if (typeof window.VibeMolTesting.pasteEditClipboardSelection === 'function') {
-                            window.VibeMolTesting.pasteEditClipboardSelection();
-                        }
-                    }"""
-                )
-                page.wait_for_function(
-                    r"""() => {
-                        const exported = window.VibeMolStructure.exportActive();
-                        return exported.volume.atoms.length === 4
-                          && Array.isArray(exported.volume.bonds)
-                          && exported.volume.bonds.length === 2;
-                    }"""
-                )
+            with state_after_input(page,
+                    """() => { const volume=VibeMolStructure.exportActive().volume;
+                        return {atoms:volume.atoms.length,bonds:volume.bonds?.length,
+                          bondsArray:Array.isArray(volume.bonds)}; }""",
+                    {'atoms':4,'bonds':2,'bondsArray':True}, label='native clipboard paste',
+                    policy='native-clipboard',event='keydown',selector=None,key='v',
+                    asynchronous=True,require_transition=True) as check:
+                page.keyboard.press(copy_paste_shortcut + 'V')
+                check()
 
             page.locator('#editSelectionDeleteCueButton').click()
             page.wait_for_function(

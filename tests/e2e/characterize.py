@@ -12,6 +12,7 @@ import gzip
 import hashlib
 import json
 import math
+from assertion_contract import numbers_close
 import os
 import pathlib
 import platform
@@ -94,7 +95,7 @@ def first_difference(expected, actual, path='$'):
             if diff:
                 return diff
     elif isinstance(expected, float):
-        if not math.isclose(expected, actual, rel_tol=1e-9, abs_tol=1e-12):
+        if not numbers_close(expected, actual, rel_tol=1e-9, abs_tol=1e-12):
             return f'{path}: {expected!r} != {actual!r}'
     elif expected != actual:
         return f'{path}: {str(expected)[:180]!r} != {str(actual)[:180]!r}'

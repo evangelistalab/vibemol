@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Camera depth, framing, and picking for slabs and diffuse orbital displays."""
 import math
+from assertion_contract import numbers_close
 import json
 import premerge as p
 from surface_shadows import settings, settle
@@ -26,7 +27,7 @@ def assert_camera_frustum_matches_pose(page, label, expected_distance):
     print('[camera-frustum] '+json.dumps(comparands),flush=True)
     assert actual['type']=='OrthographicCamera',comparands
     for key,value in expected.items():
-        assert math.isclose(actual[key],value,rel_tol=1e-9,abs_tol=1e-12),(key,comparands)
+        assert numbers_close(actual[key],value,rel_tol=1e-9,abs_tol=1e-12),(key,comparands)
     return actual
 
 
@@ -183,7 +184,7 @@ def slab_rotation_and_picking(page, context, url):
     after=covered(page)
     assert after['zoom']==before['zoom']
     for vector in ['camera','target','up']:
-        assert all(math.isclose(before['pose'][vector][a],after['pose'][vector][a],abs_tol=1e-8) for a in ['x','y','z'])
+        assert all(numbers_close(before['pose'][vector][a],after['pose'][vector][a],abs_tol=1e-8) for a in ['x','y','z'])
     # A far dolly after a small-molecule fit must not retain that fit's old far plane.
     assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 0.96 0 0\nH -0.25 0.93 0'}])['ok']
     settings(page,{'view.projection':'perspective','view.camera.x':0,'view.camera.y':0,'view.camera.z':2000,
@@ -272,7 +273,7 @@ def edit_grid_continuity(page, context, url):
         settle(page)
         page.evaluate('() => {window.gridWithout=gridImage();}')
         without_depth=page.evaluate('() => [depthCamera.near,depthCamera.far]')
-        assert all(math.isclose(a,b,rel_tol=1e-8,abs_tol=1e-6) for a,b in zip(depth,without_depth)),(depth,without_depth)
+        assert all(numbers_close(a,b,rel_tol=1e-8,abs_tol=1e-6) for a,b in zip(depth,without_depth)),(depth,without_depth)
         for kind in (['outside','before','after'] if projection=='orthographic' else ['after']):
             points=groups[kind]
             assert points,(projection,shift,kind,grid_comparands)

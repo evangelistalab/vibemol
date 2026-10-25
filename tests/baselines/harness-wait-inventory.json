@@ -8,41 +8,41 @@
       "line": 1245,
       "originalMs": 600,
       "expression": "'(payload) => {\\n                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())\\n                  ? window.VibeMolTesting.getEditSelectionIndices()\\n                  : [];\\n                const target = Number(payload.atomIndex);\\n                if (!payload.additive) return indices.length === 1 && indices[0] === target;\\n                return indices.includes(target);\\n            }'",
-      "disposition": "Unchanged until authoritative arrival distribution; original failures preserved"
+      "disposition": "Keep600ms; native event receipt records exact selection at completed pointerup, measured138.7\u2013264.8ms. No later RAF observation deadline."
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1326,
       "originalMs": 750,
       "expression": "page",
-      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1298,
       "originalMs": 750,
       "expression": "'() => {\\n                        return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1;\\n                    }'",
-      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 1750,
       "originalMs": 750,
       "expression": "'() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1'",
-      "disposition": "Two select_two_fixture_atoms deadlines already removed in83d5ba6; remaining startup duplicate to consolidate after measurement"
+      "disposition": "Removed duplicate readiness deadline and API selection repair; exact native identity/toggle assertion is the single owner."
     },
     {
       "file": "tests/e2e/smoke.py",
       "line": 3424,
       "originalMs": 5000,
       "expression": "'() => {\\n                        const exported = window.VibeMolStructure.exportActive();\\n                        return exported.volume.atoms.length === 4\\n                          && Array.isArray(exported.volume.bonds)\\n                          && exported.volume.bonds.length === 2;\\n                    }'",
-      "disposition": "Native clipboard readiness; consolidate in shared helper without broad acceptance of missing arrival"
+      "disposition": "Keep5000ms; shared helper starts at actual native paste activation, observes DOM-backed arrival, logs exact atoms/bonds comparands, removes API copy/paste repair."
     },
     {
       "file": "tests/e2e/presented_state_probe.py",
       "line": 21,
       "originalMs": 100,
-      "disposition": "Intentional false-predicate negative control; must still reject false, not a measured product-arrival budget"
+      "disposition": "Keep100ms as named false-presented-control policy; intentionally false predicate must still time out."
     }
   ],
   "extraFixedSleeps": "Two100ms post-close sleeps exist separately; they are not the100ms false-predicate deadline and are unchanged during measurement.",
@@ -57,7 +57,7 @@
       "Original600ms wait polls and host elapsed time",
       "Frames and long tasks"
     ],
-    "budgetChosen": null,
+    "budgetChosen": 600,
     "ordinary600Unchanged": true,
     "noProductionChanges": true,
     "sharedLock": "api/requirements-ci.lock",
@@ -65,7 +65,19 @@
       "playwright": "1.64.1",
       "python": "3.12.15"
     },
-    "missingReceiptsNeverCountAsFastSamples": true
+    "missingReceiptsNeverCountAsFastSamples": true,
+    "runId": 40149272378,
+    "budgetRaised": false,
+    "result": "tests/baselines/selection-arrival.json",
+    "originalTimeoutReproduced": false
   },
-  "figure43": "Deadline policy remains held pending42; no Figure rerun or behavior change"
+  "figure43": "Deadline policy remains held pending42; no Figure rerun or behavior change",
+  "sharedHelper": {
+    "python": "tests/e2e/assertion_contract.py",
+    "browser": "tests/e2e/assertion_runtime.js",
+    "numeric": "math.isclose with original caller parameters/type checks; exact serialized repeat unchanged",
+    "timing": "Native event or DOM-backed receipt; missing/wrong/late input fails. No polling frame, sleep, retry, or state repair.",
+    "realBrowserContract": "tests/e2e/assertion_contract_probe.py closes its browser before Smoke",
+    "figure": "No Figure policy change"
+  }
 }

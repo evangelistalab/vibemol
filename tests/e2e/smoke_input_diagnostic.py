@@ -195,6 +195,8 @@ class Page:
                         assertionBoundary=len(self.probe.assertions),kind='select_two_fixture_atoms direct fallback',
                         callsite=self.probe.callsite())
             self.probe.repairs.append(repair);self.probe.emit('other-selection-repair',repair=repair,state=self.probe.snapshot())
+        if isinstance(result,dict) and result.get('contract')=='shared-assertion':
+            self.probe.check('shared-assertion',self.probe.line,result.get('label'),result.get('passed'),True,values=result)
         return result
     def wait_for_function(self, expression, **kwargs):
         site=self.probe.callsite();line=site[0]['line'] if site else self.probe.line

@@ -23,6 +23,7 @@ class ArrivalProbe:
         self.receipt = None
         self.host = {}
         self.waits = []
+        self.shared_assertions = []
         self.errors = []
 
     def start(self, page, values):
@@ -67,6 +68,13 @@ class ArrivalPage:
 
     def __getattr__(self, name):
         return getattr(self.raw, name)
+
+    def evaluate(self, expression, *args, **kwargs):
+        start=time.monotonic()
+        result=self.raw.evaluate(expression,*args,**kwargs)
+        if self.probe.active and isinstance(result,dict) and result.get('contract')=='shared-assertion':
+            self.probe.shared_assertions.append(dict(value=result,hostReadMs=(time.monotonic()-start)*1000))
+        return result
 
     def wait_for_function(self, expression, **kwargs):
         target = self.probe.active and self.probe.armed and kwargs.get('timeout') == 600
@@ -142,7 +150,10 @@ def run(args, out, source, checkout):
     body = next(n for n in next(n for n in fn.body if isinstance(n,ast.With)).body if isinstance(n,ast.Try)).body
     close = next(i for i,n in enumerate(body) if isinstance(n,ast.Expr) and isinstance(n.value,ast.Call) and ast.unparse(n.value.func)=='browser.close')
     body = body[:close]
-    assert next(n for n in ast.walk(original) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute) and n.func.attr=='wait_for_function' and any(k.arg=='timeout' and isinstance(k.value,ast.Constant) and k.value.value==600 for k in n.keywords))
+    legacy_waits=[n for n in ast.walk(original) if isinstance(n,ast.Call) and isinstance(n.func,ast.Attribute)
+                  and n.func.attr=='wait_for_function' and any(k.arg=='timeout' and isinstance(k.value,ast.Constant)
+                  and k.value.value==600 for k in n.keywords)]
+    assert legacy_waits or 'state_after_input' in source, 'Unsupported assertion boundary'
     failures, page_errors, console_errors, executed = [], [], [], []
     started = time.monotonic()
     with namespace['run_http_server'](args.source_root.resolve()) as url, sync_playwright() as pw:
@@ -172,8 +183,9 @@ def run(args, out, source, checkout):
                 sourceCleanAfter=subprocess.check_output(['git','status','--porcelain'],cwd=args.source_root,text=True)=='',
                 sourceHashes={path:hashlib.sha256((args.source_root/path).read_bytes()).hexdigest() for path in ['assets/app/js/app.js','assets/app/js/edit-tools.js','assets/app/js/trajectory-video.js']},
                 harnessSha256=hashlib.sha256(source.encode()).hexdigest(),probeSha256=hashlib.sha256((HERE/'selection_arrival_probe.js').read_bytes()).hexdigest(),
-                originalSelectionWaitMs=600,originalSelectionLogicUnchanged=True,extraObservationCeilingMs=30000,
-                observationCeilingIsNotAssertionBudget=True,hostTimeline=probe.host,originalWaits=probe.waits,
+                originalSelectionWaitMs=600 if legacy_waits else None,selectionInputBudgetMs=600,
+                assertionMode='legacy-raf-wait' if legacy_waits else 'native-event-receipt',originalSelectionLogicUnchanged=True,extraObservationCeilingMs=30000,
+                observationCeilingIsNotAssertionBudget=True,hostTimeline=probe.host,originalWaits=probe.waits,sharedAssertions=probe.shared_assertions,
                 receipt=probe.receipt,measurementErrors=probe.errors,originalFailures=failures,
                 executedStatements=executed,originalTargetSectionCompleted=probe.case==CASE and not failures,
                 pageErrors=page_errors,consoleErrors=console_errors,elapsedSeconds=time.monotonic()-started,

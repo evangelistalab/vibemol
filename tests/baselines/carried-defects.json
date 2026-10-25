@@ -368,6 +368,72 @@
         "noFurtherDiagnosticReplays": true
       },
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
+    },
+    {
+      "id": "smoke-grow-add-selection-deadline",
+      "issue": 50,
+      "url": "https://github.com/evangelistalab/vibemol/issues/50",
+      "status": "Measured native-arrival harness repair proposed; original missed poll unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "workflow": "grow-add can be followed immediately by atom selection",
+      "ordinary": {
+        "runId": 40138904806,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "callerLine": 3539,
+        "helperLine": 1291,
+        "waitMs": 600,
+        "before": [],
+        "expected": [
+          0
+        ],
+        "finalActual": [
+          0
+        ],
+        "exception": "TimeoutError",
+        "playwright": "1.64.1"
+      },
+      "diagnostic": {
+        "runId": 40138888119,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "nativePointerupSelection": [
+          0
+        ],
+        "predicateReadback": [
+          0
+        ],
+        "pointerupToPredicateMilliseconds": 270,
+        "playwright": "1.64.0"
+      },
+      "classification": "No seconds-late selection observed. State is set within native pointerup in all5 samples. Original timeout not reproduced; its exact missed poll remains unknown. Repair removes post-event RAF observation as a prerequisite without increasing600ms or accepting late/missing input.",
+      "baseline": "tests/baselines/selection-arrival.json",
+      "disposition": "Replacement PR49 candidate must prove its own complete gate; PR46 stays held until harness lands.",
+      "measurement": {
+        "runId": 40149272378,
+        "samples": 5,
+        "excluded": 0,
+        "arrivalRangeMs": [
+          138.7,
+          264.8
+        ],
+        "handlerArrivalRangeMs": [
+          0.8,
+          1.5
+        ],
+        "callbackRangeMs": [
+          1.3,
+          2.7
+        ],
+        "hostWaitRangeMs": [
+          294.48,
+          543.1
+        ],
+        "playwright": "1.64.1",
+        "chromium": "156.0.8078.4",
+        "python": "3.12.15",
+        "allOriginal600WaitsPassed": true
+      }
     }
   ],
   "openHarnessDefects": [
@@ -392,9 +458,9 @@
         "sameFixtureCheckpoints": 23,
         "definition": "102 wait calls +8 Python asserts +3 explicit failure guards +final runtime guard; excludes additional nested helper/clickability guards. CI collector counts those too."
       },
-      "fixDeferredUntilIssue47Understood": true,
-      "failLoudFixNotImplemented": true,
-      "timingPolicy": "600ms remains unchanged for evidence. Future policy belongs in shared helper43, held pending42 classification; no new threshold.",
+      "fixDeferredUntilIssue47Understood": false,
+      "failLoudFixNotImplemented": false,
+      "timingPolicy": "Shared helper keeps600ms after5 measured native arrivals; Figure43 policy hold does not apply to this direct-human50 authorization.",
       "diagnostic": "tests/baselines/smoke-input-diagnostic.json",
       "firstCiObservation": {
         "run": 40129183912,
@@ -464,7 +530,7 @@
       "sharedCauseWith47": "No shared product input-loss cause in the observed traces. Repeated Shift fallback receives canvas input and correctly toggles selection; original4830 click hits an overlaid Carboxyl row instead of canvas; Fusion targets an auto-hidden launcher with pointer-events:none. Common harness weakness is using geometric/leaf visibility without proving DOM hit eligibility.",
       "ciRun": 40130635514,
       "fixDisposition": "No fix in this diagnostic; native fallback still repairs, failure evidence retained.47 mechanism now understood; PR46disposition and harness repair remain separate decisions.",
-      "repairCandidate": "Harness-only native preconditions; pending own ordinary gate and bypassed-input diagnostic. No production or timing-policy change."
+      "repairCandidate": "PR49 measured native-input/event-boundary harness repair; own new complete ordinary gate and scoped bypassed native-input diagnostic pending."
     },
     {
       "id": "smoke-build-fusion-phenyl-switch",
@@ -535,7 +601,7 @@
         },
         "baseline": "tests/baselines/smoke-input-diagnostic.json"
       },
-      "repairCandidate": "Harness-only native preconditions; pending own ordinary gate and bypassed-input diagnostic. No production or timing-policy change."
+      "repairCandidate": "PR49 measured native-input/event-boundary harness repair; own new complete ordinary gate and scoped bypassed native-input diagnostic pending."
     }
   ]
 }
