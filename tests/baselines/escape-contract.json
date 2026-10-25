@@ -1,6 +1,6 @@
 {
   "issue": 52,
-  "status": "candidate; gate composition authorization and own complete ordinary run required",
+  "status": "authorized36/1/37 candidate; own complete first automatic ordinary run required",
   "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
   "contract": "docs/maintenance/axis-escape-contract.md",
   "canonicalTables": [
@@ -270,14 +270,19 @@
   },
   "units": {
     "js": 459,
-    "python": 98,
+    "python": 101,
     "passed": true
   },
   "smokeRisk": "trajectory-video adds only an Escape action offer for existing activation cancellation; recording/activation handlers unchanged. Both exporter completion records and all activation readbacks remain mandatory in own ordinary gate.",
   "ordinaryGate": {
-    "manifestUnchanged": true,
-    "pendingHumanCompositionAuthorization": true,
-    "complete": false
+    "manifestUnchanged": false,
+    "pendingHumanCompositionAuthorization": false,
+    "complete": false,
+    "expected": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    }
   },
   "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth",
   "pinnedDiagnostic": {
@@ -322,5 +327,47 @@
     "localCases": 25,
     "passed": true,
     "note": "Additional native defaultPrevented/propagation readbacks added after the pinned diagnostic. Own full gate must include this strengthened harness; no completed suite rerun for acceptance."
+  },
+  "taggedReproduction": {
+    "runId": 40227225248,
+    "attempt": 1,
+    "tag": "v0.9.5-pre-refactor",
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "55e0b6b29ea4f0e58b55a38d03024d099236e6b04e57dae844539f8c1efaaecd",
+    "harnessSha256": "f4c18cd9965328fa0b604d5addcce2ad425a6473c467df7063c44424d922ad63",
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "taggedFocus": "viewAxisNegZBtn",
+    "candidateFocus": "canvas",
+    "editActionsPerSource": 1,
+    "taggedSelection": [],
+    "candidateSelection": [],
+    "pageerrors": [],
+    "diagnosticOnly": true,
+    "independentlyVerified": true
+  },
+  "manifestDiff": {
+    "phase": "issue52",
+    "before": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37
+    },
+    "after": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "removedSuite": "tests/e2e/axis_gizmo.py",
+    "removedEntry": {
+      "workflow": "escape-canvas-focus",
+      "exceptionType": "AssertionError",
+      "defect": "Escape interception prevents canvas focus",
+      "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/axis_gizmo.log"
+    },
+    "retainedSuite": "tests/e2e/mode_consistency.py",
+    "retainedEntryByteIdentical": true,
+    "retainedEntrySha256": "225fb48f71664ef4d04c82a54515430d18162e2ca4455ef14c3c6d41fcd75df0",
+    "source": "direct human authorization in chat; only52removed; any other actual result stops"
   }
 }
