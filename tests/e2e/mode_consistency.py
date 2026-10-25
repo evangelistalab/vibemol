@@ -3,6 +3,7 @@
 import math
 import json
 from workflow_contract import workflow_step
+from helpers import wait_for_presented_state
 import premerge as p
 from surface_shadows import settings, settle
 
@@ -77,6 +78,11 @@ def coordinate_row_actions(page):
     assert page.locator('#coordsContent [data-coords-action="delete"]').count() == 3
     page.locator('#editAddAdjustHydrogens').evaluate("el=>{el.checked=true;el.dispatchEvent(new Event('change',{bubbles:true}))}")
     page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0,2])')
+    # #53 must exercise the presented card, not win a pre-render click race.
+    wait_for_presented_state(page,'''()=>{
+      const card=document.getElementById('editSelectionTranslateCue');
+      return card.getAttribute('aria-hidden')==='false' && card.getBoundingClientRect().width>0;
+    }''')
     before = page.evaluate('()=>VibeMolStructure.exportActive().volume')
     deleted_id = before['atoms'][1]['id']
     def delete_hit():

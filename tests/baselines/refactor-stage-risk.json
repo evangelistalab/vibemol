@@ -2257,23 +2257,16 @@
   "gateAcceptancePolicy": {
     "identity": "suite and workflow",
     "lineNumbers": "diagnostic only; never acceptance keys",
-    "acceptedWorkflows": [
-      {
-        "suite": "mode_consistency.py",
-        "workflow": "coordinates-delete-selection-card",
-        "exceptionType": "TimeoutError",
-        "defect": "Selection card covers Coordinates Delete",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-      }
-    ],
+    "acceptedWorkflows": [],
     "expected": {
-      "passed": 36,
-      "failed": 1,
+      "passed": 37,
+      "failed": 0,
       "total": 37
     },
-    "authority": "Direct human issue52 authorization: remove only Axis Escape; exact36/1/37 regardless of CI outcome.",
+    "authority": "Direct human issue53 authorization: remove only Coordinates; exact37/0/37 independent of observed CI.",
     "firstAutomaticCandidateRunOnly": true,
-    "overPerformance": "37/0/37 stops during issue52; only the separately authorized issue53 PR may use37/0/37."
+    "overPerformance": "All37 suites must pass exactly once. Changed totals, repeats, omissions or any failure stop. The intentionally empty accepted set is not a missing manifest.",
+    "acceptedSetIntentionallyEmpty": true
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
@@ -2293,11 +2286,11 @@
     ],
     "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here.",
     "currentBrowserGate": {
-      "passed": 36,
-      "failed": 1,
+      "passed": 37,
+      "failed": 0,
       "total": 37
     },
-    "humanCorrection": "Direct human issue52 repair authorization removes only Axis Escape, requiring36/1/37. Any other count or workflow stops; diagnostic evidence cannot supply a merge gate.",
+    "humanCorrection": "Direct human issue53 repair authorization removes only Coordinates after accepted52: exactly37/0/37, intentionally empty accepted set. No other gate requirement changes.",
     "cacheOnlyRestrictionScope": "The let-to-els/line-neutral limitation applies to historical Stage3 cache conversions. The direct human separately authorizes Stage4 and Stage5 real controller extractions under their accepted seams, with preserved behavior and construction-order gate."
   },
   "editTool320Diagnostic": {
@@ -2976,6 +2969,29 @@
         },
         "measurementLimit": "One observed workflow run; runner variation, setup, queues, artifacts and joins included."
       }
+    },
+    {
+      "pr": 54,
+      "head": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
+      "run": "https://github.com/evangelistalab/vibemol/actions/runs/40237309034",
+      "attempt": 1,
+      "integrationCommit": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
+      "status": "complete first-pass corrected52 conjunction; merged/pushed",
+      "counts": {
+        "passed": 36,
+        "failed": 1,
+        "total": 37
+      },
+      "nativeEscapeCases": 62,
+      "tableCases": 1248,
+      "lets": 251,
+      "maxHelperInputs": 11,
+      "construction": "54app/26provider",
+      "bothExporterCompletionRecords": true,
+      "looksSeconds": 1688.9,
+      "bothMaterialFamilyPathsCompleted": true,
+      "workflowSeconds": 1743,
+      "archiveSha256": "07f8a7506d01f16020964ba4fe2a70736b8bbda6360238b78bbe305c4071dd07"
     }
   ],
   "historicalRejectedCiGateAttempts": [
@@ -3750,38 +3766,31 @@
     "vibrationExportReached": false
   },
   "ordinaryExpected": {
-    "passed": 36,
-    "failed": 1,
+    "passed": 37,
+    "failed": 0,
     "total": 37
   },
   "currentBrowserBaseline": {
-    "passed": 36,
-    "failed": 1,
+    "passed": 37,
+    "failed": 0,
     "total": 37,
     "environment": "CI",
-    "status": "Required issue52 candidate composition; not an observed result",
-    "acceptedDefects": [
-      {
-        "suite": "mode_consistency.py",
-        "workflow": "coordinates-delete-selection-card",
-        "exceptionType": "TimeoutError",
-        "defect": "Selection card covers Coordinates Delete",
-        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
-      }
-    ],
+    "status": "Required issue53 candidate composition, not an observed result",
+    "acceptedDefects": [],
+    "acceptedSetIntentionallyEmpty": true,
     "gate": {
-      "passed": 36,
-      "failed": 1,
+      "passed": 37,
+      "failed": 0,
       "total": 37,
-      "status": "Own complete first-pass issue52 conjunction required"
+      "status": "Own complete first-pass issue53 conjunction required"
     },
     "issue11AcceptedCiFailure": false,
+    "issue52AcceptedCiFailure": false,
+    "issue53AcceptedCiFailure": false,
     "requiredExporterSites": [
       "trajectory",
       "vibration"
-    ],
-    "evidence": "tests/baselines/video-export-activation.json",
-    "issue52AcceptedCiFailure": false
+    ]
   },
   "preIssue52BrowserBaseline": {
     "passed": 35,
@@ -3859,5 +3868,55 @@
     },
     "overPerformance": "35/2/37 is a stop: an accepted failure is missing",
     "authority": "Direct human synchronization correction after diagnostic39129507791; own new harness and unchanged5c gates required"
+  },
+  "preIssue53BrowserBaseline": {
+    "passed": 36,
+    "failed": 1,
+    "total": 37,
+    "environment": "CI",
+    "status": "Required issue52 candidate composition; not an observed result",
+    "acceptedDefects": [
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      }
+    ],
+    "gate": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37,
+      "status": "Own complete first-pass issue52 conjunction required"
+    },
+    "issue11AcceptedCiFailure": false,
+    "requiredExporterSites": [
+      "trajectory",
+      "vibration"
+    ],
+    "evidence": "tests/baselines/video-export-activation.json",
+    "issue52AcceptedCiFailure": false
+  },
+  "historicalGateAcceptancePolicyBeforeIssue53": {
+    "identity": "suite and workflow",
+    "lineNumbers": "diagnostic only; never acceptance keys",
+    "acceptedWorkflows": [
+      {
+        "suite": "mode_consistency.py",
+        "workflow": "coordinates-delete-selection-card",
+        "exceptionType": "TimeoutError",
+        "defect": "Selection card covers Coordinates Delete",
+        "evidence": "tests/baselines/evidence/browser-ci-gate/ci-38141289409/mode_consistency.log"
+      }
+    ],
+    "expected": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "authority": "Direct human issue52 authorization: remove only Axis Escape; exact36/1/37 regardless of CI outcome.",
+    "firstAutomaticCandidateRunOnly": true,
+    "overPerformance": "37/0/37 stops during issue52; only the separately authorized issue53 PR may use37/0/37."
   }
 }

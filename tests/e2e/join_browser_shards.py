@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Join every planned shard, validate raw evidence and enforce the exact manifest composition (currently36/1/37)."""
+"""Join every planned shard, validate raw evidence and enforce37/0/37 with an intentionally empty accepted set."""
 import argparse
 import json
 import math

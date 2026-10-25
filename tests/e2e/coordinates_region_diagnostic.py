@@ -99,7 +99,11 @@ class Page:
 def main():
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--prepare-only',action='store_true')
+    parser.add_argument('--source-root',type=Path,default=p.ROOT,
+                        help='Serve this immutable source with the same diagnostic harness; never merge evidence.')
     args=parser.parse_args()
+    served_root=args.source_root.resolve()
+    served_app_sha=digest(served_root/'assets/app/js/app.js')
     OUT.mkdir(parents=True,exist_ok=True)
     source_file=HERE/'mode_consistency.py';source=source_file.read_text();tree=ast.parse(source)
     original=ast.dump(tree,include_attributes=False)
@@ -117,7 +121,7 @@ def main():
     module.__file__=str(source_file);module.__dict__['_probe']=probe
     exec(compile(tree,str(source_file),'exec'),module.__dict__)
     identity=artifact_identity();cases=[]
-    with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
+    with p.run_http_server(served_root) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
         try:
             for name,workspace,function in [('legacy-row-actions',0,'coordinate_row_actions'),
@@ -144,7 +148,10 @@ def main():
             browser_version=browser.version
             browser.close()
     assert artifact_identity()==identity
+    assert digest(served_root/'assets/app/js/app.js')==served_app_sha
     report=dict(diagnosticOnly=True,mergeEvidence=False,artifactIdentity=identity,sourceUnchanged=True,
+        artifactIdentityRole='harness checkout; served source is identified separately',
+        servedSourceRoot=str(served_root),servedSourceAppSha256=served_app_sha,
         harnessSha256=digest(Path(__file__)),sourceSuiteSha256=digest(source_file),
         toolchainLockSha256=digest(p.ROOT/'api/requirements-ci.lock'),cases=cases,
         toolchain=dict(python=platform.python_version(),playwright=importlib.metadata.version('playwright'),

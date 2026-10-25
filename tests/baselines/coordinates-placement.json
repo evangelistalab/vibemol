@@ -1,0 +1,191 @@
+{
+  "issue": 53,
+  "status": "authorized37/0/37 candidate on accepted52; guard separate and nonblocking",
+  "base": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
+  "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
+  "knowinglyExtendsFragmentation": true,
+  "placementPolicyAudit": "docs/maintenance/coordinates-placement-policy.md",
+  "dependencyInputs": {
+    "closure": [
+      "els"
+    ],
+    "geometryParameters": [
+      "left",
+      "top",
+      "width",
+      "height",
+      "minLeft",
+      "viewportWidth",
+      "viewportHeight"
+    ],
+    "total": 8
+  },
+  "newModuleLetCount": 0,
+  "trackedModuleLets": 251,
+  "construction": {
+    "passed": true,
+    "appBindings": 19,
+    "note": "Initial direct late coordsPanel closure failed; original lookup now fills an early null-initialized els field. Failed audit preserved."
+  },
+  "geometryCases": 8,
+  "initialOverlapPreflight": {
+    "source": "unchanged main d635abf",
+    "browser": "145.0.7632.6",
+    "profiles": [
+      "coordinates-selection",
+      "build-selection",
+      "metal-selection"
+    ],
+    "widths": [
+      1512,
+      1024,
+      390
+    ],
+    "layouts": [
+      "Workbench",
+      "legacy"
+    ],
+    "cases": 18,
+    "collisionPairs": [
+      [
+        "coordsPanel",
+        "displayWindowAdaptiveMenu"
+      ],
+      [
+        "coordsPanel",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "coordsPanel",
+        "toolbar"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editAdaptiveAddAtomPopover"
+      ],
+      [
+        "displayWindowAdaptiveMenu",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "editSelectionTranslateCue"
+      ],
+      [
+        "editAdaptiveAddAtomPopover",
+        "toolbar"
+      ],
+      [
+        "editAddAtomOperatorPanel",
+        "toolbar"
+      ],
+      [
+        "editSelectionMetalBondingCuePopover",
+        "toolbar"
+      ],
+      [
+        "editSelectionTranslateCue",
+        "toolbar"
+      ]
+    ],
+    "pairCount": 10,
+    "additionalPairCount": 9,
+    "scrollClippingRespected": true,
+    "pointerTransparentShellsIncludeInteractiveChildren": true,
+    "notExhaustive": true
+  },
+  "guard": {
+    "separatePr": true,
+    "blocksLocalFix": false,
+    "inventoryIssue": 55,
+    "authorizedPairs": 12,
+    "authorizedSignatures": 112,
+    "addedSignatures": 28,
+    "coverageComplete": false,
+    "classificationCounts": {
+      "intentional": 0,
+      "unreachable": 0,
+      "suspected defect": 12
+    },
+    "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls"
+  },
+  "ordinaryGate": {
+    "manifestUnchanged": false,
+    "complete": false,
+    "expected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "intentionallyEmptyAcceptedSet": true,
+    "armedAfterAccepted52": true
+  },
+  "units": {
+    "js": 459,
+    "python": 102,
+    "passed": true
+  },
+  "pinnedCiDiagnostic": {
+    "runId": 40222091876,
+    "attempt": 1,
+    "head": "130a64effc73da6c433b9b5ed62d5bfac0207f62",
+    "tree": "8421762730d32ce15dd5a854e9bc84a51cf1f740",
+    "independentlyVerifiedCollection": true,
+    "playwright": "1.64.1",
+    "chromium": "156.0.8078.4",
+    "sameHarness": true,
+    "casesPerSource": 18,
+    "controlPairs": 10,
+    "candidatePairs": 9,
+    "removedPairs": [
+      [
+        "coordsPanel",
+        "editSelectionTranslateCue"
+      ]
+    ],
+    "newPairs": [],
+    "completeGuard": false,
+    "mergeGateEvidence": false,
+    "looksMaterialPaths": "not covered"
+  },
+  "taggedLocalReproduction": {
+    "diagnosticOnly": true,
+    "mergeGateEvidence": false,
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09",
+    "taggedNativeFailures": 1,
+    "taggedExplicitBypasses": 1,
+    "candidateNativeFailures": 0,
+    "candidateBypasses": 0,
+    "originalAssertionsPerSource": 62,
+    "sourceUnchanged": true,
+    "toolchain": {
+      "python": "3.9.6",
+      "playwright": "1.60.0",
+      "chromium": "145.0.7632.6"
+    },
+    "newTool": false,
+    "standingDiagnosticExtended": true,
+    "failure": "legacy row1 native Delete intercepted by editSelectionPosition; preserved as failure before explicit diagnostic continuation",
+    "finalRebasedPinnedCheckStillRequired": true
+  },
+  "preRebaseNativeModeSuite": {
+    "passed": true,
+    "presentedCardBeforeDelete": true,
+    "legacyCardBefore": {
+      "x": 908,
+      "y": 73
+    },
+    "legacyCardAfter": {
+      "x": 908,
+      "y": 340.671875
+    },
+    "originalAssertionsPreserved": true,
+    "sourceAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09"
+  },
+  "currentNativeModeSuite": {
+    "status": "required in own first ordinary gate on final rebased candidate",
+    "presentedCardBeforeDelete": true,
+    "originalAssertionsPreserved": true
+  }
+}

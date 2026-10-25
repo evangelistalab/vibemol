@@ -1,0 +1,47 @@
+name: Coordinates tagged reproduction
+on:
+  workflow_dispatch:
+jobs:
+  coordinates-reproduction:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Use ordinary CI's pinned toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Same original assertions on tagged base and candidate
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p "$RUNNER_TEMP/coordinates-tagged"
+          git archive v0.9.5-pre-refactor index.html assets src | tar -x -C "$RUNNER_TEMP/coordinates-tagged"
+          VIBEMOL_TEST_ARTIFACT_DIR=out/test-artifacts/coordinates-reproduction/tagged python tests/e2e/coordinates_region_diagnostic.py --source-root "$RUNNER_TEMP/coordinates-tagged"
+          VIBEMOL_TEST_ARTIFACT_DIR=out/test-artifacts/coordinates-reproduction/candidate python tests/e2e/coordinates_region_diagnostic.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root=Path('out/test-artifacts/coordinates-reproduction')
+          tagged=json.loads((root/'tagged/result.json').read_text())
+          candidate=json.loads((root/'candidate/result.json').read_text())
+          for row in [tagged,candidate]:
+              assert row['diagnosticOnly'] and not row['mergeEvidence'] and row['sourceUnchanged']
+              assert all(case['execution']=='completed original region' and not case['pageErrors'] for case in row['cases'])
+              assert all(check['passed'] for check in row['assertions'])
+          assert len(tagged['nativeFailures'])==len(tagged['bypasses'])==1
+          failure=tagged['nativeFailures'][0]
+          assert failure['case']=='legacy-row-actions' and failure['state']['cardOwnsHit'] and not failure['state']['targetOwnsHit']
+          assert '[data-coords-action="delete"]' in failure['selector']
+          assert candidate['nativeFailures']==candidate['bypasses']==[]
+          print(json.dumps(dict(taggedFailures=tagged['nativeFailures'],candidateFailures=[],diagnosticOnly=True,mergeEvidence=False),indent=2))
+          PY
+      - name: Preserve all failures and explicit continuations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coordinates-tagged-reproduction
+          path: out/test-artifacts/coordinates-reproduction/
