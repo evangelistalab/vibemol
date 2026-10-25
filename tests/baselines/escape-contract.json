@@ -279,5 +279,48 @@
     "pendingHumanCompositionAuthorization": true,
     "complete": false
   },
-  "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth"
+  "rawArtifacts": "ignored out/test-artifacts/issue52; no raw evidence tree growth",
+  "pinnedDiagnostic": {
+    "runId": 40220367858,
+    "attempt": 1,
+    "head": "caf50aa9d31434d6c65d42c1350868a7ba0e8c86",
+    "tree": "ae9c770a6e1e09fd559b00853eec4319510edaf2",
+    "passed": true,
+    "independentlyVerified": true,
+    "chromium": "156.0.8078.4",
+    "playwright": "1.64.1",
+    "tableCases": 300,
+    "nativeCases": 25,
+    "suites": [
+      "axis_gizmo.py",
+      "edit_tool.py",
+      "workbench.py"
+    ],
+    "construction": "54app/25consumer bindings",
+    "mergeGateEvidence": false,
+    "looksMaterialPaths": "not covered"
+  },
+  "localFocusedSuites": [
+    {
+      "suite": "axis_gizmo",
+      "exitCode": 0,
+      "seconds": 81.005420375
+    },
+    {
+      "suite": "edit_tool",
+      "exitCode": 0,
+      "seconds": 328.410476375
+    },
+    {
+      "suite": "workbench",
+      "exitCode": 0,
+      "seconds": 29.176200583000025
+    }
+  ],
+  "ownershipObserverFollowup": {
+    "productionUnchanged": true,
+    "localCases": 25,
+    "passed": true,
+    "note": "Additional native defaultPrevented/propagation readbacks added after the pinned diagnostic. Own full gate must include this strengthened harness; no completed suite rerun for acceptance."
+  }
 }

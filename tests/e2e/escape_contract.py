@@ -14,6 +14,12 @@ from helpers import wait_for_presented_state
 from assertion_contract import numbers_close
 
 ROOT = Path(__file__).resolve().parents[2]
+EVENT_OBSERVER = '''window.addEventListener('keydown', event => {
+  if(event.key==='Escape') window.__escapeNativeEvent=event;
+},true);
+window.addEventListener('keydown', event => {
+  if(event.key==='Escape') window.__escapeReachedBubble=true;
+});'''
 EXPOSE = '''  window.__escapeContract = {
     table: ESCAPE_LADDER, resolve: resolveEscapeDecision, execute: executeEscapeDecision,
     records: [], actions: [], completions: [],
@@ -53,12 +59,14 @@ def observed_source():
 
 def press(page, report, label, action, *, detail=None, selection=None, mode=None, focus=None):
     before=page.evaluate('()=>__escapeContract.state()')
-    page.evaluate('()=>{__escapeContract.records=[];__escapeContract.actions=[];__escapeContract.completions=[];}')
+    page.evaluate('()=>{__escapeContract.records=[];__escapeContract.actions=[];__escapeContract.completions=[];window.__escapeNativeEvent=null;window.__escapeReachedBubble=false;}')
     page.keyboard.press('Escape')
-    actual=page.evaluate('()=>({records:__escapeContract.records,actions:__escapeContract.actions,completions:__escapeContract.completions,after:__escapeContract.state()})')
+    actual=page.evaluate('()=>({records:__escapeContract.records,actions:__escapeContract.actions,completions:__escapeContract.completions,defaultPrevented:__escapeNativeEvent?.defaultPrevented,reachedBubble:__escapeReachedBubble,after:__escapeContract.state()})')
     report['cases'].append(dict(label=label,before=before,**actual))
     expected=[] if action is None else [action]
     check(actual['actions']==expected,actual['actions'],expected,label+' exactly one applicable action')
+    check(actual['defaultPrevented']==bool(expected),actual['defaultPrevented'],bool(expected),label+' consume only on a winner')
+    check(actual['reachedBubble']==(not expected),actual['reachedBubble'],not expected,label+' decline preserves propagation')
     check(len(actual['records'])==1,actual['records'],'one fresh decision',label+' decision count')
     decision=actual['records'][0]['decision']
     if detail is not None:check(decision and decision['detail']==detail,decision,detail,label+' Edit branch')
@@ -93,6 +101,7 @@ def escape_regression(browser,url):
     try:
         for legacy in [False,True]:
             context=browser.new_context(viewport={'width':1512,'height':1000})
+            context.add_init_script(EVENT_OBSERVER)
             page=context.new_page();page.on('pageerror',lambda error:report['pageerrors'].append(str(error)))
             page.route('**/assets/app/js/app.js*',lambda route:route.fulfill(status=200,content_type='application/javascript',body=served))
             try:
