@@ -10,8 +10,9 @@ adds pointer/keyboard dragging, retains manual positions, clamps them to the
 viewport with a 12px margin, and manages active/manual z-order. Its `constrain`
 function receives one surface's dimensions and viewport bounds, not other open
 surfaces. `edit-ui.js:positionFloatingPopover` positions one trigger/popover pair
-against the viewport and an optional top inset. `VmListPopover` similarly uses
-its own anchor and viewport. Neither receives an obstacle set.
+against the viewport and an optional top inset. `VmListPopover` supplies list,
+row-action and editing behavior; it does not place surfaces. Its app-owned
+shell supplies placement. Neither provides a shared obstacle set.
 
 Workbench's model allocates right/bottom dock regions and resizes the usable
 canvas; display-window exclusivity prevents some panels coexisting. These are
@@ -65,8 +66,17 @@ Unknown failures stop their case, with the rest unexecuted; fresh independent
 cases still expose later masking. Original waits and predicates are unchanged;
 the CI toolchain uses the ordinary lockfile. This diagnostic cannot accept a PR.
 
-Before choosing the product cut, report that run's failures and downstream
-coverage. The eventual ordinary regression must require the intended Delete (or
+Diagnostic40203023318 completed the original regions on Python3.12.15,
+Playwright1.64.1 and Chromium156.0.8078.4: legacy row actions22 assertions with
+one native Delete interception and one explicit DOM-click bypass; orbital
+context19 assertions with no bypass; Workbench row actions21 assertions with
+no bypass. All62 executed checks held and there were no page errors. Ten
+checks preceded the legacy failure, exposing52 dynamic checks behind it.
+No additional native failure or failed assertion was found. Fresh later
+contexts do not inherit the bypass, but remain diagnostic, not ordinary gate
+evidence. See `tests/baselines/coordinates-region.json` for provenance.
+
+The eventual ordinary regression must require the intended Delete (or
 child) to own its native click point and retain stable atom-ID/bond assertions,
 first-click inline editing, Undo/Redo, Enter/Space and Workbench coverage. No
 production placement rule or accepted-set change is included in the classifier

@@ -18,11 +18,12 @@ def _exception_hook(kind, error, tb):
     try:
         _original_hook(kind, error, tb)
     finally:
-        record = getattr(error, _binding, None)
-        if record:
-            print('[workflow-exception] ' + json.dumps({
-                'token': record['token'], 'suite': record['suite'],
-                'exceptionType': kind.__name__}), file=sys.stderr, flush=True)
+        record = getattr(error, _binding, None) or {}
+        # Emit an explicit unbound event too. A later unrelated exception must
+        # supersede any earlier named failure rather than inherit its token.
+        print('[workflow-exception] ' + json.dumps({
+            'token': record.get('token'), 'suite': record.get('suite'),
+            'exceptionType': kind.__name__}), file=sys.stderr, flush=True)
 
 
 def _install_hook():

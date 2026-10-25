@@ -26,11 +26,13 @@ def failure_workflow(suite, log, source=None):
     Historical unmarked logs keep their immutable historical reports; they are
     deliberately not accepted by this contract. Closed #11/#21 have no live rule.
     """
-    lines = log.rstrip().splitlines()
-    if not lines or not lines[-1].startswith('[workflow-exception] '):
+    lines = log.splitlines()
+    terminal_events = list(re.finditer(r'^\[workflow-exception\] ([^\n]+)$', log, re.M))
+    if not terminal_events:
         return None
+    last_event = terminal_events[-1]
     try:
-        terminal = json.loads(lines[-1].split(' ', 1)[1])
+        terminal = json.loads(last_event[1])
         records = [json.loads(line.split(' ', 1)[1]) for line in lines
                    if line.startswith('[workflow-step] ')]
     except (ValueError, TypeError):
@@ -45,7 +47,12 @@ def failure_workflow(suite, log, source=None):
     if len(candidates) != 1:
         return None
     row = candidates[0]
-    exceptions = re.findall(r'^([\w.]*(?:Error|Exception))(?::|$)', log, re.M)
+    # Informational output after the event is harmless; an unbound later
+    # exception is not. Neither condition examines a source statement or line.
+    exception_pattern = r'^([\w.]*(?:Error|Exception))(?::|$)'
+    exceptions = re.findall(exception_pattern, log[:last_event.start()], re.M)
+    if re.search(exception_pattern, log[last_event.end():], re.M):
+        return None
     if (not exceptions or row.get('schema') != 1 or row.get('suite') != name
             or terminal.get('suite') != name or row.get('outcome') != 'failed'
             or row.get('factsError') or row.get('bindingError')

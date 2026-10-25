@@ -23,11 +23,13 @@ class WorkflowContractTests(unittest.TestCase):
     def test_caught_step_cannot_label_later_unrelated_assertion(self):
         r=self.run_script("try:\n with workflow_step('axis_gizmo.py','escape-canvas-focus','axis-endpoint.escape.canvas-focus',{}):\n  assert False\nexcept AssertionError: pass\nassert False\n")
         self.assertNotEqual(r.returncode,0)
-        self.assertNotIn('[workflow-exception]',r.stderr)
+        terminal=json.loads(r.stderr.rsplit('[workflow-exception] ',1)[1])
+        self.assertIsNone(terminal['token'])
         self.assertIsNone(browser_suite.failure_workflow('axis_gizmo.py',r.stdout+r.stderr))
     def test_passed_step_cannot_label_later_failure(self):
         r=self.run_script("with workflow_step('axis_gizmo.py','escape-canvas-focus','axis-endpoint.escape.canvas-focus',{}):\n assert True\nassert False\n")
-        self.assertNotIn('[workflow-exception]',r.stderr)
+        terminal=json.loads(r.stderr.rsplit('[workflow-exception] ',1)[1])
+        self.assertIsNone(terminal['token'])
     def test_readback_failure_preserves_original_error_and_fails_closed(self):
         r=self.run_script("def broken(): raise ValueError('readback unavailable')\nwith workflow_step('axis_gizmo.py','escape-canvas-focus','axis-endpoint.escape.canvas-focus',broken):\n assert False, 'original failure'\n")
         self.assertIn('AssertionError: original failure',r.stderr)

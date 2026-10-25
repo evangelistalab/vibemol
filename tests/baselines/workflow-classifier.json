@@ -30,7 +30,7 @@
     }
   ],
   "remainingTracebackParsing": "Only informational firstFailure/failureCallSite line/function and original exception type; no source statement/AST parser remains in acceptance",
-  "binding": "Context records original exception object; final exception hook emits token only for that object. Caught or passed prior steps cannot label a later error. Original exception type/message, waits and assertions remain.",
+  "binding": "Context records original exception object; final exception hook emits token only for that object. Caught or passed prior steps cannot label a later error. Original exception type/message, waits and assertions remain. Every uncaught exception emits an explicit bound/unbound event; harmless trailing log output is not identity. The latest exception event wins, and any later unstructured exception fails closed.",
   "negativeTests": [
     "unrelated focus assertion/other step",
     "Home instead of Escape",
@@ -45,7 +45,8 @@
     "passed earlier step",
     "other suite",
     "missing/ambiguous/malformed evidence",
-    "unsupported closed workflow"
+    "unsupported closed workflow",
+    "later unbound exception cannot inherit an earlier failure token"
   ],
   "formatTests": [
     "semicolon vs split",
@@ -53,7 +54,8 @@
     "quote changes and renamed source locals",
     "arbitrary line shifts",
     "traceback source unavailable",
-    "rendered HTML changed/omitted"
+    "rendered HTML changed/omitted",
+    "harmless trailing information after the terminal exception event"
   ],
   "failedCandidate": {
     "head": "e172dc3e43c9fb8931fb58b68f74a14e5640b091",
@@ -64,5 +66,11 @@
   "productChanges": false,
   "newControllerDependencies": 0,
   "newAppBindings": 0,
-  "constructionOrderRequired": true
+  "constructionOrderRequired": true,
+  "supersededCandidate": {
+    "head": "3a9af1c7cddeb5a3a5b7dc9ce42be211437c464d",
+    "ordinaryRun": 40203023154,
+    "disposition": "cancelled while running for remaining reader-format dependency; not acceptance, not retried",
+    "completedDiagnostic": 40203023318
+  }
 }

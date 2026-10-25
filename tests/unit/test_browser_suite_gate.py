@@ -73,6 +73,12 @@ class WorkflowGateTests(unittest.TestCase):
     def test_other_suite_cannot_borrow_step(self):
         self.assertIsNone(self.result('smoke.py',marked_log('axis_gizmo.py'))['failureWorkflow'])
         self.assertFalse(self.accepted('axis_gizmo.py',self.edit(marked_log('axis_gizmo.py'),lambda r:r.update(suite='smoke.py'))))
+    def test_trailing_information_is_not_exception_identity(self):
+        log=marked_log('axis_gizmo.py')
+        self.assertTrue(self.accepted('axis_gizmo.py',log+'cleanup complete\n\nordinary diagnostic output\n'))
+        unbound='[workflow-exception] '+json.dumps(dict(token=None,suite=None,exceptionType='AssertionError'))+'\n'
+        self.assertFalse(self.accepted('axis_gizmo.py',log+'AssertionError: unrelated\n'+unbound))
+        self.assertFalse(self.accepted('axis_gizmo.py',log+'AssertionError: unrelated\n'))
     def test_missing_ambiguous_or_bad_evidence_fails_closed(self):
         log=marked_log('axis_gizmo.py')
         for change in [lambda r:r.update(factsError='unavailable'),lambda r:r.update(facts=None),
