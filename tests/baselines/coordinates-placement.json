@@ -28,19 +28,6 @@
     "note": "Initial direct late coordsPanel closure failed; original lookup now fills an early null-initialized els field. Failed audit preserved."
   },
   "geometryCases": 8,
-  "nativeModeSuite": {
-    "passed": true,
-    "presentedCardBeforeDelete": true,
-    "legacyCardBefore": {
-      "x": 908,
-      "y": 73
-    },
-    "legacyCardAfter": {
-      "x": 908,
-      "y": 340.671875
-    },
-    "originalAssertionsPreserved": true
-  },
   "initialOverlapPreflight": {
     "source": "unchanged main d635abf",
     "browser": "145.0.7632.6",
@@ -135,7 +122,7 @@
   },
   "units": {
     "js": 459,
-    "python": 98,
+    "python": 102,
     "passed": true
   },
   "pinnedCiDiagnostic": {
@@ -181,5 +168,24 @@
     "standingDiagnosticExtended": true,
     "failure": "legacy row1 native Delete intercepted by editSelectionPosition; preserved as failure before explicit diagnostic continuation",
     "finalRebasedPinnedCheckStillRequired": true
+  },
+  "preRebaseNativeModeSuite": {
+    "passed": true,
+    "presentedCardBeforeDelete": true,
+    "legacyCardBefore": {
+      "x": 908,
+      "y": 73
+    },
+    "legacyCardAfter": {
+      "x": 908,
+      "y": 340.671875
+    },
+    "originalAssertionsPreserved": true,
+    "sourceAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09"
+  },
+  "currentNativeModeSuite": {
+    "status": "required in own first ordinary gate on final rebased candidate",
+    "presentedCardBeforeDelete": true,
+    "originalAssertionsPreserved": true
   }
 }
