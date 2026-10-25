@@ -29,6 +29,21 @@ SNAP=r'''() => {
   }
   return true;
  };
+ const selector=e=>{
+  if(e.id)return '#'+CSS.escape(e.id);
+  if(e.hasAttribute('data-build-search-key'))return '[data-build-search-key='+JSON.stringify(e.getAttribute('data-build-search-key'))+']';
+  if(e.hasAttribute('aria-label'))return '[aria-label='+JSON.stringify(e.getAttribute('aria-label'))+']';
+  const row=e.closest('[data-atom-index],[data-row-index]');
+  if(row&&e.hasAttribute('data-edit-field'))return '[data-atom-index='+JSON.stringify(row.getAttribute('data-atom-index'))+'] [data-edit-field='+JSON.stringify(e.getAttribute('data-edit-field'))+']';
+  if(e.hasAttribute('data-metal-bonding-choice'))return '[data-metal-bonding-choice='+JSON.stringify(e.getAttribute('data-metal-bonding-choice'))+']';
+  const parts=[];for(let n=e;n&&n!==ownerFor(e);n=n.parentElement){
+   if(n.id){parts.unshift('#'+CSS.escape(n.id));break;}
+   const peers=[...n.parentElement.children].filter(x=>x.tagName===n.tagName);
+   parts.unshift(n.tagName.toLowerCase()+':nth-of-type('+(peers.indexOf(n)+1)+')');
+  }
+  return parts.join(' > ');
+ };
+ const ownerFor=e=>e.closest(selectors);
  const label=e=>e.id||e.getAttribute('data-vm-floating-panel')||e.className;
  const roots=[...document.querySelectorAll(selectors)].filter(visible);
  const result={surfaces:roots.map(e=>({id:label(e),rect:rect(e),zIndex:getComputedStyle(e).zIndex,moved:e.getAttribute('data-vm-floating-moved')})),targets:[],collisions:[],pairs:[]};
@@ -38,7 +53,7 @@ SNAP=r'''() => {
   const r=target.getBoundingClientRect(),x=r.x+r.width/2,y=r.y+r.height/2;
   if(x<0||y<0||x>=innerWidth||y>=innerHeight||!unclipped(target,x,y))continue;
   const hit=document.elementFromPoint(x,y),other=hit?.closest(selectors);
-  const row={surface:label(owner),target:target.id||target.getAttribute('aria-label')||target.getAttribute('data-coords-action')||target.tagName,rect:rect(target),center:{x,y},hit:hit?.id||hit?.className||null,hitSurface:other?label(other):null,ownsHit:!!hit&&(hit===target||target.contains(hit)),zIndex:getComputedStyle(owner).zIndex};
+  const row={surface:label(owner),targetSelector:selector(target),targetText:target.textContent.trim().slice(0,120),target:target.id||target.getAttribute('aria-label')||target.getAttribute('data-coords-action')||target.tagName,rect:rect(target),center:{x,y},hit:hit?.id||hit?.className||null,hitSurface:other?label(other):null,ownsHit:!!hit&&(hit===target||target.contains(hit)),zIndex:getComputedStyle(owner).zIndex};
   result.targets.push(row);
   if(!row.ownsHit&&other&&other!==owner&&!owner.contains(other)&&!other.contains(owner))result.collisions.push({...row,hitStack:document.elementsFromPoint(x,y).slice(0,8).map(e=>({id:e.id,tag:e.tagName,classes:e.className,zIndex:getComputedStyle(e).zIndex}))});
  }
