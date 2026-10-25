@@ -1,6 +1,6 @@
 {
   "issue": 53,
-  "status": "local fix prepared; broader overlap findings and full guard catalog require disposition before PR",
+  "status": "local repair verified; nine latent entries explicitly authorized; stronger intersection guard blocked by additional unapproved collisions",
   "base": "d635abf11b66cd180288b76a1c25f4f12dfa3852",
   "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
   "knowinglyExtendsFragmentation": true,
@@ -109,10 +109,28 @@
   },
   "guard": {
     "complete": false,
-    "acceptedCollisions": [],
-    "knownPairAllowList": false,
+    "acceptedCollisions": "exact84signatures in9entries, not accepted CI failures",
+    "knownPairAllowList": "explicit semantic directions/targets only",
     "ordinaryIntegrationHeld": true,
-    "reason": "Initial subset already finds additional existing collisions; do not silently baseline them or claim complete28-shell coverage."
+    "reason": "First clipped-intersection guard found3additional pairs/28newtarget signatures. Preserve failed assertion; do not expand baseline or rerun for green. Full28-surface coverage remains incomplete.",
+    "ordinaryIntegration": "floating_panels workflow; renderers retired before guard;37suite inventory preserved",
+    "inventoryIssue": 55,
+    "suspectedIssues": [
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64
+    ],
+    "classificationCounts": {
+      "intentional": 0,
+      "unreachable": 0,
+      "suspected defect": 9
+    }
   },
   "ordinaryGate": {
     "manifestUnchanged": true,

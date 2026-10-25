@@ -116,3 +116,32 @@ Chromium156/Playwright1.64.1. Both trees used the same harness:10 pairs before,
 center ownership; full clipped-intersection sampling and28-shell coverage remain
 held with the additional existing collisions. A green collection job is not a
 passing zero-overlap guard or an ordinary merge gate.
+
+
+## Authorized latent baseline — separate from ordinary failures
+
+The direct human authorizes only the nine explicit known pairs in
+`tests/baselines/surface-overlap-baseline.json`. The classified master inventory
+is [#55](https://github.com/evangelistalab/vibemol/issues/55). Inspection found
+**0 intentional,0 unreachable,9 suspected defects**; each has its own issue
+[#56](https://github.com/evangelistalab/vibemol/issues/56) through
+[#64](https://github.com/evangelistalab/vibemol/issues/64). These are inspection
+classifications, not causal diagnoses. All involved surfaces are nonmodal and
+the targets have shipped click/edit/drag handlers.
+
+One pair reverses direction by layout. The baseline therefore spells out ten
+directions and84 exact interactive-target signatures in nine entries. Match the
+covering surface, covered surface and semantic target selector, never just a
+pair count, rectangle or DOM position. A different control under the same pair
+is new. Unobserved allowances need not fire. Removing allowances is free; adding
+or re-adding one requires human authorization. The authority snapshot/hash and
+base-revision subset check are intentional independent tripwires, not a JSON
+file allowed to authorize its own expansion.
+
+**None is an accepted CI failure.** These are latent surface risks recorded by
+the guard, not a license for failing ordinary workflows. The authorized ordinary
+sequence remains36/1 for52 and then37/0 for53 with an intentionally empty
+accepted set and all matcher/join machinery retained. New guard collisions fail;
+never add them to this baseline to get green. The stronger guard samples the
+clipped interactive region and its intersections with other visible surfaces,
+using actual DOM hit order rather than comparing CSS z-index numbers alone.

@@ -716,5 +716,30 @@
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
     }
   ],
-  "openHarnessDefects": []
+  "openHarnessDefects": [],
+  "latentSurfaceRisks": {
+    "category": "latent surface-pair risks; not accepted ordinary failures",
+    "inventoryIssue": 55,
+    "inventoryUrl": "https://github.com/evangelistalab/vibemol/issues/55",
+    "classificationCounts": {
+      "intentional": 0,
+      "unreachable": 0,
+      "suspected defect": 9
+    },
+    "baseline": "tests/baselines/surface-overlap-baseline.json",
+    "authority": "tests/baselines/surface-overlap-authority.json",
+    "acceptedCiFailures": [],
+    "rule": "Nine exact entries name directions and targets. Baseline shrinks freely; any new pair/direction/target requires human authorization. These allowances do not change ordinary37/0/37 or make a failing suite acceptable.",
+    "issues": [
+      56,
+      57,
+      58,
+      59,
+      60,
+      61,
+      62,
+      63,
+      64
+    ]
+  }
 }

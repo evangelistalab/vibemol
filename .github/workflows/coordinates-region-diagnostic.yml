@@ -12,10 +12,10 @@ on:
         description: Evidence collection only; never ordinary merge-gate acceptance
         type: choice
         default: coordinates
-        options: [coordinates, placement]
+        options: [coordinates, placement, placement-guard]
 jobs:
   coordinates-region:
-    if: github.event_name != 'workflow_dispatch' || inputs.scope != 'placement'
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'coordinates'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -64,3 +64,28 @@ jobs:
         with:
           name: placement-inventory-diagnostic
           path: out/test-artifacts/placement-inventory/
+  placement-guard:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'placement-guard'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Ordinary pinned toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Exact authorized baseline and clipped interactive intersections
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          python tools/check-surface-baseline.py
+          python tests/e2e/surface_collisions.py --out out/test-artifacts/surface-guard --sampling intersections
+      - name: Preserve the first unapproved collision and all collected readbacks
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surface-guard
+          path: out/test-artifacts/surface-guard/

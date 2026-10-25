@@ -2,6 +2,9 @@
 """Shared dragging across every popup shell and live display/edit workflows."""
 import math
 import json
+import subprocess
+import sys
+from pathlib import Path
 import premerge as p
 
 
@@ -233,6 +236,10 @@ def main():
                     raise
                 finally: context.close()
         finally: browser.close()
+    # Keep 37 workflows. Retire every renderer before the shared guard's native
+    # contexts; neither clones nor manual drag fixtures supply placement proof.
+    subprocess.run([sys.executable,str(Path(__file__).with_name('surface_collisions.py')),
+                    '--out',str(p.ARTIFACTS/'surface-overlap'),'--sampling','intersections'],check=True)
 
 
 if __name__=='__main__': main()

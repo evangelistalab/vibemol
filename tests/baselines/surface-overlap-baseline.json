@@ -1,0 +1,282 @@
+{
+  "schemaVersion": 1,
+  "inventoryIssue": 55,
+  "inventoryUrl": "https://github.com/evangelistalab/vibemol/issues/55",
+  "category": "latent surface-pair risks; none is an accepted CI failure",
+  "acceptedCiFailures": [],
+  "growthRequiresHumanAuthorization": true,
+  "sourceRun": 40228289285,
+  "sourceAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09",
+  "entries": [
+    {
+      "id": "latent-pair-1",
+      "pair": [
+        "coordsPanel",
+        "displayWindowAdaptiveMenu"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 56,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/56",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "displayWindowAdaptiveMenu",
+          "covered": "coordsPanel",
+          "targets": [
+            "#coordsPanelClose",
+            "#copyXYZ",
+            "#downloadXYZ",
+            "[aria-label=\"Copy atom 1 coordinates in angstroms\"]",
+            "[aria-label=\"Copy atom 2 coordinates in angstroms\"]",
+            "[aria-label=\"Copy atom 3 coordinates in angstroms\"]",
+            "[aria-label=\"Delete atom 1 (O)\"]",
+            "[aria-label=\"Delete atom 2 (H)\"]",
+            "[aria-label=\"Delete atom 3 (H)\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"y\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"zCoord\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"y\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"zCoord\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"y\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"zCoord\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-2",
+      "pair": [
+        "coordsPanel",
+        "toolbar"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 57,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/57",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "toolbar",
+          "covered": "coordsPanel",
+          "targets": [
+            "#coordsUnitsBtn",
+            "[aria-label=\"Move Coordinates\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"order\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"sym\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"x\"]",
+            "[data-row-index=\"0\"][data-edit-field=\"z\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"order\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"sym\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"x\"]",
+            "[data-row-index=\"1\"][data-edit-field=\"z\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"order\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"sym\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"x\"]",
+            "[data-row-index=\"2\"][data-edit-field=\"z\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-3",
+      "pair": [
+        "displayWindowAdaptiveMenu",
+        "editAdaptiveAddAtomPopover"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 58,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/58",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "editAdaptiveAddAtomPopover",
+          "covered": "displayWindowAdaptiveMenu",
+          "targets": [
+            "#coordsPanelBtn",
+            "#editAdaptiveAddAtomBtn",
+            "#editAdaptiveCleanStructureBtn",
+            "#editAdaptiveSymmetryBtn",
+            "[aria-label=\"Move Window and edit tools\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-4",
+      "pair": [
+        "displayWindowAdaptiveMenu",
+        "editSelectionTranslateCue"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 59,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/59",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "editSelectionTranslateCue",
+          "covered": "displayWindowAdaptiveMenu",
+          "targets": [
+            "#editAdaptiveAlignPrincipalBtn",
+            "#editAdaptiveCleanStructureBtn",
+            "#editAdaptiveShiftComBtn"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-5",
+      "pair": [
+        "editAdaptiveAddAtomPopover",
+        "editSelectionTranslateCue"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 60,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/60",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "editAdaptiveAddAtomPopover",
+          "covered": "editSelectionTranslateCue",
+          "targets": [
+            "#editSelectionAddFragmentCueButton",
+            "#editSelectionCoordinationCueButton",
+            "#editSelectionDeleteCueButton",
+            "#editSelectionTranslateCueButton",
+            "[aria-label=\"Move Selection tools\"]",
+            "[aria-label=\"X position (Å)\"]",
+            "[aria-label=\"Y position (Å)\"]",
+            "[aria-label=\"Z position (Å)\"]"
+          ]
+        },
+        {
+          "covering": "editSelectionTranslateCue",
+          "covered": "editAdaptiveAddAtomPopover",
+          "targets": [
+            "[data-build-search-key=\"atom:1\"]",
+            "[data-build-search-key=\"atom:6\"]",
+            "[data-build-search-key=\"atom:7\"]",
+            "[data-build-search-key=\"atom:8\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-6",
+      "pair": [
+        "editAdaptiveAddAtomPopover",
+        "toolbar"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 61,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/61",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "toolbar",
+          "covered": "editAdaptiveAddAtomPopover",
+          "targets": [
+            "#editAddAdjustHydrogens",
+            "#editAddCoordination",
+            "#editBuildSearch",
+            "#editFragmentAttachPolicy",
+            "#editMoleculeAlignXBtn",
+            "#editMoleculeAlignYBtn",
+            "[aria-label=\"Move Build\"]",
+            "[data-build-search-key=\"atom:1\"]",
+            "[data-build-search-key=\"atom:15\"]",
+            "[data-build-search-key=\"atom:6\"]",
+            "[data-build-search-key=\"atom:7\"]",
+            "[data-build-search-key=\"atom:8\"]",
+            "[data-build-search-key=\"atom:9\"]",
+            "[data-build-search-key=\"fragment:amide\"]",
+            "[data-build-search-key=\"fragment:amino\"]",
+            "[data-build-search-key=\"fragment:bromo\"]",
+            "[data-build-search-key=\"fragment:carbonyl\"]",
+            "[data-build-search-key=\"fragment:carboxyl\"]",
+            "[data-build-search-key=\"fragment:chloro\"]",
+            "[data-build-search-key=\"molecule:acetonitrile\"]",
+            "[data-build-search-key=\"molecule:ammonia\"]",
+            "[data-build-search-key=\"molecule:ammonia-borane\"]",
+            "[data-build-search-key=\"molecule:benzene\"]",
+            "[data-build-search-key=\"molecule:boron-trifluoride\"]",
+            "[data-build-search-key=\"molecule:carbon-dioxide\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-7",
+      "pair": [
+        "editAddAtomOperatorPanel",
+        "toolbar"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 62,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/62",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "toolbar",
+          "covered": "editAddAtomOperatorPanel",
+          "targets": [
+            "#editAddAtomOperatorHeader"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-8",
+      "pair": [
+        "editSelectionMetalBondingCuePopover",
+        "toolbar"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 63,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/63",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "toolbar",
+          "covered": "editSelectionMetalBondingCuePopover",
+          "targets": [
+            "[aria-label=\"Move Metal bond mode\"]",
+            "[data-metal-bonding-choice=\"auto\"]",
+            "[data-metal-bonding-choice=\"force_covalent\"]",
+            "[data-metal-bonding-choice=\"force_dative\"]",
+            "[data-metal-bonding-choice=\"no_bonds\"]"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "latent-pair-9",
+      "pair": [
+        "editSelectionTranslateCue",
+        "toolbar"
+      ],
+      "classification": "suspected defect",
+      "inspectionReason": "Both surfaces are nonmodal and the enumerated targets have shipped click/edit/drag handlers. No inert, disabled or modal ownership makes these controls inapplicable; no defect mechanism was investigated.",
+      "trackingIssue": 64,
+      "issueUrl": "https://github.com/evangelistalab/vibemol/issues/64",
+      "acceptedCiFailure": false,
+      "directions": [
+        {
+          "covering": "toolbar",
+          "covered": "editSelectionTranslateCue",
+          "targets": [
+            "#editSelectionCoordinationCueButton",
+            "#editSelectionTranslateCueButton",
+            "[aria-label=\"Move Selection tools\"]",
+            "[aria-label=\"X position (Å)\"]"
+          ]
+        }
+      ]
+    }
+  ]
+}
