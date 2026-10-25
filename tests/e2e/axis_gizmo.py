@@ -2,6 +2,7 @@
 """Six-direction camera gizmo: hit targets, state isolation, exports and responsive input."""
 import math
 import json
+from workflow_contract import native_keypress, workflow_step
 import os
 import premerge as p
 from surface_shadows import settings, settle
@@ -140,12 +141,14 @@ def run(page,url):
       window.addEventListener('keydown',event=>{probe.event=event;},{capture:true,once:true});
       document.getElementById('axisGizmo').addEventListener('keydown',()=>{probe.rootKeydownSeen=true;},{once:true});
     }''')
-    page.keyboard.press('Escape')
+    escape_trigger=native_keypress(page,'Escape')
     escape_readback=page.evaluate('''()=>({before:__axisEscapeProbe.before,after:__axisEscapeProbe.state(),
       rootKeydownSeen:__axisEscapeProbe.rootKeydownSeen,defaultPrevented:__axisEscapeProbe.event?.defaultPrevented,
       actual:document.activeElement?.id,expected:'canvas'})''')
     print('[axis-escape] '+json.dumps(escape_readback),flush=True)
-    assert page.locator('#canvas').evaluate('el=>el===document.activeElement')
+    with workflow_step(__file__,'escape-canvas-focus','axis-endpoint.escape.canvas-focus',
+                       {**escape_readback,'trigger':escape_trigger}):
+        assert page.locator('#canvas').evaluate('el=>el===document.activeElement')
     button.click();page.keyboard.press('m')
     assert page.locator('#modeMeasureBtn').get_attribute('aria-checked')=='true', 'Ordinary app shortcuts remain usable after an axis click'
     # The gizmo is drawn in the actual canvas (PNG/WebM), not only a DOM overlay.

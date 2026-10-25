@@ -24,7 +24,8 @@
       "expectedFocus": "canvas"
     },
     "contractRisk": "Do not bypass or double-execute cancel/disarm/clear ordering merely to satisfy the focus assertion. A fix must preserve the ladder and compose widget focus return with it.",
-    "observation": "[axis-escape] emitted before unchanged assertion"
+    "observation": "[axis-escape] emitted before unchanged assertion",
+    "mechanismReport": "docs/maintenance/axis-escape-contract.md"
   },
   "coordinates": {
     "suite": "tests/e2e/mode_consistency.py",
@@ -50,7 +51,13 @@
       }
     },
     "coverageLimit": "First failure is in legacy. The later Workbench coordinate-row pass has not been reached by this suite; do not claim its result.",
-    "observation": "[coordinates-delete-hit] will record rectangles, z-order, selection and hit-stack before the unchanged native click"
+    "observation": "[coordinates-delete-hit] will record rectangles, z-order, selection and hit-stack before the unchanged native click",
+    "policyReport": "docs/maintenance/coordinates-placement-policy.md"
   },
-  "nativeReadbackStatus": "To be measured by the collector candidate own ordinary run; predictions are source-derived, not yet claimed observed."
+  "nativeReadbackStatus": "Measured in ordinary first run40159501600; product unchanged, aggregate rejected the separate physical-statement classifier dependency",
+  "numberedIssues": {
+    "axis": 52,
+    "coordinates": 53
+  },
+  "productionFixesWritten": false
 }

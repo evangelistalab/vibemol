@@ -1,0 +1,31 @@
+name: Coordinates masked-region diagnostic
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/coordinates-region-diagnostic.yml'
+      - 'tests/e2e/coordinates_region_diagnostic.py'
+      - 'tests/e2e/mode_consistency.py'
+      - 'tests/e2e/workflow_contract.py'
+  workflow_dispatch:
+jobs:
+  coordinates-region:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Use the ordinary CI toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Expose the legacy and Workbench regions behind the collision
+        env:
+          PYTHONUNBUFFERED: '1'
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/coordinates-region
+        run: python tests/e2e/coordinates_region_diagnostic.py
+      - name: Preserve all native failures and explicitly bypassed actions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coordinates-region-diagnostic
+          path: out/test-artifacts/coordinates-region/

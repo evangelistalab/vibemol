@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import argparse
-import ast
 import hashlib
 import json
 import os
@@ -20,85 +19,66 @@ MANIFEST = ROOT / 'tests/baselines/browser-suite.json'
 SHARDS = ROOT / 'tests/baselines/browser-shards.json'
 
 
-def traceback_statements(log):
-    return re.findall(r'File "[^\"]*/tests/e2e/([^\"]+)", line \d+, in [^\n]+\n[ \t]+([^\n]+)', log)
+def failure_workflow(suite, log, source=None):
+    """Recognize a named failing step bound to the final uncaught exception.
 
-
-def parsed_statement(text):
-    try:
-        return ast.parse(text.strip()).body
-    except SyntaxError:
-        return []
-
-
-def same_statement(left, right):
-    return ast.dump(left, include_attributes=False) == ast.dump(right, include_attributes=False)
-
-
-def failure_workflow(suite, log, source):
-    """Recognize the failed action and its workflow; line numbers are diagnostic only."""
-    statements = [text for name, text in traceback_statements(log) if name == pathlib.Path(suite).name]
-    if not statements:
+    Traceback line numbers and rendered source statements are diagnostics only.
+    Historical unmarked logs keep their immutable historical reports; they are
+    deliberately not accepted by this contract. Closed #11/#21 have no live rule.
+    """
+    lines = log.rstrip().splitlines()
+    if not lines or not lines[-1].startswith('[workflow-exception] '):
         return None
-    failed = parsed_statement(statements[-1])
-    if pathlib.Path(suite).name == 'axis_gizmo.py':
-        expected = parsed_statement("page.keyboard.press('Escape'); assert page.locator('#canvas').evaluate('el=>el===document.activeElement')")
-        if len(failed) == len(expected) and all(same_statement(a, b) for a, b in zip(failed, expected)):
+    try:
+        terminal = json.loads(lines[-1].split(' ', 1)[1])
+        records = [json.loads(line.split(' ', 1)[1]) for line in lines
+                   if line.startswith('[workflow-step] ')]
+    except (ValueError, TypeError):
+        return None
+    if (not isinstance(terminal, dict)
+            or not isinstance(terminal.get('token'), str)
+            or not re.fullmatch(r'[0-9a-f]{32}', terminal['token'])):
+        return None
+    name = pathlib.Path(suite).name
+    candidates = [r for r in records if isinstance(r, dict)
+                  and r.get('token') == terminal.get('token')]
+    if len(candidates) != 1:
+        return None
+    row = candidates[0]
+    exceptions = re.findall(r'^([\w.]*(?:Error|Exception))(?::|$)', log, re.M)
+    if (not exceptions or row.get('schema') != 1 or row.get('suite') != name
+            or terminal.get('suite') != name or row.get('outcome') != 'failed'
+            or row.get('factsError') or row.get('bindingError')
+            or row.get('exceptionType') != terminal.get('exceptionType')
+            or exceptions[-1].split('.')[-1] != row.get('exceptionType')):
+        return None
+    facts = row.get('facts', {})
+    if not isinstance(facts, dict):
+        return None
+    if (name == 'axis_gizmo.py' and row.get('workflow') == 'escape-canvas-focus'
+            and row.get('step') == 'axis-endpoint.escape.canvas-focus'
+            and row.get('exceptionType') == 'AssertionError'):
+        before, after = facts.get('before', {}), facts.get('after', {})
+        if not isinstance(before, dict) or not isinstance(after, dict):
+            return None
+        endpoints = {'viewAxis'+sign+axis+'Btn' for sign in ('Pos','Neg') for axis in 'XYZ'}
+        if (facts.get('trigger') == {'kind':'native-keydown','key':'Escape','completed':True}
+                and isinstance(before.get('focus'), str) and before['focus'] in endpoints
+                and facts.get('expected') == 'canvas'
+                and facts.get('actual') == after.get('focus')
+                and isinstance(facts.get('actual'), str) and facts['actual'] != 'canvas'):
             return {'id': 'escape-canvas-focus'}
-    elif pathlib.Path(suite).name == 'mode_consistency.py':
-        expected = parsed_statement("page.locator('#coordsContent [data-atom-index=\"1\"] [data-coords-action=\"delete\"]').click()")
-        intercepted = re.search(r'<[^\n]*id="editSelection(?:Position|TranslateCue)"[^\n]*intercepts pointer events', log)
-        if len(failed) == 1 and same_statement(failed[0], expected[0]) and intercepted:
+    if (name == 'mode_consistency.py' and row.get('workflow') == 'coordinates-delete-selection-card'
+            and row.get('step') == 'coordinates.row1.native-delete'
+            and row.get('exceptionType') == 'TimeoutError'):
+        target, hit = facts.get('action', {}), facts.get('hit', {})
+        if not isinstance(hit, dict):
+            return None
+        if (target == {'kind':'native-click','rowAtomIndex':1,'command':'delete'}
+                and hit.get('targetVisible') is True and hit.get('targetEnabled') is True
+                and hit.get('targetOwnsHit') is False and hit.get('cardOwnsHit') is True
+                and hit.get('interceptorId') in ('editSelectionPosition','editSelectionTranslateCue')):
             return {'id': 'coordinates-delete-selection-card'}
-    elif pathlib.Path(suite).name == 'edit_tool.py':
-        # Historical #21 logs remain readable as provenance; this classification
-        # is not in the accepted set after the state-synchronization fix.
-        # Match only the width assertion at320px, never a later hit test.
-        old = parsed_statement("assert page.locator('.wb-tools').evaluate('el=>el.scrollWidth<=el.clientWidth+1'),width")
-        measured = parsed_statement("assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width")
-        if len(failed) == 1 and re.search(r'^AssertionError: 320\s*$', log, re.M):
-            if same_statement(failed[0], old[0]):
-                return {'id': 'issue-21-edit-toolbar-layout-collapse-320'}
-            if same_statement(failed[0], measured[0]):
-                measurements = re.findall(r'^\[edit-tool-layout\] (.+)$', log, re.M)
-                try:
-                    value = json.loads(measurements[-1])
-                except (IndexError, ValueError):
-                    return None
-                actual = value.get('actual', {})
-                if (value.get('viewportWidth') == 320
-                        and type(actual.get('scrollWidth')) is int
-                        and type(actual.get('clientWidth')) is int
-                        and 0 <= actual['clientWidth'] < actual['scrollWidth'] - 1
-                        and value.get('expected') == {'maximumScrollWidth': actual['clientWidth'] + 1}
-                        and value.get('passed') is False):
-                    return {'id': 'issue-21-edit-toolbar-layout-collapse-320'}
-    elif pathlib.Path(suite).name == 'smoke.py':
-        # Both Stop-after-export paths are issue #11. The second-download wait
-        # and Stop action distinguish them from every other video workflow.
-        for site in ('trajectory', 'vibration'):
-            expected = parsed_statement(f"wait_for_video_idle(page, '{site}')")[0]
-            if len(failed) != 1 or not same_statement(failed[0], expected):
-                continue
-            for owner in ast.walk(ast.parse(source)):
-                for value in vars(owner).values():
-                    if not isinstance(value, list):
-                        continue
-                    for index, node in enumerate(value):
-                        if not isinstance(node, ast.Expr) or not same_statement(node, expected) or index < 2:
-                            continue
-                        previous = value[index - 1]
-                        stop = value[index - 2]
-                        stop_expected = parsed_statement(f"page.locator('#{site}SaveVideoBtn').click()")[0]
-                        if not isinstance(previous, ast.Expr) or not isinstance(previous.value, ast.Call):
-                            continue
-                        wait = previous.value
-                        if (ast.unparse(wait.func) == 'page.wait_for_function' and wait.args
-                                and isinstance(wait.args[0], ast.Constant) and isinstance(wait.args[0].value, str)
-                                and 'window.__trajectoryVideoExportTest?.downloads?.length' in wait.args[0].value
-                                and re.search(r'===\s*2\s*$', wait.args[0].value.strip())
-                                and same_statement(stop, stop_expected)):
-                            return {'id': 'issue-11-stop-after-second-download', 'site': site}
     return None
 
 
@@ -110,7 +90,7 @@ def failure_details(log, suite=None, source=None):
             'failureCallSite': ({'suite': sites[-2][0], 'line': int(sites[-2][1]), 'function': sites[-2][2]}
                                 if len(sites) > 1 else None),
             'exceptionType': exceptions[-1].split('.')[-1] if exceptions else None,
-            'failureWorkflow': failure_workflow(suite, log, source) if suite and source is not None else None}
+            'failureWorkflow': failure_workflow(suite, log) if suite else None}
     if suite and pathlib.Path(suite).name == 'smoke.py':
         details['videoExportCompletion'] = [json.loads(x) for x in re.findall(r'^\[video-export-completion\] (.+)$', log, re.M)]
     return details

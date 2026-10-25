@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
 import browser_suite
+from workflow_fixtures import marked_log
 import join_browser_shards
 import join_characterize
 from ci_evidence import artifact_identity, digest
@@ -35,7 +36,7 @@ class BrowserJoinTests(unittest.TestCase):
                       'wallTimeSeconds': 100.0, 'suites': []}
             for test in shard['suites']:
                 failed = test in self.manifest['knownDefects']
-                log = ((ROOT / self.manifest['knownDefects'][test]['evidence']).read_text() if failed else 'Suite passed\n')
+                log = marked_log(pathlib.Path(test).name) if failed else 'Suite passed\n'
                 raw = folder / pathlib.Path(test).stem / 'run.log'
                 raw.parent.mkdir()
                 raw.write_text(log)
@@ -77,7 +78,7 @@ class BrowserJoinTests(unittest.TestCase):
 
     def test_raw_log_cannot_be_overruled_by_recorded_classification(self):
         raw=self.paths['balanced-3'].parent/'axis_gizmo/run.log'
-        raw.write_text(raw.read_text().replace("press('Escape')", "press('Home')"))
+        raw.write_text(raw.read_text().replace('"key": "Escape"', '"key": "Home"'))
         with self.assertRaisesRegex(AssertionError,'Raw failure details differ'):
             self.join()
 

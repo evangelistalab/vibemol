@@ -69,21 +69,29 @@
     },
     {
       "id": "axis-gizmo-escape",
-      "trackingIssue": 4,
-      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "trackingIssue": 52,
+      "url": "https://github.com/evangelistalab/vibemol/issues/52",
       "status": "open",
       "workflow": "Escape interception prevents canvas focus",
       "acceptedCiFailure": true,
-      "suite": "tests/e2e/axis_gizmo.py"
+      "suite": "tests/e2e/axis_gizmo.py",
+      "issue": 52,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/axis-escape-contract.md",
+      "regressionAssertion": "Native Escape returns canvas focus with exactly one prescribed Edit action and preserved higher priorities"
     },
     {
       "id": "coordinates-delete-selection-card",
-      "trackingIssue": 4,
-      "url": "https://github.com/evangelistalab/vibemol/issues/4",
+      "trackingIssue": 53,
+      "url": "https://github.com/evangelistalab/vibemol/issues/53",
       "status": "open",
       "workflow": "Selection card covers Coordinates Delete",
       "acceptedCiFailure": true,
-      "suite": "tests/e2e/mode_consistency.py"
+      "suite": "tests/e2e/mode_consistency.py",
+      "issue": 53,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/coordinates-placement-policy.md",
+      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts"
     }
   ],
   "otherCarriedFollowups": [
@@ -158,8 +166,8 @@
     }
   ],
   "acceptedCiGate": {
-    "passed": 34,
-    "failed": 3,
+    "passed": 35,
+    "failed": 2,
     "total": 37
   },
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",

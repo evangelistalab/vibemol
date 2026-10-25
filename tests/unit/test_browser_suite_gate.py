@@ -1,3 +1,4 @@
+import copy
 import importlib.util
 import json
 import pathlib
@@ -5,92 +6,97 @@ import re
 import sys
 import unittest
 
-ROOT = pathlib.Path(__file__).resolve().parents[2]
-sys.path.insert(0, str(ROOT / 'tests/e2e'))
-SPEC = importlib.util.spec_from_file_location('browser_suite', ROOT / 'tests/e2e/browser_suite.py')
-GATE = importlib.util.module_from_spec(SPEC)
-SPEC.loader.exec_module(GATE)
-MANIFEST = json.loads((ROOT / 'tests/baselines/browser-suite.json').read_text())
-EVIDENCE = ROOT / 'tests/baselines/evidence/browser-ci-gate'
+ROOT=pathlib.Path(__file__).resolve().parents[2]
+sys.path.insert(0,str(ROOT/'tests/e2e'))
+from workflow_fixtures import marked_log
+import browser_suite as GATE
+MANIFEST=json.loads(GATE.MANIFEST.read_text())
+EVIDENCE=ROOT/'tests/baselines/evidence/browser-ci-gate'
 
 
 class WorkflowGateTests(unittest.TestCase):
-    def result(self, suite, log, source=None):
-        return {'exitCode': 1, 'test': f'tests/e2e/{suite}',
-                **GATE.failure_details(log, suite, source or (ROOT / 'tests/e2e' / suite).read_text())}
+    def result(self,suite,log,source=''):
+        return dict(exitCode=1,test='tests/e2e/'+suite,**GATE.failure_details(log,suite,source))
+    def accepted(self,suite,log,source=''):
+        known=MANIFEST['knownDefects'].get('tests/e2e/'+suite)
+        return bool(known) and GATE.matches_known_defect(self.result(suite,log,source),known)
+    def edit(self,log,change):
+        lines=log.splitlines();row=json.loads(lines[0].split(' ',1)[1]);change(row)
+        lines[0]='[workflow-step] '+json.dumps(row);return '\n'.join(lines)+'\n'
+    def test_both_named_workflows(self):
+        for suite in ['axis_gizmo.py','mode_consistency.py']:
+            self.assertTrue(self.accepted(suite,marked_log(suite)))
+    def test_statement_and_source_format_are_not_identity(self):
+        for suite in ['axis_gizmo.py','mode_consistency.py']:
+            for statement in ["page.keyboard.press('Escape'); assert focused",'assert (\n        focused\n    )',
+                              'target.click(\n        **options\n    )','# traceback source unavailable']:
+                with self.subTest(suite=suite,statement=statement):
+                    log=marked_log(suite,statement=statement)
+                    self.assertTrue(self.accepted(suite,log,'unrelated formatting and renamed local variables'))
+                    self.assertTrue(self.accepted(suite,re.sub(r'line \d+','line 123456',log),'\n'*1000))
+            unrendered='\n'.join(line for line in marked_log(suite).splitlines()
+                                 if not line.startswith(('  File ','    assert ')))+'\n'
+            self.assertTrue(self.accepted(suite,unrendered))
+            self.assertIsNotNone(GATE.failure_details(marked_log(suite),suite)['failureWorkflow'])
+    def test_unrelated_focus_assertion_is_not_axis_escape(self):
+        log=marked_log('axis_gizmo.py')
+        for change in [lambda r:r.update(step='axis.home.focus'),
+                       lambda r:r['facts']['trigger'].update(key='Home'),
+                       lambda r:r['facts']['trigger'].update(completed=False),
+                       lambda r:r['facts']['before'].update(focus='coordsPanelClose'),
+                       lambda r:r['facts'].update(expected='other'),
+                       lambda r:r['facts'].update(actual='canvas',after=dict(focus='canvas'))]:
+            self.assertFalse(self.accepted('axis_gizmo.py',self.edit(log,change)))
+    def test_delete_requires_this_native_target_and_actual_interceptor(self):
+        log=marked_log('mode_consistency.py')
+        for change in [lambda r:r.update(step='coordinates.row1.copy'),
+                       lambda r:r['facts']['action'].update(command='copy'),
+                       lambda r:r['facts']['action'].update(rowAtomIndex=2),
+                       lambda r:r['facts']['action'].update(kind='programmatic-click'),
+                       lambda r:r['facts']['hit'].update(targetVisible=False),
+                       lambda r:r['facts']['hit'].update(targetEnabled=False),
+                       lambda r:r['facts']['hit'].update(targetOwnsHit=True),
+                       lambda r:r['facts']['hit'].update(cardOwnsHit=False),
+                       lambda r:r['facts']['hit'].update(interceptorId='otherPanel')]:
+            self.assertFalse(self.accepted('mode_consistency.py',self.edit(log,change)))
+    def test_error_html_format_does_not_identify_interceptor(self):
+        log=marked_log('mode_consistency.py')
+        for text in ['rendered HTML omitted',"<div id='editSelectionPosition' class='x'>",'<div class="x" id="editSelectionPosition">']:
+            self.assertTrue(self.accepted('mode_consistency.py',log.replace('original error unchanged',text)))
+    def test_terminal_exception_must_bind_exact_step(self):
+        log=marked_log('axis_gizmo.py')
+        self.assertFalse(self.accepted('axis_gizmo.py',log.rsplit('[workflow-exception]',1)[0]))
+        self.assertFalse(self.accepted('axis_gizmo.py',log.replace('"token": "'+'a'*32+'"','"token": "'+'b'*32+'"',1)))
+        self.assertFalse(self.accepted('axis_gizmo.py',log+'AssertionError: unrelated later error\n'))
+        self.assertFalse(self.accepted('axis_gizmo.py',self.edit(log,lambda r:r.update(exceptionType='TimeoutError'))))
+        self.assertFalse(self.accepted('axis_gizmo.py',self.edit(log,lambda r:r.update(outcome='passed'))))
+    def test_other_suite_cannot_borrow_step(self):
+        self.assertIsNone(self.result('smoke.py',marked_log('axis_gizmo.py'))['failureWorkflow'])
+        self.assertFalse(self.accepted('axis_gizmo.py',self.edit(marked_log('axis_gizmo.py'),lambda r:r.update(suite='smoke.py'))))
+    def test_missing_ambiguous_or_bad_evidence_fails_closed(self):
+        log=marked_log('axis_gizmo.py')
+        for change in [lambda r:r.update(factsError='unavailable'),lambda r:r.update(facts=None),
+                       lambda r:r.update(schema=2),lambda r:r['facts'].update(before=None),
+                       lambda r:r['facts']['before'].update(focus=[])]:
+            self.assertFalse(self.accepted('axis_gizmo.py',self.edit(log,change)))
+        self.assertFalse(self.accepted('axis_gizmo.py',log.splitlines()[0]+'\n'+log))
+        for value in ['null','[]','"bad"','{}']:
+            self.assertFalse(self.accepted('axis_gizmo.py',log.rsplit('[workflow-exception]',1)[0]+'[workflow-exception] '+value))
+    def test_unmarked_historical_logs_are_not_reinterpreted(self):
+        for suite in ['axis_gizmo.py','mode_consistency.py','smoke.py']:
+            log=(EVIDENCE/'ci-38141289409'/suite.replace('.py','.log')).read_text()
+            self.assertIsNone(self.result(suite,log)['failureWorkflow'])
+        old=(EVIDENCE/'ci-39086927339/edit_tool.log').read_text()
+        self.assertIsNone(self.result('edit_tool.py',old)['failureWorkflow'])
+    def test_closed_workflows_have_no_live_recognition(self):
+        for suite in ['smoke.py','edit_tool.py']:
+            self.assertNotIn('tests/e2e/'+suite,MANIFEST['knownDefects'])
+            self.assertIsNone(self.result(suite,marked_log(suite,workflow='issue-11-stop-after-second-download'))['failureWorkflow'])
+    def test_exception_and_passing_status_still_reject(self):
+        result=self.result('axis_gizmo.py',marked_log('axis_gizmo.py'))
+        known=MANIFEST['knownDefects']['tests/e2e/axis_gizmo.py']
+        self.assertFalse(GATE.matches_known_defect({**result,'exceptionType':'TimeoutError'},known))
+        self.assertFalse(GATE.matches_known_defect({**result,'exitCode':0},known))
 
-    def accepted(self, suite, log, source=None):
-        known = MANIFEST['knownDefects'].get(f'tests/e2e/{suite}')
-        return bool(known) and GATE.matches_known_defect(self.result(suite, log, source), known)
 
-    def test_completed_ci_workflows_and_both_issue11_sites(self):
-        for suite in ('axis_gizmo.py', 'mode_consistency.py'):
-            log = (EVIDENCE / 'ci-38141289409' / suite.replace('.py', '.log')).read_text()
-            with self.subTest(suite=suite):
-                self.assertTrue(self.accepted(suite, log))
-        for path, site in [('ci-38141289409/smoke.log', 'trajectory'), ('smoke.log', 'vibration')]:
-            log = (EVIDENCE / path).read_text()
-            self.assertFalse(self.accepted('smoke.py', log))
-            historical_source='\n'.join("page.locator('#"+p+"SaveVideoBtn').click()\npage.wait_for_function(\"() => (window.__trajectoryVideoExportTest?.downloads?.length || 0) === 2\")\nwait_for_video_idle(page, '"+p+"')" for p in ['trajectory','vibration'])
-            self.assertEqual(self.result('smoke.py', log,historical_source)['failureWorkflow']['site'], site)
-
-    def test_line_shifts_are_diagnostic_only(self):
-        for suite in ('axis_gizmo.py', 'mode_consistency.py'):
-            log = (EVIDENCE / 'ci-38141289409' / suite.replace('.py', '.log')).read_text()
-            shifted = re.sub(r'line (\d+)', lambda m: 'line ' + str(int(m[1]) + 123), log)
-            source = '\n' * 123 + (ROOT / 'tests/e2e' / suite).read_text()
-            self.assertTrue(self.accepted(suite, shifted, source))
-
-    def test_closed_edit_sync_issue_is_diagnostic_only(self):
-        self.assertNotIn('tests/e2e/edit_tool.py', MANIFEST['knownDefects'])
-        def classified(log):
-            return self.result('edit_tool.py', log)['failureWorkflow'] is not None
-        old = (EVIDENCE / 'ci-39086927339/edit_tool.log').read_text()
-        self.assertTrue(classified(old))
-        self.assertFalse(self.accepted('edit_tool.py', old))
-        self.assertTrue(classified(re.sub(r'line \d+', 'line 9999', old)))
-        self.assertFalse(classified(old.replace('AssertionError: 320', 'AssertionError: 390')))
-        measurement = dict(viewportWidth=320, actual=dict(scrollWidth=442, clientWidth=12),
-                           expected=dict(maximumScrollWidth=13), passed=False)
-        trace = ('Traceback (most recent call last):\n'
-                 '  File "/repo/tests/e2e/edit_tool.py", line 9999, in run\n'
-                 "    assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width\n"
-                 'AssertionError: 320\n')
-        def log(value):
-            return '[edit-tool-layout] '+json.dumps(value)+'\n'+trace
-        self.assertTrue(classified(log(measurement)))
-        self.assertFalse(self.accepted('edit_tool.py', log(measurement)))
-        self.assertFalse(classified(trace))
-        for changes in [dict(viewportWidth=390), dict(passed=True),
-                        dict(expected=dict(maximumScrollWidth=14)),
-                        dict(actual=dict(scrollWidth=442, clientWidth=442))]:
-            with self.subTest(changes=changes):
-                self.assertFalse(classified(log({**measurement, **changes})))
-        self.assertFalse(classified(log(measurement).replace(
-            "assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width",
-            "assert page.locator('#editToolStrip').is_visible(), width")))
-
-    def test_smoke_other_workflow_or_download_count_is_rejected(self):
-        log = (EVIDENCE / 'ci-38141289409/smoke.log').read_text()
-        self.assertFalse(self.accepted('smoke.py', log.replace("wait_for_video_idle(page, 'trajectory')", "page.locator('#trajectorySaveVideoBtn').click()")))
-        source = (ROOT / 'tests/e2e/smoke.py').read_text()
-        self.assertFalse(self.accepted('smoke.py', log, source.replace('downloads?.length || 0) === 2', 'downloads?.length || 0) === 1')))
-
-    def test_escape_and_delete_other_failures_are_rejected(self):
-        axis = (EVIDENCE / 'ci-38141289409/axis_gizmo.log').read_text()
-        self.assertFalse(self.accepted('axis_gizmo.py', axis.replace("press('Escape')", "press('Home')")))
-        mode = (EVIDENCE / 'ci-38141289409/mode_consistency.log').read_text()
-        self.assertFalse(self.accepted('mode_consistency.py', mode.replace('intercepts pointer events', 'is invisible')))
-        self.assertFalse(self.accepted('mode_consistency.py', mode.replace('data-coords-action="delete"', 'data-coords-action="copy"')))
-
-    def test_exception_and_passing_status_are_not_absorbed(self):
-        log = (EVIDENCE / 'ci-38141289409/smoke.log').read_text()
-        result = self.result('smoke.py', log)
-        known = dict(workflow='issue-11-stop-after-second-download',exceptionType='TimeoutError',sites=['trajectory','vibration'])
-        self.assertNotIn('tests/e2e/smoke.py',MANIFEST['knownDefects'])
-        self.assertFalse(GATE.matches_known_defect({**result, 'exceptionType': 'AssertionError'}, known))
-        self.assertFalse(GATE.matches_known_defect({**result, 'exitCode': 0}, known))
-
-
-if __name__ == '__main__':
-    unittest.main()
+if __name__=='__main__':unittest.main()

@@ -1,0 +1,68 @@
+{
+  "schema": 1,
+  "acceptance": "Named precise step bound to the actual uncaught exception object; source text and line numbers never identify a workflow",
+  "gateUnchanged": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "manifestUnchanged": "tests/baselines/browser-suite.json",
+  "audit": [
+    {
+      "branch": "axis",
+      "oldDependency": "Two statements on one traceback source line; whole-line AST length and literal evaluate string",
+      "replacement": "axis-endpoint.escape.canvas-focus plus completed native Escape, axis origin, actual/expected focus and uncaught AssertionError binding"
+    },
+    {
+      "branch": "Coordinates",
+      "oldDependency": "One traceback source line containing exact literal selector; rendered HTML double quotes/attribute layout and interception phrase",
+      "replacement": "coordinates.row1.native-delete plus native row1 Delete, visible/enabled target and measured selection-card ownership at failure; uncaught TimeoutError binding"
+    },
+    {
+      "branch": "closed #21",
+      "oldDependency": "Exact statement form/local names, AssertionError suffix320 and JSON log string",
+      "replacement": "Removed from live recognition; remains absent from accepted set; historical reports preserved verbatim"
+    },
+    {
+      "branch": "closed #11",
+      "oldDependency": "Exact wait call/local name, previous two AST sibling statements and downloads predicate string ending===2",
+      "replacement": "Removed from live recognition; Smoke must pass; historical reports preserved verbatim"
+    }
+  ],
+  "remainingTracebackParsing": "Only informational firstFailure/failureCallSite line/function and original exception type; no source statement/AST parser remains in acceptance",
+  "binding": "Context records original exception object; final exception hook emits token only for that object. Caught or passed prior steps cannot label a later error. Original exception type/message, waits and assertions remain.",
+  "negativeTests": [
+    "unrelated focus assertion/other step",
+    "Home instead of Escape",
+    "incomplete or non-axis input",
+    "wrong target/command/row",
+    "invisible or disabled target",
+    "other interceptor",
+    "programmatic click",
+    "wrong exception",
+    "passing exit",
+    "stale caught failure",
+    "passed earlier step",
+    "other suite",
+    "missing/ambiguous/malformed evidence",
+    "unsupported closed workflow"
+  ],
+  "formatTests": [
+    "semicolon vs split",
+    "wrapped/multiline statements",
+    "quote changes and renamed source locals",
+    "arbitrary line shifts",
+    "traceback source unavailable",
+    "rendered HTML changed/omitted"
+  ],
+  "failedCandidate": {
+    "head": "e172dc3e43c9fb8931fb58b68f74a14e5640b091",
+    "runId": 40159501600,
+    "neverRetried": true,
+    "notAcceptance": true
+  },
+  "productChanges": false,
+  "newControllerDependencies": 0,
+  "newAppBindings": 0,
+  "constructionOrderRequired": true
+}
