@@ -160,5 +160,26 @@
     "completeGuard": false,
     "mergeGateEvidence": false,
     "looksMaterialPaths": "not covered"
+  },
+  "taggedLocalReproduction": {
+    "diagnosticOnly": true,
+    "mergeGateEvidence": false,
+    "taggedAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "candidateAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09",
+    "taggedNativeFailures": 1,
+    "taggedExplicitBypasses": 1,
+    "candidateNativeFailures": 0,
+    "candidateBypasses": 0,
+    "originalAssertionsPerSource": 62,
+    "sourceUnchanged": true,
+    "toolchain": {
+      "python": "3.9.6",
+      "playwright": "1.60.0",
+      "chromium": "145.0.7632.6"
+    },
+    "newTool": false,
+    "standingDiagnosticExtended": true,
+    "failure": "legacy row1 native Delete intercepted by editSelectionPosition; preserved as failure before explicit diagnostic continuation",
+    "finalRebasedPinnedCheckStillRequired": true
   }
 }
