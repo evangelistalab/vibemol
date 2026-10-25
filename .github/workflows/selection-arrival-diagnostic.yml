@@ -1,0 +1,65 @@
+name: Diagnostic selection arrival 50
+
+on:
+  push:
+    branches: [codex/selection-arrival-diagnostic]
+    paths:
+      - api/requirements-ci.lock
+      - .github/workflows/selection-arrival-diagnostic.yml
+      - tests/e2e/selection_arrival_diagnostic.py
+      - tests/e2e/selection_arrival_probe.js
+      - tests/e2e/smoke_input_diagnostic.py
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    name: Selection arrival (${{ matrix.sample }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        sample: [1, 2, 3, 4, 5]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Install the same locked dependencies as ordinary CI
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r api/requirements-ci.lock
+          python -m pip check
+      - name: Resolve locked Playwright
+        id: playwright
+        run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
+      - name: Install the ordinary browser and system dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Preserve the locked runtime and measure one original grow-add activation
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/selection-arrival
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/selection-arrival-pycache
+          VIBEMOL_SMOKE_VERBOSE: '1'
+          VIBEMOL_CI_UNBOUNDED_PROBE: '0'
+          PYTHONUNBUFFERED: '1'
+          SAMPLE: ${{ matrix.sample }}
+        run: |
+          mkdir -p "$VIBEMOL_TEST_ARTIFACT_DIR"
+          python -m pip freeze --all > "$VIBEMOL_TEST_ARTIFACT_DIR/pip-freeze.txt"
+          python tests/e2e/smoke_input_diagnostic.py --source-root . --harness-root . --source-ref "$GITHUB_SHA" --harness-ref "$GITHUB_SHA" --case "sample-$SAMPLE" --selection-arrival 2>&1 | tee "$VIBEMOL_TEST_ARTIFACT_DIR/run.log"
+      - name: Preserve every measurement and original assertion failure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: selection-arrival-${{ matrix.sample }}
+          path: out/test-artifacts/selection-arrival/
+          if-no-files-found: error

@@ -13,9 +13,11 @@ from playwright.sync_api import sync_playwright
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+    from assertion_contract import state_after_input
     from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 else:
+    from .assertion_contract import state_after_input
     from .helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts, wait_for_presented_state
     from .ci_gate_diagnostics import install_video_probe, record_renderer, arm_video_stop_trace, wait_for_video_idle
 
@@ -1162,6 +1164,32 @@ def ensure_build_popover_open(page, *, focus_search: bool = False) -> None:
             }"""
         )
         if can_click_button:
+            # #47: leaf display does not imply pointer eligibility. Native
+            # movement reveals the deliberately auto-hidden launcher first.
+            box = page.locator('#editAdaptiveAddAtomBtn').bounding_box()
+            if not box:
+                raise AssertionError('Build launcher has no bounds despite display eligibility')
+            point = {'x': box['x'] + box['width'] / 2, 'y': box['y'] + box['height'] / 2}
+            page.mouse.move(point['x'], point['y'])
+            try:
+                page.wait_for_function(
+                    """(point) => {
+                        const button = document.getElementById('editAdaptiveAddAtomBtn');
+                        return !!button && getComputedStyle(button).pointerEvents !== 'none'
+                          && button.contains(document.elementFromPoint(point.x, point.y));
+                    }""", arg=point,
+                )
+            finally:
+                readback = page.evaluate(
+                    """(point) => {
+                        const button = document.getElementById('editAdaptiveAddAtomBtn');
+                        const hit = document.elementFromPoint(point.x, point.y);
+                        return {pointerEvents: button && getComputedStyle(button).pointerEvents,
+                          hit: hit && (hit.id || hit.className),
+                          actual: !!button && button.contains(hit), expected: true};
+                    }""", point,
+                )
+                print('[smoke-build-launcher] ' + json.dumps(readback), flush=True)
             click_when_ready(page, '#editAdaptiveAddAtomBtn')
         else:
             page.keyboard.press('/')
@@ -1207,6 +1235,9 @@ def trigger_selection_tool(page) -> None:
 
 
 def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> None:
+    # #48: a geometric pick can be behind the open catalog. Dismiss it before
+    # checking native input; never repair selection after a missed click.
+    ensure_build_popover_closed(page)
     # Selection belongs to Transform. Accept any placed atom before disarming
     # Build, so Escape does not cancel the structure the fixture just created.
     if page.locator('#canvas').evaluate("el=>el.classList.contains('vm-build-armed')"):
@@ -1217,6 +1248,17 @@ def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> No
         page.keyboard.press('Enter')
         page.keyboard.press('Escape')
         page.wait_for_function("()=>!document.getElementById('canvas').classList.contains('vm-build-armed')")
+    page.mouse.move(x, y)
+    pointer = page.evaluate(
+        """(point) => {
+            const hit = document.elementFromPoint(point.x, point.y);
+            return {actual: hit?.id || hit?.className || null, expected: 'canvas',
+              onCanvas: hit === document.getElementById('canvas')};
+        }""", {'x': x, 'y': y},
+    )
+    print('[smoke-selection-hit] ' + json.dumps(pointer), flush=True)
+    if not pointer['onCanvas']:
+        raise AssertionError(f'Atom selection point is covered: {pointer}')
     hit = page.evaluate(
         """(payload) => {
             if (!window.VibeMolTesting || typeof window.VibeMolTesting.pickEditHitAtClient !== 'function') return null;
@@ -1232,41 +1274,28 @@ def click_atom_to_select(page, x: float, y: float, additive: bool = False) -> No
             return Array.isArray(indices) ? indices.slice() : [];
         }"""
     )
-    if additive:
-        page.keyboard.down('Shift')
-    try:
-        page.mouse.click(x, y)
-    finally:
-        if additive:
-            page.keyboard.up('Shift')
     if hit_atom_index < 0:
-        return
-    try:
-        page.wait_for_function(
-            """(payload) => {
-                const indices = Array.isArray(window.VibeMolTesting?.getEditSelectionIndices?.())
-                  ? window.VibeMolTesting.getEditSelectionIndices()
-                  : [];
-                const target = Number(payload.atomIndex);
-                if (!payload.additive) return indices.length === 1 && indices[0] === target;
-                return indices.includes(target);
-            }""",
-            arg={'atomIndex': hit_atom_index, 'additive': bool(additive)},
-            timeout=600,
-        )
-    except Exception:
-        merged = []
-        if additive and isinstance(before_selection, list):
-            merged = sorted({int(value) for value in before_selection if isinstance(value, (int, float))} | {hit_atom_index})
-        else:
-            merged = [hit_atom_index]
-        page.evaluate(
-            """(indices) => {
-                if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
-                return window.VibeMolTesting.setEditSelectionIndices(indices);
-            }""",
-            merged,
-        )
+        raise AssertionError(f'Atom selection requires an atom hit: actual={hit}, expected atomIndex>=0')
+    expected = set(int(value) for value in before_selection)
+    if additive:
+        expected.symmetric_difference_update([hit_atom_index])
+    else:
+        expected = {hit_atom_index}
+    expected = sorted(expected)
+    with state_after_input(page,
+            '()=>VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)', expected,
+            label='native atom selection') as check:
+        if additive:
+            page.keyboard.down('Shift')
+        try:
+            page.mouse.click(x, y)
+        finally:
+            if additive:
+                page.keyboard.up('Shift')
+        result = check()
+        print('[smoke-selection-result] ' + json.dumps(dict(
+            before=before_selection, atom=hit_atom_index, additive=additive,
+            actual=result['actual'], expected=expected)), flush=True)
 
 
 def select_two_fixture_atoms(page) -> None:
@@ -1291,54 +1320,19 @@ def select_two_fixture_atoms(page) -> None:
             }"""
         )
 
-    def _select_one(candidates: list[tuple[float, float]]) -> bool:
-        for x, y in candidates:
-            click_atom_to_select(page, x, y)
-            try:
-                page.wait_for_function(
-                    r"""() => {
-                        return Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1;
-                    }""",
-                    timeout=750,
-                )
-                return True
-            except Exception:
-                continue
-        return False
-
-    left_candidates = projected_atom_hit_candidates(page, 0, 1)
-    right_candidates = projected_atom_hit_candidates(page, 1, 0)
-
-    if not _select_one(left_candidates):
-        direct_left = page.evaluate(
-            """() => {
-                if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
-                return window.VibeMolTesting.setEditSelectionIndices([0]);
-            }"""
+    # #48: count1 could be the wrong atom, making the next Shift-click a
+    # legitimate deselection. Pick the requested identities before clicking;
+    # do not retry failed clicks or inject [0]/[0,1] as a repair.
+    for atom_index, additive, expected in [(0, False, [0]), (1, True, [0, 1])]:
+        x, y = find_atom_click_point(page, atom_index)
+        click_atom_to_select(page, x, y, additive=additive)
+        actual = page.evaluate(
+            '()=>VibeMolTesting.getEditSelectionIndices().slice().sort((a,b)=>a-b)'
         )
-        if not (isinstance(direct_left, dict) and int(direct_left.get('count', -1)) == 1):
-            raise AssertionError('Could not select the left atom in the deterministic two-atom fixture.')
-        wait_for_selected_atoms(page, 1)
-
-    for x, y in right_candidates:
-        click_atom_to_select(page, x, y, additive=True)
-        try:
-            wait_for_selected_atoms(page, 2, timeout=750)
-            return
-        except Exception:
-            continue
-
-    direct_result = page.evaluate(
-        """() => {
-            if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
-            return window.VibeMolTesting.setEditSelectionIndices([0, 1]);
-        }"""
-    )
-    if isinstance(direct_result, dict) and int(direct_result.get('count', -1)) == 2:
-        wait_for_selected_atoms(page, 2)
-        return
-
-    raise AssertionError('Could not extend the deterministic two-atom fixture selection to two atoms.')
+        print('[smoke-two-atom-selection] ' + json.dumps(dict(
+            actual=actual, expected=expected)), flush=True)
+        if actual != expected:
+            raise AssertionError(f'Native fixture selection: actual={actual}, expected={expected}')
 
 
 def wait_for_ready(page) -> None:
@@ -1746,23 +1740,8 @@ def main() -> int:
             atom2_x, atom2_y = project_active_atom(page, 1)
 
             click_atom_to_select(page, atom1_x, atom1_y)
-            try:
-                page.wait_for_function(
-                    """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1""",
-                    timeout=750,
-                )
-            except Exception:
-                direct_selected = page.evaluate(
-                    """() => {
-                        if (!window.VibeMolTesting || typeof window.VibeMolTesting.setEditSelectionIndices !== 'function') return null;
-                        return window.VibeMolTesting.setEditSelectionIndices([0]);
-                    }"""
-                )
-                if not (isinstance(direct_selected, dict) and int(direct_selected.get('count', -1)) == 1):
-                    raise
-            page.wait_for_function(
-                """() => Number(window.VibeMolTesting?.getEditSelectionCount?.() || 0) === 1"""
-            )
+            # Exact native selection is already asserted by click_atom_to_select;
+            # no duplicate750ms wait or direct API repair follows it.
             move_probe = page.evaluate(
                 """(payload) => {
                     if (!window.VibeMolTesting || typeof window.VibeMolTesting.performSelectionMoveDrag !== 'function') return null;
@@ -3419,37 +3398,15 @@ def main() -> int:
                 }"""
             )
             page.keyboard.press(copy_paste_shortcut + 'C')
-            page.keyboard.press(copy_paste_shortcut + 'V')
-            try:
-                page.wait_for_function(
-                    r"""() => {
-                        const exported = window.VibeMolStructure.exportActive();
-                        return exported.volume.atoms.length === 4
-                          && Array.isArray(exported.volume.bonds)
-                          && exported.volume.bonds.length === 2;
-                    }""",
-                    timeout=5000,
-                )
-            except Exception:
-                page.evaluate(
-                    """() => {
-                        if (!window.VibeMolTesting) return;
-                        if (typeof window.VibeMolTesting.copyEditSelectionToClipboard === 'function') {
-                            window.VibeMolTesting.copyEditSelectionToClipboard();
-                        }
-                        if (typeof window.VibeMolTesting.pasteEditClipboardSelection === 'function') {
-                            window.VibeMolTesting.pasteEditClipboardSelection();
-                        }
-                    }"""
-                )
-                page.wait_for_function(
-                    r"""() => {
-                        const exported = window.VibeMolStructure.exportActive();
-                        return exported.volume.atoms.length === 4
-                          && Array.isArray(exported.volume.bonds)
-                          && exported.volume.bonds.length === 2;
-                    }"""
-                )
+            with state_after_input(page,
+                    """() => { const volume=VibeMolStructure.exportActive().volume;
+                        return {atoms:volume.atoms.length,bonds:volume.bonds?.length,
+                          bondsArray:Array.isArray(volume.bonds)}; }""",
+                    {'atoms':4,'bonds':2,'bondsArray':True}, label='native clipboard paste',
+                    policy='native-clipboard',event='keydown',selector=None,key='v',
+                    asynchronous=True,require_transition=True) as check:
+                page.keyboard.press(copy_paste_shortcut + 'V')
+                check()
 
             page.locator('#editSelectionDeleteCueButton').click()
             page.wait_for_function(

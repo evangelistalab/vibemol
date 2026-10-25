@@ -1,0 +1,102 @@
+name: Diagnostic Smoke native input
+
+on:
+  push:
+    branches: [codex/smoke-native-input-preconditions]
+    paths:
+      - '.github/workflows/smoke-input-diagnostic.yml'
+      - 'tests/e2e/smoke.py'
+      - 'tests/e2e/smoke_input_diagnostic.py'
+      - 'tests/e2e/smoke_input_probe.js'
+      - 'tools/diagnostics/instrument_smoke_predicates.cjs'
+      - 'tools/diagnostics/validate_smoke_input.py'
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Immutable product commit (blank uses selected workflow commit)
+        default: ''
+      harness_ref:
+        description: Immutable harness commit (blank uses selected workflow commit)
+        default: ''
+      bypass_issue11:
+        description: Bypass only the two known issue11 idle assertions, preserving their readbacks
+        type: boolean
+        default: true
+      region_only:
+        description: Start at the complete original trajectory section; omit unrelated prefix
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  collect:
+    name: Bypassed Smoke input region (not ordinary gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prepare immutable source and harness
+        env:
+          SOURCE_REF: ${{ inputs.source_ref || github.sha }}
+          HARNESS_REF: ${{ inputs.harness_ref || github.sha }}
+        run: |
+          git fetch --no-tags origin "$SOURCE_REF" "$HARNESS_REF"
+          git worktree add --detach out/input-source "$SOURCE_REF"
+          if [ "$HARNESS_REF" = "$SOURCE_REF" ]; then
+            echo "HARNESS_ROOT=$GITHUB_WORKSPACE/out/input-source" >> "$GITHUB_ENV"
+          else
+            git worktree add --detach out/input-harness "$HARNESS_REF"
+            echo "HARNESS_ROOT=$GITHUB_WORKSPACE/out/input-harness" >> "$GITHUB_ENV"
+          fi
+          echo "SOURCE_REF=$SOURCE_REF" >> "$GITHUB_ENV"
+          echo "HARNESS_REF=$HARNESS_REF" >> "$GITHUB_ENV"
+      - name: Match the original failing CI runtime
+        run: |
+          python -m pip install -r api/requirements-ci.lock
+          npm install --prefix "$RUNNER_TEMP/input-audit" --no-save --ignore-scripts @babel/parser@7.24.4 @babel/traverse@7.24.1 @babel/generator@7.24.4 @babel/types@7.24.0
+      - name: Resolve the locked Playwright version
+        id: playwright
+        run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
+      - name: Install Chromium and operating-system dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Check the shared assertion contract before the product prefix
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/assertion-contract-probe
+        run: python tests/e2e/assertion_contract_probe.py
+      - name: Collect original assertions and native input routes
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/input-diagnostic
+          VIBEMOL_BABEL_ROOT: ${{ runner.temp }}/input-audit/node_modules/@babel
+          PYTHONUNBUFFERED: '1'
+          BYPASS: ${{ github.event_name == 'push' || inputs.bypass_issue11 }}
+          REGION_ONLY: ${{ inputs.region_only }}
+        run: |
+          flags=()
+          if [ "$BYPASS" = true ]; then flags+=(--bypass-issue11); fi
+          if [ "$REGION_ONLY" = true ]; then flags+=(--video-region-only); fi
+          python tests/e2e/smoke_input_diagnostic.py --source-root out/input-source --harness-root "$HARNESS_ROOT" --source-ref "$SOURCE_REF" --harness-ref "$HARNESS_REF" --case native-input --prepare-only
+          node tools/diagnostics/instrument_smoke_predicates.cjs "$VIBEMOL_TEST_ARTIFACT_DIR/predicates.json" "$VIBEMOL_TEST_ARTIFACT_DIR/instrumented-predicates.json"
+          python tests/e2e/smoke_input_diagnostic.py --source-root out/input-source --harness-root "$HARNESS_ROOT" --source-ref "$SOURCE_REF" --harness-ref "$HARNESS_REF" --case native-input "${flags[@]}"
+      - name: Validate repaired input paths independently of known exporter findings
+        run: python tools/diagnostics/validate_smoke_input.py out/test-artifacts/input-diagnostic --harness-root "$HARNESS_ROOT"
+      - name: Preserve all diagnostic evidence, including failures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-native-input-diagnostic
+          path: out/test-artifacts/input-diagnostic/
+          if-no-files-found: error

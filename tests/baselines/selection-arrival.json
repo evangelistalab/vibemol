@@ -1,0 +1,270 @@
+{
+  "runId": 40149272378,
+  "head": "52056d5eff382aefd6cd33d5ce8aa3dcd1123177",
+  "samples": [
+    {
+      "sample": 1,
+      "arrivalAfterEventTimestampMs": 258.30000000004657,
+      "arrivalAfterPointerupCaptureMs": 0.8999999999068677,
+      "authoritativeWriteBounds": [
+        441061.3999999999,
+        441061.3999999999
+      ],
+      "callbackMs": 1.6000000000931323,
+      "nativeEventCompleteMs": 261.60000000009313,
+      "firstWaitPollAfterStateMs": 271.80000000004657,
+      "firstFrameAfterStateMs": 7.300000000046566,
+      "hostWaitMs": 539.5202750000863,
+      "original600msWaitPassed": true,
+      "longTasks": [
+        {
+          "start": 440800.69999999995,
+          "duration": 257
+        },
+        {
+          "start": 441065,
+          "duration": 267
+        },
+        {
+          "start": 441333.30000000005,
+          "duration": 270
+        },
+        {
+          "start": 441604.09999999986,
+          "duration": 267
+        },
+        {
+          "start": 441872.30000000005,
+          "duration": 270
+        }
+      ],
+      "runtime": {
+        "playwright": "1.64.1",
+        "pyee": "14.0.0",
+        "greenlet": "3.5.6",
+        "typingExtensions": "4.16.0",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "chromium": "156.0.8078.4"
+      },
+      "runnerImage": "20261023.334.3"
+    },
+    {
+      "sample": 2,
+      "arrivalAfterEventTimestampMs": 258.5999999999767,
+      "arrivalAfterPointerupCaptureMs": 1.2999999999883585,
+      "authoritativeWriteBounds": [
+        437861.7,
+        437861.7
+      ],
+      "callbackMs": 2.7000000000116415,
+      "nativeEventCompleteMs": 263.5999999999767,
+      "firstWaitPollAfterStateMs": 272.79999999998836,
+      "firstFrameAfterStateMs": 9.700000000011642,
+      "hostWaitMs": 537.357333999978,
+      "original600msWaitPassed": true,
+      "longTasks": [
+        {
+          "start": 437601.5,
+          "duration": 255
+        },
+        {
+          "start": 437867,
+          "duration": 266
+        },
+        {
+          "start": 438134.7,
+          "duration": 268
+        },
+        {
+          "start": 438403.2,
+          "duration": 268
+        },
+        {
+          "start": 438671.60000000003,
+          "duration": 267
+        }
+      ],
+      "runtime": {
+        "playwright": "1.64.1",
+        "pyee": "14.0.0",
+        "greenlet": "3.5.6",
+        "typingExtensions": "4.16.0",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "chromium": "156.0.8078.4"
+      },
+      "runnerImage": "20261023.334.3"
+    },
+    {
+      "sample": 3,
+      "arrivalAfterEventTimestampMs": 200.79999999993015,
+      "arrivalAfterPointerupCaptureMs": 0.7999999999301508,
+      "authoritativeWriteBounds": [
+        342458.69999999995,
+        342458.69999999995
+      ],
+      "callbackMs": 1.7999999999301508,
+      "nativeEventCompleteMs": 204.5,
+      "firstWaitPollAfterStateMs": 209.30000000004657,
+      "firstFrameAfterStateMs": 7.300000000046566,
+      "hostWaitMs": 415.21862899992357,
+      "original600msWaitPassed": true,
+      "longTasks": [
+        {
+          "start": 342256.19999999995,
+          "duration": 198
+        },
+        {
+          "start": 342462.69999999995,
+          "duration": 204
+        },
+        {
+          "start": 342668.1,
+          "duration": 209
+        },
+        {
+          "start": 342877.5,
+          "duration": 203
+        },
+        {
+          "start": 343081.5,
+          "duration": 205
+        }
+      ],
+      "runtime": {
+        "playwright": "1.64.1",
+        "pyee": "14.0.0",
+        "greenlet": "3.5.6",
+        "typingExtensions": "4.16.0",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "chromium": "156.0.8078.4"
+      },
+      "runnerImage": "20261023.334.3"
+    },
+    {
+      "sample": 4,
+      "arrivalAfterEventTimestampMs": 264.80000000004657,
+      "arrivalAfterPointerupCaptureMs": 1.5,
+      "authoritativeWriteBounds": [
+        449184.6,
+        449184.6
+      ],
+      "callbackMs": 1.900000000023283,
+      "nativeEventCompleteMs": 268.4000000000233,
+      "firstWaitPollAfterStateMs": 273.9000000000233,
+      "firstFrameAfterStateMs": 7.800000000046566,
+      "hostWaitMs": 543.0985870000313,
+      "original600msWaitPassed": true,
+      "longTasks": [
+        {
+          "start": 448920.6,
+          "duration": 260
+        },
+        {
+          "start": 449188.5,
+          "duration": 269
+        },
+        {
+          "start": 449458.6,
+          "duration": 272
+        },
+        {
+          "start": 449731.4,
+          "duration": 268
+        },
+        {
+          "start": 449999.69999999995,
+          "duration": 270
+        }
+      ],
+      "runtime": {
+        "playwright": "1.64.1",
+        "pyee": "14.0.0",
+        "greenlet": "3.5.6",
+        "typingExtensions": "4.16.0",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "chromium": "156.0.8078.4"
+      },
+      "runnerImage": "20261023.334.3"
+    },
+    {
+      "sample": 5,
+      "arrivalAfterEventTimestampMs": 138.70000000001164,
+      "arrivalAfterPointerupCaptureMs": 0.7999999999883585,
+      "authoritativeWriteBounds": [
+        246601.2,
+        246601.2
+      ],
+      "callbackMs": 1.2999999999883585,
+      "nativeEventCompleteMs": 141.59999999997672,
+      "firstWaitPollAfterStateMs": 147.0,
+      "firstFrameAfterStateMs": 5.899999999965075,
+      "hostWaitMs": 294.4790799999737,
+      "original600msWaitPassed": true,
+      "longTasks": [
+        {
+          "start": 246460.2,
+          "duration": 137
+        },
+        {
+          "start": 246604.3,
+          "duration": 141
+        },
+        {
+          "start": 246748.3,
+          "duration": 141
+        },
+        {
+          "start": 246893.40000000002,
+          "duration": 143
+        },
+        {
+          "start": 247038.2,
+          "duration": 140
+        }
+      ],
+      "runtime": {
+        "playwright": "1.64.1",
+        "pyee": "14.0.0",
+        "greenlet": "3.5.6",
+        "typingExtensions": "4.16.0",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "chromium": "156.0.8078.4"
+      },
+      "runnerImage": "20261023.334.3"
+    }
+  ],
+  "validSamples": 5,
+  "excludedSamples": 0,
+  "activationsPerWorker": 1,
+  "noRetries": true,
+  "lockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be",
+  "arrivalMs": {
+    "min": 138.70000000001164,
+    "median": 258.30000000004657,
+    "max": 264.80000000004657
+  },
+  "handlerArrivalMs": {
+    "min": 0.7999999999301508,
+    "max": 1.5
+  },
+  "callbackMs": {
+    "min": 1.2999999999883585,
+    "max": 2.7000000000116415
+  },
+  "hostObservationWaitMs": {
+    "min": 294.4790799999737,
+    "max": 543.0985870000313
+  },
+  "measurement": "Authoritative setter bounds; not the time a polling frame first notices the value",
+  "interpretation": "All state arrivals occur inside native pointerup, well before600ms. The old wait spends hundreds of ms observing already-correct state through RAF/protocol scheduling. These five samples do not reproduce the original timeout and do not diagnose its exact missed poll.",
+  "decision": "Do not increase600. Assert value at the completed native pointerup boundary and apply the unchanged600ms budget to that event receipt, eliminating dependence on a later polling frame. Preserve failed/late/missing native receipts as failures.",
+  "figureDeadlineUnchanged": true,
+  "archive": {
+    "runId": 40149272378,
+    "archive": "arrival-40149272378.tar.gz",
+    "bytes": 149973,
+    "sha256": "a02bdc8372c2df853065de4831c5e263bc68d7931823163416485f7d34f65864",
+    "allArchivedFilesReopened": 30
+  },
+  "mergeEvidence": false
+}

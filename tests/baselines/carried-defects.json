@@ -368,6 +368,240 @@
         "noFurtherDiagnosticReplays": true
       },
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
+    },
+    {
+      "id": "smoke-grow-add-selection-deadline",
+      "issue": 50,
+      "url": "https://github.com/evangelistalab/vibemol/issues/50",
+      "status": "Measured native-arrival harness repair proposed; original missed poll unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "workflow": "grow-add can be followed immediately by atom selection",
+      "ordinary": {
+        "runId": 40138904806,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "callerLine": 3539,
+        "helperLine": 1291,
+        "waitMs": 600,
+        "before": [],
+        "expected": [
+          0
+        ],
+        "finalActual": [
+          0
+        ],
+        "exception": "TimeoutError",
+        "playwright": "1.64.1"
+      },
+      "diagnostic": {
+        "runId": 40138888119,
+        "head": "83d5ba655987fef8693cd4fa31dff70f0c77c1c6",
+        "nativePointerupSelection": [
+          0
+        ],
+        "predicateReadback": [
+          0
+        ],
+        "pointerupToPredicateMilliseconds": 270,
+        "playwright": "1.64.0"
+      },
+      "classification": "No seconds-late selection observed. State is set within native pointerup in all5 samples. Original timeout not reproduced; its exact missed poll remains unknown. Repair removes post-event RAF observation as a prerequisite without increasing600ms or accepting late/missing input.",
+      "baseline": "tests/baselines/selection-arrival.json",
+      "disposition": "Replacement PR49 candidate must prove its own complete gate; PR46 stays held until harness lands.",
+      "measurement": {
+        "runId": 40149272378,
+        "samples": 5,
+        "excluded": 0,
+        "arrivalRangeMs": [
+          138.7,
+          264.8
+        ],
+        "handlerArrivalRangeMs": [
+          0.8,
+          1.5
+        ],
+        "callbackRangeMs": [
+          1.3,
+          2.7
+        ],
+        "hostWaitRangeMs": [
+          294.48,
+          543.1
+        ],
+        "playwright": "1.64.1",
+        "chromium": "156.0.8078.4",
+        "python": "3.12.15",
+        "allOriginal600WaitsPassed": true
+      }
+    }
+  ],
+  "openHarnessDefects": [
+    {
+      "id": "smoke-selection-state-repair-coverage-hole",
+      "issue": 48,
+      "url": "https://github.com/evangelistalab/vibemol/issues/48",
+      "status": "open; coverage hole and two distinct harness selection mechanisms measured",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "helper": "click_atom_to_select",
+      "mainHelperWaitLine": 1245,
+      "mainObservedCallerLine": 4830,
+      "actualSelectionCount": 0,
+      "expectedSelectionCount": 1,
+      "existingWaitMs": 600,
+      "repair": "VibeMolTesting.setEditSelectionIndices",
+      "coverage": "Assertions after repair cannot establish success of the original native click. Count dynamic checkpoints and same-fixture checks separately.",
+      "priorTraceLowerBound": {
+        "downstreamAssertionCheckpoints": 114,
+        "sameFixtureCheckpoints": 23,
+        "definition": "102 wait calls +8 Python asserts +3 explicit failure guards +final runtime guard; excludes additional nested helper/clickability guards. CI collector counts those too."
+      },
+      "fixDeferredUntilIssue47Understood": false,
+      "failLoudFixNotImplemented": false,
+      "timingPolicy": "Shared helper keeps600ms after5 measured native arrivals; Figure43 policy hold does not apply to this direct-human50 authorization.",
+      "diagnostic": "tests/baselines/smoke-input-diagnostic.json",
+      "firstCiObservation": {
+        "run": 40129183912,
+        "primaryRepairsAcrossControls": 21,
+        "nativeInputLanded": true,
+        "before": [
+          1
+        ],
+        "afterNativeShiftClick": [],
+        "afterRepair": [
+          1
+        ],
+        "correctProductToggle": true,
+        "original4830NotReached": true,
+        "repairRetained": true
+      },
+      "classification": {
+        "observedIn": "Main and PR46product/mainharness controls40130635514",
+        "before": [],
+        "expected": [
+          1
+        ],
+        "afterNativeClick": [],
+        "afterRepair": [
+          1
+        ],
+        "nativeTarget": ".vm-catalog-list-name under #editFragmentQuick inside #editAdaptiveAddAtomPopover",
+        "actualClick": "Carboxyl catalog entry; arms add_fragment rather than selecting an atom",
+        "geometricPickIgnoresDomOverlay": true,
+        "stuckPointerCapture": false
+      },
+      "otherMechanism": {
+        "observedIn": "All three controls in40129183912 and40130635514",
+        "wantedLeftAtom": 0,
+        "firstGeometricPick": 1,
+        "selectionBeforeAdditiveClick": [
+          1
+        ],
+        "selectionAfterNativePointerup": [],
+        "selectionAfterRepair": [
+          1
+        ],
+        "pointerdownUpClickReachCanvas": true,
+        "cause": "Two-atom helper validates cardinality rather than atom identity, then repeatedly Shift-clicks already-selected atom1. Product toggle is correct; inclusion expectation and repair conceal it.",
+        "productContract": "assets/app/js/edit-tools.js additive selection toggles existing members."
+      },
+      "coverageCensus": {
+        "original4830PerCompleteControl": {
+          "downstreamOriginalCheckpoints": 140,
+          "distinctOriginalSites": 75,
+          "sameFixtureOriginalCheckpoints": 28,
+          "passedOriginalCheckpoints": 139,
+          "kinds": {
+            "waitPredicates": 100,
+            "pythonAssertionsOrFailureGuards": 38,
+            "clickabilityGuards": 2
+          },
+          "excludedExtraRecoveryChecks": 2
+        },
+        "firstRepairOnMain": {
+          "downstreamOriginalCheckpoints": 458,
+          "distinctOriginalSites": 227,
+          "sameFixtureOriginalCheckpoints": 17
+        },
+        "meaning": "Later checks cannot establish the repaired native click. Counts are invocations and separate distinct sites, not a claim that every later section depends on the same selection. Original600ms check is unchanged."
+      },
+      "sharedCauseWith47": "No shared product input-loss cause in the observed traces. Repeated Shift fallback receives canvas input and correctly toggles selection; original4830 click hits an overlaid Carboxyl row instead of canvas; Fusion targets an auto-hidden launcher with pointer-events:none. Common harness weakness is using geometric/leaf visibility without proving DOM hit eligibility.",
+      "ciRun": 40130635514,
+      "fixDisposition": "No fix in this diagnostic; native fallback still repairs, failure evidence retained.47 mechanism now understood; PR46disposition and harness repair remain separate decisions.",
+      "repairCandidate": "PR49 measured native-input/event-boundary harness repair; own new complete ordinary gate and scoped bypassed native-input diagnostic pending."
+    },
+    {
+      "id": "smoke-build-fusion-phenyl-switch",
+      "issue": 47,
+      "url": "https://github.com/evangelistalab/vibemol/issues/47",
+      "status": "open; pre-existing launcher-readiness harness defect measured on main",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/smoke.py",
+      "workflow": "Build query changes Fusion phenyl to Methyl while fuse preview remains active",
+      "originalCandidate": {
+        "head": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "pr": 46,
+        "ciRun": 39694044396,
+        "line": 4988,
+        "assertion": "Build palette button trial click becomes reachable within30000ms",
+        "failure": "Canvas intercepts #editAdaptiveAddAtomBtn"
+      },
+      "mainLocalDiagnostic": {
+        "head": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "browserVersion": "145.0.7632.6",
+        "focusedFusionFailures": 0,
+        "fullSmokePropagatedFailures": 0,
+        "newRegionStatements": 301,
+        "newRegionLines": [
+          4395,
+          5514
+        ],
+        "idleWaitBypasses": [
+          4394,
+          4531
+        ],
+        "caughtExistingFixtureWaits": 1,
+        "diagnosticOnly": true,
+        "baseline": "tests/baselines/smoke-region-diagnostic.json"
+      },
+      "classification": "Pre-existing harness launcher-readiness defect; not introduced by PR46 exporter change. Open/unfixed/not accepted.",
+      "disposition": "PR46 remains held; failed CI not rerun.",
+      "sharedCauseWith48": "No shared product input-loss cause in the observed traces. Repeated Shift fallback receives canvas input and correctly toggles selection; original4830 click hits an overlaid Carboxyl row instead of canvas; Fusion targets an auto-hidden launcher with pointer-events:none. Common harness weakness is using geometric/leaf visibility without proving DOM hit eligibility.",
+      "firstCiDiagnostic": {
+        "run": 40129183912,
+        "earlierSameButtonInterceptionOnMainAndBothControls": true,
+        "earlierMainLine": 3546,
+        "earlierCandidateLine": 3549,
+        "actual": "Auto-hidden launcher parent disables pointer events; canvas is underneath. Original Fusion HTML has the same parent class.",
+        "notAStuckPointerCapture": true,
+        "fusionSectionNotReached": true,
+        "nativeShortcutContinuationPending": false
+      },
+      "historicalClassification": "Not reproduced on unchanged main locally; neither pre-existence nor PR46 regression established. Original failure was CI Chromium156; local diagnostic Chromium145. Existing600ms selection-fixture fallback is disclosed separately. No manifest change or production fix selected.",
+      "ciMeasurement": {
+        "runId": 40130635514,
+        "exactOriginalWorkflowReproducedOnMain": true,
+        "mainRef": "2ac83da1fcc8879302bac06705fe5b869cec37ef",
+        "candidateRef": "162a11f57db2efaae7445a9f95f653bdbac4ca78",
+        "actual": {
+          "observedIn": "Exact original Fusion-to-Methyl switch on unchangedmain and PR46product/mainharness40130635514",
+          "mainLine": 4973,
+          "pr46Line": 4988,
+          "fusePreview": true,
+          "ancestorClass": "adaptiveMenu is-auto-hidden",
+          "buttonPointerEvents": "none",
+          "buttonPointHit": "canvas",
+          "stuckPointerCapture": false,
+          "source": "display-ui.css intentionally disables pointer events on auto-hidden launcher; helper checks leaf hidden/display and attempts trial click without revealing ancestor.",
+          "nativeContinuation": "Original failure retained, then existing / shortcut opens Build successfully.",
+          "classification": "Pre-existing harness launcher-readiness defect; not introduced by PR46 exporter change. Open/unfixed/not accepted."
+        },
+        "baseline": "tests/baselines/smoke-input-diagnostic.json"
+      },
+      "repairCandidate": "PR49 measured native-input/event-boundary harness repair; own new complete ordinary gate and scoped bypassed native-input diagnostic pending."
     }
   ]
 }

@@ -5,6 +5,7 @@ on:
     branches: [main, codex/app-js-decomposition]
     paths:
       - api/requirements.txt
+      - api/requirements-ci.lock
       - .github/workflows/ci.yml
       - .github/workflows/playwright-cache.yml
 
@@ -24,9 +25,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.15'
       - name: Install Python dependencies
-        run: python -m pip install --upgrade pip && pip install -r api/requirements.txt
+        run: python -m pip install --upgrade pip && pip install -r api/requirements-ci.lock
       - name: Resolve Playwright version
         id: playwright
         run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"

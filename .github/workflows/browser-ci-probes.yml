@@ -23,9 +23,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.15'
       - name: Install browser dependencies
-        run: pip install -r api/requirements.txt && python -m playwright install --with-deps chromium
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
       - name: Full suite with unbounded real-state wait
         env:
           VIBEMOL_CI_UNBOUNDED_PROBE: '1'
