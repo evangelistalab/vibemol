@@ -33,8 +33,7 @@ SNAP=r'''() => {
   if(e.id)return '#'+CSS.escape(e.id);
   if(e.hasAttribute('data-build-search-key'))return '[data-build-search-key='+JSON.stringify(e.getAttribute('data-build-search-key'))+']';
   if(e.hasAttribute('aria-label'))return '[aria-label='+JSON.stringify(e.getAttribute('aria-label'))+']';
-  const row=e.closest('[data-atom-index],[data-row-index]');
-  if(row&&e.hasAttribute('data-edit-field'))return '[data-atom-index='+JSON.stringify(row.getAttribute('data-atom-index'))+'] [data-edit-field='+JSON.stringify(e.getAttribute('data-edit-field'))+']';
+  if(e.hasAttribute('data-row-index')&&e.hasAttribute('data-edit-field'))return '[data-row-index='+JSON.stringify(e.getAttribute('data-row-index'))+'][data-edit-field='+JSON.stringify(e.getAttribute('data-edit-field'))+']';
   if(e.hasAttribute('data-metal-bonding-choice'))return '[data-metal-bonding-choice='+JSON.stringify(e.getAttribute('data-metal-bonding-choice'))+']';
   return null; // An unidentified control fails closed; never key on DOM position.
  };
@@ -50,9 +49,11 @@ SNAP=r'''() => {
   const hit=document.elementFromPoint(x,y),other=hit?.closest(selectors);
   const row={surface:label(owner),targetSelector:selector(target),targetText:target.textContent.trim().slice(0,120),target:target.id||target.getAttribute('aria-label')||target.getAttribute('data-coords-action')||target.tagName,rect:rect(target),center:{x,y},hit:hit?.id||hit?.className||null,hitSurface:other?label(other):null,ownsHit:!!hit&&(hit===target||target.contains(hit)),zIndex:getComputedStyle(owner).zIndex};
   row.selectorMatches=row.targetSelector ? owner.querySelectorAll(row.targetSelector).length : 0;
-  if(row.selectorMatches!==1)result.identityErrors.push({...row,attributes:Object.fromEntries([...target.attributes].map(a=>[a.name,a.value]))});
   result.targets.push(row);
-  if(!row.ownsHit&&other&&other!==owner&&!owner.contains(other)&&!other.contains(owner))result.collisions.push({...row,hitStack:document.elementsFromPoint(x,y).slice(0,8).map(e=>({id:e.id,tag:e.tagName,classes:e.className,zIndex:getComputedStyle(e).zIndex}))});
+  if(!row.ownsHit&&other&&other!==owner&&!owner.contains(other)&&!other.contains(owner)){
+   if(row.selectorMatches!==1)result.identityErrors.push({...row,attributes:Object.fromEntries([...target.attributes].map(a=>[a.name,a.value]))});
+   result.collisions.push({...row,hitStack:document.elementsFromPoint(x,y).slice(0,8).map(e=>({id:e.id,tag:e.tagName,classes:e.className,zIndex:getComputedStyle(e).zIndex}))});
+  }
  }
  return result;
 }'''
