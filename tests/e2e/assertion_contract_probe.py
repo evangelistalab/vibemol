@@ -20,8 +20,11 @@ def main():
                     page.wait_for_function('()=>false',timeout=budget_ms('false-presented-control'))
             except TimeoutError:
                 false_rejected=True
-            assert false_rejected and negative['outcome']=='failed' and negative['timeoutMs']==100
-            assert negative['browser']['observerError'] is None,negative
+            negative_comparands=dict(actual=dict(falseRejected=false_rejected,outcome=negative['outcome'],
+                timeoutMs=negative['timeoutMs'],observerError=negative.get('browser',{}).get('observerError','missing')),
+                expected=dict(falseRejected=True,outcome='failed',timeoutMs=100,observerError=None))
+            print('[stall-observer-contract] '+json.dumps(negative_comparands),flush=True)
+            assert negative_comparands['actual']==negative_comparands['expected'],negative_comparands
             page.evaluate('''() => {
                 window.model=[];window.pasted=false;
                 requestAnimationFrame=()=>{throw new Error('Contract must not wait for RAF')};
@@ -41,8 +44,10 @@ def main():
             with state_after_input(page,'()=>model.slice()',[0],label='contract native') as check:
                 page.mouse.click(30,30)
                 native=check()
-            assert native['stalls']['hadLongTaskOverlap'] is True,native
-            assert native['stalls']['longTaskOverlapMs']>0,native
+            stall_comparands=dict(actual=dict(hadOverlap=native['stalls']['hadLongTaskOverlap'],
+                overlapMs=native['stalls']['longTaskOverlapMs']),expected=dict(hadOverlap=True,overlapMs='>0'))
+            print('[stall-observer-contract] '+json.dumps(stall_comparands),flush=True)
+            assert stall_comparands['actual']['hadOverlap'] is True and stall_comparands['actual']['overlapMs']>0,stall_comparands
             missing_failed=False
             try:
                 with state_after_input(page,'()=>model.slice()',[0],label='contract missing native') as check:

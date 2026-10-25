@@ -62,7 +62,9 @@
         "construction": "8exporter consumer bindings/0newapp bindings;passed",
         "goldens": "102twice/exactrepeat",
         "identity": "52slots/eightcontexts/allminima",
-        "units": "450JS/80Python;WebKitpassed"
+        "units": "450JS/80Python;WebKitpassed",
+        "postMergeBaselineRun": 40157081954,
+        "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
       }
     },
     {
@@ -149,7 +151,9 @@
         "construction": "8exporter consumer bindings/0newapp bindings;passed",
         "goldens": "102twice/exactrepeat",
         "identity": "52slots/eightcontexts/allminima",
-        "units": "450JS/80Python;WebKitpassed"
+        "units": "450JS/80Python;WebKitpassed",
+        "postMergeBaselineRun": 40157081954,
+        "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
       }
     }
   ],

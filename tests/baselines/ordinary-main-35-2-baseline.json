@@ -1,0 +1,347 @@
+{
+  "runId": 40157081954,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/40157081954",
+  "attempt": 1,
+  "event": {
+    "conclusion": "success",
+    "event": "push",
+    "head_branch": "main",
+    "head_sha": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+    "id": 40157081954,
+    "pull_requests": [],
+    "run_attempt": 1,
+    "status": "completed"
+  },
+  "role": "First ordinary push run on merged main for35/2/37; no PR merge ref, no retry",
+  "main": "cc38c87ff380e4cfe1f2cfe7436af4bcdcb7207d",
+  "tree": "81f9b453ab35cc5f0a1894ad133c280154a00597",
+  "completeConjunction": true,
+  "failedWorkflowComposition": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37,
+    "allExecutedOnce": true,
+    "actualFailingWorkflows": [
+      [
+        "tests/e2e/axis_gizmo.py",
+        "escape-canvas-focus"
+      ],
+      [
+        "tests/e2e/mode_consistency.py",
+        "coordinates-delete-selection-card"
+      ]
+    ],
+    "issue11Workflow": {
+      "status": "passed"
+    },
+    "vibrationReached": true
+  },
+  "characterization": {
+    "captures": 102,
+    "runs": 2,
+    "exactSerializedRepeat": true,
+    "identityContexts": 8,
+    "composition": {
+      "workbench": {
+        "live": 47,
+        "knownAbsent": 5
+      },
+      "legacy": {
+        "live": 48,
+        "knownAbsent": 4
+      }
+    },
+    "allMinima": true,
+    "counts": [
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5356,
+          "session restore": 1,
+          "panel transition": 1127
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5462,
+          "session restore": 1,
+          "panel transition": 1112
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3284,
+          "session restore": 1,
+          "panel transition": 848
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 1,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3101,
+          "session restore": 1,
+          "panel transition": 781
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5352,
+          "session restore": 1,
+          "panel transition": 1127
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "workbench",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 47,
+          "knownAbsent": 5
+        },
+        "checksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 408,
+          "DOM replacement": 5460,
+          "session restore": 1,
+          "panel transition": 1097
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 39,
+          "mode switch": 5,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 4,
+        "observedModeChecks": 404
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "light",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 2989,
+          "session restore": 1,
+          "panel transition": 763
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      },
+      {
+        "run": 2,
+        "launch": "legacy",
+        "theme": "dark",
+        "nodeCount": 52,
+        "composition": {
+          "live": 48,
+          "knownAbsent": 4
+        },
+        "checksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 9,
+          "DOM replacement": 3397,
+          "session restore": 1,
+          "panel transition": 822
+        },
+        "minimumChecksByReason": {
+          "presented checkpoint": 32,
+          "mode switch": 4,
+          "panel transition": 2,
+          "DOM replacement": 1,
+          "session restore": 1
+        },
+        "explicitModeChecks": 3,
+        "observedModeChecks": 6
+      }
+    ]
+  },
+  "construction": {
+    "status": "passed",
+    "newAppBindings": 0,
+    "newModuleLets": 0,
+    "newControllerDependencies": 0,
+    "consumerBindings": {
+      "assets/app/js/trajectory-video.js": 8
+    }
+  },
+  "checks": {
+    "js": 450,
+    "python": 80,
+    "WebKit": "passed"
+  },
+  "exporterCompletion": [
+    {
+      "prefix": "trajectory",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    },
+    {
+      "prefix": "vibration",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    }
+  ],
+  "activationReadbacks": 58,
+  "looks": {
+    "looksSeconds": 1088.79,
+    "looksMinutes": 18.1465,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "timing": {
+    "seconds": 1927.0,
+    "minutes": 32.11666666666667,
+    "cache": {
+      "restoreHits": 8,
+      "restoreMisses": 0,
+      "hitJobs": [
+        "Browser suites (balanced-1)",
+        "Browser suites (balanced-2)",
+        "Browser suites (balanced-3)",
+        "Browser suites (looks)",
+        "Browser suites (smoke)",
+        "Characterization (1)",
+        "Characterization (2)",
+        "WebKit Properties interactions"
+      ],
+      "missJobs": [],
+      "playwrightVersions": [
+        "1.64.1"
+      ]
+    }
+  },
+  "archive": {
+    "source": "main-40157081954",
+    "archive": "main-40157081954-immutable.tar.gz",
+    "bytes": 88079892,
+    "sha256": "4c8dc7b7a4a72ed765c7eeef4b87d70f0958687292746db64151c90112ca9de8",
+    "allFilesReopened": 472
+  },
+  "independentVerification": "Both shipped joins rerun with exact source/tree/run identity; actual failing raw workflows and every exporter state comparand independently read."
+}
