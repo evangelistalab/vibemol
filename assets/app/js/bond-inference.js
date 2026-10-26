@@ -44,8 +44,13 @@
   }
 
   function resolveAtomicNumber(atomOrZ) {
-    if (atomOrZ && typeof atomOrZ === 'object') return Number(atomOrZ.Z) | 0;
-    return Number(atomOrZ) | 0;
+    const z = atomOrZ && typeof atomOrZ === 'object' ? atomOrZ.Z : atomOrZ;
+    getElementSymbol(z); // Reject missing identity/metadata before any coercion.
+    return Number(z);
+  }
+
+  function validateBondAtomicNumbers(atoms) {
+    if (Array.isArray(atoms)) for (const atom of atoms) if (atom) resolveAtomicNumber(atom);
   }
 
   function countsTowardAtomValence(atomOrZ, otherAtomOrZ) {
@@ -57,11 +62,12 @@
 
   /**
    * Look up the covalent radius for an atomic number in angstroms.
-   * Falls back to a generic radius when element metadata is unavailable.
+   * Identity and metadata are required; a known element may use the radius fallback.
    * @param {number} z
    * @returns {number}
    */
   function getCovalentRadiusAngstrom(z) {
+    z = resolveAtomicNumber(z);
     return (global.ATOM_Z_TO_DATA && global.ATOM_Z_TO_DATA[z] && global.ATOM_Z_TO_DATA[z].radius_covalent) || 0.70;
   }
 
@@ -71,6 +77,7 @@
    * @returns {boolean}
    */
   function isMonovalentMainGroupAtomicNumber(z) {
+    z = resolveAtomicNumber(z);
     return z === 1 || z === 9 || z === 17 || z === 35 || z === 53;
   }
 
@@ -81,6 +88,7 @@
    * @returns {number[]}
    */
   function getAllowedMainGroupValences(z) {
+    z = resolveAtomicNumber(z);
     switch (z | 0) {
       case 1: return [1];
       case 5: return [3];
@@ -121,6 +129,7 @@
    * @returns {boolean}
    */
   function isAutoBondSupportedAtomicNumber(z) {
+    z = resolveAtomicNumber(z);
     switch (z | 0) {
       case 1:
       case 5:
@@ -147,6 +156,7 @@
    * @returns {number}
    */
   function getElementMaxCoordination(z) {
+    z = resolveAtomicNumber(z);
     switch (z | 0) {
       case 1: return 1;
       case 5: return 4;
@@ -320,8 +330,8 @@
    * @returns {number}
    */
   function getPairMaxBondOrder(zi, zj) {
-    const a = zi | 0;
-    const b = zj | 0;
+    const a = resolveAtomicNumber(zi);
+    const b = resolveAtomicNumber(zj);
     if (isTransitionMetalAtomicNumber(a) || isTransitionMetalAtomicNumber(b)) return 1;
     if (isLanthanideOrActinideAtomicNumber(a) || isLanthanideOrActinideAtomicNumber(b)) return 1;
     if (isMonovalentMainGroupAtomicNumber(a) || isMonovalentMainGroupAtomicNumber(b)) return 1;
@@ -373,6 +383,8 @@
    * @returns {boolean}
    */
   function hasBondCandidates(atomPositions) {
+    // Preserve this query's lazy early exit. Each visited atom is validated by
+    // isMetalAtomicNumber; full inference validates its whole input up front.
     const count = Array.isArray(atomPositions) ? atomPositions.length : 0;
     for (let i = 0; i < count; i++) {
       const atomI = atomPositions[i];
@@ -402,6 +414,7 @@
    * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
    */
   function collectRawBondCandidates(atomPositions, options = {}) {
+    validateBondAtomicNumbers(atomPositions);
     const edges = [];
     const n = Array.isArray(atomPositions) ? atomPositions.length : 0;
     const tolerance = Number.isFinite(options.tolerance) ? Number(options.tolerance) : AUTO_BOND_TOLERANCE;
@@ -425,6 +438,7 @@
    * @returns {Array<{i:number,j:number,len:number,singleRef:number,cutoff:number,ratio:number,order:number,maxOrder:number}>}
    */
   function acceptBondCandidatesByDistanceRank(atomPositions, candidates, options = {}) {
+    validateBondAtomicNumbers(atomPositions);
     if (!Array.isArray(atomPositions) || !Array.isArray(candidates) || !candidates.length) return [];
     const sorted = candidates.slice().sort((left, right) => {
       const ratioDelta = (Number(left && left.ratio) || 0) - (Number(right && right.ratio) || 0);
@@ -539,6 +553,7 @@
    * @deprecated App code should call perceiveBondConnectivity(...) directly.
    */
   function inferBondOrders(atomPositions, edges) {
+    validateBondAtomicNumbers(atomPositions);
     if (!Array.isArray(atomPositions) || !Array.isArray(edges)) return;
     const atomCount = atomPositions.length | 0;
     const valence = new Array(atomCount).fill(0);
@@ -839,6 +854,7 @@
    * @returns {Array<{atoms:number[],center:THREE.Vector3,normal:THREE.Vector3,radius:number}>}
    */
   function inferAromaticSixRings(atomPositions, edges) {
+    validateBondAtomicNumbers(atomPositions);
     if (!Array.isArray(edges) || !edges.length) return [];
     const n = atomPositions.length | 0;
     const carbonAdj = Array.from({ length: n }, () => []);

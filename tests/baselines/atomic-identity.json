@@ -1,0 +1,481 @@
+{
+  "status": "fix candidate; complete first automatic gate required",
+  "issue": 5,
+  "scope": "Identity branch only; clamp-policy findings remain open",
+  "sourceAudit": {
+    "status": "passed",
+    "base": "a8ae88d34f6729bbb7f35c44417ea38102aff6e1",
+    "inputs": [
+      {
+        "file": "assets/app/js/element-utils.js",
+        "function": "requireAtomicNumber",
+        "parameters": [
+          "value"
+        ],
+        "closure": [],
+        "totalInputs": 1
+      },
+      {
+        "file": "assets/app/js/element-utils.js",
+        "function": "getElementSymbolRaw",
+        "parameters": [
+          "z",
+          "table"
+        ],
+        "closure": [
+          "requireAtomicNumber"
+        ],
+        "totalInputs": 3
+      },
+      {
+        "file": "assets/app/js/parsers.js",
+        "function": "requireParsedAtomicNumber",
+        "parameters": [
+          "z",
+          "label"
+        ],
+        "closure": [],
+        "totalInputs": 2
+      },
+      {
+        "file": "assets/app/js/structure.js",
+        "function": "requireStructureAtomicNumber",
+        "parameters": [
+          "value"
+        ],
+        "closure": [],
+        "totalInputs": 1
+      },
+      {
+        "file": "assets/app/js/bond-inference.js",
+        "function": "resolveAtomicNumber",
+        "parameters": [
+          "atomOrZ"
+        ],
+        "closure": [
+          "getElementSymbol"
+        ],
+        "totalInputs": 2
+      },
+      {
+        "file": "assets/app/js/bond-inference.js",
+        "function": "validateBondAtomicNumbers",
+        "parameters": [
+          "atoms"
+        ],
+        "closure": [
+          "resolveAtomicNumber"
+        ],
+        "totalInputs": 2
+      },
+      {
+        "file": "assets/app/js/geometry-inference.js",
+        "function": "requireGeometryAtomicNumber",
+        "parameters": [
+          "value"
+        ],
+        "closure": [],
+        "totalInputs": 1
+      }
+    ],
+    "maximumNewOrChangedHelperInputs": 3,
+    "exports": {
+      "VibeMolElementUtils": [
+        "clamp",
+        "clampOrZero",
+        "clampWithUpperPriority",
+        "getElementSymbol",
+        "getElementSymbolByAtomicNumber",
+        "getElementSymbolRaw",
+        "isLanthanideOrActinideAtomicNumber",
+        "isTransitionMetalAtomicNumber"
+      ],
+      "VibeMolParsers": [
+        "arrayMinMax",
+        "parseCube",
+        "parseMolden",
+        "parsePsi4Geometry",
+        "parseTwoComponentCube",
+        "parseXYZ"
+      ],
+      "VibeMolStructureCore": [
+        "absorbObservedBuilderId",
+        "allocateBuilderAtomId",
+        "allocateBuilderGroupId",
+        "allocateBuilderOpId",
+        "appendVolumeSelectionClipboard",
+        "bondSnapshotsEqual",
+        "buildVolumeBondId",
+        "buildVolumeSelectionClipboard",
+        "cloneBondSnapshot",
+        "cloneJsonLike",
+        "cloneJsonStructuredData",
+        "cloneStructuredData",
+        "cloneVolumeAnnotationsSnapshot",
+        "createVolumeBondNormalizationContext",
+        "ensureAtomId",
+        "ensureVolumeAtomIds",
+        "ensureVolumeSchema",
+        "findVolumeBondRecordIndex",
+        "getAtomBuilderMeta",
+        "getAtomCoordinationMeta",
+        "getAtomMetalBondingMeta",
+        "getBuilderAnnotationsMap",
+        "getCoordinationAnnotationsMap",
+        "getHydrogenBondError",
+        "getMetalBondingAnnotationsMap",
+        "isPlainObject",
+        "migrateLegacyBuilderAnnotations",
+        "normalizeEditAddBondOrder",
+        "normalizeMetalBondingMode",
+        "normalizeVolumeAtom",
+        "normalizeVolumeBondKind",
+        "normalizeVolumeBondOrigin",
+        "normalizeVolumeBondRecord",
+        "normalizeVolumeBondStyle",
+        "normalizeVolumeBonds",
+        "pruneVolumeAtomAnnotations",
+        "rehydrateClonedVolume",
+        "removeVolumeBond",
+        "resolveVolumeAtomId",
+        "setAtomBuilderMeta",
+        "setAtomCoordinationMeta",
+        "setAtomMetalBondingMeta",
+        "upsertVolumeBond"
+      ],
+      "VibeMolBondInference": [
+        "AUTO_BOND_MIN_DISTANCE",
+        "AUTO_BOND_TOLERANCE",
+        "MAX_METAL_COORDINATION",
+        "METAL_BOND_RADIUS",
+        "acceptBondCandidatesByDistanceRank",
+        "buildBondAdjacency",
+        "chooseTargetValence",
+        "classifyBondCleanupDiff",
+        "collectBondCandidates",
+        "collectRawBondCandidates",
+        "countsTowardAtomValence",
+        "enforceAlternatingSixRingBondOrders",
+        "findSimpleCyclesOfSize",
+        "getAllowedMainGroupValences",
+        "getCovalentRadiusAngstrom",
+        "getElementMaxCoordination",
+        "getMetalBondRadiusAngstrom",
+        "getPairMaxBondOrder",
+        "getUndirectedPairKey",
+        "hasBondCandidates",
+        "inferAromaticSixRings",
+        "inferBondOrders",
+        "isAutoBondSupportedAtomicNumber",
+        "isLanthanideOrActinideAtomicNumber",
+        "isMetalAtomicNumber",
+        "isMonovalentMainGroupAtomicNumber",
+        "isTransitionMetalAtomicNumber",
+        "normalizeMetalBondMode",
+        "perceiveBondConnectivity"
+      ],
+      "VibeMolCoordination": [
+        "GeometryId",
+        "getCoordinationProfile",
+        "getGeometry",
+        "isCoordinationChoiceCompatible",
+        "listHaloCoordinationChoices",
+        "resolveAutoCoordinationChoice"
+      ],
+      "VibeMolGeometryInference": [
+        "VSEPR_TABLE",
+        "baseValence",
+        "inferAllAtomGeometries",
+        "inferAtomGeometry",
+        "inferGeometryFromState",
+        "period",
+        "resolveEffectiveValence",
+        "valenceElectrons"
+      ],
+      "VibeMolSessionFormat": [
+        "KIND",
+        "MAX_BYTES",
+        "VERSION",
+        "decode",
+        "encode",
+        "validate",
+        "validateVolume"
+      ]
+    },
+    "allPublicNamespaceKeysUnchanged": true,
+    "unchangedFiles": [
+      "assets/app/js/app.js",
+      "assets/app/js/periodic-table.js",
+      "assets/app/js/qa-characterize.js",
+      "tests/baselines/characterize.json.gz",
+      "tests/baselines/color-contrast.json",
+      "index.html",
+      "tests/e2e/assertion_contract.py",
+      "tests/e2e/stall_diagnostics.js"
+    ],
+    "sourceHashes": {
+      "assets/app/js/element-utils.js": "47de85b01bc0a03ad9288cc89e339b3ee27ba71a99ca5d45d802c99edf83501e",
+      "assets/app/js/parsers.js": "ee81b15b04c60cab8b81c195a129ba97da6d773016a3a4a27510f8644ab7170d",
+      "assets/app/js/structure.js": "604e9d51e7b95f40f8a67f9c1ca70ac11fdcbf58769d0746c234e6ca9fc90bba",
+      "assets/app/js/bond-inference.js": "8b5d118c142e128799a31069430a0142b64e2acd1e21d514f9e7443deaaa38c2",
+      "assets/app/js/coordination.js": "ccc8f0f56191fd653bf9ce85552dcf5bb8605c87dd24d2969eaf2ac09fa11227",
+      "assets/app/js/geometry-inference.js": "7b69334f143a0eea8d1dd7c0df41bea6d8a5b78a91f2cc57f7b7854d6dbdca2a",
+      "assets/app/js/session-format.js": "3478febdf576ad9a335c3d5906f087aee1987180e10a27cacd09b5d52f9d50dd"
+    },
+    "catalog": {
+      "entries": 101,
+      "minimum": 0,
+      "maximum": 100,
+      "dummy": "X"
+    },
+    "appLetDeclarationLines": 250,
+    "newAppBindings": 0,
+    "newModuleLets": 0,
+    "newControllerDependencies": 0
+  },
+  "construction": {
+    "status": "passed",
+    "appBindings": 0,
+    "consumerBindings": {
+      "assets/app/js/element-utils.js": 5,
+      "assets/app/js/parsers.js": 4,
+      "assets/app/js/structure.js": 4,
+      "assets/app/js/bond-inference.js": 3,
+      "assets/app/js/coordination.js": 1,
+      "assets/app/js/geometry-inference.js": 4,
+      "assets/app/js/session-format.js": 0
+    }
+  },
+  "before": {
+    "preFix": true,
+    "results": [
+      {
+        "ref": "v0.9.5-pre-refactor",
+        "hashes": {
+          "assets/vendor/js/atomic-data.js": "f43943b814ebc738b9cb8065b79f80e62aecab38857caefa364e88cba758d4f5",
+          "assets/app/js/parsers.js": "419379763591eeb4e672ed601130d8bfa8735733cc2493543376e334f45ed33b",
+          "assets/app/js/structure.js": "37013e81a6d9d45d230af1f895c87e129910d2fdba5e36c7579e837e5eb66d2f",
+          "assets/app/js/bond-inference.js": "5f20baeae9895acc03ba8d119a213dfa3dbd76a5e7be8e46a1bd0c9cb4fb4663"
+        },
+        "cases": [
+          {
+            "requested": 0,
+            "parsed": 0,
+            "normalized": 0,
+            "radius": 0.18,
+            "metal": false,
+            "maxCoordination": 0
+          },
+          {
+            "requested": 6,
+            "parsed": 6,
+            "normalized": 6,
+            "radius": 0.75,
+            "metal": false,
+            "maxCoordination": 4
+          },
+          {
+            "requested": 6.9,
+            "parsed": 6.9,
+            "normalized": 6,
+            "radius": 0.7,
+            "metal": false,
+            "maxCoordination": 4
+          },
+          {
+            "requested": 119,
+            "parsed": 119,
+            "normalized": 119,
+            "radius": 0.7,
+            "metal": false,
+            "maxCoordination": 0
+          }
+        ]
+      },
+      {
+        "ref": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+        "hashes": {
+          "assets/vendor/js/atomic-data.js": "f43943b814ebc738b9cb8065b79f80e62aecab38857caefa364e88cba758d4f5",
+          "assets/app/js/element-utils.js": "1f989a1b2ae58bfd8421eb9ed3250d37b1a401898fb5cb638d7547d05ee71bc0",
+          "assets/app/js/parsers.js": "419379763591eeb4e672ed601130d8bfa8735733cc2493543376e334f45ed33b",
+          "assets/app/js/structure.js": "37013e81a6d9d45d230af1f895c87e129910d2fdba5e36c7579e837e5eb66d2f",
+          "assets/app/js/bond-inference.js": "c42cf7d4b34333406fb00ac95d0a7c47b8f8f401fd130c4ec92731c72356489e"
+        },
+        "cases": [
+          {
+            "requested": 0,
+            "parsed": 0,
+            "normalized": 0,
+            "radius": 0.18,
+            "metal": false,
+            "maxCoordination": 0
+          },
+          {
+            "requested": 6,
+            "parsed": 6,
+            "normalized": 6,
+            "radius": 0.75,
+            "metal": false,
+            "maxCoordination": 4
+          },
+          {
+            "requested": 6.9,
+            "parsed": 6.9,
+            "normalized": 6,
+            "radius": 0.7,
+            "metal": false,
+            "maxCoordination": 4
+          },
+          {
+            "requested": 119,
+            "parsed": 119,
+            "normalized": 119,
+            "radius": 0.7,
+            "metal": false,
+            "maxCoordination": 0
+          }
+        ]
+      }
+    ]
+  },
+  "sessionBoundaryBefore": {
+    "results": [
+      {
+        "ref": "v0.9.5-pre-refactor",
+        "catalogEntries": 101,
+        "catalogMinimum": 0,
+        "catalogMaximum": 100,
+        "rows": [
+          {
+            "Z": 0,
+            "metadata": true,
+            "accepted": false,
+            "error": "Invalid session: identity census: invalid atom."
+          },
+          {
+            "Z": 6,
+            "metadata": true,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 101,
+            "metadata": false,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 118,
+            "metadata": false,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 119,
+            "metadata": false,
+            "accepted": false,
+            "error": "Invalid session: identity census: invalid atom."
+          }
+        ]
+      },
+      {
+        "ref": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+        "catalogEntries": 101,
+        "catalogMinimum": 0,
+        "catalogMaximum": 100,
+        "rows": [
+          {
+            "Z": 0,
+            "metadata": true,
+            "accepted": false,
+            "error": "Invalid session: identity census: invalid atom."
+          },
+          {
+            "Z": 6,
+            "metadata": true,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 101,
+            "metadata": false,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 118,
+            "metadata": false,
+            "accepted": true,
+            "error": null
+          },
+          {
+            "Z": 119,
+            "metadata": false,
+            "accepted": false,
+            "error": "Invalid session: identity census: invalid atom."
+          }
+        ]
+      }
+    ]
+  },
+  "native": {
+    "passed": true,
+    "rejectedCases": 24,
+    "allComparandsMatched": true,
+    "scenePreservedInEveryRejectedAppendAndReplace": true,
+    "dummy": {
+      "actual": {
+        "ok": true,
+        "Z": 0
+      },
+      "expected": {
+        "ok": true,
+        "Z": 0
+      }
+    },
+    "session": {
+      "actual": {
+        "Z": 0
+      },
+      "expected": {
+        "Z": 0
+      },
+      "restoreResult": {
+        "ok": true,
+        "name": "dummy.xyz",
+        "sceneCount": 1,
+        "sourceCount": 1
+      }
+    }
+  },
+  "unitCounts": {
+    "js": 483,
+    "python": 144
+  },
+  "catalogPolicy": "Formats, structure and session accept the actual bundled0..100 domain, including X/Dummy. Pure periodic/classification arithmetic supports physical0..118 without metadata; topology/profile operations require metadata. No unknown identity gets generic chemistry.",
+  "numericStringPolicy": "Structure accepts nonempty numeric strings that resolve to a supported integer. Molden preserves integer-valued decimal/exponent/FortranD forms and its zero/unspecified symbol fallback; fractional/unknown supplied values fail.",
+  "namespacePolicy": "No added/removed public keys. Display-placeholder compatibility helpers remain; chemistry uses strict canonical symbols.",
+  "fixtureCorrection": "Auto-hydrogen radius fixtures omitted symbols; complete their existing metadata records without changing any scientific expected value.",
+  "historicalParityFixturesUnmodified": true,
+  "ordinaryExpected": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37
+  },
+  "acceptedSetIntentionallyEmpty": true,
+  "identity": {
+    "slots": 48,
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 1
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 0
+    },
+    "allEightContextsAndMinimaRequired": true
+  },
+  "goldensUnchanged": true,
+  "trackedLetLines": 250,
+  "periodicUsedInputs": 11
+}

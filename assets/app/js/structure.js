@@ -5,6 +5,18 @@
   let nextBuilderGroupId = 1;
   let nextBuilderOpId = 1;
 
+  // Validate before allocating IDs, migrating annotations or invoking inference.
+  // Numeric strings are part of the existing structure import contract; missing,
+  // fractional and unsupported identities must not become a different element.
+  function requireStructureAtomicNumber(value) {
+    const z = typeof value === 'number' ? value
+      : typeof value === 'string' && value.trim() ? Number(value) : NaN;
+    if (!Number.isInteger(z) || z < 0 || z > 100) {
+      throw new RangeError(`Unsupported atomic number: ${String(value)} (expected an integer from 0 to 100 in the bundled catalog).`);
+    }
+    return z;
+  }
+
   /**
    * Deep-clone JSON-compatible data.
    * @param {*} value
@@ -245,9 +257,10 @@
    */
   function normalizeVolumeAtom(raw) {
     const atom = (raw && typeof raw === 'object') ? raw : {};
+    const Z = requireStructureAtomicNumber(atom.Z);
     const out = {
       id: String(atom.id || '').trim() || allocateBuilderAtomId(),
-      Z: Number(atom.Z) | 0,
+      Z,
       x: Number(atom.x) || 0,
       y: Number(atom.y) || 0,
       z: Number(atom.z) || 0,
@@ -646,6 +659,7 @@
   function ensureVolumeSchema(vol, options = {}) {
     if (!vol || typeof vol !== 'object') return vol;
     if (Array.isArray(vol.atoms)) {
+      for (const atom of vol.atoms) requireStructureAtomicNumber(atom && atom.Z);
       migrateLegacyBuilderAnnotations(vol);
       vol.atoms = vol.atoms.map((atom) => normalizeVolumeAtom(atom));
       vol.natoms = vol.atoms.length;
@@ -925,8 +939,9 @@
    * @returns {{atomIndices:Array<number>,atomIds:Array<string>,bondCount:number}}
    */
   function appendVolumeSelectionClipboard(vol, payload, options = {}) {
-    ensureVolumeSchema(vol, { inferMissingBonds: false });
     const entries = Array.isArray(payload && payload.atoms) ? payload.atoms : [];
+    for (const entry of entries) requireStructureAtomicNumber(entry && entry.atom && entry.atom.Z);
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
     if (!entries.length) return { atomIndices: [], atomIds: [], bondCount: 0 };
     const mapAtom = typeof options.mapAtom === 'function' ? options.mapAtom : null;
     const groupIdRemap = new Map();
