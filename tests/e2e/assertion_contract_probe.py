@@ -81,15 +81,16 @@ def main():
             page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
               model=[1];setTimeout(()=>{model=[0]},0);
             })''')
-            wrong_rejected=False
+            wrong_rejected=False;wrong_receipt=None
             try:
                 with state_after_input(page,'()=>model.slice()',[0],label='budget wrong completion') as check:
                     page.mouse.click(30,30)
                     check()
-            except AssertionError:
-                wrong_rejected=True
+            except AssertionError as error:
+                wrong_rejected=True;wrong_receipt=error.args[0]
+            assert isinstance(wrong_receipt,dict) and wrong_receipt['actual']==[1] and wrong_receipt['passed']is False,wrong_receipt
             assert wrong_rejected,'A later correct state must never repair wrong native completion'
-            result['budgetControls']=dict(stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected)
+            result['budgetControls']=dict(stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected,wrongNativeReceipt=wrong_receipt)
             # The native-input control deliberately forbids RAF. Retire it before
             # testing a distinct contract that explicitly requires presentation.
             page.close()
