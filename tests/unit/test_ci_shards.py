@@ -199,19 +199,15 @@ class CharacterizationJoinTests(unittest.TestCase):
     @staticmethod
     def contexts():
         result = []
-        absent = {
-            'editAtomsMenuEl': {'id': 'editAtomsMenu', 'issue': 15, 'cached': 'null'},
-            'editAtomsMenuBodyEl': {'id': 'editAtomsMenuBody', 'issue': 15, 'cached': 'null'},
-            'editAtomsMenuCurrentEl': {'id': 'editAtomsMenuCurrent', 'issue': 15, 'cached': 'null'},
-            'editSelectionFragmentCuePopoverEl': {'id': 'editSelectionFragmentCuePopover', 'issue': 15, 'cached': 'null'}}
+        absent = {}
         for launch in ('workbench', 'legacy'):
             modes = ['Display', 'Measure', 'Edit'] + (['Calculations'] if launch == 'workbench' else [])
             panels = [str(i) for i in range(17 if launch == 'workbench' else 14)]
             known = copy.deepcopy(absent)
             if launch == 'workbench':
-                known['elementColorBtn'] = {'id': 'elementColorBtn', 'issue': 14, 'cached': 'detached'}
+                known['elementColorBtn'] = {'id': 'elementColorBtn', 'issue': 14, 'cached': 'null'}
             for theme in ('light', 'dark'):
-                identity = {'supported': True, 'nodeCount': 52, 'composition': {'live': 52-len(known), 'knownAbsent': len(known)},
+                identity = {'supported': True, 'nodeCount': 48, 'composition': {'live': 48-len(known), 'knownAbsent': len(known)},
                     'knownAbsent': known, 'failures': [], 'checks': {'presented checkpoint': 39 if launch == 'workbench' else 32,
                     'mode switch': len(modes)+1, 'DOM replacement': 1, 'session restore': 1, 'panel transition: panel': 2}}
                 result.append({'launch': launch, 'theme': theme, 'modes': modes, 'panelOpenClosePairs': panels,
@@ -305,7 +301,7 @@ class CharacterizationJoinTests(unittest.TestCase):
     def test_missing_observer_and_unknown_absence_reject_identity_sweep(self):
         for mutate, message in (
             (lambda c: c['identity']['checks'].update({'mode switch': len(c['modes'])}), 'mode switch:'),
-            (lambda c: c['identity']['knownAbsent']['editAtomsMenuEl'].update(issue=999), 'issue/ID/disposition'),
+            (lambda c: c['identity']['knownAbsent']['elementColorBtn'].update(issue=999), 'issue/ID/disposition'),
         ):
             contexts = self.contexts()
             mutate(contexts[0])

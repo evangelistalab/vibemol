@@ -1,7 +1,7 @@
 {
   "scope": "Authorized14 Workbench-only and15 null-slot cleanup; legacy retained",
   "status": "candidate; complete first automatic CI required",
-  "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+  "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
   "removedSlots": [
     "editAtomsMenuEl",
     "editAtomsMenuBodyEl",
@@ -74,5 +74,41 @@
       32
     ],
     "otherMinimaUnchanged": true
-  }
+  },
+  "sourceAudit": {
+    "status": "passed",
+    "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+    "wholeAppASTExactAfterOnlyNamedRetirements": true,
+    "counts": {
+      "slotProperties": 16,
+      "timer": 1,
+      "legacyQuery": 1,
+      "removedCalls": 18,
+      "nullListener": 1,
+      "function:positionEditAtomsMenu": 1,
+      "function:updateEditAtomsMenuUi": 1,
+      "function:hideSelectionFragmentCuePopover": 1,
+      "function:showSelectionFragmentCuePopover": 1,
+      "function:positionSelectionFragmentCuePopover": 1,
+      "absenceDisposition": 1
+    },
+    "newAppBindings": [],
+    "newControllerDependencies": 0,
+    "newModuleLets": 0,
+    "trackedLetLines": {
+      "before": 251,
+      "after": 250
+    },
+    "actualLetBindings": {
+      "before": 264,
+      "after": 263
+    },
+    "livePaneOwnersByteExact": {
+      "restoreBuildPopoverPanes": "a4f79d70fe432806e1af588988e2d99bac3977e0ffc7fb05b90eaa8fde1cd02c",
+      "syncBuildPopoverPanes": "4295cbff3c35b6a31d9357fc819e8b0f21565ac3cf78f152cf1f61e0b71b0909"
+    },
+    "periodicSourceByteExact": true,
+    "appSha256": "ec90d0ca7019d8bd714943f511a797ab604f0e230c99944c049a3f8672d058e6"
+  },
+  "sourceAuditRole": "Independent whole-app AST normalization of the explicitly named removals; all live pane owner bodies and periodic source byte-exact"
 }
