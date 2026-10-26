@@ -979,10 +979,11 @@ def synchronized_trajectories(page, dialogs):
 
 
 def main():
+    from atomic_identity import run as atomic_identity
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (scene_creation, molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (atomic_identity, scene_creation, molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, orbital_group_appearance, molden_group_appearance,
                         molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})

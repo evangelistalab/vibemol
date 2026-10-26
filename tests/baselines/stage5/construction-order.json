@@ -125,6 +125,21 @@
         "elementColorBtn"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Maintenance5 atomic identity validation before coercion and inference",
+      "before": "a8ae88d34f6729bbb7f35c44417ea38102aff6e1",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/element-utils.js",
+        "assets/app/js/parsers.js",
+        "assets/app/js/structure.js",
+        "assets/app/js/bond-inference.js",
+        "assets/app/js/coordination.js",
+        "assets/app/js/geometry-inference.js",
+        "assets/app/js/session-format.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

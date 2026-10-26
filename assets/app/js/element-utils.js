@@ -1,8 +1,20 @@
 (function (global) {
   'use strict';
 
-  // Keep the legacy symbol policies distinct: UI labels trim strings, chemistry
-  // profiles coerce atomic numbers/symbols, and bond inference reads raw symbols.
+  // Display placeholders remain available; chemistry must reject unknown identity.
+  // Atomic-number validity includes X/Dummy and physical elements through118.
+  // Metadata-dependent chemistry additionally requires a real table entry. The
+  // bundled table currently ends at100; parser/structure guards enforce that
+  // supported domain, with an explicit catalog-census tripwire.
+  function requireAtomicNumber(value) {
+    const z = typeof value === 'number' ? value
+      : typeof value === 'string' && value.trim() ? Number(value) : NaN;
+    if (!Number.isInteger(z) || z < 0 || z > 118) {
+      throw new RangeError(`Unsupported atomic number: ${String(value)} (expected an integer from 0 to 118).`);
+    }
+    return z;
+  }
+
   function getElementSymbol(z, table) {
     const info = table && table[z];
     if (info && typeof info.symbol === 'string' && info.symbol.trim()) return info.symbol.trim();
@@ -15,11 +27,16 @@
   }
 
   function getElementSymbolRaw(z, table) {
-    return (table && table[z] && table[z].symbol) || '';
+    const n = requireAtomicNumber(z);
+    const symbol = table && table[n] && table[n].symbol;
+    if (typeof symbol !== 'string' || !symbol.trim()) {
+      throw new RangeError(`Missing element metadata for atomic number ${n}.`);
+    }
+    return symbol.trim();
   }
 
   function isTransitionMetalAtomicNumber(z) {
-    const n = z | 0;
+    const n = requireAtomicNumber(z);
     return (
       (n >= 21 && n <= 30) ||
       (n >= 39 && n <= 48) ||
@@ -29,7 +46,7 @@
   }
 
   function isLanthanideOrActinideAtomicNumber(z) {
-    const n = z | 0;
+    const n = requireAtomicNumber(z);
     return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
   }
 

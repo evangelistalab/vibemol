@@ -1,4 +1,13 @@
 (function (global) {
+// Format-boundary validation deliberately needs no DOM or metadata loading.
+// Keep the catalog-domain census in atomic-identity.test.mjs in step with this
+// and structure's independent guard; X/Dummy is the supported zero entry.
+function requireParsedAtomicNumber(z, label) {
+  if (!Number.isInteger(z) || z < 0 || z > 100) {
+    throw new Error(`${label}: unsupported atomic number ${String(z)} (expected an integer from 0 to 100 in the bundled catalog).`);
+  }
+  return z;
+}
 /**
  * Atom record used by parsed molecular files.
  * Coordinates are stored in file-native units.
@@ -202,7 +211,7 @@ function parseCube(text) {
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
-    atoms.push({ Z: p[0], x: p[2], y: p[3], z: p[4], formalCharge: 0 });
+    atoms.push({ Z: requireParsedAtomicNumber(p[0], `Malformed CUBE atom line ${lineNo}`), x: p[2], y: p[3], z: p[4], formalCharge: 0 });
   }
 
   // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
@@ -308,7 +317,7 @@ function parseTwoComponentCube(text) {
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed 2C CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
-    atoms.push({ Z: p[0], x: p[2], y: p[3], z: p[4], formalCharge: 0 });
+    atoms.push({ Z: requireParsedAtomicNumber(p[0], `Malformed 2C CUBE atom line ${lineNo}`), x: p[2], y: p[3], z: p[4], formalCharge: 0 });
   }
   const dataStartLine = 6 + atomCount;
   const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
@@ -433,7 +442,7 @@ function parseXYZ(text) {
       if (!hasSymbol) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
       }
-      const Z = window.ATOM_SYMBOL_TO_Z[symbolKey];
+      const Z = requireParsedAtomicNumber(window.ATOM_SYMBOL_TO_Z[symbolKey], `Malformed XYZ atom line ${lineNo}`);
       const x = parseFloat(parts[1]);
       const y = parseFloat(parts[2]);
       const z = parseFloat(parts[3]);
@@ -503,10 +512,11 @@ function resolveMoldenAtomicNumber(symbolToken, zToken, lineNo) {
   const symbolRaw = String(symbolToken == null ? '' : symbolToken).trim();
   const symbolLetters = symbolRaw.replace(/[^A-Za-z]/g, '');
   const symbolKey = symbolLetters.toUpperCase();
-  const z = parseInt(String(zToken == null ? '' : zToken).trim(), 10);
-  if (Number.isInteger(z) && z > 0) return z;
+  const token = String(zToken == null ? '' : zToken).trim();
+  const z = Number(token.replace(/[dD]/g, 'e'));
+  if (token && z !== 0) return requireParsedAtomicNumber(z, `Malformed Molden [Atoms] entry at line ${lineNo}`);
   if (symbolKey && window.ATOM_SYMBOL_TO_Z && Number.isInteger(window.ATOM_SYMBOL_TO_Z[symbolKey])) {
-    return window.ATOM_SYMBOL_TO_Z[symbolKey];
+    return requireParsedAtomicNumber(window.ATOM_SYMBOL_TO_Z[symbolKey], `Malformed Molden [Atoms] entry at line ${lineNo}`);
   }
   throw new Error(`Malformed Molden [Atoms] entry at line ${lineNo}: could not resolve atomic number for "${symbolRaw}".`);
 }

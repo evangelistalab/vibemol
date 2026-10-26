@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
 
-  const { getElementSymbolByAtomicNumber, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
-  const getElementSymbol = z => getElementSymbolByAtomicNumber(z, global.ATOM_Z_TO_DATA);
+  const { getElementSymbolRaw, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
+  const getElementSymbol = z => getElementSymbolRaw(z, global.ATOM_Z_TO_DATA);
 
   const EPSILON = 1e-8;
   const DEG120 = 0.8660254037844386;
@@ -198,8 +198,8 @@
   }
 
   function getCoordinationProfile(z) {
-    const atomicNumber = z | 0;
-    const symbol = getElementSymbol(atomicNumber);
+    const symbol = getElementSymbol(z); // Validate the original value before coercion.
+    const atomicNumber = Number(z);
     const rawProfile = METAL_PROFILE_BY_SYMBOL.get(symbol)
       || MAIN_GROUP_PROFILE_BY_Z.get(atomicNumber)
       || (isTransitionMetalAtomicNumber(atomicNumber) || isLanthanideOrActinideAtomicNumber(atomicNumber)

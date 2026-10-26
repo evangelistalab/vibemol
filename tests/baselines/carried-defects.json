@@ -71,7 +71,21 @@
   "otherCarriedFollowups": [
     {
       "issue": 5,
-      "scope": "Element identity/clamp divergences outside behavior-preserving extraction"
+      "scope": "Element identity/clamp divergences outside behavior-preserving extraction",
+      "identityRepair": {
+        "status": "candidate; full gate required",
+        "contract": "tests/baselines/atomic-identity.json",
+        "clampFindingsRemainOpen": true,
+        "atomicCatalogDomain": [
+          0,
+          100
+        ],
+        "purePhysicalDomain": [
+          0,
+          118
+        ],
+        "dummySessionRestores": true
+      }
     },
     {
       "issue": 14,
