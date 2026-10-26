@@ -11,15 +11,15 @@ function fixture(entries=[],{unsupported=false,readError=false}={}) {
     takeRecords() {if(readError)throw new Error('Read failed');const result=buffer;buffer=[];return result;}
     disconnect() {disconnected=true;}
   }
-  const factory=vm.runInNewContext(source,{PerformanceObserver:Observer,performance:{now:()=>clock}});
+  const factory=vm.runInNewContext(source,{PerformanceObserver:Observer,performance:{now:()=>clock},setTimeout:()=>1,clearTimeout:()=>{}});
   const observer=factory();return {observer,at:value=>{clock=value;},disconnected:()=>disconnected};
 }
 const task=(startTime,duration)=>({startTime,duration,name:'self',entryType:'longtask'});
-test('long-task attribution clips to the wait/deadline and unions overlap',()=>{
+test('long-task attribution clips to the full wait and unions overlap; nominal wall deadline remains diagnostic',()=>{
   const f=fixture([task(80,40),task(110,70),task(160,90)]);f.at(260);
   const row=f.observer.finish({startedAtMs:100,timeoutMs:100,completedAtMs:250,
     deadlineSample:{observedAtMs:250,scheduledAtMs:200,latenessMs:50}});
-  assert.equal(row.longTaskOverlapMs,100);assert.equal(row.hadLongTaskOverlap,true);
+  assert.equal(row.longTaskOverlapMs,150);assert.equal(row.hadLongTaskOverlap,true);
   assert.equal(row.longTasksOverlappingWait.length,3);assert.equal(row.longTasksCrossingDeadline.length,1);
   assert.equal(row.deadlineSample.latenessMs,50);assert.equal(row.readbackAfterDeadlineMs,60);
   assert.equal(f.disconnected(),true);

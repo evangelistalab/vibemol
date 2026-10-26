@@ -1,0 +1,74 @@
+{
+  "runId": 40263180674,
+  "pr": 69,
+  "status": "unclassified observations; PR69 held; no retry or accepted-set change",
+  "gate": {
+    "passed": 35,
+    "failed": 2,
+    "total": 37
+  },
+  "productionAppSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+  "observations": [
+    {
+      "id": "properties-startup-load-timeout",
+      "suite": "tests/e2e/appearance_controls.py",
+      "delegate": "tests/e2e/properties_inspector.py",
+      "operation": "page.goto(url+'?workspaceLab=1&appearanceStudy=1')",
+      "timeoutMs": 30000,
+      "waitUntil": "load",
+      "exception": "TimeoutError",
+      "pageErrors": [],
+      "consoleErrors": [
+        "Failed to load resource: net::ERR_TIMED_OUT"
+      ],
+      "snapshot": "Workbench markup present; external gtag script listed; pending request/readyState were not collected",
+      "classification": "unclassified; external analytics is a hypothesis, not established cause",
+      "carried": false,
+      "acceptedCiFailure": false
+    },
+    {
+      "id": "surface-schemes-fresh-load-timeout",
+      "suite": "tests/e2e/surface_schemes.py",
+      "operation": "other.goto(url) during stored-library/default/autosave cases",
+      "timeoutMs": 30000,
+      "waitUntil": "load",
+      "exception": "TimeoutError",
+      "whichStoredPayload": "not logged in failed run",
+      "classification": "unclassified; no request-level evidence",
+      "carried": false,
+      "acceptedCiFailure": false
+    }
+  ],
+  "newInstrumentation": "tests/e2e/navigation_diagnostics.py records request URLs/type/completion/failure, pending requests, lifecycle events, readyState and actual timestamps on both outcomes. Existing goto(load)/timeouts untouched.",
+  "relationshipTo43": "Observation only; navigation receives no responsive budget or increased timeout.",
+  "guardResult": {
+    "passed": true,
+    "contexts": 18,
+    "pairs": 12,
+    "directions": 13,
+    "observedSignatures": 112,
+    "unexpected": 0
+  },
+  "resizeResult": {
+    "passed": true,
+    "allSixComparands": [
+      720,
+      794,
+      720,
+      794,
+      720,
+      794
+    ],
+    "presented": true,
+    "maxPollGapMs": 24640.600000000093,
+    "longTaskOverlapMs": 18543
+  },
+  "looks": {
+    "seconds": 1451.35,
+    "StudioMaterialFamilies": true,
+    "PropertiesMaterialFamilies": true,
+    "appearanceMaterialPresetTimeoutObserved": false,
+    "riskRemainsOpen": true
+  },
+  "wholeCISeconds": 2521
+}

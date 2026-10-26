@@ -10,23 +10,27 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / 'tests/e2e'))
-from figure_preview_diagnostics import INSTALL_OBSERVER, PREVIEW_PREDICATE, wait_for_preview
+from figure_preview_diagnostics import INSTALL_OBSERVER, PREVIEW_PREDICATE, wait_for_preview, STALL_RUNTIME
 
 
 class FakePage:
     def __init__(self, *, wait_error=None, readback_error=None):
         self.wait_error, self.readback_error = wait_error, readback_error
         self.waits, self.evaluations = [], []
-        self.handle = object()
+        self.handle = type('Handle',(),{'dispose':lambda self:None})()
+        self.result=dict(done=True,passed=True,timing=dict(withinBudget=True))
 
     def evaluate(self, expression, arg=None):
         self.evaluations.append((expression, arg))
         if 'begin(' in expression:
-            return dict(startedAtMs=1000, timeoutMs=arg, deadlineAtMs=31000)
+            return dict(startedAtMs=1000, timeoutMs=arg['timeoutMs'], deadlineAtMs=31000)
+        if 'step(false)' in expression:return self.result
         if self.readback_error:
             raise self.readback_error
         return dict(deadlineSample=dict(observedAtMs=31000, image=dict(src='')),
                     readback=dict(observedAtMs=42000, image=dict(src='blob:later')))
+
+    def evaluate_handle(self,*args):return self.handle
 
     def wait_for_function(self, expression, **options):
         self.waits.append((expression, options))
@@ -43,6 +47,7 @@ const img = {src: '', hidden: true, complete: true, naturalWidth: 0,
 const context = {window: {}, performance: {now: () => now},
   document: {querySelector: selector => selector.endsWith(' img') ? img : {}},
   PerformanceObserver: class {
+    static supportedEntryTypes=['longtask'];
     constructor(callback) {this.callback = callback; this.pending = []; taskObserver = this;}
     observe() {}
     takeRecords() {const rows = this.pending; this.pending = []; return rows;}
@@ -53,27 +58,32 @@ const context = {window: {}, performance: {now: () => now},
     observe() {}
     disconnect() {this.disconnected = true;}
   },
-  setTimeout: fn => {timer = fn; return 1;},
+  setTimeout: (fn,ms) => {if(ms===30000)timer = fn; return 1;},
   clearTimeout: () => {timerCleared = true;}
 };
 vm.runInNewContext('(' + HOOK + ')()', context);
 const diagnostic = context.window.__vmFigurePreviewDiagnostics;
-now = 1000; diagnostic.begin(30000);
+now = 1000; diagnostic.begin({timeoutMs:30000,hardWallMs:180000});
 '''
 
 
 class FigurePreviewEvidence(unittest.TestCase):
     def run_clock(self, scenario):
-        script = 'const HOOK = '+json.dumps(INSTALL_OBSERVER)+';\n'+NODE_CLOCK+scenario
+        script = 'const HOOK = '+json.dumps(INSTALL_OBSERVER.replace('__STALL_RUNTIME__',STALL_RUNTIME))+';\n'+NODE_CLOCK+scenario
         result = subprocess.run(['node', '-e', script], text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout+result.stderr)
 
-    def test_success_keeps_exact_predicate_deadline_and_handle(self):
+    def test_success_keeps_exact_predicate_and_uses_shared_budget(self):
         page = FakePage()
         with tempfile.TemporaryDirectory() as tmp, contextlib.redirect_stdout(io.StringIO()):
-            self.assertIs(wait_for_preview(page, tmp), page.handle)
+            self.assertEqual(wait_for_preview(page, tmp),page.result)
             report = json.loads((Path(tmp)/'figure-preview-wait.json').read_text())
-        self.assertEqual(page.waits, [(PREVIEW_PREDICATE, dict(timeout=30000))])
+        self.assertEqual(len(page.waits),1)
+        expression,options=page.waits[0]
+        self.assertIn(PREVIEW_PREDICATE,expression)
+        self.assertEqual(options['timeout'],180000)
+        self.assertEqual(report['timeoutMs'],30000)
+        self.assertEqual(report['hardWallMs'],180000)
         self.assertEqual(report['outcome'], 'passed')
         self.assertGreaterEqual(report['readbackQueryElapsedMs'], 0)
 
@@ -102,6 +112,22 @@ class FigurePreviewEvidence(unittest.TestCase):
         self.assertEqual(len(page.waits), 1)
         self.assertEqual(report['readbackError'], 'renderer unavailable')
         self.assertNotIn('browser', report)
+
+    def test_failed_wait_setup_records_wall_and_preserves_exception(self):
+        original=RuntimeError('begin failed')
+        class BrokenPage(FakePage):
+            def evaluate(self,expression,arg=None):
+                if 'begin('in expression:raise original
+                return super().evaluate(expression,arg)
+        page=BrokenPage();output=io.StringIO()
+        with tempfile.TemporaryDirectory()as tmp,contextlib.redirect_stdout(output):
+            with self.assertRaises(RuntimeError)as caught:wait_for_preview(page,tmp)
+            report=json.loads((Path(tmp)/'figure-preview-wait.json').read_text())
+        self.assertIs(caught.exception,original)
+        self.assertFalse(report['waitStarted'])
+        wall=json.loads(next(x.split('] ',1)[1]for x in output.getvalue().splitlines()if x.startswith('[wait-wall] ')))
+        self.assertEqual(wall['outcome'],'failed')
+        self.assertGreaterEqual(wall['hostAttemptWallMs'],0)
 
     def test_41518ms_stall_marks_late_deadline_sample_and_flushes_tasks(self):
         self.run_clock(r'''

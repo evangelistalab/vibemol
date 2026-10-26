@@ -4,6 +4,7 @@ import json
 import premerge as p
 from appearance_controls import change
 from looks import choose_material
+from navigation_diagnostics import navigation_diagnostics
 
 
 def main():
@@ -17,7 +18,9 @@ def main():
             'placements': {'displayInspector': 'bottom', 'styleStudio': 'right'}, 'rightWidth': 560}}
         page.add_init_script('localStorage.setItem("vibemol.workbench.lab.v1", '+json.dumps(json.dumps(legacy_layout))+')')
         try:
-            page.goto(url+'?workspaceLab=1&appearanceStudy=1'); page.wait_for_function('()=>window.VibeMolWorkbench')
+            with navigation_diagnostics(page,p.ARTIFACTS,label='properties-startup'):
+                page.goto(url+'?workspaceLab=1&appearanceStudy=1')
+            page.wait_for_function('()=>window.VibeMolWorkbench')
             page.evaluate('''() => { window.__vmqa = { errors: [],
               rowByLabel: label => [...document.querySelectorAll('#inspector .vm-field-row')].find(r => r.querySelector('label')?.textContent === label),
               snap: () => { const body = document.getElementById('inspectorLook'); return {

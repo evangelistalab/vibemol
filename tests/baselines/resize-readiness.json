@@ -1,6 +1,6 @@
 {
   "issue": 70,
-  "status": "instrumentation candidate; underlying timeout unclassified",
+  "status": "instrumentation merged inPR72; original timeout unclassified; shared budget candidate43",
   "carried": false,
   "acceptedCiFailure": false,
   "firstFailureRun": 40245313826,
@@ -36,8 +36,8 @@
   "readsBeforeWaitAndOnBothOutcomes": true,
   "readbackTimestampsAndLatenessCaveat": true,
   "originalExceptionPreserved": true,
-  "noStallTimeDiscount": true,
-  "budget43StillHeld": true,
+  "noStallTimeDiscount": false,
+  "budget43StillHeld": false,
   "legacyUnboundedDiagnosticOption": "Existing environment option preserved and explicitly marked; never ordinary acceptance or invoked by this work.",
   "floatingUiExperiment": {
     "status": "closed without execution",
@@ -60,5 +60,28 @@
     "retiredRafForbiddenNativePage": true
   },
   "newRuntimeDependencies": 0,
-  "newModuleLets": 0
+  "newModuleLets": 0,
+  "hardWallMs": 180000,
+  "responsiveBudgetMs": 30000,
+  "mergedInstrumentation": {
+    "pr": 72,
+    "runId": 40254546952,
+    "head": "b5e02c5b24e53e489a23691cc59dca539e63d776",
+    "merge": "df47c8054fa95496b9efffb14bc720a43a221029",
+    "gate": "37/0/37",
+    "sixComparands": [
+      720,
+      794,
+      720,
+      794,
+      720,
+      794
+    ],
+    "largestPollGapMs": 24680.9,
+    "longTaskOverlapMs": 18500,
+    "hostWaitMs": 24707.320147,
+    "firstMatchingMetricsObservedAfterAnchorMs": 24690.7,
+    "firstPresentedSuccessObservedAfterAnchorMs": 24714,
+    "arrivalTimeNotKnown": true
+  }
 }

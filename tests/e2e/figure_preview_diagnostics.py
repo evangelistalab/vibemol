@@ -1,16 +1,21 @@
-"""Observe Figure's existing preview deadline without changing its acceptance."""
+"""Exact Figure blob predicate under the shared responsive/wall budget."""
+import contextlib
 import json
 from pathlib import Path
 import time
+from wall_times import record_wait_wall
+from assertion_contract import STALL_RUNTIME,HARD_WALL_MS,wait_for_budget,budget_ms
 
 
-PREVIEW_TIMEOUT_MS = 30_000
+PREVIEW_TIMEOUT_MS = budget_ms('figure-preview')
 PREVIEW_PREDICATE = '()=>document.querySelector("#figurePanel img").src.startsWith("blob:")'
 
 INSTALL_OBSERVER = r'''() => {
-  const startedAtMs = performance.now(), longTasks = [], imageHistory = [];
-  let droppedLongTasks = 0, droppedImages = 0, observerError = null;
-  let taskObserver = null, timer = null, wait = null, deadlineSample = null;
+  const stalls=(__STALL_RUNTIME__)();
+  let budget=null;
+  const startedAtMs = performance.now(), imageHistory = [];
+  let droppedImages = 0;
+  let timer = null, wait = null, deadlineSample = null;
   const image = () => {
     const img = document.querySelector('#figurePanel img');
     return img ? {present: true, src: img.src, srcAttribute: img.getAttribute('src'),
@@ -21,27 +26,16 @@ INSTALL_OBSERVER = r'''() => {
     if (imageHistory.length < 512) imageHistory.push(row); else droppedImages++;
     return row;
   };
-  const collect = entries => {
-    for (const e of entries) {
-      if (e.startTime + e.duration < startedAtMs) continue;
-      if (longTasks.length < 4096) longTasks.push({startTime: e.startTime,
-        duration: e.duration, name: e.name, entryType: e.entryType});
-      else droppedLongTasks++;
-    }
-  };
-  try {
-    taskObserver = new PerformanceObserver(list => collect(list.getEntries()));
-    taskObserver.observe({type: 'longtask', buffered: true});
-  } catch (error) { observerError = String(error); }
   const imageObserver = new MutationObserver(() => sample('image mutation delivered'));
   imageObserver.observe(document.querySelector('#figurePanel'), {subtree: true,
     childList: true, attributes: true, attributeFilter: ['src', 'hidden']});
   sample('prelude start');
   window.__vmFigurePreviewDiagnostics = {
-    begin(timeoutMs) {
+    begin({timeoutMs,hardWallMs}) {
       const before = sample('wait start');
       wait = {startedAtMs: before.observedAtMs, timeoutMs,
         deadlineAtMs: before.observedAtMs + timeoutMs};
+      budget=stalls.budget(before.observedAtMs,timeoutMs,hardWallMs);
       timer = setTimeout(() => {
         const state = sample('deadline callback');
         deadlineSample = {...state, scheduledAtMs: wait.deadlineAtMs,
@@ -49,17 +43,16 @@ INSTALL_OBSERVER = r'''() => {
       }, timeoutMs);
       return wait;
     },
+    step(ready) {return budget.step(ready);},
     finish() {
-      if (taskObserver) { collect(taskObserver.takeRecords()); taskObserver.disconnect(); }
+      const timing=budget.result?.timing || budget.sample();stalls.dispose();
       imageObserver.disconnect(); clearTimeout(timer);
       const readback = sample('readback');
-      return {preludeStartedAtMs: startedAtMs, wait, deadlineSample, readback,
+      return {...timing,preludeStartedAtMs: startedAtMs, wait, deadlineSample, readback,
         readbackAfterDeadlineMs: readback.observedAtMs - wait.deadlineAtMs,
         lastImageObservationBeforeDeadline: imageHistory.filter(row =>
           row.observedAtMs <= wait.deadlineAtMs).slice(-1)[0] || null,
-        longTasks, longTasksCrossingDeadline: longTasks.filter(e =>
-          e.startTime < wait.deadlineAtMs && e.startTime + e.duration >= wait.deadlineAtMs),
-        imageHistory, droppedLongTasks, droppedImages, observerError,
+        imageHistory, droppedImages,
         samplingCaveat: 'A blocked renderer delays the deadline callback. Use actual observation times and lateness; a late readback is not an exact deadline snapshot. Image mutation times are observer delivery times.'};
     }
   };
@@ -68,20 +61,21 @@ INSTALL_OBSERVER = r'''() => {
 
 def install_preview_diagnostics(page):
     """Start before the fixture/export prelude; observe only, without extra frames."""
-    page.evaluate(INSTALL_OBSERVER)
+    page.evaluate(INSTALL_OBSERVER.replace('__STALL_RUNTIME__',STALL_RUNTIME))
 
 
 def wait_for_preview(page, artifact_dir):
-    """Keep the original predicate/deadline and preserve its original exception."""
+    """Keep the exact blob predicate and report both responsive and hard-wall limits."""
     anchor_started = time.monotonic()
-    anchor = page.evaluate('timeout => window.__vmFigurePreviewDiagnostics.begin(timeout)',
-                           PREVIEW_TIMEOUT_MS)
-    started, wall_started = time.monotonic(), time.time()
+    anchor=None;receipt=None
+    budget_report=dict(timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS)
+    started,wall_started=anchor_started,time.time()
 
     def capture(outcome, error=None):
         caught = time.monotonic()
         report = dict(outcome=outcome, predicate=PREVIEW_PREDICATE,
-                      timeoutMs=PREVIEW_TIMEOUT_MS, browserAnchor=anchor,
+                      timeoutMs=PREVIEW_TIMEOUT_MS, hardWallMs=HARD_WALL_MS,browserAnchor=anchor,
+                      budgetResult=budget_report.get('budgetResult'),waitStarted=receipt is not None,
                       clockAlignment='Browser timer is armed just before the wait RPC; anchorCallElapsedMs records that alignment uncertainty.',
                       anchorCallElapsedMs=(started-anchor_started)*1000,
                       waitElapsedMs=(caught-started)*1000,
@@ -101,11 +95,23 @@ def wait_for_preview(page, artifact_dir):
         except OSError as artifact_error:
             report['artifactWriteError'] = str(artifact_error)
         print('[figure-preview-wait] '+json.dumps(report), flush=True)
+        record_wait_wall(site='figure.preview',label='Figure preview blob',kind='image-preview',
+            outcome=outcome,host_elapsed_ms=report['waitElapsedMs'],browser=report.get('browser'),
+            policy='figure-preview',error_type=type(error).__name__ if error is not None else None)
 
     try:
-        result = page.wait_for_function(PREVIEW_PREDICATE, timeout=PREVIEW_TIMEOUT_MS)
+        anchor=page.evaluate('config=>window.__vmFigurePreviewDiagnostics.begin(config)',
+            dict(timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS))
+        receipt=page.evaluate_handle('()=>window.__vmFigurePreviewDiagnostics')
+        budget_report['_receipt']=receipt
+        started,wall_started=time.monotonic(),time.time()
+        result=wait_for_budget(page,PREVIEW_PREDICATE,budget_report)
     except Exception as error:
         capture('failed', error)
         raise
-    capture('passed')
-    return result
+    else:
+        capture('passed')
+        return result
+    finally:
+        with contextlib.suppress(Exception):
+            if receipt is not None:receipt.dispose()

@@ -76,6 +76,9 @@ jobs:
         run: python tests/e2e/assertion_contract_probe.py
       - name: Collect assigned browser suites (aggregate gate runs in join)
         run: python tests/e2e/browser_suite.py --shard "${{ matrix.shard }}"
+      - name: Raw wait wall-time distributions
+        if: always()
+        run: python tests/e2e/wall_times.py --root out/test-artifacts --out out/test-artifacts/assertion-wall-times-summary.json
       - name: Upload shard evidence
         if: always()
         uses: actions/upload-artifact@v4

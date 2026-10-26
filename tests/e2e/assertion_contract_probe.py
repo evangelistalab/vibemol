@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError
-from assertion_contract import state_after_input, deadline_diagnostics, budget_ms
+from assertion_contract import state_after_input, deadline_diagnostics, budget_ms, wait_for_budget
 from helpers import wait_for_presented_state
 
 
@@ -18,7 +18,7 @@ def main():
             try:
                 with deadline_diagnostics(page,label='contract original timeout',policy='false-presented-control',
                         site='presented-state.false-control') as negative:
-                    page.wait_for_function('()=>false',timeout=budget_ms('false-presented-control'))
+                    wait_for_budget(page,'()=>false',negative)
             except TimeoutError:
                 false_rejected=True
             negative_comparands=dict(actual=dict(falseRejected=false_rejected,outcome=negative['outcome'],
@@ -63,6 +63,35 @@ def main():
             result=dict(native=native,asynchronous=asynchronous,missingNativeRejected=missing_failed,
                         negativeControl=negative,falseStateStillRejected=false_rejected,
                         noPollingFrame=True,browser=browser.version)
+            # Synthetic page CPU work:80ms+700ms busy loops, no VibeMol and no
+            # induced descheduling. This proves accounting, not environment
+            # attribution: awaited product work could be discounted the same way.
+            page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
+              const end=performance.now()+700;while(performance.now()<end){}
+            })''')
+            with state_after_input(page,'()=>model.slice()',[0],label='synthetic CPU:80ms+700ms busy loops',site='control.synthetic-cpu') as check:
+                page.mouse.click(30,30)
+                stalled_native=check()
+            comparands=dict(actual=dict(passed=stalled_native['passed'],
+                beyondOriginalWall=stalled_native['elapsedMs']>600,
+                withinResponsive=stalled_native['stalls']['responsiveElapsedMs']<=600,
+                hardWallMs=stalled_native['stalls']['hardWallMs']),
+                expected=dict(passed=True,beyondOriginalWall=True,withinResponsive=True,hardWallMs=180000))
+            print('[budget-control] '+json.dumps(comparands),flush=True)
+            assert comparands['actual']==comparands['expected'],comparands
+            page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
+              model=[1];setTimeout(()=>{model=[0]},0);
+            })''')
+            wrong_rejected=False;wrong_receipt=None
+            try:
+                with state_after_input(page,'()=>model.slice()',[0],label='budget wrong completion') as check:
+                    page.mouse.click(30,30)
+                    check()
+            except AssertionError as error:
+                wrong_rejected=True;wrong_receipt=error.args[0]
+            assert isinstance(wrong_receipt,dict) and wrong_receipt['actual']==[1] and wrong_receipt['passed']is False,wrong_receipt
+            assert wrong_rejected,'A later correct state must never repair wrong native completion'
+            result['budgetControls']=dict(controlNature=dict(kind='synthetic page CPU work',busyLoopsMs=[80,700],appLoaded=False,deschedulingInduced=False),stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected,wrongNativeReceipt=wrong_receipt)
             # The native-input control deliberately forbids RAF. Retire it before
             # testing a distinct contract that explicitly requires presentation.
             page.close()
@@ -80,7 +109,7 @@ def main():
             try:
                 with deadline_diagnostics(page,label='resize comparand negative control',
                         policy='false-presented-control',site='resize-comparand.negative') as resize_deadline:
-                    wait_for_presented_state(page,predicate,timeout=budget_ms('false-presented-control'),diagnostics=resize_negative)
+                    wait_for_presented_state(page,predicate,timeout=budget_ms('false-presented-control'),diagnostics=resize_negative,budget=resize_deadline)
             except TimeoutError:
                 resize_rejected=True
             last=resize_negative['observations'][-1]
@@ -101,7 +130,7 @@ def main():
                 page.locator('#resizeAction').click()
             with deadline_diagnostics(page,label='resize comparand positive control',policy='resize-readiness',
                     site='resize-comparand.positive',prelude=resize_prelude) as resize_pass_deadline:
-                wait_for_presented_state(page,predicate,timeout=budget_ms('resize-readiness'),diagnostics=resize_positive)
+                wait_for_presented_state(page,predicate,timeout=budget_ms('resize-readiness'),diagnostics=resize_positive,budget=resize_pass_deadline)
             last=resize_positive['observations'][-1]
             check=dict(actual=dict(phase=last['phase'],presentation=last['presentation']['actual'],
                 allComparands=all(x['passed']for x in last['state']['comparands'].values()),
