@@ -96,17 +96,17 @@
       "issue": 43,
       "url": "https://github.com/evangelistalab/vibemol/issues/43",
       "kind": "harness",
-      "status": "open",
+      "status": "fix candidate; complete ordinary gate required",
       "suite": "tests/e2e/figure.py",
       "scope": "Fixed30000ms functional preview deadline is smaller than the41518ms long task observed on unmodified main. This does not retrospectively diagnose occurrence42.",
       "acceptedCiFailure": false,
-      "proposal": "Design only: a shared numeric/timing assertion helper, motivated by golden float comparison, camera pose issue40 and this fixed deadline. For preview timing, propose a30s responsive-time budget and independent180s hard wall ceiling; subtract the union of wait-overlapping long-task intervals and detected descheduling gaps from missed monotonic-heartbeat intervals, without double counting or discounting prelude-only time. Preserve exact blob predicate, explicit error failure and original numeric tolerances. Report unavailable/dropped observations with an explicit tested fallback.",
+      "proposal": "Implemented shared responsive budgets with50ms monotonic heartbeat and180000ms independent hard wall. Existing responsive values and exact predicates retained; union of observed wait-overlapping longtasks and overdue heartbeat gaps discounted once. See tests/baselines/responsive-assertion-budgets.json.",
       "evidenceCollector": "tests/e2e/figure_preview_diagnostics.py",
-      "standingGateUnchanged": "34/3/37 exact accepted workflows; Figure remains required to pass.",
-      "implementationPrerequisite": "Wait for issue42 classification. If the blob genuinely never arrives for a product-state reason, a responsive-time budget is not a remedy. No deadline or shared-helper implementation in the collector PR.",
-      "smokeSubset": "Direct human50 separately authorized shared numeric and measured Smoke event-receipt helper; PR49 merged. Figure responsive-time/heartbeat deadline extension remains design-only pending42.",
-      "diagnosticHalf": "Authorized now: tests/e2e/stall_diagnostics.js observes all six former short-deadline sites through their shared owners; logs raw longtasks, union overlap duration, deadline crossings, actual timestamps/lateness, drops and observer errors. Changes no budget or acceptance.",
-      "budgetHalf": "Held. No stall time is excluded or discounted, and no budget is raised. Figure deadline implementation remains untouched pending42 classification.",
+      "standingGateUnchanged": "37/0/37; accepted set intentionally empty; every suite including Figure must pass.",
+      "implementationPrerequisite": "Direct human authorization unheld the budget after PR72 measured24680.9ms poll gap/18500ms longtask and correct resize; #50 correct arrivals139\u2013265ms; #42 laterFailureArtifactHadBlob:true. Does not classify or close original42.",
+      "smokeSubset": "Existing completed-native/DOM-backed value contracts retained; the shared clock changes timing accounting only.",
+      "diagnosticHalf": "Raw longtasks and overdue heartbeat gaps, individual overlaps, union discount, wall/responsive elapsed, nominal-deadline timestamps/lateness, drops and observer errors.",
+      "budgetHalf": "Released by direct human instruction: shared engine covers original six sites plus70 resize and original43 Figure target. Never-arriving/wrong values and hard-wall crossings fail; incomplete record windows charge all wall time.",
       "additionalDiagnosticSite": {
         "issue": 70,
         "site": "edit-picking.resize-readiness",
@@ -114,9 +114,12 @@
         "ordinal": 7,
         "sharedOwner": "tests/e2e/assertion_contract.py:deadline_diagnostics",
         "timeoutMs": 30000,
-        "noStallDiscount": true,
-        "budgetHalfStillHeld": true
-      }
+        "noStallDiscount": false,
+        "budgetHalfStillHeld": false,
+        "responsiveBudgetMs": 30000,
+        "hardWallMs": 180000
+      },
+      "contract": "tests/baselines/responsive-assertion-budgets.json"
     },
     {
       "issue": 45,
@@ -175,7 +178,18 @@
           "shortfall": true
         }
       ],
-      "scope": "Separate from fixed52; inaccurate helper flag remains. No helper production change released; does not excuse an ordinary CI failure."
+      "scope": "Separate from fixed52; inaccurate helper flag remains. No helper production change released; does not excuse an ordinary CI failure.",
+      "consumerAudit": {
+        "source": "df47c8054fa95496b9efffb14bc720a43a221029",
+        "record": "docs/maintenance/selection-clear-return-consumers.md",
+        "productionDecisionConsumers": [
+          "edit-gestures.handlePointerUp void-clear: Selection cleared status hint only"
+        ],
+        "otherCallersDiscardResult": true,
+        "noStateRepairOrDownstreamValidationTrust": true,
+        "unitGap": "Direct changed-flag assertion uses callback mock without cross-selection side effect",
+        "externalApiConsumersUnknown": true
+      }
     }
   ],
   "acceptedCiGate": {
@@ -189,7 +203,7 @@
       53
     ],
     "scope": "Complete directly authorized53 local fix, then independent strict guard. Shared placement policy is justified but not scheduled; evaluate alongside0.11 declarative controls.",
-    "reason": "25/17/3/11/45/52 fixed;42 remains open/unclassified;43 Figure budget remains held. Latent surface risks are not accepted ordinary failures.",
+    "reason": "25/17/3/11/45/52/53 fixed;42 remains open/unclassified;43 budget released by direct human authorization. Latent surface risks are not accepted ordinary failures.",
     "authority": "Direct human52/53/guard instructions."
   },
   "closedTestIssues": [

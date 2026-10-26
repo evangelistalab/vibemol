@@ -14,6 +14,7 @@ class AssertionContract(unittest.TestCase):
         self.assertEqual(budget_ms('native-clipboard'),5000)
         self.assertEqual(budget_ms('false-presented-control'),100)
         self.assertEqual(budget_ms('resize-readiness'),30000)
+        self.assertEqual(budget_ms('figure-preview'),30000)
         with self.assertRaises(KeyError):budget_ms('unreviewed-policy')
 
     def test_original_numeric_boundary_still_rejects_a_millionth(self):

@@ -172,14 +172,16 @@ def invalidates(page, point, action, *, presented_state=None):
         timeout = 0 if os.environ.get('VIBEMOL_CI_UNBOUNDED_PROBE') == '1' else budget_ms('resize-readiness')
         diagnostics = dict(reader='()=>__editProbe.viewportComparands()', observations=[])
         evidence = dict(timeout=timeout, predicate=presented_state, viewport=diagnostics,
-                        unboundedDiagnostic=timeout == 0, acceptanceChanged=False)
+                        unboundedDiagnostic=timeout == 0, acceptanceChanged=True,
+                        timingChange="Human-authorized43: unchanged responsive budget; union stall discount and180s hard wall")
         try:
             with deadline_diagnostics(page,label='Edit slab resize readiness',
                     policy='resize-readiness',site='edit-picking.resize-readiness',prelude=action) as report:
                 evidence['deadline'] = report
-                report['actualWaitTimeoutOptionMs'] = timeout
+                report['responsiveBudgetMs'] = timeout
+                report['actualWaitTimeoutOptionMs'] = report['hardWallMs'] if timeout else 0
                 report['unboundedDiagnostic'] = timeout == 0
-                wait_for_presented_state(page, presented_state, timeout=timeout,diagnostics=diagnostics)
+                wait_for_presented_state(page, presented_state, timeout=timeout,diagnostics=diagnostics,budget=report)
         finally:
             # Failures retain the original exception and all available readbacks.
             try:

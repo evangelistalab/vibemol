@@ -67,7 +67,7 @@ def ensure_artifact_dir(root: pathlib.Path) -> pathlib.Path:
     return root
 
 
-def wait_for_presented_state(page, predicate: str, *, timeout=None, diagnostics=None) -> None:
+def wait_for_presented_state(page, predicate: str, *, timeout=None, diagnostics=None, budget=None) -> None:
     """Poll app state after presentation, using Stage 0's two-frame boundary.
 
     The app renders in requestAnimationFrame. The second callback observes the
@@ -146,9 +146,13 @@ def wait_for_presented_state(page, predicate: str, *, timeout=None, diagnostics=
         expression = 'boundary => boundary.presented && (' + predicate + ')()'
         if diagnostics is not None:
             # Observe the exact original result; never replace its predicate,
-            # coerce its return, retry it, or discount time spent between polls.
+            # coerce its return or retry it. The shared budget separately accounts for stalls.
             expression = 'boundary => {const ready=boundary.presented && (' + predicate + ')(); if(boundary.pollObserve)boundary.pollObserve(ready); return ready;}'
-        page.wait_for_function(expression,arg=boundary,**options)
+        if budget is not None and timeout != 0:
+            from assertion_contract import wait_for_budget
+            wait_for_budget(page,expression,budget,arg=boundary)
+        else:
+            page.wait_for_function(expression,arg=boundary,**options)
         outcome = 'passed'
     finally:
         if diagnostics is not None: diagnostics['waitCallElapsedMs'] = (time.monotonic()-wait_started)*1000

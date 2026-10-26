@@ -3,7 +3,7 @@ import json
 import os
 from pathlib import Path
 from playwright.sync_api import sync_playwright, TimeoutError
-from assertion_contract import state_after_input, deadline_diagnostics, budget_ms
+from assertion_contract import state_after_input, deadline_diagnostics, budget_ms, wait_for_budget
 from helpers import wait_for_presented_state
 
 
@@ -18,7 +18,7 @@ def main():
             try:
                 with deadline_diagnostics(page,label='contract original timeout',policy='false-presented-control',
                         site='presented-state.false-control') as negative:
-                    page.wait_for_function('()=>false',timeout=budget_ms('false-presented-control'))
+                    wait_for_budget(page,'()=>false',negative)
             except TimeoutError:
                 false_rejected=True
             negative_comparands=dict(actual=dict(falseRejected=false_rejected,outcome=negative['outcome'],
@@ -63,6 +63,33 @@ def main():
             result=dict(native=native,asynchronous=asynchronous,missingNativeRejected=missing_failed,
                         negativeControl=negative,falseStateStillRejected=false_rejected,
                         noPollingFrame=True,browser=browser.version)
+            # A genuine completed event beyond600 wall ms now passes only from
+            # measured stalls. A wrong receipt still fails, even if corrected later.
+            page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
+              const end=performance.now()+700;while(performance.now()<end){}
+            })''')
+            with state_after_input(page,'()=>model.slice()',[0],label='budget stalled native') as check:
+                page.mouse.click(30,30)
+                stalled_native=check()
+            comparands=dict(actual=dict(passed=stalled_native['passed'],
+                beyondOriginalWall=stalled_native['elapsedMs']>600,
+                withinResponsive=stalled_native['stalls']['responsiveElapsedMs']<=600,
+                hardWallMs=stalled_native['stalls']['hardWallMs']),
+                expected=dict(passed=True,beyondOriginalWall=True,withinResponsive=True,hardWallMs=180000))
+            print('[budget-control] '+json.dumps(comparands),flush=True)
+            assert comparands['actual']==comparands['expected'],comparands
+            page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
+              model=[1];setTimeout(()=>{model=[0]},0);
+            })''')
+            wrong_rejected=False
+            try:
+                with state_after_input(page,'()=>model.slice()',[0],label='budget wrong completion') as check:
+                    page.mouse.click(30,30)
+                    check()
+            except AssertionError:
+                wrong_rejected=True
+            assert wrong_rejected,'A later correct state must never repair wrong native completion'
+            result['budgetControls']=dict(stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected)
             # The native-input control deliberately forbids RAF. Retire it before
             # testing a distinct contract that explicitly requires presentation.
             page.close()
@@ -80,7 +107,7 @@ def main():
             try:
                 with deadline_diagnostics(page,label='resize comparand negative control',
                         policy='false-presented-control',site='resize-comparand.negative') as resize_deadline:
-                    wait_for_presented_state(page,predicate,timeout=budget_ms('false-presented-control'),diagnostics=resize_negative)
+                    wait_for_presented_state(page,predicate,timeout=budget_ms('false-presented-control'),diagnostics=resize_negative,budget=resize_deadline)
             except TimeoutError:
                 resize_rejected=True
             last=resize_negative['observations'][-1]
@@ -101,7 +128,7 @@ def main():
                 page.locator('#resizeAction').click()
             with deadline_diagnostics(page,label='resize comparand positive control',policy='resize-readiness',
                     site='resize-comparand.positive',prelude=resize_prelude) as resize_pass_deadline:
-                wait_for_presented_state(page,predicate,timeout=budget_ms('resize-readiness'),diagnostics=resize_positive)
+                wait_for_presented_state(page,predicate,timeout=budget_ms('resize-readiness'),diagnostics=resize_positive,budget=resize_pass_deadline)
             last=resize_positive['observations'][-1]
             check=dict(actual=dict(phase=last['phase'],presentation=last['presentation']['actual'],
                 allComparands=all(x['passed']for x in last['state']['comparands'].values()),

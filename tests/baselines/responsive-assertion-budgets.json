@@ -1,0 +1,46 @@
+{
+  "issue": 43,
+  "status": "candidate; full first ordinary conjunction required",
+  "gate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true
+  },
+  "hardWallMs": 180000,
+  "heartbeatMs": 50,
+  "sourceObservation": {
+    "runId": 40254546952,
+    "pollGapMs": 24680.9,
+    "longTaskMs": 18500,
+    "unattributedRemainderAboutMs": 6180.9
+  },
+  "responsiveBudgetsMs": {
+    "native-selection": 600,
+    "native-clipboard": 5000,
+    "false-presented-control": 100,
+    "resize-readiness": 30000,
+    "figure-preview": 30000
+  },
+  "originalSixSites": [
+    "smoke.native-selection",
+    "smoke.select-two-first",
+    "smoke.select-two-additive",
+    "smoke.startup-single-selection",
+    "smoke.native-clipboard",
+    "presented-state.false-control"
+  ],
+  "seventhSite": "edit-picking.resize-readiness",
+  "originalFigureTarget": "figure.preview",
+  "owner": "tests/e2e/stall_diagnostics.js",
+  "discount": "Union of observed wait-overlapping longtasks and overdue heartbeat gaps, including pending overdue gap before callback; never prelude-only time",
+  "fallback": "Dropped observations or invalid window: charge wall time. Missing longtask observer: use only retained known interval and heartbeat evidence.",
+  "exactValuesAndNumericTolerancesUnchanged": true,
+  "nativeWrongReceiptCannotBeRepaired": true,
+  "asynchronousTimerCannotInventArrival": true,
+  "original42ClassificationUnchanged": true,
+  "productionDependencies": 0,
+  "newProductionBindings": 0,
+  "newModuleLets": 0,
+  "trackedLets": 251
+}
