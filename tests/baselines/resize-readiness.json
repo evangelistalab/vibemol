@@ -1,0 +1,64 @@
+{
+  "issue": 70,
+  "status": "instrumentation candidate; underlying timeout unclassified",
+  "carried": false,
+  "acceptedCiFailure": false,
+  "firstFailureRun": 40245313826,
+  "firstFailureHead": "d6607e98b80dedbe6c7baf544ad66d367bbae196",
+  "controlAppSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+  "originalImplicitDefaultTimeoutMs": 30000,
+  "currentExplicitSameTimeoutMs": 30000,
+  "originalPredicate": "boundary.presented && __editProbe.viewportReady()",
+  "viewportComparands": [
+    "cssWidth",
+    "cssHeight",
+    "canvasWidth",
+    "canvasHeight",
+    "bufferWidth",
+    "bufferHeight"
+  ],
+  "presentationComparand": {
+    "actual": "boundary.presented",
+    "expected": true
+  },
+  "originalSixSites": [
+    "smoke.native-selection",
+    "smoke.select-two-first",
+    "smoke.select-two-additive",
+    "smoke.startup-single-selection",
+    "smoke.native-clipboard",
+    "presented-state.false-control"
+  ],
+  "newSeventhSite": "edit-picking.resize-readiness",
+  "observer": "tests/e2e/stall_diagnostics.js via shared deadline_diagnostics",
+  "preludeObserved": true,
+  "waitAnchorAfterResize": true,
+  "readsBeforeWaitAndOnBothOutcomes": true,
+  "readbackTimestampsAndLatenessCaveat": true,
+  "originalExceptionPreserved": true,
+  "noStallTimeDiscount": true,
+  "budget43StillHeld": true,
+  "legacyUnboundedDiagnosticOption": "Existing environment option preserved and explicitly marked; never ordinary acceptance or invoked by this work.",
+  "floatingUiExperiment": {
+    "status": "closed without execution",
+    "limitedVersionRun": false,
+    "reason": "altBoundary is boolean/clipping context; panel avoidance needs custom policy middleware."
+  },
+  "changeOnlyPollHistory": true,
+  "pollCountAndLargestGapRecorded": true,
+  "timestampedDeadlineSample": true,
+  "lateSamplesNeverExactDeadline": true,
+  "localControl": {
+    "browser": "145.0.7632.6",
+    "role": "Bounded helper mechanics only; no causal comparison or ordinary gate",
+    "negativeActual": 99,
+    "negativeExpected": 100,
+    "negativeStillFails100ms": true,
+    "positiveSixComparandsPass": true,
+    "actualNativePreludeLongTaskMs": 80,
+    "preludeNotChargedToWait": true,
+    "retiredRafForbiddenNativePage": true
+  },
+  "newRuntimeDependencies": 0,
+  "newModuleLets": 0
+}

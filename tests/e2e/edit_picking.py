@@ -8,6 +8,7 @@ from smoke import build_fixture_structure
 from surface_shadows import settings, settle
 from helpers import wait_for_presented_state
 from ci_gate_diagnostics import record_renderer
+from assertion_contract import deadline_diagnostics, budget_ms
 
 
 def instrumented_source():
@@ -36,6 +37,17 @@ def instrumented_source():
           && canvas.width===requested.width && canvas.height===requested.height
           && applied.bufferWidth===Math.round(requested.width*applied.dpr)
           && applied.bufferHeight===Math.round(requested.height*applied.dpr);
+      },
+      viewportComparands() {
+        const state=this.viewportState(),{requested,applied,canvas}=state;
+        const pair=(actual,expected)=>({actual,expected,passed:actual===expected});
+        return {state,comparands:{
+          cssWidth:pair(applied.cssWidth,requested.width),
+          cssHeight:pair(applied.cssHeight,requested.height),
+          canvasWidth:pair(canvas.width,requested.width),
+          canvasHeight:pair(canvas.height,requested.height),
+          bufferWidth:pair(applied.bufferWidth,Math.round(requested.width*applied.dpr)),
+          bufferHeight:pair(applied.bufferHeight,Math.round(requested.height*applied.dpr))}};
       },
       moveGizmo() {
         contentGroup.updateMatrixWorld(true);
@@ -154,17 +166,29 @@ def compare_fresh(page, point):
 def invalidates(page, point, action, *, presented_state=None):
     query(page, point)
     page.evaluate('()=>__editProbe.reset()')
-    action()
     if presented_state:
         # Issue #4 CI follow-up: browser viewport acknowledgement is not the
         # app's deferred ResizeObserver/projection update. Preserve both checks.
-        timeout = 0 if os.environ.get('VIBEMOL_CI_UNBOUNDED_PROBE') == '1' else None
-        before = page.evaluate('()=>__editProbe.viewportState()')
-        wait_for_presented_state(page, presented_state, timeout=timeout)
-        after = page.evaluate('()=>__editProbe.viewportState()')
-        evidence = {'timeout': timeout, 'before': before, 'after': after}
-        (p.ARTIFACTS / 'resize-state-wait.json').write_text(json.dumps(evidence, indent=2)+'\n')
-        print('[picking] applied viewport wait: '+json.dumps(evidence), flush=True)
+        timeout = 0 if os.environ.get('VIBEMOL_CI_UNBOUNDED_PROBE') == '1' else budget_ms('resize-readiness')
+        diagnostics = dict(reader='()=>__editProbe.viewportComparands()', observations=[])
+        evidence = dict(timeout=timeout, predicate=presented_state, viewport=diagnostics,
+                        unboundedDiagnostic=timeout == 0, acceptanceChanged=False)
+        try:
+            with deadline_diagnostics(page,label='Edit slab resize readiness',
+                    policy='resize-readiness',site='edit-picking.resize-readiness',prelude=action) as report:
+                evidence['deadline'] = report
+                report['actualWaitTimeoutOptionMs'] = timeout
+                report['unboundedDiagnostic'] = timeout == 0
+                wait_for_presented_state(page, presented_state, timeout=timeout,diagnostics=diagnostics)
+        finally:
+            # Failures retain the original exception and all available readbacks.
+            try:
+                (p.ARTIFACTS / 'resize-state-wait.json').write_text(json.dumps(evidence,indent=2)+'\n')
+            except OSError as error:
+                evidence['artifactWriteError'] = str(error)
+            print('[picking] applied viewport wait: '+json.dumps(evidence), flush=True)
+    else:
+        action()
     assert compare_fresh(page, point)['counts']['queries'] >= 1, 'Changed geometry/view reused a stale hit'
 
 

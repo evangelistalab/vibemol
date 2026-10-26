@@ -119,3 +119,10 @@ Reaction Guess Camera (activity-based trajectory framing) and VibeDJ (procedural
 - Keep the current regression gates; add targeted coverage with each milestone.
 - Refactor along the ownership boundaries in [Scene architecture](scene-architecture.md). Avoid serializing renderer state or expanding `app.js` with a second persistence system.
 - Revisit priorities after session save/recovery is usable and local-cleanup behavior has been evaluated on representative structures.
+
+## 0.11 architecture evidence
+
+[Controls maintenance evidence](maintenance/0.11-controls-evidence.md) records
+the Escape matrix cost and the placement model already computed by the strict
+guard. These are inputs to future evaluation, not scheduled tasks or a new
+implementation plan.

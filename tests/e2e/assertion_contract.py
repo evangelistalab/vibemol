@@ -7,7 +7,8 @@ from pathlib import Path
 import time
 
 # Existing budgets, not larger values inferred from host/RAF observation delay.
-BUDGET_MS = {'native-selection': 600, 'native-clipboard': 5000, 'false-presented-control': 100}
+BUDGET_MS = {'native-selection': 600, 'native-clipboard': 5000, 'false-presented-control': 100,
+             'resize-readiness': 30_000}  # Existing Playwright default, made explicit; #70.
 RUNTIME = Path(__file__).with_name('assertion_runtime.js').read_text()
 STALL_RUNTIME = Path(__file__).with_name('stall_diagnostics.js').read_text()
 
@@ -64,25 +65,41 @@ def state_after_input(page, reader, expected, *, label, policy='native-selection
 
 
 @contextmanager
-def deadline_diagnostics(page, *, label, policy, site):
+def deadline_diagnostics(page, *, label, policy, site, prelude=None):
     """Observe an existing bounded wait; do not change its predicate or budget."""
     budget = budget_ms(policy)
-    report = dict(label=label,site=site,policy=policy,timeoutMs=budget,
-                  clockAlignment='Browser anchor precedes the original wait RPC; anchorCallElapsedMs bounds alignment uncertainty.')
+    report = dict(label=label,site=site,policy=policy,timeoutMs=budget,waitStarted=False,
+                  clockAlignment='Browser anchor precedes caller preparation and the wait RPC. Use caller preparation/readback elapsed times and actual browser observation timestamps; this anchor is not an exact Playwright deadline.')
     receipt = None
     anchor_started = time.monotonic()
-    try:
-        receipt = page.evaluate_handle('''config => {
-          const observer=(''' + STALL_RUNTIME + ''')();
-          const startedAtMs=performance.now();
-          return {dispose:observer.dispose, finish:()=>observer.finish({startedAtMs,
-            timeoutMs:config.budgetMs,completedAtMs:performance.now()})};
-        }''', dict(budgetMs=budget))
-    except Exception as diagnostic_error:
-        report['installError'] = str(diagnostic_error)
-    started = time.monotonic()
+    started = anchor_started
     outcome, error = 'passed', None
     try:
+        try:
+            receipt = page.evaluate_handle('''config => {
+              const observer=(''' + STALL_RUNTIME + ''')();
+              let startedAtMs=config.deferredStart ? null : performance.now();
+              return {dispose:observer.dispose, begin:()=>{startedAtMs=performance.now();},
+                finish:()=>observer.finish({startedAtMs,
+                  timeoutMs:config.budgetMs,completedAtMs:performance.now()})};
+            }''', dict(budgetMs=budget, deferredStart=prelude is not None))
+        except Exception as diagnostic_error:
+            report['installError'] = str(diagnostic_error)
+        if prelude is not None:
+            prelude_started = time.monotonic()
+            try:
+                prelude()
+            finally:
+                report['preludeElapsedMs'] = (time.monotonic()-prelude_started)*1000
+            # The observer covers the resize itself, but the unchanged wait's
+            # deadline starts afterwards. Never charge prelude time to the wait.
+            anchor_started = time.monotonic()
+            try:
+                if receipt is not None: page.evaluate('receipt=>receipt.begin()', receipt)
+            except Exception as diagnostic_error:
+                report['anchorError'] = str(diagnostic_error)
+        started = time.monotonic()
+        report['waitStarted'] = True
         yield report
     except BaseException as caught:
         outcome, error = 'failed', dict(exception=type(caught).__name__,error=str(caught))
