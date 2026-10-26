@@ -3,10 +3,10 @@ import contextlib
 import json
 from pathlib import Path
 import time
-from assertion_contract import STALL_RUNTIME,HARD_WALL_MS,wait_for_budget
+from assertion_contract import STALL_RUNTIME,HARD_WALL_MS,wait_for_budget,budget_ms
 
 
-PREVIEW_TIMEOUT_MS = 30_000
+PREVIEW_TIMEOUT_MS = budget_ms('figure-preview')
 PREVIEW_PREDICATE = '()=>document.querySelector("#figurePanel img").src.startsWith("blob:")'
 
 INSTALL_OBSERVER = r'''() => {
