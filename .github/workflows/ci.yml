@@ -35,6 +35,7 @@ jobs:
           node tools/audit-construction-order.cjs --self-test
           VIBEMOL_ESCAPE_CONTRACT_REPORT=out/test-artifacts/construction-order/escape-contract.json node tools/check-escape-contract.cjs
           VIBEMOL_COORDINATES_PLACEMENT_REPORT=out/test-artifacts/construction-order/coordinates-placement.json node tools/check-coordinates-placement.cjs
+          python tools/check-surface-baseline.py
           node tools/audit-construction-order.cjs tests/baselines/stage5/construction-order.json out/test-artifacts/construction-order/report.json
           PYTHONPATH=tests/e2e python -c 'import json; from pathlib import Path; from ci_evidence import artifact_identity; Path("out/test-artifacts/construction-order/identity.json").write_text(json.dumps(artifact_identity(), indent=2)+"\n")'
       - name: Upload construction-order evidence

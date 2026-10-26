@@ -1,6 +1,6 @@
 {
   "issue": 43,
-  "status": "PR73 wall-recording revision candidate; original first run40268153418 passed; new complete gate required",
+  "status": "fixed and merged by PR73 after its complete first-pass gate; raw wall distributions remain independent of discounting",
   "gate": {
     "passed": 37,
     "failed": 0,
@@ -81,5 +81,24 @@
       "maximum"
     ],
     "newPerformanceAcceptanceThreshold": null
+  },
+  "acceptedCandidate": {
+    "pr": 73,
+    "head": "d7d0df3e0efa43dbf85211b8ee2714eee927c588",
+    "runId": 40373902428,
+    "attempt": 1,
+    "merge": "8021cce588396a3915dee2bea825988d3a2111fb",
+    "ordinaryExpected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "independentChecks": 518,
+    "rawWallRecords": 31,
+    "intentionalControlFailures": 4,
+    "CISeconds": 2336.0,
+    "looksSeconds": 1093.05,
+    "bothMaterialPaths": true,
+    "archiveSha256": "d8ca7687bb212d9e25a893891da3102db847c9ee9b56bd99a180dfcc2a6b48ea"
   }
 }

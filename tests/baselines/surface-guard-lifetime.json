@@ -1,0 +1,106 @@
+{
+  "pr": 69,
+  "status": "Lifetime assertions and scoped resource recording; own first ordinary conjunction remains required for acceptance",
+  "historicalRuns": [
+    {
+      "runId": 40245313826,
+      "label": "first",
+      "observations": [
+        {
+          "suite": "tests/e2e/edit_picking.py",
+          "seconds": 260.96,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-3)",
+          "runnerId": 1000016262
+        },
+        {
+          "suite": "tests/e2e/floating_panels.py",
+          "seconds": 234.73,
+          "exitCode": 0,
+          "job": "Browser suites (balanced-2)",
+          "runnerId": 1000016269
+        }
+      ],
+      "exclusiveGuardWallMs": null,
+      "cpuNotRecorded": true,
+      "residualContextsNotRecorded": true
+    },
+    {
+      "runId": 40263180674,
+      "label": "rebased",
+      "observations": [
+        {
+          "suite": "tests/e2e/appearance_controls.py",
+          "seconds": 30.91,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-1)",
+          "runnerId": 1000016306
+        },
+        {
+          "suite": "tests/e2e/surface_schemes.py",
+          "seconds": 60.64,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-1)",
+          "runnerId": 1000016306
+        },
+        {
+          "suite": "tests/e2e/floating_panels.py",
+          "seconds": 313.9,
+          "exitCode": 0,
+          "job": "Browser suites (balanced-2)",
+          "runnerId": 1000016303
+        }
+      ],
+      "exclusiveGuardWallMs": null,
+      "cpuNotRecorded": true,
+      "residualContextsNotRecorded": true
+    }
+  ],
+  "control": {
+    "runId": 40254546952,
+    "floatingSuiteSeconds": 201.89,
+    "guardPresent": false
+  },
+  "interpretation": "Old whole-suite times include native floating tests and the guard; differences across runners do not measure exclusive guard cost. Guard and failed suites used distinct runner IDs, excluding same-runner managed-page contention but not broader CI contention.",
+  "sourceLifecycle": {
+    "browserCount": 1,
+    "browserContextsCreated": 18,
+    "serial": true,
+    "pagesPerContextCreatedByHarness": 1,
+    "caseClosure": "context.close in finally before next case",
+    "phaseClosure": "browser.close in finally; sync_playwright and HTTP server exit; blocking subprocess returns before later suites"
+  },
+  "newEvidence": {
+    "contextChecks": "before/opened/after close each case; phase end; browser retired; parent native browser retired before child starts",
+    "rawCosts": "exact guard subprocess wall duration; native phase separately; per-case wall; OS reaped-child CPU snapshots/deltas; maxRSS native units explicitly not aggregate RSS",
+    "peaks": "observed on context creation and page-open events",
+    "newPerformanceAcceptanceThreshold": null
+  },
+  "baselineUnchanged": {
+    "pairs": 12,
+    "directions": 13,
+    "signatures": 112,
+    "growthAuthorized": false
+  },
+  "productionChanges": 0,
+  "rebasedMain": "8021cce588396a3915dee2bea825988d3a2111fb",
+  "inheritsPR73": {
+    "pr": 73,
+    "head": "d7d0df3e0efa43dbf85211b8ee2714eee927c588",
+    "runId": 40373902428,
+    "attempt": 1,
+    "merge": "8021cce588396a3915dee2bea825988d3a2111fb",
+    "ordinaryExpected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "independentChecks": 518,
+    "rawWallRecords": 31,
+    "intentionalControlFailures": 4,
+    "CISeconds": 2336.0,
+    "looksSeconds": 1093.05,
+    "bothMaterialPaths": true,
+    "archiveSha256": "d8ca7687bb212d9e25a893891da3102db847c9ee9b56bd99a180dfcc2a6b48ea"
+  }
+}

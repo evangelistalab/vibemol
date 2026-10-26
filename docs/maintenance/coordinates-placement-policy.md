@@ -139,3 +139,50 @@ still incomplete; the112 signatures are not a global surface inventory.
 
 The shared policy remains justified but not scheduled. The Floating UI experiment
 is closed, and the current local rule and strict baseline are unchanged.
+
+## Strict guard: explicitly authorized latent baseline
+
+The guard samples actual clipped interactive rectangles and intersections, then
+uses DOM hit order. Center-only sampling remains historical diagnostic evidence;
+it does not supply guard acceptance. Its baseline enumerates12 unordered pairs,
+13 covering/covered directions and112 exact target signatures. The first84 are
+retained; exactly28 observations from failed run40230711618 were added under the
+direct human expansion. There is no count-only or wildcard allowance.
+
+Inspection classifies all12 as suspected defects (0 intentional,0 unreachable);
+[#55](https://github.com/evangelistalab/vibemol/issues/55) links separate issues
+#56–67 and lists every direction/target. These are latent risks, not accepted
+ordinary failures. The ordinary accepted set is intentionally empty after53,
+and none of these signatures can excuse a failing ordinary workflow.
+
+The baseline shrinks freely and grows or re-adds targets only with new human
+authorization. The independent pinned authority/hash and predecessor-subset
+check enforce this. Three profiles across two layouts and three widths are
+18 declared contexts. That scope is checked exactly, but the broader28-shell
+surface coverage is **still incomplete**. This baseline is not exhaustive.
+
+## Guard resource lifetime
+
+The guard uses one browser and18 serial real browser contexts, with one page
+created per context by the harness. Each context closes in `finally` before
+the next starts; the browser, Playwright driver and HTTP server close before
+the blocking child process returns. Native floating workflows retire their
+original browser before the guard subprocess starts. There is no concurrent
+18-context pool.
+
+The two held runs recorded only whole floating-suite durations:234.73s
+(40245313826) and313.90s (40263180674), against201.89s on control40254546952
+without the guard. Those include the original native workflows; cross-run
+differences are not exclusive guard cost. Exact phase/CPU cost and residual
+context counts were not recorded then. The guard ran on balanced-2;70 failed
+on balanced-3, and the two later navigation failures on balanced-1, with distinct
+runner IDs. A guard page cannot share those other test runners; broader CI
+contention is not excluded by that observation.
+
+The new lifetime assertions read actual context/page registries after every
+case and at phase exit, then require disconnection after browser close. They
+do not repair browser state. Event-observed peaks, per-case duration, exact
+subprocess wall time and scoped OS reaped-child CPU accounting are recorded.
+The native phase is measured separately. These observations introduce no
+performance acceptance threshold or latent-signature allowance.
+See `tests/baselines/surface-guard-lifetime.json`.
