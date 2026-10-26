@@ -47,9 +47,7 @@ def navigation_diagnostics(page, artifact_dir, *, label):
             report['readback']=page.evaluate('''()=>({url:location.href,readyState:document.readyState,
               observedAtMs:performance.now(),workbenchPresent:!!window.VibeMolWorkbench,
               looksPresent:!!window.VibeMolAppearanceLooks,
-              navigation:performance.getEntriesByType('navigation').map(e=>e.toJSON()),
-              unfinishedResources:performance.getEntriesByType('resource').filter(e=>!e.responseEnd)
-                .map(e=>({name:e.name,initiatorType:e.initiatorType,startTime:e.startTime}))})''')
+              navigation:performance.getEntriesByType('navigation').map(e=>e.toJSON())})''')
         except Exception as error:report['readbackError']=str(error)
         report['comparands']=dict(readyState=dict(actual=report.get('readback',{}).get('readyState'),expected='complete'),
             loadEventObserved=dict(actual=any(e['event']=='load'for e in events),expected=True))
