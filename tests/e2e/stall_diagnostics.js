@@ -1,4 +1,11 @@
 (function (platform = {}) {
+  // #43 confirmed limitation: this is NOT a performance-regression detector.
+  // Long tasks and missed heartbeats include the page's OWN awaited CPU work,
+  // which receives the same credit as descheduling. A correct slow result can
+  // therefore pass until the independent180s ceiling. Wrong/missing values and
+  // that ceiling remain protected; uncredited time can still expire the nominal
+  // budget. Never interpret a passing responsive duration as performance proof.
+  // Raw wall durations/distributions are retained separately; no drift gate.
   // Shared timing owner. Unavailable observations never grant unobserved time.
   const now = platform.now || performance.now.bind(performance);
   const schedule = platform.setTimeout || setTimeout;

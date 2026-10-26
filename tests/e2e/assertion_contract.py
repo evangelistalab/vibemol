@@ -7,9 +7,15 @@ from pathlib import Path
 import time
 from wall_times import record_wait_wall
 
+# #43: this budget cannot reliably catch a product slowdown: it credits the
+# page's own awaited work as well as descheduling. It is a functional value/
+# eventual-completion guard, not a performance detector. Correct slow results
+# can pass up to the180s ceiling; uncredited responsive time can still expire.
+# Compare the independent raw wall records to the stored reference for review;
+# no performance drift threshold is imposed.
 # Existing budgets, not larger values inferred from host/RAF observation delay.
 BUDGET_MS = {'native-selection': 600, 'native-clipboard': 5000, 'false-presented-control': 100,
-             'resize-readiness': 30_000, 'figure-preview': 30_000}  # Existing Playwright default, made explicit; #70.
+             'resize-readiness': 30_000, 'figure-preview': 30_000, 'navigation-load': 30_000}  # Existing Playwright default, made explicit; #70.
 HARD_WALL_MS = 180_000
 RUNTIME = Path(__file__).with_name('assertion_runtime.js').read_text()
 STALL_RUNTIME = Path(__file__).with_name('stall_diagnostics.js').read_text()
