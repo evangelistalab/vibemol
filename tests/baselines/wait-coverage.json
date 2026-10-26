@@ -1,0 +1,82 @@
+{
+  "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+  "censusRole": "AST call sites, not dynamic execution counts; imports and literal child-script references traversed from37 ordinary entrypoints",
+  "ordinaryReachableModules": 56,
+  "ordinaryStaticCallsBefore": {
+    "click": 709,
+    "reload": 30,
+    "wait_for_function": 537,
+    "wait_for": 8,
+    "goto": 88,
+    "wait_for_selector": 5
+  },
+  "allE2eStaticCallsBefore": {
+    "goto": 91,
+    "wait_for_function": 543,
+    "click": 717,
+    "wait_for": 8,
+    "reload": 30,
+    "wait_for_selector": 5
+  },
+  "budgetedBefore": [
+    {
+      "site": "smoke.native-selection",
+      "budgetMs": 600
+    },
+    {
+      "site": "smoke.select-two-first",
+      "budgetMs": 600
+    },
+    {
+      "site": "smoke.select-two-additive",
+      "budgetMs": 600
+    },
+    {
+      "site": "smoke.startup-single-selection",
+      "budgetMs": 600
+    },
+    {
+      "site": "smoke.native-clipboard",
+      "budgetMs": 5000
+    },
+    {
+      "site": "presented-state.false-control",
+      "budgetMs": 100
+    },
+    {
+      "site": "edit-picking.resize-readiness",
+      "budgetMs": 30000
+    },
+    {
+      "site": "figure.preview",
+      "budgetMs": 30000
+    }
+  ],
+  "navigationExtension": {
+    "sourceOwners": [
+      "tests/e2e/properties_inspector.py",
+      "tests/e2e/surface_schemes.py"
+    ],
+    "ordinaryInvocations": 8,
+    "roles": [
+      "Properties startup in properties_inspector and appearance_controls",
+      "Three Surface Schemes stored-payload loads in surface_schemes and looks"
+    ],
+    "preCommit": "Original30000ms bare wall deadline; no increased request timeout",
+    "postCommit": "Required load dispatch plus its next task boundary; original30000ms shared accounting, independent180000ms total wall ceiling",
+    "fallback": "Unsupported browser, same-document/hash navigation, setup failure: original deadline/load condition, no blind180s",
+    "unobservedTime": "Never credited; document transition gaps remain charged",
+    "networkWait": "Charged while renderer heartbeat runs; withheld-resource controls must fail before resource release",
+    "limitation": "Page CPU work receives credit; not a performance-regression detector",
+    "lifecycle": "Preload and current observer/timer removed each invocation. One public Playwright bridge per Page stays inactive, retains no clock and is released with the Page."
+  },
+  "notCovered": [
+    "Other goto and reload calls",
+    "Pre-commit navigation request wall deadline",
+    "Locator/selector/actionability waits",
+    "Other direct wait_for_function calls not using the shared owner",
+    "Browser launch, file chooser, download and API/CLI waits"
+  ],
+  "performanceAcceptanceThreshold": null,
+  "ordinaryGate": "37/0/37; intentionally empty accepted set;102x2/52slots/eight contexts/all minima unchanged in this harness PR"
+}

@@ -46,3 +46,43 @@ Ordinary CI and active diagnostics install `api/requirements-ci.lock`, including
 Issue50 arrival mode is part of the standing `smoke_input_diagnostic.py` tool. It executes the original complete prefix through the grow-add section, with the600ms assertion unchanged, and observes the existing authoritative selection setter. Native input, setter bounds, callback completion, first wait observations and frame/long-task records have separate timestamps. A late receipt never converts an original assertion failure into a pass. The separate30s observation ceiling reuses the existing default browser-wait ceiling solely to collect a late or missing receipt; it is not the selection budget. Five independent workers measure one activation each, without retries.
 
 The#45 completion gate holds `performance.now()` before Start while real frames and input delivery continue. The render loop feeds that time to both playback owners, whose recording-start paths reset their timestamps. Every later delta is zero until the test releases the gate. This proves natural completion cannot overtake pointerdown, even if host action delivery stalls. The gate releases after the early-Stop click or between press/key-down and release/key-up for the product regression. No sleeps, retries or longer recording window establish readiness. Native MediaRecorder verification is available with `tests/e2e/video_export_activation.py`; Smoke uses its existing recorder stubs. #11 and#45 remain separate ledger entries.
+
+## One-run infrastructure characterization (40396382688)
+
+The repository is public; ordinary jobs use standard GitHub-hosted ubuntu-latest
+VMs, not self-hosted runners. The one explicitly dispatched profile observed
+Ubuntu24.04 image20261023.334.3, Linux6.17.0-1022-azure, four vCPUs (Intel Xeon
+6973P-C),16,372,440KiB guest RAM, and a145GB root volume with85GB available.
+These are observed VM values, distinct from GitHub's documented nominal runner
+specifications. Each ordinary shard has its own VM; suites within a shard remain
+serial. Chromium uses software SwiftShader.
+
+Using the ordinary Python3.12.15/Playwright1.64.1 lockfile, the original Edit
+prelude and unchanged slab assertions ran once on the actual2,000-atom/5,400-bond
+scene.196 one-second samples include144 complete dense-phase process-tree
+observations: peak PSS1,050,133KiB (~1.00GiB), at least14,397,880KiB (~13.73GiB)
+host memory available. V8 used42.1MB against a3.76GB heap limit. Memory-pressure
+some/full totals stayed0; memory-controller files were unavailable and are not
+reported as zero.29 missing process-memory observations all occurred during
+retirement as children exited. These are sampled peaks, not allocation maxima.
+
+Dense-phase CPU utilization was98.43% across the four vCPUs, with zero recorded
+steal ticks and no cgroup throttled time. This measures CPU saturation, not memory
+limit proximity. It neither diagnoses the old unclassified navigations nor proves
+that every timeout was external machine noise. No individual timeout issue is
+filed from this profile; new occurrences belong in the shared infrastructure
+record with their evidence. A distinct product mechanism stays separate.
+
+The organization API reports the Free plan and larger hosted runners unsupported.
+GitHub offers8-vCPU/32GB Ubuntu and larger configurations to Team/Enterprise
+organizations; those runners are billed even for public repositories. Moving to
+one requires an administrator's plan/billing/runner configuration change. No such
+change was made. A controlled8-vCPU comparison would address the measured CPU
+limit; increasing RAM alone is not supported by this profile.
+
+Compact reference: tests/baselines/runner-characterization.json. Raw process,
+pressure, runner identity and scene evidence: diagnostic run40396382688. This is
+not ordinary merge acceptance, a recurring benchmark, or a new performance gate.
+Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
+and https://docs.github.com/en/actions/concepts/runners/larger-runners and
+https://docs.github.com/en/actions/reference/runners/larger-runners.

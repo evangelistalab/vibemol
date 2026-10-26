@@ -1,0 +1,45 @@
+{
+  "runId": 40396382688,
+  "head": "d5ec5a24e30f2af718d6a247c4fbd1b6f8ed873b",
+  "platform": "Linux-6.17.0-1022-azure-x86_64-with-glibc2.39",
+  "logicalCpus": 4,
+  "image": "20261023.334.3",
+  "cpuModel": "Intel Xeon6973P-C",
+  "memTotalKiB": 16372440,
+  "peakDensePssKiB": 1050133,
+  "minimumHostAvailableKiB": 14397880,
+  "denseSamples": 144,
+  "denseMissingProcessMemory": 0,
+  "denseCpuBusyPercent": 98.43002237906697,
+  "denseStealTicks": 0,
+  "heap": {
+    "used": 42100000,
+    "total": 50400000,
+    "limit": 3760000000
+  },
+  "sampleCount": 196,
+  "retirementMissingSamples": 29,
+  "limitations": "One observed run,1s samples; no allocation maximum or retrospective timeout diagnosis. Memory-controller files unavailable, not zero.29 process-memory misses all occur during retirement as children exit.",
+  "role": "One explicitly authorized infrastructure measurement, not ordinary merge acceptance or a recurring benchmark",
+  "appSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+  "toolchainLockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be",
+  "runnerName": "GitHub Actions 1000016403",
+  "disk": "Filesystem      Size  Used Avail Use% Mounted on\n/dev/root       145G   61G   85G  42% /\n",
+  "memoryPressure": "some/full total remained0 across the profile",
+  "cpuThrottledUsec": "0 at both ends; unavailable memory-controller metrics remain null, not zero",
+  "organizationPlan": "free",
+  "hostedLargerRunnerEndpoint": "GitHub hosted runners are not supported for this organization",
+  "largerRunners": {
+    "requirement": "Organization Team or Enterprise Cloud; always billed, including public repositories",
+    "option": "8vCPU /32GB Ubuntu",
+    "adminChangeRequired": true
+  },
+  "docs": [
+    "https://docs.github.com/en/actions/reference/runners/github-hosted-runners",
+    "https://docs.github.com/en/actions/concepts/runners/larger-runners",
+    "https://docs.github.com/en/actions/reference/runners/larger-runners"
+  ],
+  "performanceAcceptanceThreshold": null,
+  "sourceSamplesSha256": "51d2bed72e1ee6dd64fe66061aa84891f60f591790ec03384df250956f0b6751",
+  "conclusion": "No sampled memory-limit proximity in the dense phase; four-vCPU saturation is measured. This does not establish the cause of prior unclassified timeouts."
+}

@@ -10,9 +10,16 @@ on:
       - 'tests/e2e/edit_picking.py'
       - 'tests/e2e/smoke.py'
   workflow_dispatch:
+    inputs:
+      scope:
+        description: Explicit diagnostic; neither supplies ordinary acceptance
+        type: choice
+        options: [legacy-unbounded, runner-characterization]
+        default: legacy-unbounded
 
 jobs:
   probe:
+    if: github.event_name != 'workflow_dispatch' || inputs.scope == 'legacy-unbounded'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     strategy:
@@ -41,3 +48,26 @@ jobs:
         with:
           name: issue4-${{ matrix.suite }}
           path: out/test-artifacts/ci-probe/
+
+  runner-characterization:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'runner-characterization'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Ordinary locked browser toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: One actual runner and dense-scene characterization
+        env:
+          VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/runner-characterization
+          PYTHONUNBUFFERED: '1'
+        run: python tools/diagnostics/runner_characterization.py
+      - name: Preserve raw runner, process memory and pressure samples
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: runner-characterization
+          path: out/test-artifacts/runner-characterization/

@@ -1,7 +1,7 @@
 {
   "runId": 40263180674,
   "pr": 69,
-  "status": "unclassified observations; PR69 held; no retry or accepted-set change",
+  "status": "Historical failed run remains unclassified; PR69 later passed40382345816 without retrospectively classifying it",
   "gate": {
     "passed": 35,
     "failed": 2,
@@ -39,8 +39,8 @@
       "acceptedCiFailure": false
     }
   ],
-  "newInstrumentation": "tests/e2e/navigation_diagnostics.py records request URLs/type/completion/failure, pending requests, lifecycle events, readyState and actual timestamps on both outcomes. Existing goto(load)/timeouts untouched.",
-  "relationshipTo43": "Observation only; navigation receives no responsive budget or increased timeout.",
+  "newInstrumentation": "Request/lifecycle observations retained; the follow-up adds observed post-commit load receipts to the two affected owners. Pre-commit requests retain the original wall deadline.",
+  "relationshipTo43": "Post-commit navigation accounting now shares43 policy; page CPU credit limitation and raw wall records apply. No unobserved network time is credited.",
   "guardResult": {
     "passed": true,
     "contexts": 18,
@@ -70,5 +70,7 @@
     "appearanceMaterialPresetTimeoutObserved": false,
     "riskRemainsOpen": true
   },
-  "wholeCISeconds": 2521
+  "wholeCISeconds": 2521,
+  "currentCoverage": "tests/baselines/wait-coverage.json",
+  "currentRunnerProfile": 40396382688
 }

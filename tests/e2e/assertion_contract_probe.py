@@ -154,6 +154,8 @@ def main():
         finally:
             browser.close()
         assert not browser.is_connected(),'Contract probe browser must retire before Smoke'
+    from navigation_budget_probe import run as navigation_contract
+    navigation_contract(out/'navigation')
     return 0
 
 

@@ -139,7 +139,12 @@
         "bothMaterialPaths": true,
         "archiveSha256": "d8ca7687bb212d9e25a893891da3102db847c9ee9b56bd99a180dfcc2a6b48ea"
       },
-      "discountAttribution": "Page CPU work and descheduling are indistinguishable; raw wall is retained independently on every wait."
+      "discountAttribution": "Page CPU work and descheduling are indistinguishable; raw wall is retained independently on every wait.",
+      "performanceRegressionDetector": false,
+      "wallTimeReference": "tests/baselines/wait-wall-reference.json",
+      "navigationCoverage": "tests/baselines/wait-coverage.json",
+      "runnerCharacterization": "tests/baselines/runner-characterization.json",
+      "timeoutGrouping": "New environmental occurrences grouped in the shared infrastructure record; no individual stall issues, retries or gate allowances"
     },
     {
       "issue": 45,
