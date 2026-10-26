@@ -96,7 +96,7 @@
       "issue": 43,
       "url": "https://github.com/evangelistalab/vibemol/issues/43",
       "kind": "harness",
-      "status": "fix candidate; complete ordinary gate required",
+      "status": "fixed and merged by PR73 after complete first-pass gate",
       "suite": "tests/e2e/figure.py",
       "scope": "Fixed30000ms functional preview deadline is smaller than the41518ms long task observed on unmodified main. This does not retrospectively diagnose occurrence42.",
       "acceptedCiFailure": false,
@@ -119,7 +119,27 @@
         "responsiveBudgetMs": 30000,
         "hardWallMs": 180000
       },
-      "contract": "tests/baselines/responsive-assertion-budgets.json"
+      "contract": "tests/baselines/responsive-assertion-budgets.json",
+      "completedGate": {
+        "pr": 73,
+        "head": "d7d0df3e0efa43dbf85211b8ee2714eee927c588",
+        "runId": 40373902428,
+        "attempt": 1,
+        "merge": "8021cce588396a3915dee2bea825988d3a2111fb",
+        "ordinaryExpected": {
+          "passed": 37,
+          "failed": 0,
+          "total": 37
+        },
+        "independentChecks": 518,
+        "rawWallRecords": 31,
+        "intentionalControlFailures": 4,
+        "CISeconds": 2336.0,
+        "looksSeconds": 1093.05,
+        "bothMaterialPaths": true,
+        "archiveSha256": "d8ca7687bb212d9e25a893891da3102db847c9ee9b56bd99a180dfcc2a6b48ea"
+      },
+      "discountAttribution": "Page CPU work and descheduling are indistinguishable; raw wall is retained independently on every wait."
     },
     {
       "issue": 45,
@@ -189,6 +209,12 @@
         "noStateRepairOrDownstreamValidationTrust": true,
         "unitGap": "Direct changed-flag assertion uses callback mock without cross-selection side effect",
         "externalApiConsumersUnknown": true
+      },
+      "unitMockGap": {
+        "mock": "onSelectionChanged only appends to calls.selectionChanges",
+        "omittedRealSideEffect": "clearBondCenterSelection({updateVisuals:false}) runs before the helper computes its return",
+        "blindFixture": "Nonempty atom and transform selection already make changed true; empty atom/transform with bond-center-only selection is not modeled",
+        "requiredFutureCase": "Use real ordering or a faithful side-effect mock with bond-center-only selection; no71 fix here"
       }
     }
   ],
