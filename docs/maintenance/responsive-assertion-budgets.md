@@ -65,3 +65,14 @@ never-arriving and late-correct states, and hard-wall failure. Bounded real-driv
 controls additionally prove a completed native event beyond600 wall ms can pass
 with observed stalls while wrong native completion and false readiness fail.
 The old numeric tolerances/type/structure comparisons remain exact contracts.
+
+The separately authorized guard rerun40263180674 returned35/2/37 and remains
+held: Properties startup and Surface Schemes' fresh-page navigation both timed
+out in unchanged `goto(load)` calls. Resize70 and the strict18-context/112-target
+guard passed. The standing diagnostics rule requires request/lifecycle/readyState
+comparands before these paths run again, so the budget PR adds observation only
+at those two calls. Navigation receives no responsive budget, new ceiling,
+readiness change or retry. Neither failure is classified as analytics/contention
+from a generic resource error. See `tests/baselines/navigation-load-observations.json`.
+A separate budget candidate's result cannot retroactively accept or classify
+the failed guard candidate.

@@ -880,5 +880,6 @@
   ],
   "openHarnessDefects": [],
   "acceptedSetIntentionallyEmpty": true,
-  "activeGateConsistencyGuard": "Unit assertion compares all active manifest/risk/ledger/run-policy count records and explicit empty-set intent; closes the stale ledger acceptedCiGate35/2 left during52."
+  "activeGateConsistencyGuard": "Unit assertion compares all active manifest/risk/ledger/run-policy count records and explicit empty-set intent; closes the stale ledger acceptedCiGate35/2 left during52.",
+  "unclassifiedNavigationObservations": "tests/baselines/navigation-load-observations.json; two new goto(load) failures in PR69 run40263180674; neither carried nor accepted. Request/lifecycle observation required before rerun; no navigation budget change."
 }

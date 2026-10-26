@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Legacy surface palette migration, polarity labels, and persistence."""
 import json
+from navigation_diagnostics import navigation_diagnostics
 import premerge as p
 from appearance_controls import change
 
@@ -103,7 +104,9 @@ def surface_schemes(page, context, url):
         other.on('pageerror', lambda error: errors.append(str(error)))
         try:
             other.add_init_script('localStorage.setItem(' + json.dumps(key) + ',' + json.dumps(json.dumps(data)) + ');')
-            other.goto(url);other.wait_for_function('()=>window.VibeMolAppearanceLooks')
+            with navigation_diagnostics(other,p.ARTIFACTS,label='surface-schemes-'+key):
+                other.goto(url)
+            other.wait_for_function('()=>window.VibeMolAppearanceLooks')
             check_labels(other)
             if key == 'vibemol.looks.v1':
                 change(other, 'lookColorPreset', 'user-legacy-tableau')
