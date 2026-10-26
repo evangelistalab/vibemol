@@ -58,8 +58,8 @@ so Measure/Calculations axis Escape retains their mode and selections.
 
 ## Regression assertions and remaining questions
 
-The checker enumerates every level × four modes × five focus origins, plus
-every Edit sub-ladder state. Applicable cases have one winner/one action; fully
+The checker enumerates every level × four modes × eight concrete focus holders
+across four focus kinds, plus every Edit sub-ladder state (1248 cases). Applicable cases have one winner/one action; fully
 inapplicable cases have none, never a fabricated no-op. Two- and three-press
 sequences exercise modal→menu→Edit and cancel→disarm→clear from fresh state.
 
@@ -71,15 +71,14 @@ the legacy native cases verify it separately. The old ordinary suite aborted
 before its later legacy coverage; that gap was not a pass.
 
 There is no new controller or module state. The stateless arbiter uses current
-offers from the existing owners; all 31 action types have exactly one source
+offers from the existing owners; all 32 action types have exactly one source
 provider. The checker reports every new helper's app closure reads, global
 module reads and data parameters and requires each total to stay below 15. The
 largest helper has 11 total inputs. The inverse construction audit covers the
 app and every changed provider, including providers loaded after app startup.
-Direct human authorization now requires36/1/37 for this PR, removing only Axis
-Escape52 from acceptance. The Coordinates53 entry remains byte-identical. Any
-other count or failing workflow stops; the later37/0/37 authorization does not
-apply to this PR.
+Historical52 authorization required36/1/37 and retained Coordinates byte-identically.
+Corrected run40237309034 satisfied that conjunction. Separate53 subsequently
+passed37/0/37 and merged as91e9fb6; the current accepted set is intentionally empty.
 
 ## Corrected field ownership and action-result diagnosis
 
@@ -111,5 +110,28 @@ combinations,1248 total. The separate62-case native matrix exercises actual
 name/live-energy/select owners and every selection-target combination in both
 interfaces. The old field/control labels existed; these real owner paths and
 the distinct bond-only target did not. Do not claim native coverage of every
-abstract table cell. The corrected candidate must reach both exporter completion
-records in its own ordinary run and satisfy the authorized36/1/37 composition.
+abstract table cell. Corrected run40237309034 reached both exporter completion records and satisfied
+the authorized36/1/37 composition.
+
+## Causal repair and maintenance evidence (2026-10-26)
+
+The ten `edit.perform` page errors (two Transform selection, eight Edit picking)
+were repaired by the merged handler's code change, not by changing tested states.
+An exact extracted-handler comparison uses the same bond-only state and real
+shared controller: rejected df88b84 clears the target but returns false; merged
+ff66e776 clears it and returns true. The merged handler checks applicability
+before cleanup and verifies the postcondition afterward instead of consulting
+a changed flag computed after callback side effects. Both original suite files
+are byte-identical between those candidates. The expanded matrix adds coverage;
+it did not avoid or repair the failing state.
+
+The shared helper still has an inaccurate changed flag: the atom-selection
+callback clears the bond centre before the later helper counts it. Tagged base
+and accepted main both return false after a real clear. This is separately
+tracked as [#71](https://github.com/evangelistalab/vibemol/issues/71); the closed Escape repair does not claim to fix that helper.
+
+Specifying the ladder required300→1248 pure-table cases, plus62 native cases.
+That growth is evidence of standing maintenance cost, not a new task. Alongside
+0.11 controls, evaluate where `<dialog>`, `inert`, and focused-field ownership
+can supply platform behavior instead of maintaining every rule by hand. The
+working merged ladder is unchanged. See [0.11 evidence](0.11-controls-evidence.md).

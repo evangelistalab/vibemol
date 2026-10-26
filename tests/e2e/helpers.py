@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import contextlib
 import http.client
+import json
 import pathlib
 import re
 import socket
@@ -66,7 +67,7 @@ def ensure_artifact_dir(root: pathlib.Path) -> pathlib.Path:
     return root
 
 
-def wait_for_presented_state(page, predicate: str, *, timeout=None) -> None:
+def wait_for_presented_state(page, predicate: str, *, timeout=None, diagnostics=None) -> None:
     """Poll app state after presentation, using Stage 0's two-frame boundary.
 
     The app renders in requestAnimationFrame. The second callback observes the
@@ -77,15 +78,81 @@ def wait_for_presented_state(page, predicate: str, *, timeout=None) -> None:
     # Playwright tests the immediate predicate return for truthiness: an async
     # predicate's Promise succeeds even when it later resolves to false. Keep
     # the presentation boundary separate and the polled app predicate sync.
+    preparation_started = time.monotonic()
     boundary = page.evaluate_handle('''() => {
         const boundary = {presented: false};
         requestAnimationFrame(() => requestAnimationFrame(() => {boundary.presented = true;}));
         return boundary;
     }''')
+    def observe(phase):
+        if diagnostics is None: return
+        try:
+            reader = diagnostics.get('reader', '()=>null')
+            readback_started = time.monotonic()
+            row = page.evaluate('''({boundary,phase,timeoutMs})=>{
+              if(!boundary.capture){
+                const history=[];let signature=null,dropped=0,polls=0,lastPoll=null,maxPollGap=0,firstPoll=null;
+                boundary.capture=(reason,ready)=>{
+                  const state=(''' + reader + ''')(),observedAtMs=performance.now();
+                  const row={observedAtMs,phase:reason,presentation:{actual:boundary.presented,expected:true},
+                    state,predicatePassed:ready===undefined?null:!!ready};
+                  if(reason==='poll'){
+                    if(lastPoll!==null)maxPollGap=Math.max(maxPollGap,observedAtMs-lastPoll);
+                    if(firstPoll===null)firstPoll=observedAtMs;lastPoll=observedAtMs;polls++;
+                  }
+                  const next=JSON.stringify([row.presentation,state,row.predicatePassed]);
+                  if(next!==signature||reason!=='poll'){
+                    if(history.length<256)history.push(row);else dropped++;
+                    signature=next;
+                  }
+                  return row;
+                };
+                boundary.pollObserve=ready=>{
+                  try{boundary.capture('poll',ready);}catch(error){boundary.pollError=String(error);}
+                };
+                boundary.inspect=reason=>{
+                  if(reason==='passed'||reason==='failed')clearTimeout(boundary.deadlineTimer);
+                  const row=boundary.capture(reason);
+                  return {...row,history:history.slice(),droppedObservations:dropped,
+                    pollError:boundary.pollError||null,pollCount:polls,firstPollAtMs:firstPoll,
+                    lastPollAtMs:lastPoll,maxPollGapMs:maxPollGap,
+                    deadlineSample:boundary.deadlineSample||null};
+                };
+                if(Number.isFinite(timeoutMs)&&timeoutMs>0){
+                  const scheduledAtMs=performance.now()+timeoutMs;
+                  boundary.deadlineTimer=setTimeout(()=>{
+                    try{const row=boundary.capture('deadline callback');
+                      boundary.deadlineSample={...row,scheduledAtMs,latenessMs:row.observedAtMs-scheduledAtMs};
+                    }catch(error){boundary.pollError=String(error);}
+                  },timeoutMs);
+                }
+              }
+              return boundary.inspect(phase);
+            }''', dict(boundary=boundary,phase=phase,timeoutMs=diagnostics.get('timeoutMs',timeout)))
+            row['phase'] = phase
+            row['readbackQueryElapsedMs'] = (time.monotonic()-readback_started)*1000
+            diagnostics.setdefault('observations', []).append(row)
+            print('[presented-state-comparands] ' + json.dumps(row), flush=True)
+        except Exception as error:
+            diagnostics.setdefault('errors', []).append(dict(phase=phase,error=str(error)))
+            print('[presented-state-comparands] ' + json.dumps(diagnostics['errors'][-1]), flush=True)
+    outcome = 'failed'
+    observe('before wait')
+    if diagnostics is not None:
+        diagnostics['preparationElapsedMs'] = (time.monotonic()-preparation_started)*1000
+        diagnostics['deadlineCaveat'] = 'The last before-wait browser observation precedes the wait RPC. Failed readbacks are later observations, never exact deadline snapshots.'
+    wait_started = time.monotonic()
     try:
-        page.wait_for_function('boundary => boundary.presented && (' + predicate + ')()',
-                               arg=boundary, **options)
+        expression = 'boundary => boundary.presented && (' + predicate + ')()'
+        if diagnostics is not None:
+            # Observe the exact original result; never replace its predicate,
+            # coerce its return, retry it, or discount time spent between polls.
+            expression = 'boundary => {const ready=boundary.presented && (' + predicate + ')(); if(boundary.pollObserve)boundary.pollObserve(ready); return ready;}'
+        page.wait_for_function(expression,arg=boundary,**options)
+        outcome = 'passed'
     finally:
+        if diagnostics is not None: diagnostics['waitCallElapsedMs'] = (time.monotonic()-wait_started)*1000
+        observe(outcome)
         boundary.dispose()
 
 

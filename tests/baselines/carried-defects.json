@@ -66,28 +66,6 @@
         "postMergeBaselineRun": 40157081954,
         "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
       }
-    },
-    {
-      "id": "coordinates-delete-selection-card",
-      "trackingIssue": 53,
-      "url": "https://github.com/evangelistalab/vibemol/issues/53",
-      "status": "fix candidate; own complete first-pass37/0/37 required",
-      "workflow": "Selection card covers Coordinates Delete",
-      "acceptedCiFailure": false,
-      "suite": "tests/e2e/mode_consistency.py",
-      "issue": 53,
-      "splitFromUmbrella": 4,
-      "mechanismReport": "docs/maintenance/coordinates-placement-policy.md",
-      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts",
-      "localRuleDecision": {
-        "knowinglyExtendsFragmentation": true,
-        "sharedPolicyImplemented": false,
-        "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls",
-        "inventoryIssue": 55,
-        "audit": "docs/maintenance/coordinates-placement-policy.md",
-        "record": "tests/baselines/coordinates-placement.json",
-        "status": "isolated repair after accepted52; guard separate and nonblocking; own37/0 conjunction required"
-      }
     }
   ],
   "otherCarriedFollowups": [
@@ -128,7 +106,17 @@
       "implementationPrerequisite": "Wait for issue42 classification. If the blob genuinely never arrives for a product-state reason, a responsive-time budget is not a remedy. No deadline or shared-helper implementation in the collector PR.",
       "smokeSubset": "Direct human50 separately authorized shared numeric and measured Smoke event-receipt helper; PR49 merged. Figure responsive-time/heartbeat deadline extension remains design-only pending42.",
       "diagnosticHalf": "Authorized now: tests/e2e/stall_diagnostics.js observes all six former short-deadline sites through their shared owners; logs raw longtasks, union overlap duration, deadline crossings, actual timestamps/lateness, drops and observer errors. Changes no budget or acceptance.",
-      "budgetHalf": "Held. No stall time is excluded or discounted, and no budget is raised. Figure deadline implementation remains untouched pending42 classification."
+      "budgetHalf": "Held. No stall time is excluded or discounted, and no budget is raised. Figure deadline implementation remains untouched pending42 classification.",
+      "additionalDiagnosticSite": {
+        "issue": 70,
+        "site": "edit-picking.resize-readiness",
+        "wasAmongOriginalSix": false,
+        "ordinal": 7,
+        "sharedOwner": "tests/e2e/assertion_contract.py:deadline_diagnostics",
+        "timeoutMs": 30000,
+        "noStallDiscount": true,
+        "budgetHalfStillHeld": true
+      }
     },
     {
       "issue": 45,
@@ -159,6 +147,35 @@
         "postMergeBaselineRun": 40157081954,
         "baselineRecord": "tests/baselines/ordinary-main-35-2-baseline.json"
       }
+    },
+    {
+      "issue": 71,
+      "id": "selection-clear-changed-flag-after-callback",
+      "url": "https://github.com/evangelistalab/vibemol/issues/71",
+      "status": "open; confirmed on tagged base and accepted main by source execution",
+      "carried": true,
+      "acceptedCiFailure": false,
+      "mechanism": "Atom-selection callback clears bond-centre state before the later shared helper counts it; combined changed flag returns false after a real clear.",
+      "source": "assets/app/js/edit-tools.js:clearEditSelectionsOnEmptyClick",
+      "observations": [
+        {
+          "ref": "v0.9.5-pre-refactor",
+          "beforeBondCenter": true,
+          "afterBondCenter": false,
+          "returned": false,
+          "expectedChanged": true,
+          "shortfall": true
+        },
+        {
+          "ref": "91e9fb649b9939597b1e803e342a674c8b5b8d22",
+          "beforeBondCenter": true,
+          "afterBondCenter": false,
+          "returned": false,
+          "expectedChanged": true,
+          "shortfall": true
+        }
+      ],
+      "scope": "Separate from fixed52; inaccurate helper flag remains. No helper production change released; does not excuse an ordinary CI failure."
     }
   ],
   "acceptedCiGate": {
@@ -607,7 +624,101 @@
       "fixRecord": "tests/baselines/escape-contract.json",
       "pr": 54,
       "runId": 40237309034,
-      "merge": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982"
+      "merge": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
+      "causalRepairClarification": {
+        "tenErrors": {
+          "transformSelection": 2,
+          "editPicking": 8
+        },
+        "handlerCodeRepaired": true,
+        "matrixAvoidance": false,
+        "exactExtractedHandlerComparison": [
+          {
+            "ref": "df88b84af8a131c9de546347bf67c55bba3d72cd",
+            "name": "rejected",
+            "initialState": "no atoms/transform selection; one bond-center target",
+            "selectedAfter": false,
+            "returned": false,
+            "prevented": 0
+          },
+          {
+            "ref": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
+            "name": "merged",
+            "initialState": "no atoms/transform selection; one bond-center target",
+            "selectedAfter": false,
+            "returned": true,
+            "prevented": 1
+          }
+        ],
+        "errorSuitesByteIdentical": {
+          "tests/e2e/transform_selection.py": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601",
+          "tests/e2e/edit_picking.py": "9dbda25245e2f406e02c44f5a2858ec92a105779066456a020fb1123ad578867"
+        },
+        "sharedHelperStillInaccurate": 71,
+        "matrixMaintenanceEvidence": {
+          "before": 300,
+          "after": 1248,
+          "native": 62,
+          "interpretation": "Standing maintenance cost; input to platform/dialog/inert evaluation in0.11, not a new task or ladder change."
+        }
+      }
+    },
+    {
+      "id": "coordinates-delete-selection-card",
+      "trackingIssue": 53,
+      "url": "https://github.com/evangelistalab/vibemol/issues/53",
+      "status": "closed; PR68 merged after complete first-pass37/0/37",
+      "workflow": "Selection card covers Coordinates Delete",
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/mode_consistency.py",
+      "issue": 53,
+      "splitFromUmbrella": 4,
+      "mechanismReport": "docs/maintenance/coordinates-placement-policy.md",
+      "regressionAssertion": "Delete owns the native hit point; preserve exact atom IDs, bonds, first-click inline edit, Undo/Redo and both layouts",
+      "localRuleDecision": {
+        "knowinglyExtendsFragmentation": true,
+        "sharedPolicyImplemented": false,
+        "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls",
+        "inventoryIssue": 55,
+        "audit": "docs/maintenance/coordinates-placement-policy.md",
+        "record": "tests/baselines/coordinates-placement.json",
+        "status": "merged; guard remains separate and nonblocking"
+      },
+      "carried": false,
+      "fixEvidence": {
+        "pr": 68,
+        "head": "515dec58740acd14a49429c5cf93a3a2b35e91fd",
+        "integration": "91e9fb649b9939597b1e803e342a674c8b5b8d22",
+        "runId": 40241618214,
+        "attempt": 1,
+        "passed": 37,
+        "failed": 0,
+        "total": 37,
+        "independentChecks": 329,
+        "acceptedSetIntentionallyEmpty": true,
+        "lets": 251,
+        "constructionAppBindings": 19,
+        "maxHelperInputs": 8,
+        "bothExporterCompletionRecords": true,
+        "goldensPerRun": 102,
+        "runs": 2,
+        "exactSerializedRepeat": true,
+        "identitySlots": 52,
+        "identityContexts": 8,
+        "allMinima": true,
+        "jsUnits": 459,
+        "pythonUnits": 102,
+        "webkit": true,
+        "looksSeconds": 1897.71,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "workflowSeconds": 2472.0,
+        "cacheHits": 8,
+        "cacheMisses": 0,
+        "proofArchiveSha256": "69efd5fb93484658d37a2265ec8c60dcbebddfc49b7699f3a12e7c015a4180cd"
+      }
     }
   ],
   "unclassifiedFindings": [
@@ -722,6 +833,35 @@
         "noFurtherDiagnosticReplays": true
       },
       "futureEvidence": "tests/e2e/figure_preview_diagnostics.py records prelude/wait long tasks, timestamped deadline image state with lateness, image history and elapsed readback; original predicate/30000ms ceiling preserved."
+    },
+    {
+      "issue": 70,
+      "id": "edit-picking-resize-readiness-timeout",
+      "url": "https://github.com/evangelistalab/vibemol/issues/70",
+      "status": "open; unclassified",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "suite": "tests/e2e/edit_picking.py",
+      "workflow": "slab resize presentation/viewport readiness",
+      "runId": 40245313826,
+      "requiredGate": {
+        "passed": 37,
+        "failed": 0,
+        "total": 37
+      },
+      "observedGate": {
+        "passed": 36,
+        "failed": 1,
+        "total": 37
+      },
+      "observed": "Existing30000ms wait did not complete after1100x850 outer viewport resize in2000-atom/5400-bond scene; failed comparands/boundary were not captured.",
+      "controls": [
+        40241618214,
+        40244964729
+      ],
+      "taggedReproduction": false,
+      "diagnosticRepair": "Shared deadline observer now covers resize prelude/wait; six actual/expected viewport comparands and presentation state recorded on both outcomes, original predicate and30000ms ceiling retained.",
+      "causeStillUnclassified": true
     }
   ],
   "openHarnessDefects": [],

@@ -1,6 +1,6 @@
 {
   "issue": 53,
-  "status": "authorized37/0/37 candidate on accepted52; guard separate and nonblocking",
+  "status": "closed; isolated PR68 merged after complete first-pass37/0/37",
   "base": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
   "localRule": "nearest in-bounds adjacent placement outside visible Coordinates plus12px; retain manual and editing freezes; no-fit remains observable",
   "knowinglyExtendsFragmentation": true,
@@ -111,14 +111,48 @@
   },
   "ordinaryGate": {
     "manifestUnchanged": false,
-    "complete": false,
+    "complete": true,
     "expected": {
       "passed": 37,
       "failed": 0,
       "total": 37
     },
     "intentionallyEmptyAcceptedSet": true,
-    "armedAfterAccepted52": true
+    "armedAfterAccepted52": true,
+    "result": {
+      "pr": 68,
+      "head": "515dec58740acd14a49429c5cf93a3a2b35e91fd",
+      "integration": "91e9fb649b9939597b1e803e342a674c8b5b8d22",
+      "runId": 40241618214,
+      "attempt": 1,
+      "passed": 37,
+      "failed": 0,
+      "total": 37,
+      "independentChecks": 329,
+      "acceptedSetIntentionallyEmpty": true,
+      "lets": 251,
+      "constructionAppBindings": 19,
+      "maxHelperInputs": 8,
+      "bothExporterCompletionRecords": true,
+      "goldensPerRun": 102,
+      "runs": 2,
+      "exactSerializedRepeat": true,
+      "identitySlots": 52,
+      "identityContexts": 8,
+      "allMinima": true,
+      "jsUnits": 459,
+      "pythonUnits": 102,
+      "webkit": true,
+      "looksSeconds": 1897.71,
+      "materialFamilyPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "workflowSeconds": 2472.0,
+      "cacheHits": 8,
+      "cacheMisses": 0,
+      "proofArchiveSha256": "69efd5fb93484658d37a2265ec8c60dcbebddfc49b7699f3a12e7c015a4180cd"
+    }
   },
   "units": {
     "js": 459,
@@ -167,7 +201,7 @@
     "newTool": false,
     "standingDiagnosticExtended": true,
     "failure": "legacy row1 native Delete intercepted by editSelectionPosition; preserved as failure before explicit diagnostic continuation",
-    "finalRebasedPinnedCheckStillRequired": true
+    "finalRebasedPinnedCheckStillRequired": false
   },
   "preRebaseNativeModeSuite": {
     "passed": true,
@@ -184,8 +218,32 @@
     "sourceAppSha256": "29e73858ef4300652b032685817bf4192a936aade136bce84d914990e7093c09"
   },
   "currentNativeModeSuite": {
-    "status": "required in own first ordinary gate on final rebased candidate",
+    "status": "passed in own first ordinary run40241618214",
     "presentedCardBeforeDelete": true,
-    "originalAssertionsPreserved": true
+    "originalAssertionsPreserved": true,
+    "runId": 40241618214,
+    "layouts": [
+      "legacy",
+      "Workbench"
+    ],
+    "bypasses": 0,
+    "nativeDeleteStepsPassed": 2
+  },
+  "taggedPinnedReproduction": {
+    "runId": 40242098342,
+    "actualCheckout": "515dec58740acd14a49429c5cf93a3a2b35e91fd",
+    "candidateAppSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+    "taggedNativeFailures": 1,
+    "taggedExplicitBypasses": 1,
+    "candidateNativeFailures": 0,
+    "candidateBypasses": 0,
+    "originalAssertionsPerSource": 62,
+    "toolchain": {
+      "python": "3.12.15",
+      "playwright": "1.64.1",
+      "chromium": "156.0.8078.4"
+    },
+    "diagnosticOnly": true,
+    "mergeGateEvidence": false
   }
 }

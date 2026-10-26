@@ -114,3 +114,28 @@ incomplete; its preparation does not block this local fix. Those latent
 allowances are not accepted ordinary-suite failures. This PR removes only the
 Coordinates accepted workflow after52 and requires37/0/37 with an intentionally
 empty accepted set; matcher/join machinery stays.
+
+## Floating UI experiment closed; reusable guard model
+
+The proposed one-surface Floating UI trial was closed by direct human review on
+2026-10-26, before any limited trial or UMD dependency was loaded. It is not held
+for an obstacle-representation decision: that decision is the deferred policy.
+[`altBoundary`](https://floating-ui.com/docs/detectoverflow#altboundary) is a
+boolean selecting the alternate reference/floating clipping context, not a list
+of panel obstacles. `shift()` and `flip()` constrain placement within clipping
+boundaries; they provide no arbitrary inter-panel obstacle avoidance. Supporting
+these twelve pairs would require custom `detectOverflow` middleware and obstacle
+policy: implementing the policy with an added dependency, rather than replacing
+it. Re-proposing the same API is not a substitute for that missing runtime work.
+
+The earlier requirements inventory overstates the amount to build from zero.
+The strict guard already computes clipped interactive rectangles and actual DOM
+hit/stacking order across18 declared contexts and112 signatures. This is the
+policy's existing data/checking half. The missing runtime half would consume the
+same model to choose placement, with ownership/priorities, manual-placement
+constraints, lifecycle invalidation and a deliberate no-fit rule. Reuse that
+model when estimating the policy alongside0.11 declarative controls. Coverage is
+still incomplete; the112 signatures are not a global surface inventory.
+
+The shared policy remains justified but not scheduled. The Floating UI experiment
+is closed, and the current local rule and strict baseline are unchanged.
