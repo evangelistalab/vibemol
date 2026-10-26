@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 import time
+from wall_times import record_wait_wall
 
 # Existing budgets, not larger values inferred from host/RAF observation delay.
 BUDGET_MS = {'native-selection': 600, 'native-clipboard': 5000, 'false-presented-control': 100,
@@ -37,35 +38,38 @@ def state_after_input(page, reader, expected, *, label, policy='native-selection
                   expected=expected, budgetMs=budget_ms(policy), hardWallMs=HARD_WALL_MS, event=event,
                   selector=selector, key=key, requireTransition=require_transition, arg=arg, site=site)
     expression = '(payload)=>(' + RUNTIME + ')(payload,(' + reader + '),(' + STALL_RUNTIME + '))'
-    receipt = page.evaluate_handle(expression, config)
-    checked = False
+    receipt=None;checked=False;last_result=None;attempt_error=None
+    attempt_started=time.monotonic()
     def check():
-        nonlocal checked
+        nonlocal checked,last_result
         readback_started = time.monotonic()
         if asynchronous:
             page.wait_for_function('receipt=>!receipt.received || receipt.complete',arg=receipt,timeout=HARD_WALL_MS,polling=50)
         result = page.evaluate('receipt=>receipt.snapshot()', receipt)
         result['readbackQueryElapsedMs'] = (time.monotonic()-readback_started)*1000
-        checked = True
+        checked=True;last_result=result
         print('[shared-assertion] ' + json.dumps(result), flush=True)
         assert result['passed'], result
         return result
     try:
+        receipt=page.evaluate_handle(expression,config)
         yield check
     except BaseException as original_error:
-        if not checked:
-            # A failed input action must also leave attribution. Read only;
-            # never await a late arrival or replace the original exception.
+        attempt_error=type(original_error).__name__
+        if receipt is not None and not checked:
             with suppress(Exception):
-                result = page.evaluate('receipt=>receipt.snapshot()', receipt)
-                result['inputActionError'] = dict(exception=type(original_error).__name__,error=str(original_error))
-                print('[shared-assertion] ' + json.dumps(result), flush=True)
+                last_result=page.evaluate('receipt=>receipt.snapshot()',receipt)
+                last_result['inputActionError']=dict(exception=attempt_error,error=str(original_error))
+                print('[shared-assertion] '+json.dumps(last_result),flush=True)
         raise
     finally:
-        with suppress(Exception):
-            page.evaluate('receipt=>receipt.dispose()', receipt)
-        with suppress(Exception):
-            receipt.dispose()
+        outcome='failed' if attempt_error else 'passed' if checked and last_result['passed'] else 'unasserted'
+        record_wait_wall(site=site,label=label,kind='native-receipt' if not asynchronous else 'DOM-backed-receipt',
+            outcome=outcome,host_elapsed_ms=(time.monotonic()-attempt_started)*1000,
+            browser=(last_result or {}).get('stalls'),policy=policy,error_type=attempt_error)
+        if receipt is not None:
+            with suppress(Exception):page.evaluate('receipt=>receipt.dispose()',receipt)
+            with suppress(Exception):receipt.dispose()
 
 
 @contextmanager
@@ -124,6 +128,9 @@ def deadline_diagnostics(page, *, label, policy, site, prelude=None):
             report['readbackError'] = str(diagnostic_error)
         report['readbackQueryElapsedMs'] = (time.monotonic()-readback_started)*1000
         print('[shared-deadline] ' + json.dumps(report),flush=True)
+        record_wait_wall(site=site,label=label,kind='readiness',outcome=outcome,
+            host_elapsed_ms=report['waitElapsedMs'],browser=report.get('browser'),policy=policy,
+            error_type=(error or {}).get('exception'))
         if receipt is not None:
             with suppress(Exception): page.evaluate('receipt=>receipt.dispose()', receipt)
             with suppress(Exception): receipt.dispose()

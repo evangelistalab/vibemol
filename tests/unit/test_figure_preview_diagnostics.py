@@ -113,6 +113,22 @@ class FigurePreviewEvidence(unittest.TestCase):
         self.assertEqual(report['readbackError'], 'renderer unavailable')
         self.assertNotIn('browser', report)
 
+    def test_failed_wait_setup_records_wall_and_preserves_exception(self):
+        original=RuntimeError('begin failed')
+        class BrokenPage(FakePage):
+            def evaluate(self,expression,arg=None):
+                if 'begin('in expression:raise original
+                return super().evaluate(expression,arg)
+        page=BrokenPage();output=io.StringIO()
+        with tempfile.TemporaryDirectory()as tmp,contextlib.redirect_stdout(output):
+            with self.assertRaises(RuntimeError)as caught:wait_for_preview(page,tmp)
+            report=json.loads((Path(tmp)/'figure-preview-wait.json').read_text())
+        self.assertIs(caught.exception,original)
+        self.assertFalse(report['waitStarted'])
+        wall=json.loads(next(x.split('] ',1)[1]for x in output.getvalue().splitlines()if x.startswith('[wait-wall] ')))
+        self.assertEqual(wall['outcome'],'failed')
+        self.assertGreaterEqual(wall['hostAttemptWallMs'],0)
+
     def test_41518ms_stall_marks_late_deadline_sample_and_flushes_tasks(self):
         self.run_clock(r'''
 taskObserver.pending.push({startTime: 20000, duration: 41518, name: 'self', entryType: 'longtask'});

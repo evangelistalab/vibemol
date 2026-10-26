@@ -3,6 +3,7 @@ import contextlib
 import json
 from pathlib import Path
 import time
+from wall_times import record_wait_wall
 from assertion_contract import STALL_RUNTIME,HARD_WALL_MS,wait_for_budget,budget_ms
 
 
@@ -66,17 +67,15 @@ def install_preview_diagnostics(page):
 def wait_for_preview(page, artifact_dir):
     """Keep the exact blob predicate and report both responsive and hard-wall limits."""
     anchor_started = time.monotonic()
-    anchor = page.evaluate('config => window.__vmFigurePreviewDiagnostics.begin(config)',
-                           dict(timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS))
-    receipt=page.evaluate_handle('()=>window.__vmFigurePreviewDiagnostics')
-    budget_report=dict(_receipt=receipt,timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS)
-    started, wall_started = time.monotonic(), time.time()
+    anchor=None;receipt=None
+    budget_report=dict(timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS)
+    started,wall_started=anchor_started,time.time()
 
     def capture(outcome, error=None):
         caught = time.monotonic()
         report = dict(outcome=outcome, predicate=PREVIEW_PREDICATE,
                       timeoutMs=PREVIEW_TIMEOUT_MS, hardWallMs=HARD_WALL_MS,browserAnchor=anchor,
-                      budgetResult=budget_report.get('budgetResult'),
+                      budgetResult=budget_report.get('budgetResult'),waitStarted=receipt is not None,
                       clockAlignment='Browser timer is armed just before the wait RPC; anchorCallElapsedMs records that alignment uncertainty.',
                       anchorCallElapsedMs=(started-anchor_started)*1000,
                       waitElapsedMs=(caught-started)*1000,
@@ -96,9 +95,17 @@ def wait_for_preview(page, artifact_dir):
         except OSError as artifact_error:
             report['artifactWriteError'] = str(artifact_error)
         print('[figure-preview-wait] '+json.dumps(report), flush=True)
+        record_wait_wall(site='figure.preview',label='Figure preview blob',kind='image-preview',
+            outcome=outcome,host_elapsed_ms=report['waitElapsedMs'],browser=report.get('browser'),
+            policy='figure-preview',error_type=type(error).__name__ if error is not None else None)
 
     try:
-        result = wait_for_budget(page,PREVIEW_PREDICATE,budget_report)
+        anchor=page.evaluate('config=>window.__vmFigurePreviewDiagnostics.begin(config)',
+            dict(timeoutMs=PREVIEW_TIMEOUT_MS,hardWallMs=HARD_WALL_MS))
+        receipt=page.evaluate_handle('()=>window.__vmFigurePreviewDiagnostics')
+        budget_report['_receipt']=receipt
+        started,wall_started=time.monotonic(),time.time()
+        result=wait_for_budget(page,PREVIEW_PREDICATE,budget_report)
     except Exception as error:
         capture('failed', error)
         raise
@@ -106,4 +113,5 @@ def wait_for_preview(page, artifact_dir):
         capture('passed')
         return result
     finally:
-        with contextlib.suppress(Exception):receipt.dispose()
+        with contextlib.suppress(Exception):
+            if receipt is not None:receipt.dispose()

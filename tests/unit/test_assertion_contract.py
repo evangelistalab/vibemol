@@ -35,7 +35,11 @@ class AssertionContract(unittest.TestCase):
                 with deadline_diagnostics(Page(),label='control',policy='false-presented-control',site='test'):
                     raise original
         self.assertIs(caught.exception,original)
-        report=json.loads(output.getvalue().split('] ',1)[1])
+        report=json.loads(next(line.split('] ',1)[1]for line in output.getvalue().splitlines()if line.startswith('[shared-deadline] ')))
+        wall=json.loads(next(line.split('] ',1)[1]for line in output.getvalue().splitlines()if line.startswith('[wait-wall] ')))
+        self.assertEqual(wall['outcome'],'failed')
+        self.assertGreaterEqual(wall['hostAttemptWallMs'],0)
+        self.assertIsNone(wall['browserWallMs'])
         self.assertEqual(report['exception'],'ValueError')
         self.assertEqual(report['readbackError'],'Diagnostic readback failed')
         self.assertEqual(report['timeoutMs'],100)

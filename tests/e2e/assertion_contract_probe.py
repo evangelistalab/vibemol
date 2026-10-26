@@ -63,12 +63,13 @@ def main():
             result=dict(native=native,asynchronous=asynchronous,missingNativeRejected=missing_failed,
                         negativeControl=negative,falseStateStillRejected=false_rejected,
                         noPollingFrame=True,browser=browser.version)
-            # A genuine completed event beyond600 wall ms now passes only from
-            # measured stalls. A wrong receipt still fails, even if corrected later.
+            # Synthetic page CPU work:80ms+700ms busy loops, no VibeMol and no
+            # induced descheduling. This proves accounting, not environment
+            # attribution: awaited product work could be discounted the same way.
             page.evaluate('''()=>document.getElementById('canvas').addEventListener('pointerup',()=>{
               const end=performance.now()+700;while(performance.now()<end){}
             })''')
-            with state_after_input(page,'()=>model.slice()',[0],label='budget stalled native') as check:
+            with state_after_input(page,'()=>model.slice()',[0],label='synthetic CPU:80ms+700ms busy loops',site='control.synthetic-cpu') as check:
                 page.mouse.click(30,30)
                 stalled_native=check()
             comparands=dict(actual=dict(passed=stalled_native['passed'],
@@ -90,7 +91,7 @@ def main():
                 wrong_rejected=True;wrong_receipt=error.args[0]
             assert isinstance(wrong_receipt,dict) and wrong_receipt['actual']==[1] and wrong_receipt['passed']is False,wrong_receipt
             assert wrong_rejected,'A later correct state must never repair wrong native completion'
-            result['budgetControls']=dict(stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected,wrongNativeReceipt=wrong_receipt)
+            result['budgetControls']=dict(controlNature=dict(kind='synthetic page CPU work',busyLoopsMs=[80,700],appLoaded=False,deschedulingInduced=False),stalledNative=stalled_native,wrongCompletionRejected=wrong_rejected,wrongNativeReceipt=wrong_receipt)
             # The native-input control deliberately forbids RAF. Retire it before
             # testing a distinct contract that explicitly requires presentation.
             page.close()

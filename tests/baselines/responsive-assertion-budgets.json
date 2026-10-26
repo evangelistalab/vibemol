@@ -1,6 +1,6 @@
 {
   "issue": 43,
-  "status": "candidate; full first ordinary conjunction required",
+  "status": "PR73 wall-recording revision candidate; original first run40268153418 passed; new complete gate required",
   "gate": {
     "passed": 37,
     "failed": 0,
@@ -42,5 +42,44 @@
   "productionDependencies": 0,
   "newProductionBindings": 0,
   "newModuleLets": 0,
-  "trackedLets": 251
+  "trackedLets": 251,
+  "discountAttribution": "Neither a longtask nor a missed heartbeat distinguishes descheduling from awaited page work. Page CPU work can be discounted; raw wall duration is an independent observation, not a discounted metric.",
+  "syntheticControlInterpretation": {
+    "runId": 40268153418,
+    "busyLoopsMs": [
+      80,
+      700
+    ],
+    "appLoaded": false,
+    "deschedulingInduced": false,
+    "initialStateAlreadyMatched": true,
+    "wallMs": 780.4,
+    "responsiveMs": 0.2,
+    "longTask": {
+      "startMs": 334.8,
+      "endMs": 1114.8,
+      "durationMs": 780
+    },
+    "heartbeatOverlapMs": 731.5,
+    "unionDiscountMs": 780.2,
+    "remainingMsMeaning": "Delay from event timestamp to capture-handler entry; not a useful-work measure",
+    "limitation": "Synthetic accounting check, not evidence that environment stalls were distinguished from product work"
+  },
+  "rawWallRecording": {
+    "module": "tests/e2e/wall_times.py",
+    "rawFile": "assertion-wall-times.jsonl",
+    "summaryFile": "assertion-wall-times-summary.json",
+    "everyInvocation": true,
+    "passAndFail": true,
+    "browserReadbackMissing": "browserWallMs null; hostAttemptWallMs retained",
+    "clockScopesSeparate": true,
+    "statistics": [
+      "count",
+      "minimum",
+      "median",
+      "p95",
+      "maximum"
+    ],
+    "newPerformanceAcceptanceThreshold": null
+  }
 }

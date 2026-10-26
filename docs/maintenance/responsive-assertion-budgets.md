@@ -76,3 +76,33 @@ readiness change or retry. Neither failure is classified as analytics/contention
 from a generic resource error. See `tests/baselines/navigation-load-observations.json`.
 A separate budget candidate's result cannot retroactively accept or classify
 the failed guard candidate.
+
+## CPU attribution and independent wall durations
+
+The780.4ms/0.2ms passing result in40268153418 was a synthetic test page, not
+VibeMol rendering or induced OS descheduling. Two `pointerup` handlers deliberately
+busy-wait for80ms and700ms. The first writes `model=[0]` after its loop; that
+state already matched before this particular control. The second delays event
+completion. The self longtask covered334.8–1114.8ms, and the clipped heartbeat
+gap covered383.5–1115.0ms; their union was780.2ms of the780.4ms event window.
+The remaining0.2ms was pre-handler delay, not a measure of useful rendering.
+The loops use elapsed time; no CPU profile apportions incidental scheduler time
+inside them. No environment-specific cause can be inferred from this control.
+
+The same clock observations can discount the work a product is doing to satisfy
+the predicate. They do not distinguish that work from descheduling. The native
+control proves accounting and value-contract preservation, not causal attribution
+or complete performance-regression detection.
+
+Every shared wait invocation now independently emits `[wait-wall]` and appends
+`assertion-wall-times.jsonl` on success or failure. Browser event/wait-window raw
+wall time is kept separately from the monotonic host invocation duration. A failed
+or absent browser readback leaves browser time null and still records host time;
+it is never fabricated as zero. File-write failure retains a stdout copy and
+cannot replace an assertion exception. Raw wall values are not stall-discounted.
+
+Each CI shard also writes `assertion-wall-times-summary.json` with separate raw
+browser/host count/minimum/median/p95/maximum distributions by site, kind and outcome.
+These preserve visibility of product slowdowns even when the discounted budget
+passes. No new performance threshold or accepted failure is introduced; a drift
+requires review, rather than being automatically classified as environment noise.
