@@ -216,6 +216,9 @@ def touch_and_resize(page):
 
 
 def main():
+    from browser_lifetime import assert_browser_lifetime,child_usage,child_usage_delta
+    import time
+    parent_started=time.monotonic();lifetime=[]
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
         try:
@@ -234,12 +237,35 @@ def main():
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'floating-'+run.__name__,errors,console_errors)
                     raise
-                finally: context.close()
-        finally: browser.close()
+                finally:
+                    context.close()
+                    assert_browser_lifetime(browser,stage=run.__name__+'/closed',contexts=0,pages=0,connected=True,records=lifetime)
+        finally:
+            try:assert_browser_lifetime(browser,stage='native phase before browser close',contexts=0,pages=0,connected=True,records=lifetime)
+            finally:
+                try:browser.close()
+                finally:
+                    try:assert_browser_lifetime(browser,stage='native browser retired',contexts=0,pages=0,connected=False,records=lifetime)
+                    finally:(p.ARTIFACTS/'floating-browser-lifetime.json').write_text(json.dumps(lifetime,indent=2)+'\n')
     # Keep 37 workflows. Retire every renderer before the shared guard's native
     # contexts; neither clones nor manual drag fixtures supply placement proof.
-    subprocess.run([sys.executable,str(Path(__file__).with_name('surface_collisions.py')),
-                    '--out',str(p.ARTIFACTS/'surface-overlap'),'--sampling','intersections'],check=True)
+    assert_browser_lifetime(browser,stage='before guard subprocess',contexts=0,pages=0,connected=False,records=lifetime)
+    (p.ARTIFACTS/'floating-browser-lifetime.json').write_text(json.dumps(lifetime,indent=2)+'\n')
+    native_wall_ms=(time.monotonic()-parent_started)*1000
+    before=child_usage();guard_started=time.monotonic();returncode=None
+    try:
+        result=subprocess.run([sys.executable,str(Path(__file__).with_name('surface_collisions.py')),
+                        '--out',str(p.ARTIFACTS/'surface-overlap'),'--sampling','intersections'],check=True)
+        returncode=result.returncode
+    except subprocess.CalledProcessError as error:
+        returncode=error.returncode;raise
+    finally:
+        cost=dict(nativePhaseWallMs=native_wall_ms,guardSubprocessWallMs=(time.monotonic()-guard_started)*1000,
+            guardReturnCode=returncode,childResources=child_usage_delta(before,child_usage()),
+            nativeRetiredBeforeGuard=lifetime[-1],
+            scope='Blocking guard subprocess, including startup and shutdown; original native phase measured separately. No performance acceptance threshold.')
+        (p.ARTIFACTS/'surface-overlap-cost.json').write_text(json.dumps(cost,indent=2)+'\n')
+        print('[surface-subprocess-cost] '+json.dumps(cost),flush=True)
 
 
 if __name__=='__main__': main()

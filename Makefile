@@ -96,7 +96,7 @@ check:
 	python3 -m py_compile tests/e2e/wall_times.py tests/e2e/navigation_diagnostics.py tests/e2e/figure_preview_diagnostics.py tests/e2e/video_export_activation.py
 	python3 -m py_compile tests/e2e/workflow_contract.py tests/e2e/coordinates_region_diagnostic.py
 	python3 -m py_compile tests/e2e/escape_contract.py tests/e2e/escape_reproduction.py
-	python3 -m py_compile tests/e2e/surface_collisions.py tests/e2e/surface_overlap_contract.py tools/check-surface-baseline.py
+	python3 -m py_compile tests/e2e/browser_lifetime.py tests/e2e/surface_collisions.py tests/e2e/surface_overlap_contract.py tools/check-surface-baseline.py
 	node --check tests/e2e/surface_collision_probe.js
 	python3 -m py_compile tests/e2e/smoke_input_diagnostic.py tools/diagnostics/validate_smoke_input.py tests/e2e/selection_arrival_diagnostic.py tests/e2e/assertion_contract.py tests/e2e/assertion_contract_probe.py
 	node --check tests/e2e/smoke_input_probe.js

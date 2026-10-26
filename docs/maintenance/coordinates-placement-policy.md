@@ -160,3 +160,29 @@ authorization. The independent pinned authority/hash and predecessor-subset
 check enforce this. Three profiles across two layouts and three widths are
 18 declared contexts. That scope is checked exactly, but the broader28-shell
 surface coverage is **still incomplete**. This baseline is not exhaustive.
+
+## Guard resource lifetime
+
+The guard uses one browser and18 serial real browser contexts, with one page
+created per context by the harness. Each context closes in `finally` before
+the next starts; the browser, Playwright driver and HTTP server close before
+the blocking child process returns. Native floating workflows retire their
+original browser before the guard subprocess starts. There is no concurrent
+18-context pool.
+
+The two held runs recorded only whole floating-suite durations:234.73s
+(40245313826) and313.90s (40263180674), against201.89s on control40254546952
+without the guard. Those include the original native workflows; cross-run
+differences are not exclusive guard cost. Exact phase/CPU cost and residual
+context counts were not recorded then. The guard ran on balanced-2;70 failed
+on balanced-3, and the two later navigation failures on balanced-1, with distinct
+runner IDs. A guard page cannot share those other test runners; broader CI
+contention is not excluded by that observation.
+
+The new lifetime assertions read actual context/page registries after every
+case and at phase exit, then require disconnection after browser close. They
+do not repair browser state. Event-observed peaks, per-case duration, exact
+subprocess wall time and scoped OS reaped-child CPU accounting are recorded.
+The native phase is measured separately. These observations introduce no
+performance acceptance threshold or latent-signature allowance.
+See `tests/baselines/surface-guard-lifetime.json`.

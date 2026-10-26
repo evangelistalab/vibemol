@@ -1,0 +1,86 @@
+{
+  "pr": 69,
+  "status": "lifetime/resource instrumentation candidate; new ordinary gate required",
+  "historicalRuns": [
+    {
+      "runId": 40245313826,
+      "label": "first",
+      "observations": [
+        {
+          "suite": "tests/e2e/edit_picking.py",
+          "seconds": 260.96,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-3)",
+          "runnerId": 1000016262
+        },
+        {
+          "suite": "tests/e2e/floating_panels.py",
+          "seconds": 234.73,
+          "exitCode": 0,
+          "job": "Browser suites (balanced-2)",
+          "runnerId": 1000016269
+        }
+      ],
+      "exclusiveGuardWallMs": null,
+      "cpuNotRecorded": true,
+      "residualContextsNotRecorded": true
+    },
+    {
+      "runId": 40263180674,
+      "label": "rebased",
+      "observations": [
+        {
+          "suite": "tests/e2e/appearance_controls.py",
+          "seconds": 30.91,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-1)",
+          "runnerId": 1000016306
+        },
+        {
+          "suite": "tests/e2e/surface_schemes.py",
+          "seconds": 60.64,
+          "exitCode": 1,
+          "job": "Browser suites (balanced-1)",
+          "runnerId": 1000016306
+        },
+        {
+          "suite": "tests/e2e/floating_panels.py",
+          "seconds": 313.9,
+          "exitCode": 0,
+          "job": "Browser suites (balanced-2)",
+          "runnerId": 1000016303
+        }
+      ],
+      "exclusiveGuardWallMs": null,
+      "cpuNotRecorded": true,
+      "residualContextsNotRecorded": true
+    }
+  ],
+  "control": {
+    "runId": 40254546952,
+    "floatingSuiteSeconds": 201.89,
+    "guardPresent": false
+  },
+  "interpretation": "Old whole-suite times include native floating tests and the guard; differences across runners do not measure exclusive guard cost. Guard and failed suites used distinct runner IDs, excluding same-runner managed-page contention but not broader CI contention.",
+  "sourceLifecycle": {
+    "browserCount": 1,
+    "browserContextsCreated": 18,
+    "serial": true,
+    "pagesPerContextCreatedByHarness": 1,
+    "caseClosure": "context.close in finally before next case",
+    "phaseClosure": "browser.close in finally; sync_playwright and HTTP server exit; blocking subprocess returns before later suites"
+  },
+  "newEvidence": {
+    "contextChecks": "before/opened/after close each case; phase end; browser retired; parent native browser retired before child starts",
+    "rawCosts": "exact guard subprocess wall duration; native phase separately; per-case wall; OS reaped-child CPU snapshots/deltas; maxRSS native units explicitly not aggregate RSS",
+    "peaks": "observed on context creation and page-open events",
+    "newPerformanceAcceptanceThreshold": null
+  },
+  "baselineUnchanged": {
+    "pairs": 12,
+    "directions": 13,
+    "signatures": 112,
+    "growthAuthorized": false
+  },
+  "productionChanges": 0
+}
