@@ -1,0 +1,44 @@
+{
+  "runId": 40405810975,
+  "head": "50b72bc40304fab4ac9907487562d256ddb22ec3",
+  "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+  "merge": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+  "completeGate": true,
+  "independentChecks": 684,
+  "ordinaryExpected": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37
+  },
+  "identitySlots": 52,
+  "identityContexts": 8,
+  "allMinima": true,
+  "goldens": 102,
+  "exactRuns": 2,
+  "jsUnits": 474,
+  "pythonUnits": 144,
+  "navigationLoads": 8,
+  "navigationControls": 4,
+  "rawWallRecords": 43,
+  "wallMinutes": 42.11666666666667,
+  "looks": {
+    "looksSeconds": 1064.09,
+    "looksMinutes": 17.73483333333333,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "bothMaterialFamiliesPathsReached": true,
+    "recurred": false,
+    "coverageDisposition": "both paths completed",
+    "riskRemainsOpen": true
+  },
+  "appSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+  "trackedLetLines": 251,
+  "rawArchive": {
+    "sha256": "2e4aeddf5e5bc3c554b12fb83078e4cb8a2c8b8a428a0b9606d7909632de0a4f",
+    "bytes": 49023669,
+    "members": 542
+  },
+  "performanceRegressionDetector": false
+}

@@ -1,0 +1,78 @@
+{
+  "scope": "Authorized14 Workbench-only and15 null-slot cleanup; legacy retained",
+  "status": "candidate; complete first automatic CI required",
+  "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+  "removedSlots": [
+    "editAtomsMenuEl",
+    "editAtomsMenuBodyEl",
+    "editAtomsMenuCurrentEl",
+    "editSelectionFragmentCuePopoverEl"
+  ],
+  "removedFunctions": [
+    "positionEditAtomsMenu",
+    "updateEditAtomsMenuUi",
+    "hideSelectionFragmentCuePopover",
+    "showSelectionFragmentCuePopover",
+    "positionSelectionFragmentCuePopover"
+  ],
+  "removedTimer": "selectionFragmentCuePopoverHideTimer",
+  "retainedLiveOwners": [
+    "restoreBuildPopoverPanes",
+    "syncBuildPopoverPanes"
+  ],
+  "periodicUsedInputs": 11,
+  "newControllerInputs": 0,
+  "newModuleLets": 0,
+  "trackedLetDeclarationLines": {
+    "before": 251,
+    "after": 250
+  },
+  "actualModuleLetBindings": {
+    "before": 264,
+    "after": 263
+  },
+  "native": {
+    "passed": true,
+    "cases": 4,
+    "exactObservations": true,
+    "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+    "panesConnectedAndOwnedAtEveryCheckpoint": true,
+    "allContextsRetired": true,
+    "collectorCorrections": [
+      "Workbench suspends rather than restoring on mode change",
+      "Open legacy Appearance accordion before clicking its button"
+    ]
+  },
+  "construction": {
+    "status": "passed",
+    "auditedBindings": 42,
+    "explicitRechecks": [
+      "els",
+      "elementColorBtn"
+    ]
+  },
+  "identity": {
+    "slots": 48,
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 1
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 0
+    },
+    "retainedKnownAbsence": {
+      "elementColorBtn": {
+        "id": "elementColorBtn",
+        "issue": 14,
+        "cached": "null"
+      }
+    },
+    "eightContexts": true,
+    "presentedMinima": [
+      39,
+      32
+    ],
+    "otherMinimaUnchanged": true
+  }
+}

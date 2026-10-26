@@ -115,6 +115,16 @@
         "els"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Maintenance14/15 retained legacy launcher and retired null slots",
+      "before": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+      "worktree": ".",
+      "recheck": [
+        "els",
+        "elementColorBtn"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

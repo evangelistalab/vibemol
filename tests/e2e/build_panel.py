@@ -138,8 +138,13 @@ def main():
         try:
             run(page,url)
             assert not errors,errors
+            page.close()
+            from retired_edit_cache import run as retired_cache_cases
+            retired_cache_cases(browser,url)
         except Exception:
-            p.write_failure_artifacts(page,p.ARTIFACTS,'build-panel-failure',errors,[]);raise
+            if not page.is_closed():
+                p.write_failure_artifacts(page,p.ARTIFACTS,'build-panel-failure',errors,[])
+            raise
         finally:browser.close()
 
 

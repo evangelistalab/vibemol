@@ -62,13 +62,7 @@ function cacheFixture(legacy = false) {
   class Mesh {}
   Mesh.prototype.onBeforeRender = () => {};
   const ids = Object.fromEntries(Array.from({ length: legacy ? 48 : 47 }, (_, i) => ['cache' + i, 'node' + i]));
-  const knownAbsent = {
-    editAtomsMenuEl: { id: 'editAtomsMenu', issue: 15, cached: 'null' },
-    editAtomsMenuBodyEl: { id: 'editAtomsMenuBody', issue: 15, cached: 'null' },
-    editAtomsMenuCurrentEl: { id: 'editAtomsMenuCurrent', issue: 15, cached: 'null' },
-    editSelectionFragmentCuePopoverEl: { id: 'editSelectionFragmentCuePopover', issue: 15, cached: 'null' },
-    ...(!legacy ? { elementColorBtn: { id: 'elementColorBtn', issue: 14, cached: 'detached' } } : {}),
-  };
+  const knownAbsent = !legacy ? { elementColorBtn: { id: 'elementColorBtn', issue: 14, cached: 'null' } } : {};
   const live = new Map(Object.values(ids).map(id => [id, { id, nodeType: 1, isConnected: true, ariaHidden: 'false' }]));
   const nodes = Object.fromEntries(Object.entries(ids).map(([name, id]) => [name, live.get(id)]));
   for (const [name, entry] of Object.entries(knownAbsent)) {
@@ -84,7 +78,7 @@ test('node identity rejects a detached cache even when replacement IDs and ARIA 
   const fixture = cacheFixture();
   const original = fixture.nodes.cache0;
   const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: fixture.globals });
-  assert.equal(context.__vmqa.assertElementCacheIdentity('mode switch').count, 52);
+  assert.equal(context.__vmqa.assertElementCacheIdentity('mode switch').count, 48);
   const replacement = { ...original };
   fixture.live.set('node0', replacement);
   assert.deepEqual(replacement, original, 'The live ID/ARIA contract still matches');
@@ -103,9 +97,9 @@ test('known-absent composition is issue-backed and different in the two layouts'
   for (const legacy of [false, true]) {
     const fixture = cacheFixture(legacy);
     const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: fixture.globals });
-    assert.equal(context.__vmqa.assertElementCacheIdentity('presented checkpoint').count, 52);
+    assert.equal(context.__vmqa.assertElementCacheIdentity('presented checkpoint').count, 48);
     const report = JSON.parse(JSON.stringify(context.__vmqa.elementCacheReport()));
-    assert.deepEqual(report.composition, legacy ? { live: 48, knownAbsent: 4 } : { live: 47, knownAbsent: 5 });
+    assert.deepEqual(report.composition, legacy ? { live: 48, knownAbsent: 0 } : { live: 47, knownAbsent: 1 });
     assert.ok(Object.values(report.knownAbsent).every(entry => Number.isInteger(entry.issue) && entry.issue > 0));
   }
 });
@@ -119,14 +113,14 @@ test('an unexpected absence still fails even when both lookup and cache are null
 test('a known-absent slot becoming present fails and cannot be hidden by restoring absence', () => {
   const fixture = cacheFixture();
   const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: fixture.globals });
-  fixture.live.set('editAtomsMenu', { id: 'editAtomsMenu', nodeType: 1, isConnected: true });
-  assert.throws(() => context.__vmqa.assertElementCacheIdentity('DOM replacement'), /editAtomsMenuEl/);
-  fixture.live.delete('editAtomsMenu');
+  fixture.live.set('elementColorBtn', { id: 'elementColorBtn', nodeType: 1, isConnected: true });
+  assert.throws(() => context.__vmqa.assertElementCacheIdentity('DOM replacement'), /elementColorBtn/);
+  fixture.live.delete('elementColorBtn');
   assert.throws(() => context.__vmqa.assertElementCacheIdentity('session restore'), /after DOM replacement/);
 });
 
 test('a known-absent entry without an issue is rejected', () => {
-  const fixture = cacheFixture(); delete fixture.knownAbsent.editAtomsMenuEl.issue;
+  const fixture = cacheFixture(); delete fixture.knownAbsent.elementColorBtn.issue;
   const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: fixture.globals });
   assert.throws(() => context.__vmqa.assertElementCacheIdentity('checkpoint'), /issue-backed known-absent/);
 });
@@ -135,5 +129,5 @@ test('the original inventory cannot silently omit Element Colors or absence decl
   const fixture = cacheFixture();
   fixture.globals.__vmqaElementCaches = { ids: Object.fromEntries(Object.entries(fixture.ids).slice(0,43)), readNodes: () => fixture.nodes };
   const context = loadGlobalModule('assets/app/js/qa-characterize.js', { globals: fixture.globals });
-  assert.throws(() => context.__vmqa.assertElementCacheIdentity('checkpoint'), /47 live and 5 issue-backed/);
+  assert.throws(() => context.__vmqa.assertElementCacheIdentity('checkpoint'), /47 live and 1 issue-backed/);
 });

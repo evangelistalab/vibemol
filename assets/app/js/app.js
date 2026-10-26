@@ -1253,12 +1253,8 @@
     editSelectionBondOrderCueButtonEl: null,
     editSelectionAddFragmentCueButtonEl: null,
     editSelectionDeleteCueButtonEl: null,
-    editSelectionFragmentCuePopoverEl: null,
     editSelectionCoordinationCuePopoverEl: null,
     editSelectionMetalBondingCuePopoverEl: null,
-    editAtomsMenuEl: null,
-    editAtomsMenuBodyEl: null,
-    editAtomsMenuCurrentEl: null,
     editAdaptiveAddAtomBtn: null,
     editAdaptiveSymmetryBtn: null,
     editAdaptiveSymmetryMetaEl: null,
@@ -1366,7 +1362,6 @@
   let editHaloController = null;
   let editToolUi = null;
   let lastHintMessage = '';
-  let selectionFragmentCuePopoverHideTimer = 0;
   let selectionCueDragState = null;
   let bondCenterSelectionState = null;
   const bondCenterClickDirectionByKey = new Map();
@@ -6307,7 +6302,8 @@
   const toggleAtomLabelNumbers = document.getElementById('showAtomLabelNumbers');
   const elementColors = document.getElementById('elementColors');
   const visibilityElementColorsToggleEl = document.getElementById('visibilityElementColorsToggle');
-  const elementColorBtn = document.getElementById('elementColorBtn');
+  // Properties removes this legacy launcher in Workbench; keep the supported legacy route.
+  const elementColorBtn = workspaceEnabled ? null : document.getElementById('elementColorBtn');
   els.elementColorOverlay = document.getElementById('elementColorOverlay');
   els.elementColorClose = document.getElementById('elementColorClose');
   els.periodicTableViewport = document.getElementById('periodicTableViewport');
@@ -7274,9 +7270,6 @@
   const moldenGridSummary = document.getElementById('moldenGridSummary');
   const cloudTypeSel = document.getElementById('cloudType');
   cacheElement('workbenchBarEl', 'workbenchBar');
-  cacheElement('editAtomsMenuEl', 'editAtomsMenu');
-  cacheElement('editAtomsMenuBodyEl', 'editAtomsMenuBody');
-  cacheElement('editAtomsMenuCurrentEl', 'editAtomsMenuCurrent');
   cacheElement('editSelectionTranslateCueEl', 'editSelectionTranslateCue');
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
@@ -7292,7 +7285,6 @@
   cacheElement('editSelectionBondOrderCueButtonEl', 'editSelectionBondOrderCueButton');
   cacheElement('editSelectionAddFragmentCueButtonEl', 'editSelectionAddFragmentCueButton');
   cacheElement('editSelectionDeleteCueButtonEl', 'editSelectionDeleteCueButton');
-  cacheElement('editSelectionFragmentCuePopoverEl', 'editSelectionFragmentCuePopover');
   cacheElement('editSelectionCoordinationCuePopoverEl', 'editSelectionCoordinationCuePopover');
   cacheElement('editSelectionMetalBondingCuePopoverEl', 'editSelectionMetalBondingCuePopover');
 
@@ -7405,7 +7397,6 @@
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
       hideSelectionMetalBondingCuePopover();
-      hideSelectionFragmentCuePopover();
       const record = ensureEditableVolumeRecord();
       const vol = record && record.vol;
       if (getBondCenterSelectionResolved(vol)) {
@@ -7414,11 +7405,6 @@
       } else {
         deleteSelectedAtoms();
       }
-    });
-  }
-  if (els.editSelectionFragmentCuePopoverEl) {
-    els.editSelectionFragmentCuePopoverEl.addEventListener('mouseleave', () => {
-      hideSelectionFragmentCuePopover(120);
     });
   }
   if (els.editSelectionCoordinationCuePopoverEl) {
@@ -14479,7 +14465,6 @@
       anchorAtomId: '',
       preserveAnchor: false,
     };
-    hideSelectionFragmentCuePopover();
   }
 
   function isFragmentPayloadLoaded() {
@@ -14560,7 +14545,6 @@
       cueAnchorIndex = getPinnedFragmentAttachAnchorIndex((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null);
     }
     clearEditHaloGhostHoverState();
-    hideSelectionFragmentCuePopover();
     updateEditToolboxUi({ syncSearch: false });
     if (cueAnchorIndex >= 0) {
       setEditAtomSelection([cueAnchorIndex]);
@@ -15960,7 +15944,6 @@
     hideAllAdaptiveToolPopovers();
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
-    hideSelectionFragmentCuePopover();
     if (bondEditing && typeof bondEditing.hidePopup === 'function') bondEditing.hidePopup();
   }
 
@@ -17385,21 +17368,7 @@
     updateEditToolboxUi({ syncSearch: false });
   }
 
-  function positionEditAtomsMenu() {
-    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
-  }
 
-  function updateEditAtomsMenuUi() {
-    if (els.editAtomsMenuEl) els.editAtomsMenuEl.setAttribute('aria-hidden', 'true');
-    if (!editAddAtomPaneEl) return;
-    if (els.editAtomsMenuBodyEl && editAddAtomPaneEl.parentElement === els.editAtomsMenuBodyEl) {
-      restorePaneHomeHelper({
-        paneEl: editAddAtomPaneEl,
-        homeParent: editAddAtomPaneHomeParent,
-        homeNextSibling: editAddAtomPaneHomeNextSibling,
-      });
-    }
-  }
 
   function normalizeEditSelectionDragMode(mode) {
     return String(mode || '').toLowerCase() === 'rotate' ? 'rotate' : 'translate';
@@ -17704,7 +17673,6 @@
     editSelectionPositionUi?.sync(null);
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
-    hideSelectionFragmentCuePopover();
     if (!els.editSelectionTranslateCueEl) return;
     els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'true');
     els.editSelectionTranslateCueEl.style.left = '0px';
@@ -17829,7 +17797,6 @@
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
-    hideSelectionFragmentCuePopover();
     if (!workspaceEnabled && isSymmetryPopoverOpen()) hideSymmetryPopover({ restore: true });
     if (Object.prototype.hasOwnProperty.call(options, 'query')) {
       setBuildPaletteFilterQuery(String(options.query || ''), { syncInput: true });
@@ -18120,7 +18087,6 @@
     clearSymmetryElementGuide();
     clearGestureVoidPreview();
     hideSelectionCoordinationCuePopover();
-    hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover();
     invalidateSymmetryPopoverAnalysisCache();
     els.editAdaptiveSymmetryPopoverEl.setAttribute('aria-hidden', 'false');
@@ -18190,92 +18156,8 @@
     return applyActiveSymmetryPreview();
   }
 
-  function hideSelectionFragmentCuePopover(delayMs = 0) {
-    if (selectionFragmentCuePopoverHideTimer) {
-      clearTimeout(selectionFragmentCuePopoverHideTimer);
-      selectionFragmentCuePopoverHideTimer = 0;
-    }
-    const applyHide = () => {
-      if (els.editSelectionFragmentCuePopoverEl) {
-        els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'true');
-      }
-      if (editAddFragmentPaneEl && editAddFragmentPaneHomeParent && editAddFragmentPaneEl.parentElement === els.editSelectionFragmentCuePopoverEl) {
-        restorePaneHomeHelper({
-          paneEl: editAddFragmentPaneEl,
-          homeParent: editAddFragmentPaneHomeParent,
-          homeNextSibling: editAddFragmentPaneHomeNextSibling,
-        });
-      }
-    };
-    if (delayMs > 0) {
-      selectionFragmentCuePopoverHideTimer = window.setTimeout(() => {
-        selectionFragmentCuePopoverHideTimer = 0;
-        applyHide();
-      }, delayMs);
-      return;
-    }
-    applyHide();
-  }
 
-  function showSelectionFragmentCuePopover(options = {}) {
-    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl || !editAddFragmentPaneEl) return;
-    if (workspaceEnabled) {
-      // The legacy cue and Build share this pane. Keep one owner in Workbench.
-      showBuildPopover({ query: '' });
-      editAddFragmentPaneEl.scrollIntoView({ block: 'nearest' });
-      if (options.focusSearch) focusElementDeferred(els.editBuildSearchEl);
-      return;
-    }
-    if (selectionFragmentCuePopoverHideTimer) {
-      clearTimeout(selectionFragmentCuePopoverHideTimer);
-      selectionFragmentCuePopoverHideTimer = 0;
-    }
-    hideSelectionCoordinationCuePopover();
-    hideSelectionMetalBondingCuePopover();
-    hideBuildPopover();
-    if (editAddFragmentPaneEl.parentElement !== els.editSelectionFragmentCuePopoverEl) {
-      els.editSelectionFragmentCuePopoverEl.appendChild(editAddFragmentPaneEl);
-    }
-    els.editSelectionFragmentCuePopoverEl.setAttribute('aria-hidden', 'false');
-    positionSelectionFragmentCuePopover();
-    if (options.focusSearch) focusElementDeferred(editFragmentSearchEl || null);
-  }
 
-  function positionSelectionFragmentCuePopover() {
-    if (!els.editSelectionAddFragmentCueButtonEl || !els.editSelectionFragmentCuePopoverEl) return;
-    const gap = 12;
-    const triggerRect = els.editSelectionAddFragmentCueButtonEl.getBoundingClientRect();
-    const popoverRect = els.editSelectionFragmentCuePopoverEl.getBoundingClientRect();
-    const viewportWidth = Math.max(
-      1,
-      Math.round(window.innerWidth || 0),
-      Math.round((document.documentElement && document.documentElement.clientWidth) || 0)
-    );
-    const viewportHeight = Math.max(
-      1,
-      Math.round(window.innerHeight || 0),
-      Math.round((document.documentElement && document.documentElement.clientHeight) || 0)
-    );
-    const popoverWidth = Math.max(1, Math.round(popoverRect.width || els.editSelectionFragmentCuePopoverEl.offsetWidth || 280));
-    const popoverHeight = Math.max(1, Math.round(popoverRect.height || els.editSelectionFragmentCuePopoverEl.offsetHeight || 160));
-    const roomRight = viewportWidth - triggerRect.right - gap;
-    let left = 0;
-    let top = 0;
-    if (roomRight >= popoverWidth) {
-      left = Math.round(triggerRect.right + gap);
-      top = Math.round(triggerRect.top + (triggerRect.height * 0.5) - (popoverHeight * 0.5));
-    } else {
-      left = Math.round(Math.min(
-        Math.max(gap, triggerRect.left),
-        Math.max(gap, viewportWidth - popoverWidth - gap)
-      ));
-      top = Math.round(triggerRect.bottom + gap);
-    }
-    left = Math.min(Math.max(gap, left), Math.max(gap, viewportWidth - popoverWidth - gap));
-    top = Math.min(Math.max(gap, top), Math.max(gap, viewportHeight - popoverHeight - gap));
-    els.editSelectionFragmentCuePopoverEl.style.left = `${left}px`;
-    els.editSelectionFragmentCuePopoverEl.style.top = `${top}px`;
-  }
 
   function getOpenCoordinationGhostTheme(options = {}) {
     const hovered = !!options.hovered;
@@ -18657,7 +18539,6 @@
     const state = getSelectionCoordinationCueState();
     if (!state || !state.choices.length) return;
     hideSelectionMetalBondingCuePopover();
-    hideSelectionFragmentCuePopover();
     els.editSelectionCoordinationCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionCoordinationCuePopover();
   }
@@ -18789,7 +18670,6 @@
     const state = getSelectionMetalBondingCueState();
     if (!state || !state.choices.length) return;
     hideSelectionCoordinationCuePopover();
-    hideSelectionFragmentCuePopover();
     if (!workspaceEnabled) hideBuildPopover({ quiet: true });
     els.editSelectionMetalBondingCuePopoverEl.setAttribute('aria-hidden', 'false');
     renderSelectionMetalBondingCuePopover();
@@ -19137,7 +19017,6 @@
       els.editSelectionAddFragmentCueButtonEl.setAttribute('aria-label', cueLabel);
       setTooltipText(els.editSelectionAddFragmentCueButtonEl, cueLabel);
       if (!visible) {
-        hideSelectionFragmentCuePopover();
         hideSelectionCoordinationCuePopover();
         hideSelectionMetalBondingCuePopover();
       }
@@ -19769,7 +19648,6 @@
       return true;
     }
     if (isSelectionFragmentCueActive() && getEditAtomSelection().length > 0) {
-      hideSelectionFragmentCuePopover();
       clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
       setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
       if (typeof e.preventDefault === 'function') e.preventDefault();
@@ -20231,7 +20109,6 @@
    */
   function updateEditAdaptiveMenuUi() {
     if (currentMode !== MODES.EDIT) hideEditSelectionTranslateCue();
-    updateEditAtomsMenuUi();
     updateCanvasAdaptiveMenuUi();
     if (isSymmetryPopoverOpen()) renderSymmetryPopover();
   }
@@ -22384,7 +22261,6 @@
     setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
-    hideSelectionFragmentCuePopover();
     bondCenterSelectionState = normalizedIds;
     updateSelectedHalos();
     updateEditAdaptiveMenuUi();
@@ -22944,7 +22820,6 @@
       if (editGestureController) editGestureController.refreshUi();
       updateEditSelectionVisuals();
       updateSelectedHalos();
-      hideSelectionFragmentCuePopover();
       updateEditAdaptiveMenuUi();
     }
     return appended;
@@ -31902,15 +31777,10 @@
   // Only the explicit QA launch exposes private cache values. The live DOM
   // is queried by the harness, independently of these cached references.
   if (launchParams.get('qa') === '1') {
-    // Issue-backed absence is distinct from a live cache, including the four
-    // obsolete edit slots that already stayed null before this refactor.
+    // The legacy-only launcher remains an issue-backed absence in Workbench.
     const knownAbsent = Object.freeze({
-      editAtomsMenuEl: Object.freeze({ id: 'editAtomsMenu', issue: 15, cached: 'null' }),
-      editAtomsMenuBodyEl: Object.freeze({ id: 'editAtomsMenuBody', issue: 15, cached: 'null' }),
-      editAtomsMenuCurrentEl: Object.freeze({ id: 'editAtomsMenuCurrent', issue: 15, cached: 'null' }),
-      editSelectionFragmentCuePopoverEl: Object.freeze({ id: 'editSelectionFragmentCuePopover', issue: 15, cached: 'null' }),
       ...(workspaceEnabled ? {
-        elementColorBtn: Object.freeze({ id: 'elementColorBtn', issue: 14, cached: 'detached' }),
+        elementColorBtn: Object.freeze({ id: 'elementColorBtn', issue: 14, cached: 'null' }),
       } : {}),
     });
     const inventoryIds = Object.freeze({
@@ -31926,9 +31796,6 @@
         canvasAdaptiveMenuEl: 'displayWindowAdaptiveMenu',
         measurementsPanel: 'measurementsPanel',
         calculationsPanel: 'subspacePanel',
-        editAtomsMenuEl: 'editAtomsMenu',
-        editAtomsMenuBodyEl: 'editAtomsMenuBody',
-        editAtomsMenuCurrentEl: 'editAtomsMenuCurrent',
         editSelectionTranslateCueEl: 'editSelectionTranslateCue',
         editSelectionTranslateCueButtonEl: 'editSelectionTranslateCueButton',
         editSelectionRotateCueButtonEl: 'editSelectionRotateCueButton',
@@ -31939,7 +31806,6 @@
         editSelectionBondOrderCueButtonEl: 'editSelectionBondOrderCueButton',
         editSelectionAddFragmentCueButtonEl: 'editSelectionAddFragmentCueButton',
         editSelectionDeleteCueButtonEl: 'editSelectionDeleteCueButton',
-        editSelectionFragmentCuePopoverEl: 'editSelectionFragmentCuePopover',
         editSelectionCoordinationCuePopoverEl: 'editSelectionCoordinationCuePopover',
         editSelectionMetalBondingCuePopoverEl: 'editSelectionMetalBondingCuePopover',
         editAdaptiveAddAtomBtn: 'editAdaptiveAddAtomBtn',
@@ -31984,9 +31850,6 @@
         canvasAdaptiveMenuEl: els.displayWindowAdaptiveMenuEl,
         measurementsPanel: measurementsPanel.panel,
         calculationsPanel: calculationsPanel.panel,
-        editAtomsMenuEl: els.editAtomsMenuEl,
-        editAtomsMenuBodyEl: els.editAtomsMenuBodyEl,
-        editAtomsMenuCurrentEl: els.editAtomsMenuCurrentEl,
         editSelectionTranslateCueEl: els.editSelectionTranslateCueEl,
         editSelectionTranslateCueButtonEl: els.editSelectionTranslateCueButtonEl,
         editSelectionRotateCueButtonEl: els.editSelectionRotateCueButtonEl,
@@ -31997,7 +31860,6 @@
         editSelectionBondOrderCueButtonEl: els.editSelectionBondOrderCueButtonEl,
         editSelectionAddFragmentCueButtonEl: els.editSelectionAddFragmentCueButtonEl,
         editSelectionDeleteCueButtonEl: els.editSelectionDeleteCueButtonEl,
-        editSelectionFragmentCuePopoverEl: els.editSelectionFragmentCuePopoverEl,
         editSelectionCoordinationCuePopoverEl: els.editSelectionCoordinationCuePopoverEl,
         editSelectionMetalBondingCuePopoverEl: els.editSelectionMetalBondingCuePopoverEl,
         editAdaptiveAddAtomBtn: els.editAdaptiveAddAtomBtn,

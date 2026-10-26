@@ -23,10 +23,9 @@ def validate_identity_contexts(contexts):
         assert len(panels) == len(set(panels)) and len(panels) >= (17 if len(modes) == 4 else 14)
         actual = capture.assert_element_cache_exercise(context['identity'], modes, panels)
         assert context['exercise'] == actual, 'Identity exercise counts differ'
-        absent = {key: {'id': key.removesuffix('El'), 'issue': 15, 'cached': 'null'} for key in (
-            'editAtomsMenuEl', 'editAtomsMenuBodyEl', 'editAtomsMenuCurrentEl', 'editSelectionFragmentCuePopoverEl')}
+        absent = {}
         if context['launch'] == 'workbench':
-            absent['elementColorBtn'] = {'id': 'elementColorBtn', 'issue': 14, 'cached': 'detached'}
+            absent['elementColorBtn'] = {'id': 'elementColorBtn', 'issue': 14, 'cached': 'null'}
         assert context['identity']['knownAbsent'] == absent, 'Known-absent issue/ID/disposition differs'
 
 
