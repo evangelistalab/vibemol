@@ -140,6 +140,12 @@
         "assets/app/js/session-format.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Maintenance77 retire beta channel without new bindings",
+      "before": "51b90e5814765fd09c650184a66d991733ba7b64",
+      "worktree": ".",
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -1,0 +1,48 @@
+{
+  "issue": 77,
+  "release": "0.10.1",
+  "authority": "Direct human instruction includes beta retirement in0.10.1",
+  "previousCandidate": "51b90e5814765fd09c650184a66d991733ba7b64",
+  "sourceAudit": {
+    "goldenSha256": "ef5eef82f36a11938eaa98a589fc4dc97c2625ae0cd4f80ead8f5a1075505932",
+    "status": "passed",
+    "before": "51b90e5814765fd09c650184a66d991733ba7b64",
+    "beforeAppSha256": "ec90d0ca7019d8bd714943f511a797ab604f0e230c99944c049a3f8672d058e6",
+    "appSha256": "4744507bd4e8e6baf7fd7047531e6961bc2dad2cf3ba6487d93219a63dda73fb",
+    "indexSha256": "67f20f49bbc53cc9cbf98547ddda3215bb3b714700d982296f48b3dfa7585cd0",
+    "wholeAppASTExactAfterNamedRetirement": true,
+    "allOriginalFunctionDeclarationsExact": true,
+    "functionDeclarations": 1182,
+    "removedAppBindings": [
+      "VIBEMOL_CHANNEL",
+      "toolbarDisplayVersion",
+      "toolbarChannelBadge"
+    ],
+    "removedGlobalExport": "VIBEMOL_CHANNEL",
+    "removedDeclarations": 3,
+    "removedExport": 1,
+    "removedBadgeAction": 1,
+    "versionRewrite": 1,
+    "indexExactAfterOnlyBadgeMarkupAndStylesRemoval": true,
+    "removedCssRules": 2,
+    "removedMarkupNodes": 1,
+    "workflowRemoved": true,
+    "newAppBindings": [],
+    "newModuleLets": 0,
+    "newControllerDependencies": 0,
+    "letDeclarationLines": 250,
+    "variableLetBindings": 261,
+    "goldenUnchanged": true
+  },
+  "version": "0.10.1",
+  "gate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37
+  },
+  "acceptedSetIntentionallyEmpty": true,
+  "goldensUnchanged": true,
+  "regression": "workbench_release emits exact plain version, missing channel global and zero badge elements on both default/explicit Workbench launches",
+  "workflowRemoved": ".github/workflows/deploy-beta.yml",
+  "mainPushRequiresHumanSignOff": true
+}

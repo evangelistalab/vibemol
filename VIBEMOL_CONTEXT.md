@@ -209,9 +209,6 @@ Francesco hasn't picked a direction yet. Don't start Phase 3 work until he does.
 
 Things that came up across the conversations but were deferred or never made it into a prompt:
 
-### Beta channel infrastructure (advice given, not implemented)
-Recommended: `beta.vibemol.org` subdomain (separate origin = isolated localStorage; matches what every major product does). Setup via Cloudflare Pages / Vercel / Netlify with branch-based subdomains, OR Emory server vhost. Build-time `CHANNEL` constant flipped via `sed` in deploy script. BETA badge in UI. Version string includes channel suffix. Branch model: feature → beta → main; promote regularly.
-
 ### "Create new molecule" button — DRAFTED, NOT SENT
 The next concrete action when Francesco resumes. See "Next concrete actions" below.
 

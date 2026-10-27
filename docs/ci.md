@@ -176,3 +176,13 @@ build. The CI-only branch must not be merged through GitHub; fast-forward local
 main to its exact accepted head for the human check. After sign-off, push main,
 tag that exact commit, verify the Pages build and served tree match it, then
 delete the CI branch. Beta deployment is retired; no beta workflow is dispatched.
+
+
+The original promotion at `51b90e5` passed first ordinary run 40447991258
+(37/0/37, complete conjunction). The human then explicitly included beta
+retirement #77 in 0.10.1. That later candidate removes the obsolete channel
+global, toolbar badge/styles, version suffix and beta deployment workflow.
+The original capture and its metadata remain immutable; the authorized cleanup
+must pass its own complete first gate against the unchanged 0.10.1 goldens.
+The original version-only source identity statement applies to the recording
+and its original promotion, before this separately audited cleanup.

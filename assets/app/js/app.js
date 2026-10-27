@@ -4,8 +4,6 @@
   const getElementSymbol = z => window.VibeMolElementUtils.getElementSymbol(z, ATOM_Z_TO_DATA);
   // Shared by UI/export metadata and every bundled asset URL.
   const APP_VERSION = window.VibeMolAssets.version;
-  const VIBEMOL_CHANNEL = location.hostname.startsWith('beta.') ? 'beta' : 'production';
-  window.VIBEMOL_CHANNEL = VIBEMOL_CHANNEL;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
   const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
@@ -6386,10 +6384,7 @@
   applyFontPair(getFontPair());
   if (versionText) versionText.textContent = APP_VERSION;
   const toolbarVersion = document.getElementById('toolbarVersion');
-  const toolbarDisplayVersion = VIBEMOL_CHANNEL === 'beta' ? `v${APP_VERSION}-beta` : `v${APP_VERSION}`;
-  if (toolbarVersion) toolbarVersion.textContent = toolbarDisplayVersion;
-  const toolbarChannelBadge = document.getElementById('toolbarChannelBadge');
-  if (toolbarChannelBadge && VIBEMOL_CHANNEL === 'beta') toolbarChannelBadge.classList.add('is-visible');
+  if (toolbarVersion) toolbarVersion.textContent = `v${APP_VERSION}`;
   const emptyStateVersion = document.getElementById('emptyStateVersion');
   if (emptyStateVersion) emptyStateVersion.textContent = `v${APP_VERSION}`;
   document.getElementById('emptyStateWhatsNewSummary').textContent = `What's new in v${APP_VERSION}`;

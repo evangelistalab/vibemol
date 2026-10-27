@@ -22,7 +22,6 @@
     "domain": "vibemol.org",
     "pushPublishesIndependentlyOfCi": true
   },
-  "deferredBetaMaintenance": 77,
   "newAppBindings": 0,
   "newControllerDependencies": 0,
   "letDeclarationLines": 250,
@@ -54,6 +53,17 @@
     "versionMappingUsed": false,
     "goldenGzipSha256": "ef5eef82f36a11938eaa98a589fc4dc97c2625ae0cd4f80ead8f5a1075505932",
     "tagMoveVerifiedBeforeRecording": true,
-    "looksMaterialPaths": "not covered by characterization recording"
+    "looksMaterialPaths": "not covered by characterization recording",
+    "productionSourceIdentityScope": "Exact capture source and original promotion 51b90e5; the later authorized beta cleanup is validated separately against these unchanged goldens."
+  },
+  "betaMaintenance": {
+    "issue": 77,
+    "status": "included by direct human instruction; complete updated candidate gate required",
+    "removed": [
+      "channel global",
+      "toolbar beta badge and styles",
+      "version beta suffix",
+      "beta deployment workflow"
+    ]
   }
 }

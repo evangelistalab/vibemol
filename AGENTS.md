@@ -840,3 +840,14 @@ The bundled catalog is exactly101entries,0..100, including X/Dummy. File parsers
 
 
 PR75 merged as036bc3bdc7802ef4f56adcc82666547a4923c540 after its own first run40418833122 independently passed697checks:37/0/37,102x2/exact repeat,48slots/eight contexts/exact composition/all minima,474JS/144Python, WebKit/construction and both exporters. CI39.4167min; Looks965.41s completed BOTH material-family paths without the preset timeout in that covered run; risk remains open. The supported legacy Colors button remains.14/15 are closed;5 remains open for its separately held clamp findings. The local Symmetry menu actionability timeout belongs to shared43 observations, remains unclassified and unaccepted, and does not authorize a re-run or threshold change.
+
+
+## 0.10.1 beta retirement
+
+Direct human instruction includes maintenance #77 in 0.10.1. Remove the retired
+channel global, toolbar badge/styles, version suffix and beta mirror workflow.
+Production remains GitHub Pages from main; publishing main and creating the
+0.10.1 tag still require Francesco's local check and sign-off. The updated
+candidate requires its own complete first-pass 37/0/37 conjunction against the
+unchanged CI-recorded 0.10.1 goldens. The earlier accepted candidate/run
+51b90e5/40447991258 remains historical evidence for its own tree only.

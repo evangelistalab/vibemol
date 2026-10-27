@@ -1075,14 +1075,17 @@
       "rule": "No re-run, new individual issue, deadline increase or accepted-set change. Held clamp work remains separate."
     }
   ],
-  "deferredMaintenance": [
+  "deferredMaintenance": [],
+  "releaseMaintenance": [
     {
       "issue": 77,
       "url": "https://github.com/evangelistalab/vibemol/issues/77",
-      "status": "filed; deferred; not part of0.10.1",
-      "scope": "Retired VIBEMOL_CHANNEL export, toolbar badge/version suffix and deploy-beta.yml. Keep implementation unchanged in this release.",
+      "status": "implemented in the 0.10.1 candidate; complete updated gate required",
+      "scope": "Remove the retired beta channel global, badge markup/styles, version suffix and beta deployment workflow.",
       "acceptedCiFailure": false,
-      "scheduled": false
+      "scheduled": true,
+      "release": "0.10.1",
+      "gateUnchanged": true
     }
   ]
 }

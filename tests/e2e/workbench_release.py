@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Production Workbench launch, appearance persistence, recovery, and CLI styles."""
 import sys
+import json
 import premerge as p
 from appearance_controls import change
 from helpers import read_app_version
@@ -13,7 +14,14 @@ def release(page, url, suffix):
     page.goto(url + suffix)
     page.wait_for_function('()=>window.VibeMolWorkbench && VibeMolRecovery.getState().ready')
     assert page.locator('#workbenchBar').is_visible()
-    assert page.locator('#toolbarVersion').inner_text() == 'v' + read_app_version()
+    channel_actual = page.evaluate('''() => ({
+      version: document.getElementById('toolbarVersion').textContent,
+      channelExported: Object.hasOwn(window, 'VIBEMOL_CHANNEL'),
+      channelBadgeCount: document.querySelectorAll('#toolbarChannelBadge').length,
+    })''')
+    channel_expected = {'version': 'v' + read_app_version(), 'channelExported': False, 'channelBadgeCount': 0}
+    print('[release-channel] ' + json.dumps({'actual': channel_actual, 'expected': channel_expected}, sort_keys=True), flush=True)
+    assert channel_actual == channel_expected, (channel_actual, channel_expected)
     assert page.locator('.wb-lab, #appearanceLookPreset, #styleStudio').count() == 0
     assert 'experiment' not in page.locator('#sessionStatus').inner_text().lower()
     assert p.load(page, [{'name': 'release.cube', 'text': p.cube(0)}])['ok']

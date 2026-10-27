@@ -1580,25 +1580,6 @@
       color: var(--vm-color-text-secondary);
     }
 
-    #toolbar .tb-channelBadge {
-      display: none;
-      align-items: center;
-      justify-content: center;
-      min-height: 20px;
-      padding: 0 8px;
-      border-radius: 999px;
-      background: #f2a900;
-      color: #0033a0;
-      font-size: var(--vm-type-badge-size);
-      font-weight: var(--vm-type-badge-weight);
-      letter-spacing: 0;
-      line-height: 1.1;
-    }
-
-    #toolbar .tb-channelBadge.is-visible {
-      display: inline-flex;
-    }
-
     #toolbarModeRow {
       display: grid;
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2327,7 +2308,6 @@
           <img class="tb-brandLogo themeLogoLight" src="assets/app/img/logo_600px.png?v=0.10.1" alt="VibeMol" />
           <img class="tb-brandLogo themeLogoDark" src="assets/app/img/logo_dark_600px.png?v=0.10.1" alt="VibeMol" />
           <span id="toolbarVersion" class="tb-versionBadge vm-versionBadge" aria-label="VibeMol version">v0.0.0</span>
-          <span id="toolbarChannelBadge" class="tb-channelBadge" aria-label="Beta channel">BETA</span>
         </div>
         <button id="toolbarCollapseBtn" class="secondary ms-icon-button" type="button"
           data-tooltip="Hide sidebar">chevron_left</button>
