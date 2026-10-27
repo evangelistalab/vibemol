@@ -26,7 +26,17 @@
   "newControllerDependencies": 0,
   "letDeclarationLines": 250,
   "variableLetBindings": 261,
-  "recording": {
+  "betaMaintenance": {
+    "issue": 77,
+    "status": "included by direct human instruction; complete updated candidate gate required",
+    "removed": [
+      "channel global",
+      "toolbar beta badge and styles",
+      "version beta suffix",
+      "beta deployment workflow"
+    ]
+  },
+  "originalRecordingBeforeBetaRetirement": {
     "runId": 40444609180,
     "attempt": 1,
     "captureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
@@ -56,14 +66,29 @@
     "looksMaterialPaths": "not covered by characterization recording",
     "productionSourceIdentityScope": "Exact capture source and original promotion 51b90e5; the later authorized beta cleanup is validated separately against these unchanged goldens."
   },
-  "betaMaintenance": {
-    "issue": 77,
-    "status": "included by direct human instruction; complete updated candidate gate required",
-    "removed": [
-      "channel global",
-      "toolbar beta badge and styles",
-      "version beta suffix",
-      "beta deployment workflow"
-    ]
+  "recording": {
+    "status": "freshCIrecording authorized; exact one-ID removal per102captures",
+    "previousCaptureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+    "previousGoldenGzipSha256": "ef5eef82f36a11938eaa98a589fc4dc97c2625ae0cd4f80ead8f5a1075505932",
+    "authority": "Direct human reply: Re-record this exact change",
+    "approvedChange": {
+      "path": "dom.ids",
+      "removedId": "toolbarChannelBadge",
+      "exactRemovals": 102,
+      "allOtherCapturedValuesAndTypesUnchanged": true
+    },
+    "mappingOrComparisonExceptionAllowed": false
+  },
+  "rejectedBetaCandidate": {
+    "head": "b31f736c2197e30bc57e7d3f47367f318807a23f",
+    "runId": 40505038734,
+    "overallConclusion": "failure",
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "goldenGate": "failed: obsolete badge ID present in old snapshot",
+    "noRetryOfThatCandidate": true
   }
 }

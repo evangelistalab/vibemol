@@ -186,3 +186,15 @@ The original capture and its metadata remain immutable; the authorized cleanup
 must pass its own complete first gate against the unchanged 0.10.1 goldens.
 The original version-only source identity statement applies to the recording
 and its original promotion, before this separately audited cleanup.
+
+
+Run 40505038734 on beta candidate b31f736 is rejected overall: both
+characterization workers found exactly the retired toolbarChannelBadge ID
+missing from every one of102 DOM inventories. Their full serialized captures
+match each other, and every other value and numeric type matches the prior
+baseline exactly. Its browser gate passed37/0/37; this does not accept the
+failed characterization gate. The human then authorized a fresh CI recording
+of exactly those102 ID removals, preserving all other values/types. No mapping
+or ordinary comparison exception is permitted. The earlier C0 recording remains
+immutable historical evidence; the unpublished0.10.1 dataset will pin its new
+actual capture SHA after the replacement recording is independently verified.

@@ -848,6 +848,9 @@ Direct human instruction includes maintenance #77 in 0.10.1. Remove the retired
 channel global, toolbar badge/styles, version suffix and beta mirror workflow.
 Production remains GitHub Pages from main; publishing main and creating the
 0.10.1 tag still require Francesco's local check and sign-off. The updated
-candidate requires its own complete first-pass 37/0/37 conjunction against the
-unchanged CI-recorded 0.10.1 goldens. The earlier accepted candidate/run
+candidate requires its own complete first-pass 37/0/37 conjunction. After run
+40505038734 measured exactly one removed toolbarChannelBadge ID in each of102
+captures, the human explicitly authorized a fresh CI-recorded 0.10.1 baseline
+with exactly those102 dom.ids removals and every other value/type unchanged.
+No mapping or comparison exception is allowed; the failed run remains failed. The earlier accepted candidate/run
 51b90e5/40447991258 remains historical evidence for its own tree only.

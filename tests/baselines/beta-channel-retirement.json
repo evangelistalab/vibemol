@@ -44,5 +44,20 @@
   "goldensUnchanged": true,
   "regression": "workbench_release emits exact plain version, missing channel global and zero badge elements on both default/explicit Workbench launches",
   "workflowRemoved": ".github/workflows/deploy-beta.yml",
-  "mainPushRequiresHumanSignOff": true
+  "mainPushRequiresHumanSignOff": true,
+  "sourceAuditScope": "Code-only b31f736 before the separately human-authorized baseline revision; source/golden hashes retain their actual measured values.",
+  "baselineAuthorization": {
+    "authority": "Direct human reply: Re-record this exact change",
+    "rejectedRunId": 40505038734,
+    "previousRecordingRunId": 40444609180,
+    "previousCaptureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+    "approvedRemoval": {
+      "path": "dom.ids",
+      "id": "toolbarChannelBadge",
+      "captures": 102
+    },
+    "everyOtherValueAndTypeMustMatchExactly": true,
+    "noMappingOrComparisonException": true,
+    "freshCompleteGateRequired": true
+  }
 }
