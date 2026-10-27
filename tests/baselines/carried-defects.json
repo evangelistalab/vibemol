@@ -75,14 +75,17 @@
     },
     {
       "issue": 14,
-      "scope": "Retired Workbench launcher excluded from live set and existing periodic factory; connected/wired supported legacy button retained. Native Workbench openElementColors entry passed both themes; full removed-markup sweep classified all observed references. Broader retired-UI cleanup remains open.",
+      "scope": "One periodic controller for both routes. Workbench skips detached launcher query/wiring; legacy markup, query, onclick and connected identity slot remain.",
       "evidence": "tests/baselines/evidence/stage3/colors/preflight/overlay-sweep.md",
       "handoffPr": 23,
-      "actualPeriodicFactoryInputs": 11
+      "actualPeriodicFactoryInputs": 11,
+      "status": "Workbench-only cleanup candidate; legacy function retained; complete gate required",
+      "controllerDependencyCount": 11
     },
     {
       "issue": 15,
-      "scope": "Four obsolete null edit slots retained and issue-backed in identity guard"
+      "scope": "Four explicitly named null slots and dormant paths/timer removed.48-slot composition is47+1null14 in Workbench and48+0 in legacy; all minima unchanged.",
+      "status": "cleanup candidate; complete gate required"
     },
     {
       "issue": 40,

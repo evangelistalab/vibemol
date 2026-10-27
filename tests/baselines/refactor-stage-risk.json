@@ -3918,5 +3918,53 @@
     "authority": "Direct human issue52 authorization: remove only Axis Escape; exact36/1/37 regardless of CI outcome.",
     "firstAutomaticCandidateRunOnly": true,
     "overPerformance": "37/0/37 stops during issue52; only the separately authorized issue53 PR may use37/0/37."
+  },
+  "maintenanceCacheRetirement": {
+    "role": "Current directly authorized14/15 cleanup; historical stage results above retain52",
+    "removedSlots": [
+      "editAtomsMenuEl",
+      "editAtomsMenuBodyEl",
+      "editAtomsMenuCurrentEl",
+      "editSelectionFragmentCuePopoverEl"
+    ],
+    "retainedLegacySlot": "elementColorBtn",
+    "knownAbsent": {
+      "workbench": {
+        "elementColorBtn": {
+          "id": "elementColorBtn",
+          "issue": 14,
+          "cached": "null"
+        }
+      },
+      "legacy": {}
+    },
+    "composedSlots": 48,
+    "composition": {
+      "workbench": {
+        "live": 47,
+        "knownAbsent": 1
+      },
+      "legacy": {
+        "live": 48,
+        "knownAbsent": 0
+      }
+    },
+    "presentedMinima": {
+      "workbench": 39,
+      "legacy": 32
+    },
+    "allOtherMinimaUnchanged": true,
+    "controllerDependencies": 0,
+    "periodicFactoryUsedInputs": 11,
+    "moduleLets": {
+      "before": 251,
+      "after": 250
+    },
+    "ordinaryExpected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "acceptedSetIntentionallyEmpty": true
   }
 }

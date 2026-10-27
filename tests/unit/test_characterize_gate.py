@@ -33,9 +33,9 @@ class ElementCacheGateTests(unittest.TestCase):
 
     @staticmethod
     def report(modes, panels):
-        absent = 5 if len(modes) == 4 else 4
-        return {'supported': True, 'nodeCount': 52,
-                'composition': {'live': 52 - absent, 'knownAbsent': absent},
+        absent = 1 if len(modes) == 4 else 0
+        return {'supported': True, 'nodeCount': 48,
+                'composition': {'live': 48 - absent, 'knownAbsent': absent},
                 'knownAbsent': {str(i): {'issue': 15} for i in range(absent)},
                 'failures': [], 'checks': {
             'presented checkpoint': len(modes) + 2 * len(panels) + 1,

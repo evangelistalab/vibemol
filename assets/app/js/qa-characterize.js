@@ -180,7 +180,7 @@
     const absent = bridge.knownAbsent || {};
     const absentNames = Object.keys(absent);
     const expected = global.VibeMolWorkbenchHost?.enabled
-      ? { live: 47, knownAbsent: 5 } : { live: 48, knownAbsent: 4 };
+      ? { live: 47, knownAbsent: 1 } : { live: 48, knownAbsent: 0 };
     const names = [...liveNames, ...absentNames];
     if (liveNames.length !== expected.live || absentNames.length !== expected.knownAbsent
       || new Set(names).size !== names.length

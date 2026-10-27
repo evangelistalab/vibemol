@@ -1,0 +1,114 @@
+{
+  "scope": "Authorized14 Workbench-only and15 null-slot cleanup; legacy retained",
+  "status": "candidate; complete first automatic CI required",
+  "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+  "removedSlots": [
+    "editAtomsMenuEl",
+    "editAtomsMenuBodyEl",
+    "editAtomsMenuCurrentEl",
+    "editSelectionFragmentCuePopoverEl"
+  ],
+  "removedFunctions": [
+    "positionEditAtomsMenu",
+    "updateEditAtomsMenuUi",
+    "hideSelectionFragmentCuePopover",
+    "showSelectionFragmentCuePopover",
+    "positionSelectionFragmentCuePopover"
+  ],
+  "removedTimer": "selectionFragmentCuePopoverHideTimer",
+  "retainedLiveOwners": [
+    "restoreBuildPopoverPanes",
+    "syncBuildPopoverPanes"
+  ],
+  "periodicUsedInputs": 11,
+  "newControllerInputs": 0,
+  "newModuleLets": 0,
+  "trackedLetDeclarationLines": {
+    "before": 251,
+    "after": 250
+  },
+  "actualModuleLetBindings": {
+    "before": 264,
+    "after": 263
+  },
+  "native": {
+    "passed": true,
+    "cases": 4,
+    "exactObservations": true,
+    "base": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+    "panesConnectedAndOwnedAtEveryCheckpoint": true,
+    "allContextsRetired": true,
+    "collectorCorrections": [
+      "Workbench suspends rather than restoring on mode change",
+      "Open legacy Appearance accordion before clicking its button"
+    ]
+  },
+  "construction": {
+    "status": "passed",
+    "auditedBindings": 42,
+    "explicitRechecks": [
+      "els",
+      "elementColorBtn"
+    ]
+  },
+  "identity": {
+    "slots": 48,
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 1
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 0
+    },
+    "retainedKnownAbsence": {
+      "elementColorBtn": {
+        "id": "elementColorBtn",
+        "issue": 14,
+        "cached": "null"
+      }
+    },
+    "eightContexts": true,
+    "presentedMinima": [
+      39,
+      32
+    ],
+    "otherMinimaUnchanged": true
+  },
+  "sourceAudit": {
+    "status": "passed",
+    "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+    "wholeAppASTExactAfterOnlyNamedRetirements": true,
+    "counts": {
+      "slotProperties": 16,
+      "timer": 1,
+      "legacyQuery": 1,
+      "removedCalls": 18,
+      "nullListener": 1,
+      "function:positionEditAtomsMenu": 1,
+      "function:updateEditAtomsMenuUi": 1,
+      "function:hideSelectionFragmentCuePopover": 1,
+      "function:showSelectionFragmentCuePopover": 1,
+      "function:positionSelectionFragmentCuePopover": 1,
+      "absenceDisposition": 1
+    },
+    "newAppBindings": [],
+    "newControllerDependencies": 0,
+    "newModuleLets": 0,
+    "trackedLetLines": {
+      "before": 251,
+      "after": 250
+    },
+    "actualLetBindings": {
+      "before": 264,
+      "after": 263
+    },
+    "livePaneOwnersByteExact": {
+      "restoreBuildPopoverPanes": "a4f79d70fe432806e1af588988e2d99bac3977e0ffc7fb05b90eaa8fde1cd02c",
+      "syncBuildPopoverPanes": "4295cbff3c35b6a31d9357fc819e8b0f21565ac3cf78f152cf1f61e0b71b0909"
+    },
+    "periodicSourceByteExact": true,
+    "appSha256": "ec90d0ca7019d8bd714943f511a797ab604f0e230c99944c049a3f8672d058e6"
+  },
+  "sourceAuditRole": "Independent whole-app AST normalization of the explicitly named removals; all live pane owner bodies and periodic source byte-exact"
+}
