@@ -45,16 +45,22 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
                       'actualTag': golden['baseline']['tag'], 'expectedTag': baseline_ref}
         print('[baseline-recording-identity] ' + json.dumps(comparands, sort_keys=True), flush=True)
         assert golden['baseline']['commit'] == expected_commit and golden['baseline']['tag'] == baseline_ref, comparands
-        if baseline_ref == 'v0.10.0':
+        if baseline_ref in ('v0.10.0', 'v0.10.1'):
             proof = json.loads((artifact / 'release-baseline-source.json').read_text())
             assert proof['status'] == 'passed' and proof['commit'] == expected_commit and proof['tag'] == baseline_ref, proof
-            assert proof['allArchivedBlobsMatchTag'] and not proof['harnessInjection'] and not proof['fixturePreparation'], proof
+            if baseline_ref == 'v0.10.0':
+                assert proof['allArchivedBlobsMatchTag'], proof
+            else:
+                assert proof['recordingMode'] == 'candidate' and proof['allArchivedBlobsMatchCommit'], proof
+                assert proof['correctedReleaseBase'] == '44bcb5d534cecba27fd0ccfc60f74324a0920b73' and proof['mappingHelperAbsent'], proof
+            assert not proof['harnessInjection'] and not proof['fixturePreparation'], proof
+            expected_version = baseline_ref.removeprefix('v')
             wrong_versions = [{'capture': name, 'session.appVersion': c['session'].get('appVersion'),
                                'session.preset.appVersion': c['session']['preset'].get('appVersion')}
                               for name, c in golden['captures'].items()
-                              if c['session'].get('appVersion') != '0.10.0' or c['session']['preset'].get('appVersion') != '0.10.0']
+                              if c['session'].get('appVersion') != expected_version or c['session']['preset'].get('appVersion') != expected_version]
             versions = {'actualLeaves': 2 * len(golden['captures']), 'expectedLeaves': 204,
-                        'actualWrongValues': wrong_versions, 'expectedWrongValues': [], 'expectedVersion': '0.10.0'}
+                        'actualWrongValues': wrong_versions, 'expectedWrongValues': [], 'expectedVersion': expected_version}
             print('[release-recorded-versions] ' + json.dumps(versions, sort_keys=True), flush=True)
             assert versions['actualLeaves'] == 204 and not wrong_versions, versions
         for run in (1, 2):

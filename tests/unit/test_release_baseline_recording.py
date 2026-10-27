@@ -52,6 +52,63 @@ class PublishedReleaseRecording(unittest.TestCase):
         with patch.dict(os.environ, self.env, clear=True):
             return recording.require_published_release_source(self.root, self.source, self.args, self.folder / 'proof.json')
 
+    def prepare_candidate(self, version='0.10.1', expired_helper=False):
+        self.shipped = self.commit
+        (self.root / 'assets/app/js/asset-urls.js').write_text("const APP_VERSION = '"+version+"';\n")
+        if expired_helper:
+            path = self.root / 'tests/e2e/release_version_mapping.py'
+            path.parent.mkdir(parents=True)
+            path.write_text('# forbidden historical helper fixture\n')
+        self.git('add', '.')
+        self.git('-c', 'user.name=Recording Test', '-c', 'user.email=recording-test@example.invalid', 'commit', '-qm', 'Synthetic candidate')
+        self.commit = self.git('rev-parse', 'HEAD')
+        with tarfile.open(fileobj=io.BytesIO(subprocess.check_output(['git','archive',self.commit],cwd=self.root))) as archive:
+            archive.extractall(self.source)
+        self.args.record_release_tag = 'v0.10.1'
+        self.args.record_source_commit = self.commit
+        self.env.update(GITHUB_REF='refs/heads/codex/release-0-10-1-ci', GITHUB_SHA=self.commit, GITHUB_EVENT_NAME='workflow_dispatch')
+
+    def invoke_candidate(self):
+        with patch.dict(os.environ,self.env,clear=True), patch.object(recording,'SHIPPED_0100_COMMIT',self.shipped):
+            return recording.require_release_candidate_source(self.root,self.source,self.args,self.folder/'candidate-proof.json')
+
+    def test_candidate_exact_archive_is_accepted_without_a_published_0101_release(self):
+        self.prepare_candidate()
+        result = self.invoke_candidate()
+        self.assertEqual(result['commit'],self.commit)
+        proof = json.loads((self.folder/'candidate-proof.json').read_text())
+        self.assertEqual(proof['recordingMode'],'candidate')
+        self.assertEqual(proof['correctedReleaseBase'],self.shipped)
+        self.assertTrue(proof['publicationPending'] and proof['allArchivedBlobsMatchCommit'])
+
+    def test_candidate_requires_exact_ci_branch_event_and_sha(self):
+        self.prepare_candidate()
+        for key,value in [('GITHUB_REF','refs/heads/main'),('GITHUB_EVENT_NAME','push'),('GITHUB_SHA','a'*40),('GITHUB_ACTIONS','false')]:
+            previous = self.env[key]
+            with self.subTest(key=key), self.assertRaises(AssertionError):
+                self.env[key]=value;self.invoke_candidate()
+            self.env[key]=previous
+
+    def test_candidate_refuses_a_different_0100_tag_target(self):
+        self.prepare_candidate();self.git('tag','-f','v0.10.0',self.commit)
+        with self.assertRaises(AssertionError):self.invoke_candidate()
+
+    def test_candidate_rejects_wrong_actual_version_even_in_an_exact_archive(self):
+        self.prepare_candidate(version='0.9.5')
+        with self.assertRaises(AssertionError):self.invoke_candidate()
+
+    def test_candidate_cannot_restore_the_expired_mapping_helper(self):
+        self.prepare_candidate(expired_helper=True)
+        with self.assertRaises(AssertionError):self.invoke_candidate()
+
+    def test_candidate_cannot_change_recording_options(self):
+        self.prepare_candidate()
+        for key,value in [('inject_harness',True),('prepare_fixtures',True),('runs',1),('matrix_run_index',1),('record_source_commit','HEAD')]:
+            previous=getattr(self.args,key)
+            with self.subTest(key=key),self.assertRaises(AssertionError):
+                setattr(self.args,key,value);self.invoke_candidate()
+            setattr(self.args,key,previous)
+
     def test_exact_published_archive_is_accepted_and_provenance_is_saved(self):
         self.assertEqual(self.invoke(), {'tag': 'v0.10.0', 'commit': self.commit})
         report = json.loads((self.folder / 'proof.json').read_text())

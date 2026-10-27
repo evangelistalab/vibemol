@@ -1,0 +1,30 @@
+{
+  "version": "0.10.1",
+  "status": "preparing candidate; not published",
+  "correctedPreviousTag": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "historical0100Capture": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "recordingWorkflow": "record-release-baseline.yml",
+  "ciBranch": "codex/release-0-10-1-ci",
+  "mainPushRequiresHumanSignOff": true,
+  "createReleaseTagOnlyAfterMainPush": true,
+  "deleteCiBranchOnlyAfterMainPush": true,
+  "versionMappingHelperAbsent": true,
+  "expectedGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37
+  },
+  "acceptedSetIntentionallyEmpty": true,
+  "hosting": {
+    "type": "GitHub Pages branch publication",
+    "branch": "main",
+    "path": "/",
+    "domain": "vibemol.org",
+    "pushPublishesIndependentlyOfCi": true
+  },
+  "deferredBetaMaintenance": 77,
+  "newAppBindings": 0,
+  "newControllerDependencies": 0,
+  "letDeclarationLines": 250,
+  "variableLetBindings": 261
+}

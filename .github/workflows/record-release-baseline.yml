@@ -1,14 +1,19 @@
-name: Record published 0.10.0 characterization baseline
+name: Record release characterization baseline
 
 on:
   workflow_dispatch:
+    inputs:
+      source_commit:
+        description: Exact authorized 0.10.1 candidate commit (40 hex characters)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 jobs:
   record:
-    if: github.ref == 'refs/tags/v0.10.0'
+    if: github.ref == 'refs/heads/codex/release-0-10-1-ci'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     strategy:
@@ -21,25 +26,30 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
-      - name: Install the ordinary CI browser
-        run: |
-          python -m pip install -r api/requirements.txt playwright==1.64.0
-          python -m playwright install --with-deps chromium
-      - name: Record only the published tag, twice per independent runner
+          python-version: '3.12.15'
+      - name: Install ordinary CI's pinned dependencies
+        run: pip install -r api/requirements-ci.lock
+      - name: Resolve Playwright version
+        id: playwright
+        run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
+      - name: Install ordinary CI's browser and Linux dependencies
+        run: python -m playwright install --with-deps chromium
+      - name: Record the exact candidate twice without injection or a version mapping
         env:
-          GH_TOKEN: ${{ github.token }}
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/release-record-pycache
           VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/release-baseline
-          VIBEMOL_PUBLISHED_RELEASE_JSON: ${{ runner.temp }}/published-0.10.0.json
+          VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
         run: |
-          gh release view v0.10.0 --repo "$GITHUB_REPOSITORY" --json tagName,isDraft,isPrerelease,publishedAt,url > "$VIBEMOL_PUBLISHED_RELEASE_JSON"
-          source_root="$RUNNER_TEMP/published-vibemol-0.10.0"
+          test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          source_root="$RUNNER_TEMP/release-source"
           mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
-          git archive v0.10.0 | tar -x -C "$source_root"
-          python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.0 --update-baseline --runs 2
+          git archive "$VIBEMOL_EXPECTED_SOURCE_COMMIT" | tar -x -C "$source_root"
+          python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.1 --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
           cp tests/baselines/characterize.json.gz tests/baselines/characterize-summary.json "$VIBEMOL_TEST_ARTIFACT_DIR/"
-          cp "$VIBEMOL_PUBLISHED_RELEASE_JSON" "$VIBEMOL_TEST_ARTIFACT_DIR/"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -56,13 +66,15 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.12.15'
       - uses: actions/download-artifact@v4
         with:
           pattern: characterization-baseline-*
           path: out/test-artifacts/release-baselines
       - name: Require four exact 102-capture serializations before promotion
-        run: python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.0
+        env:
+          VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
+        run: python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.1 --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
       - uses: actions/upload-artifact@v4
         with:
           name: characterization-ci-comparison

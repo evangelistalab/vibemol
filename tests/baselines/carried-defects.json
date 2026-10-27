@@ -1066,5 +1066,15 @@
       "concurrentWork": "Checks/units ran in parallel as allowed; no timing attribution was installed, so causation is unknown.",
       "rule": "No re-run, new individual issue, deadline increase or accepted-set change. Held clamp work remains separate."
     }
+  ],
+  "deferredMaintenance": [
+    {
+      "issue": 77,
+      "url": "https://github.com/evangelistalab/vibemol/issues/77",
+      "status": "filed; deferred; not part of0.10.1",
+      "scope": "Retired VIBEMOL_CHANNEL export, toolbar badge/version suffix and deploy-beta.yml. Keep implementation unchanged in this release.",
+      "acceptedCiFailure": false,
+      "scheduled": false
+    }
   ]
 }

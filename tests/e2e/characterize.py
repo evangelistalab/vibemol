@@ -480,8 +480,9 @@ def main():
     parser.add_argument('--inject-harness', action='store_true')
     parser.add_argument('--prepare-fixtures', action='store_true')
     parser.add_argument('--update-baseline', action='store_true')
-    parser.add_argument('--record-release-tag', choices=('v0.10.0',),
-                        help='Explicit CI refresh from the published0.10.0 tag; never a future version exemption.')
+    parser.add_argument('--record-release-tag', choices=('v0.10.0', 'v0.10.1'),
+                        help='Explicit CI release recording from a verified source; never a version exemption.')
+    parser.add_argument('--record-source-commit', help='Full immutable SHA for the authorized0.10.1 candidate recording.')
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
                         help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')
@@ -498,8 +499,11 @@ def main():
         assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
     baseline_identity = {'commit': BASE_COMMIT, 'tag': BASE_TAG} if args.update_baseline or args.prepare_fixtures else None
     if args.record_release_tag:
-        from release_baseline_recording import require_published_release_source
-        baseline_identity = require_published_release_source(ROOT, args.source_root, args, ARTIFACTS / 'release-baseline-source.json')
+        from release_baseline_recording import require_published_release_source, require_release_candidate_source
+        recorder = require_release_candidate_source if args.record_release_tag == 'v0.10.1' else require_published_release_source
+        baseline_identity = recorder(ROOT, args.source_root, args, ARTIFACTS / 'release-baseline-source.json')
+    else:
+        assert args.record_source_commit is None, 'Candidate SHA requires explicit release recording mode.'
     meta = metadata(args.source_root, baseline_identity)
     if (args.update_baseline or args.prepare_fixtures) and not args.record_release_tag:
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()

@@ -226,5 +226,9 @@
       "immutableHistoricalEvidence": false,
       "sha256": "bec8be00c95c78015aaeeb82e4fd7de60607c9dd4aa8e8d914da8c8fd7ebccfa"
     }
-  ]
+  ],
+  "tagCorrectionVerified": true,
+  "actualLocalTarget": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "actualRemoteTarget": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "tagMoveBefore0101Recording": true
 }
