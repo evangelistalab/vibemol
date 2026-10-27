@@ -3577,7 +3577,10 @@
     "closedTestSynchronizationIssue": 21,
     "expectedJsTests": 433,
     "expectedPythonTests": 60,
-    "noProductionChanges": true
+    "noProductionChanges": true,
+    "recordedCaptureCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
+    "recordIdentityRole": "Historical source/capture evidence at3425e02; not the corrected shipping tag target.",
+    "shippedCommit": "44bcb5d534cecba27fd0ccfc60f74324a0920b73"
   },
   "historicalReleaseCandidatePlanning": {
     "status": "preparing own immutable0.10.0 candidate; no release CI or UI matrix started yet",
@@ -4035,5 +4038,14 @@
     },
     "historicalLineCountsPreserved": true,
     "prior263IncludedTwoClasses": true
+  },
+  "releaseTagCorrection": {
+    "tag": "v0.10.0",
+    "from": "3425e0231b71eeb8b8a11523806990f553265cba",
+    "to": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+    "noProductionFileDifferences": true,
+    "historicalCaptureCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
+    "historicalCaptureResolution": "compare_ci_baselines.py pins the captured SHA, never the moved tag name.",
+    "immutableEvidenceUnchanged": true
   }
 }

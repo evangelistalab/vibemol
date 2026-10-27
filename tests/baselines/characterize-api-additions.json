@@ -1,5 +1,6 @@
 {
-  "baseTag": "v0.10.0",
-  "purpose": "Published 0.10.0 CI goldens include all six extracted classic-script namespaces. No additive exception remains.",
-  "modules": []
+  "purpose": "Historical captures at3425e02 include all six namespaces. The v0.10.0 tag is corrected to shipping commit44bcb5d; captured data remain pinned to their actual SHA. No additive exception remains.",
+  "modules": [],
+  "baseCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "baseTagAtCapture": "v0.10.0"
 }

@@ -7,13 +7,34 @@ import json
 import pathlib
 import subprocess
 import sys
+import re
+
+# These identify recorded datasets, not movable release labels. The 0.10.0
+# captures were made at3425e02 before its release tag was corrected to44bcb5d.
+BASELINE_COMMITS = {
+    'v0.9.5-pre-refactor': '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d',
+    'v0.10.0': '3425e0231b71eeb8b8a11523806990f553265cba',
+    'v0.10.1': None,  # Filled with the actual capture commit after CI recording.
+}
 
 
-def main(folder, baseline_ref='v0.9.5-pre-refactor'):
-    root = pathlib.Path(__file__).resolve().parents[2]
-    expected_commit = subprocess.check_output(['git', 'rev-parse', baseline_ref + '^{commit}'], cwd=root, text=True).strip()
+def resolve_baseline_commit(root, baseline_ref, expected_commit=None):
+    pinned = BASELINE_COMMITS[baseline_ref]
+    if pinned is not None:
+        assert expected_commit in (None, pinned), (expected_commit, pinned)
+        expected_commit = pinned
+    assert expected_commit and re.fullmatch(r'[0-9a-f]{40}', expected_commit), 'An immutable capture commit is required.'
+    resolved = subprocess.check_output(['git', 'rev-parse', expected_commit + '^{commit}'], cwd=root, text=True).strip()
+    assert resolved == expected_commit, (resolved, expected_commit)
     if baseline_ref == 'v0.9.5-pre-refactor':
-        assert expected_commit == '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d', expected_commit
+        original_tag = subprocess.check_output(['git', 'rev-parse', baseline_ref + '^{commit}'], cwd=root, text=True).strip()
+        assert original_tag == pinned, (original_tag, pinned)
+    return resolved
+
+
+def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
+    root = pathlib.Path(__file__).resolve().parents[2]
+    expected_commit = resolve_baseline_commit(root, baseline_ref, expected_commit)
     captures, provenances, artifacts = [], [], []
     for number in (1, 2):
         artifact = folder / f'characterization-baseline-{number}'
@@ -55,6 +76,7 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor'):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('folder', type=pathlib.Path)
-    parser.add_argument('--baseline-ref', choices=('v0.9.5-pre-refactor', 'v0.10.0'), default='v0.9.5-pre-refactor')
+    parser.add_argument('--baseline-ref', choices=tuple(BASELINE_COMMITS), default='v0.9.5-pre-refactor')
+    parser.add_argument('--expected-commit', help='Exact capture SHA for an explicitly authorized, not-yet-pinned release recording.')
     args = parser.parse_args()
-    main(args.folder, args.baseline_ref)
+    main(args.folder, args.baseline_ref, args.expected_commit)

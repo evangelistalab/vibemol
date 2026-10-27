@@ -1,0 +1,230 @@
+{
+  "tag": "v0.10.0",
+  "historicalTagTarget": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "shippedTagTarget": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
+  "productionDifferences": [],
+  "captureCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
+  "captureRun": 39161918761,
+  "capturedGoldenSha256": "88d80db1aefa887eb96c439adef6dddafbcf81b8a81940efa536ee8e06731bb5",
+  "historicalTagLabelIsNotResolutionPolicy": true,
+  "matchingTrackedFiles": 24,
+  "immutableEvidenceFiles": 13,
+  "references": [
+    {
+      "path": ".github/workflows/record-release-baseline.yml",
+      "counts": {
+        "v0.10.0": 5,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "dd240856af6defd9c9cb13409723d42b940323048a3b0f61cd937b3419bd3f05"
+    },
+    {
+      "path": "AGENTS.md",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "7af1e508107d8bbaf780866fbf59702207b761a0ee15da3eb5c757906317720e"
+    },
+    {
+      "path": "docs/releases/v0.10.0.md",
+      "counts": {
+        "v0.10.0": 0,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "31d85c9d0052260b2233f59f163a25fd8ac193a4934c8337fbbe5bcf16276a48"
+    },
+    {
+      "path": "tests/baselines/characterize-api-additions.json",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "88d95130ca3e2851c77f70b5ef6d17454afcdb75e92c652cb8d2c99038469d71"
+    },
+    {
+      "path": "tests/baselines/characterize-summary.json",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "9d7478a1e3ad458f1cd903618ccbac33408a363bfa054fd45230acef0354e7b3"
+    },
+    {
+      "path": "tests/baselines/characterize.json.gz",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "88d80db1aefa887eb96c439adef6dddafbcf81b8a81940efa536ee8e06731bb5"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/accessibility-settled-scan/checks-unit.log.gz",
+      "counts": {
+        "v0.10.0": 115,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "ef840873ddcaafa9287b203e551f4a1994b0ae0e729134076161e58ec5e188a3"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/beta-deployment.json.gz",
+      "counts": {
+        "v0.10.0": 0,
+        "3425e02": 2
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "3898ff2dcabc4d1c9d7be7550416397feb5ac096d158e083bd1ff4c7ca1d6ce8"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/checks-unit.log.gz",
+      "counts": {
+        "v0.10.0": 115,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "d0ac64073e0e7e48bc93919513b0ad1c4b04b13414e880d8e47260ce7f12fad2"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/expiry-source-change.json.gz",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "d21604b070158070dd48ad98ad0ecb7db53e8404a839572da10d69484ecf4369"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/finalize-baseline-docs.py",
+      "counts": {
+        "v0.10.0": 4,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "7b3d9e46172cec816007344b86a6e1d3d3b1c58b47b3c01f079ece8a76e06856"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/local-precommit-verification.json.gz",
+      "counts": {
+        "v0.10.0": 0,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "a4fb5445120267ee5de405a505c28aa40c363def7cdb3186885492e077b8cc5f"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/main-harness-archive.sha256.json",
+      "counts": {
+        "v0.10.0": 0,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "83fbc382cf870bef6bdb8d441d34c0b0d6c62c430a34169d24caa16f260eafbe"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/main-with-settled-harness.json.gz",
+      "counts": {
+        "v0.10.0": 0,
+        "3425e02": 3
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "0fca440dd4acfbf7b57f412b24862c24174469c8c9bb7445df6f67f32c9dfbe0"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/prepare-baseline-refresh-with-accessibility.py",
+      "counts": {
+        "v0.10.0": 5,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "b8c7a9bda8d715855bb628e506e5b84bbdcccf2f8afbe3f9e0e6a1cfe8033a21"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/publication-beta-evidence.sha256.json",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "a7202790a733014e780fa3b98cb6c83effb35c52dc8219caa3aa58f8a1f79ec4"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/published-release.json",
+      "counts": {
+        "v0.10.0": 2,
+        "3425e02": 1
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "887cc614907f70a384791c1564024375e6451965ba36a60830069f2c09ba940a"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/published-tag-recording.json.gz",
+      "counts": {
+        "v0.10.0": 11,
+        "3425e02": 6
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "1d78c184f1ae9c755efb82dbd80ca3e8a49eef304488566be524c72e9c4742ac"
+    },
+    {
+      "path": "tests/baselines/evidence/release-0.10.0/completion/summary.json",
+      "counts": {
+        "v0.10.0": 2,
+        "3425e02": 2
+      },
+      "immutableHistoricalEvidence": true,
+      "sha256": "e3ab63375031c5ae0371e5c2d7450fcc8fb02bc52f8a4e02f0ef05b7f2eb4678"
+    },
+    {
+      "path": "tests/baselines/refactor-stage-risk.json",
+      "counts": {
+        "v0.10.0": 2,
+        "3425e02": 4
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "66323fea9a038e3c9d56956c0b6a5502ab3a77a47768a5535ddc8e1c9eede161"
+    },
+    {
+      "path": "tests/e2e/characterize.py",
+      "counts": {
+        "v0.10.0": 1,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "8560b846d3d17a7b339469f04a6b0f108d234539c088d3357ed57c46396eaeef"
+    },
+    {
+      "path": "tests/e2e/compare_ci_baselines.py",
+      "counts": {
+        "v0.10.0": 2,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "9d60a95f34431b427a493884fdad10d46e069361d3f341e3b587ca92cf81e034"
+    },
+    {
+      "path": "tests/e2e/release_baseline_recording.py",
+      "counts": {
+        "v0.10.0": 3,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "9686b938477450252c768f1dd48a7646417796583db312e4fa07880381e9ad24"
+    },
+    {
+      "path": "tests/unit/test_release_baseline_recording.py",
+      "counts": {
+        "v0.10.0": 8,
+        "3425e02": 0
+      },
+      "immutableHistoricalEvidence": false,
+      "sha256": "bec8be00c95c78015aaeeb82e4fd7de60607c9dd4aa8e8d914da8c8fd7ebccfa"
+    }
+  ]
+}
