@@ -166,7 +166,7 @@ No build step is required for the web app. It runs directly from static files.
 
 `assets/app/js/asset-urls.js` loads first in the head and owns the single `APP_VERSION` constant. The app reads `VibeMolAssets.version`; runtime bundled loads use `VibeMolAssets.url`. Run `python3 tools/sync_asset_versions.py --version <version>` to bump a release and stamp committed HTML/CSS URLs together, or `make version-assets` after editing the constant. `make check` rejects stale URLs. Keep workers and their imports versioned too. See `docs/asset-versioning.md` and the real HTTP-cache regression `tests/e2e/asset_cache.py`.
 
-`assets/app/js/element-utils.js` loads immediately after `asset-urls.js`, before every consumer. It exports pure `VibeMolElementUtils` helpers; callers pass atomic metadata explicitly. Symbol/clamp compatibility variants preserve each tagged-base caller's behavior. The standalone Style Lab loads it before volume geometry too.
+`assets/app/js/element-utils.js` loads immediately after `asset-urls.js`, before every consumer. It exports pure `VibeMolElementUtils` helpers; callers pass atomic metadata explicitly. Display-placeholder compatibility aliases remain; chemistry validates identity before inference. The numerical aliases retain their pre-repair contract until the separate #5 clamp change. The standalone Style Lab loads it before volume geometry too.
 
 Required stylesheet order in `index.html`:
 1. `src/styles/tokens.css`
