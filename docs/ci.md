@@ -89,7 +89,7 @@ https://docs.github.com/en/actions/reference/runners/larger-runners.
 
 ## Browser worker configuration
 
-Every one of the37 entrypoints uses the direct synchronous Python Playwright
+All 37 entrypoints uses the direct synchronous Python Playwright
 library. There is no Playwright Test/pytest worker pool or half-CPU worker
 default in this execution path. `browser_suite.py` starts one suite with blocking
 `subprocess.run` and waits for it to exit before starting the next. Per runner:
@@ -104,11 +104,11 @@ default in this execution path. `browser_suite.py` starts one suite with blockin
 
 The two characterization jobs and WebKit also use one synchronous owner each on
 separate hosted VMs. GitHub matrix concurrency is not a Playwright worker count
-inside one VM. The original40396382688 CPU profile already launched exactly one
+inside one VM. The original 40396382688 CPU profile already launched exactly one
 browser, one context and one page before measuring98.43% CPU use. One browser's
-software renderer can use multiple processes and threads. Re-reading the144
-saved dense-phase samples accounts for98.41% of the VM CPU capacity in the
-observed process tree, including97.65% in Chrome processes (against98.43%
+software renderer can use multiple processes and threads. Re-reading the 144
+saved dense-phase samples accounts for 98.41% of the VM CPU capacity in the
+observed process tree, including 97.65% in Chrome processes (against 98.43%
 whole-VM busy time). No second profile was dispatched. Process names cannot
 distinguish GPU and renderer roles; this does not diagnose old timeouts. A one-worker owner
 also does not mean one page: Looks persistence/library tests and Sessions'
@@ -123,3 +123,22 @@ configuration against the identical tested PR tree/run40428946697. Its wall-time
 and recorded long-task comparison is **1→1 observational variation**, not a
 2→1 concurrency experiment or a causal claim about contention. No extra CI run
 is dispatched for that observation.
+
+The completed 1→1 observation is recorded in
+`tests/baselines/browser-worker-observation.json`. Both runs independently
+passed the full 37/0/37 conjunction (738 checks) on the identical tree and
+Playwright 1.64.1 / Chromium 156 software renderer:
+
+| Run | Whole CI | Looks |
+| --- | ---: | ---: |
+| PR76 / 40428946697 | 42.8333 min | 1097.47 s / 18.2912 min |
+| main / 40434881659 | 43.1333 min | 1651.18 s / 27.5197 min |
+
+Whole time increased by 18 s (0.7004%); balanced-2 was critical in both runs. Both
+material-family paths completed in both, with no appearanceMaterialPreset
+timeout in either covered run; its risk remains open. Across the same 31 product
+wait windows (synthetic controls excluded), wait-overlapping long-task durations
+were median 142→108 ms, p95 546→797 ms, maximum 6217→4476 ms. The summed
+duration of those tasks increased from 21,078 to 28,210 ms. These mixed changes do not establish
+improvement, especially since no worker configuration changed. No drift
+threshold or new allowance was added.

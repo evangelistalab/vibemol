@@ -1,0 +1,184 @@
+{
+  "role": "One-worker observational comparison; no worker-count treatment",
+  "configuration": {
+    "controlWorkers": 1,
+    "observedWorkers": 1,
+    "change": null,
+    "playwrightTestWorkerPool": false,
+    "meaning": "Same entire source tree and same existing one-worker execution. This is observational variation, not a two-to-one concurrency treatment."
+  },
+  "sourceTree": "3c0be399a2cb9ae0fd8582b58b94462dcb4ed87d",
+  "toolchainLockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be",
+  "runnerSourceSha256": "4b58584546bac7c5a8120872d689303ceb3ee7461af186ceb8a4974983626511",
+  "additionalDiagnosticDispatches": 0,
+  "automaticPostMergeRunUsed": true,
+  "performanceAcceptanceThreshold": null,
+  "scope": "31 existing product wait windows only; excludes12 synthetic/missing-input controls. Long-task durations retain page CPU work and do not identify environment cause. Prelude entries are filtered to each recorded prelude/window; observations across windows are not a global browser task census.",
+  "runs": {
+    "control": {
+      "runId": 40428946697,
+      "head": "f8a099fac09dc3742c7889921fa4ed2a440f6c1f",
+      "wholeMinutes": 42.833333333333336,
+      "looksSeconds": 1097.47,
+      "materialPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "waitWindows": 31,
+      "waitOverlappingLongTasks": {
+        "count": 71,
+        "minimum": 52,
+        "median": 142,
+        "p95": 546,
+        "maximum": 6217,
+        "sum": 21078
+      },
+      "preludeAndWaitLongTasks": {
+        "count": 251,
+        "minimum": 52,
+        "median": 139,
+        "p95": 484,
+        "maximum": 6217,
+        "sum": 53834
+      },
+      "productWaitWallMs": {
+        "count": 31,
+        "minimum": 53.69999999998254,
+        "median": 151.40000000002328,
+        "p95": 2993.5,
+        "maximum": 12399.29999999993,
+        "sum": 31312.59960937494
+      },
+      "cache": {
+        "restoreHits": 8,
+        "restoreMisses": 0,
+        "hitJobs": [
+          "Browser suites (balanced-1)",
+          "Browser suites (balanced-2)",
+          "Browser suites (balanced-3)",
+          "Browser suites (looks)",
+          "Browser suites (smoke)",
+          "Characterization (1)",
+          "Characterization (2)",
+          "WebKit Properties interactions"
+        ],
+        "missJobs": [],
+        "playwrightVersions": [
+          "1.64.1"
+        ]
+      },
+      "renderer": {
+        "os": "Linux",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "rendererClass": "software",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+      }
+    },
+    "observed": {
+      "runId": 40434881659,
+      "head": "fb1498c8f364c6fd8a5cb2214c50e550f235614a",
+      "wholeMinutes": 43.13333333333333,
+      "looksSeconds": 1651.18,
+      "materialPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "waitWindows": 31,
+      "waitOverlappingLongTasks": {
+        "count": 115,
+        "minimum": 50,
+        "median": 108,
+        "p95": 797,
+        "maximum": 4476,
+        "sum": 28210
+      },
+      "preludeAndWaitLongTasks": {
+        "count": 273,
+        "minimum": 50,
+        "median": 110,
+        "p95": 532,
+        "maximum": 4476,
+        "sum": 55022
+      },
+      "productWaitWallMs": {
+        "count": 31,
+        "minimum": 81.40000000002328,
+        "median": 221.0,
+        "p95": 3351.5,
+        "maximum": 13349.599999999977,
+        "sum": 41200.2005371094
+      },
+      "cache": {
+        "restoreHits": 8,
+        "restoreMisses": 0,
+        "hitJobs": [
+          "Browser suites (balanced-1)",
+          "Browser suites (balanced-2)",
+          "Browser suites (balanced-3)",
+          "Browser suites (looks)",
+          "Browser suites (smoke)",
+          "Characterization (1)",
+          "Characterization (2)",
+          "WebKit Properties interactions"
+        ],
+        "missJobs": [],
+        "playwrightVersions": [
+          "1.64.1"
+        ]
+      },
+      "renderer": {
+        "os": "Linux",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "rendererClass": "software",
+        "unmaskedRenderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+      }
+    }
+  },
+  "deltas": {
+    "wholeMinutesDelta": 0.29999999999999716,
+    "wholePercentDelta": 0.700389105058359,
+    "taskMaximumDeltaMs": -1741,
+    "waitTaskP95DeltaMs": 251
+  },
+  "ordinaryGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true,
+    "independentlyVerifiedChecks": 738,
+    "goldens": {
+      "captures": 102,
+      "runs": 2,
+      "exactRepeat": true
+    },
+    "identitySlots": 48,
+    "identityContexts": 8,
+    "allMinima": true,
+    "bothExporters": true,
+    "units": {
+      "js": 483,
+      "python": 144
+    },
+    "webkit": "passed",
+    "construction": "passed"
+  },
+  "interpretation": "Median and maximum recorded long-task duration decreased, but p95 and total wait-overlapping long-task time increased. No consistent timing improvement and no causal worker-count conclusion; both configurations are1.",
+  "immutableEvidence": {
+    "control": {
+      "bytes": 49003042,
+      "sha256": "42845edcfe54c5ca64f1733d9ff32e894bb17b54f17ac70024a2c108fedbe9ce",
+      "members": 559,
+      "allMembersReopenedAndVerified": true
+    },
+    "observed": {
+      "bytes": 49027971,
+      "sha256": "33f509a99c4b66e0db4092f1b7224b2322b30442aa5dbeb7c0ec8a00a4e1672b",
+      "members": 554,
+      "allMembersReopenedAndVerified": true
+    }
+  }
+}

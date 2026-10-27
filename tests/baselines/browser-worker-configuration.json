@@ -296,7 +296,10 @@
     "observationRun": 40434881659,
     "configurationChange": false,
     "sourceTreeIdentical": true,
-    "interpretation": "1\u21921 observational comparison; no worker-count treatment or causal reduction claim. No --workers flag or inert environment variable is added."
+    "interpretation": "1\u21921 observational comparison; no worker-count treatment or causal reduction claim. No --workers flag or inert environment variable is added.",
+    "observedComplete": true,
+    "summary": "tests/baselines/browser-worker-observation.json",
+    "completeGate": "37/0/37;738 independently verified checks; accepted set intentionally empty"
   },
   "existingProfileCpuAttribution": {
     "runId": 40396382688,
