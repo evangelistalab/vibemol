@@ -38,6 +38,19 @@ def open_menu(page):
     return page.locator('#workbenchPanelsMenu')
 
 
+def assert_menu_focus(page, menu, action, expected_id):
+    actual = {
+        'menuHidden': menu.is_hidden(),
+        'focused': page.locator('#' + expected_id).evaluate('el => document.activeElement === el'),
+        'focusedId': page.evaluate('() => document.activeElement.id'),
+    }
+    expected = {'menuHidden': True, 'focused': True, 'focusedId': expected_id}
+    record = {'action': action, 'actual': actual, 'expected': expected}
+    print('[workbench-menu-focus] ' + json.dumps(record), flush=True)
+    assert actual['menuHidden'] == expected['menuHidden'], record
+    assert actual['focused'] == expected['focused'], record
+
+
 def check_bar(page):
     result = page.evaluate('() => __vmqa.snap()')
     assert result['scrollWidth'] <= result['clientWidth'] + 1, result
@@ -167,12 +180,15 @@ def run(page):
     assert 'Right' in camera.inner_text()
     screenshot(page, 'panels')
     page.keyboard.press('Escape')
-    assert menu.is_hidden() and trigger.evaluate('el => document.activeElement === el')
+    assert_menu_focus(page, menu, 'Escape', 'workbenchPanelsBtn')
     assert trigger.get_attribute('aria-expanded') == 'false'
     open_menu(page); page.keyboard.press('Tab')
-    assert menu.is_hidden() and page.locator('#workbenchArrange').evaluate('el => document.activeElement === el')
+    assert_menu_focus(page, menu, 'Tab', 'workbenchArrange')
     open_menu(page); page.keyboard.press('Shift+Tab')
-    assert menu.is_hidden() and page.locator('#alignInertiaBtn').evaluate('el => document.activeElement === el')
+    # The requested Quick actions swap makes Point Camera to COM the preceding
+    # Tab stop. Run 40557701011 exposed the obsolete Align expectation:
+    # https://github.com/evangelistalab/vibemol/actions/runs/40557701011
+    assert_menu_focus(page, menu, 'Shift+Tab', 'pointCameraComBtn')
     open_menu(page); page.locator('#canvas').click(position={'x': 30, 'y': 30})
     assert menu.is_hidden()
     page.locator('#workbenchArrange').click()
