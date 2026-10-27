@@ -140,6 +140,15 @@
         "assets/app/js/session-format.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Maintenance5 shared finite clamp input contract",
+      "before": "3006f45d967eb1d55887637f0710fb3f34a7d500",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/element-utils.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

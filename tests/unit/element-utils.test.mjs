@@ -68,21 +68,26 @@ test('both metal classifiers preserve every catalogued element and reject invali
   }
 });
 
-test('clamp policies preserve NaN, coercion and reversed-bound behavior from all four copies', () => {
+test('all four callers retain exact finite ordered results, including signed zero', () => {
   const entries = legacy.functions.filter(entry => entry.function === 'clamp');
   assert.equal(entries.length, 4);
-  const inputs = [-Infinity, -2, -0, 0, 0.5, 2, Infinity, NaN, undefined, null, '', '0.5', 'invalid', false, 2n, Symbol('value')];
-  const bounds = [[-1, 1], [1, -1], [0, 0], [NaN, 1], [-1, NaN], [-Infinity, Infinity]];
+  const inputs = [-Number.MAX_VALUE, -2, -Number.MIN_VALUE, -0, 0, Number.MIN_VALUE, 0.5, 2, Number.MAX_VALUE];
+  const bounds = [[-1, 1], [0, 0], [-0, 0], [0, -0], [-0, -0], [82,176], [0,9]];
   for (const entry of entries) {
     const moved = entry.file.endsWith('/symmetry.js') ? api.clampWithUpperPriority
       : entry.file.endsWith('/volume-geometry.js') ? api.clamp : api.clampOrZero;
     const prior = original(entry);
     for (const value of inputs) for (const [min, max] of bounds) {
-      assert.deepEqual(result(moved, [value, min, max]), result(prior, [value, min, max]), entry.file + ': ' + String(value));
+      assert.deepEqual(result(moved,[value,min,max]),result(prior,[value,min,max]),entry.file+': '+String(value));
     }
   }
-  assert.equal(Number.isNaN(api.clamp(NaN, -1, 1)), true);
-  assert.equal(api.clampOrZero(NaN, -1, 1), 0);
-  assert.equal(api.clamp(0, 1, -1), 1);
-  assert.equal(api.clampWithUpperPriority(0, 1, -1), -1);
+});
+
+test('every clamp name rejects invalid comparands instead of coercing or choosing a reversed bound', () => {
+  const names=['clamp','clampOrZero','clampWithUpperPriority'];
+  const badValues=[NaN,Infinity,-Infinity,undefined,null,'','0.5','invalid',false,true,2n,Symbol('value')];
+  const badBounds=[[1,-1],[NaN,1],[-1,NaN],[-Infinity,Infinity],['-1',1],[-1,'1']];
+  for(const name of names)for(const args of [...badValues.map(value=>[value,-1,1]),...badBounds.map(([min,max])=>[0,min,max])]){
+    assert.throws(()=>api[name](...args),error=>error.name==='RangeError'&&/value=.*min=.*max=.*finite numbers/.test(error.message),name+': '+args.map(String));
+  }
 });

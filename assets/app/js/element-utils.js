@@ -50,16 +50,25 @@
     return (n >= 57 && n <= 71) || (n >= 89 && n <= 103);
   }
 
+  function requireClampInputs(value, min, max) {
+    if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max) || min > max) {
+      throw new RangeError(`Invalid clamp: value=${String(value)} (${typeof value}), min=${String(min)} (${typeof min}), max=${String(max)} (${typeof max}); expected finite numbers and min <= max.`);
+    }
+  }
+
   function clamp(value, min, max) {
+    requireClampInputs(value, min, max);
     return Math.max(min, Math.min(max, value));
   }
 
+  // Share rejection while preserving each finite-input IEEE/signed-zero result.
   function clampOrZero(value, min, max) {
-    return Math.max(min, Math.min(max, Number(value) || 0));
+    requireClampInputs(value, min, max);
+    return Math.max(min, Math.min(max, value || 0));
   }
 
-  // Symmetry's original nesting chooses the upper bound for reversed ranges.
   function clampWithUpperPriority(value, min, max) {
+    requireClampInputs(value, min, max);
     return Math.min(max, Math.max(min, value));
   }
 

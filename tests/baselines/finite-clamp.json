@@ -1,0 +1,334 @@
+{
+  "status": "held; unclassified local native suite failure",
+  "issue": 5,
+  "scope": "Numerical contract only",
+  "proposedPolicy": "All three names reject non-number/non-finite inputs and reversed bounds; finite ordered IEEE/signed-zero results preserved.",
+  "newControllerDependencies": 0,
+  "newModuleLets": 0,
+  "trackedLetLines": 250,
+  "maximumHelperInputs": 4,
+  "validationGuard": {
+    "parameters": [
+      "value",
+      "min",
+      "max"
+    ],
+    "applicationClosure": []
+  },
+  "wrappers": {
+    "parameters": [
+      "value",
+      "min",
+      "max"
+    ],
+    "applicationClosure": [
+      "requireClampInputs"
+    ]
+  },
+  "tagged": {
+    "base": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+    "allFourSourceBodiesMatched": true,
+    "rows": [
+      {
+        "source": "assets/app/js/auto-hydrogen.js",
+        "baseLine": 63,
+        "value": "NaN",
+        "min": -1,
+        "max": 1,
+        "actual": 0
+      },
+      {
+        "source": "assets/app/js/auto-hydrogen.js",
+        "baseLine": 63,
+        "value": 0,
+        "min": 1,
+        "max": -1,
+        "actual": 1
+      },
+      {
+        "source": "assets/app/js/edit-halo.js",
+        "baseLine": 20,
+        "value": "NaN",
+        "min": -1,
+        "max": 1,
+        "actual": 0
+      },
+      {
+        "source": "assets/app/js/edit-halo.js",
+        "baseLine": 20,
+        "value": 0,
+        "min": 1,
+        "max": -1,
+        "actual": 1
+      },
+      {
+        "source": "assets/app/js/symmetry.js",
+        "baseLine": 226,
+        "value": "NaN",
+        "min": -1,
+        "max": 1,
+        "actual": "NaN"
+      },
+      {
+        "source": "assets/app/js/symmetry.js",
+        "baseLine": 226,
+        "value": 0,
+        "min": 1,
+        "max": -1,
+        "actual": -1
+      },
+      {
+        "source": "assets/app/js/volume-geometry.js",
+        "baseLine": 263,
+        "value": "NaN",
+        "min": -1,
+        "max": 1,
+        "actual": "NaN"
+      },
+      {
+        "source": "assets/app/js/volume-geometry.js",
+        "baseLine": 263,
+        "value": 0,
+        "min": 1,
+        "max": -1,
+        "actual": 1
+      }
+    ]
+  },
+  "units": {
+    "js": 484,
+    "python": 144,
+    "passed": true
+  },
+  "finiteParityComparisons": 252,
+  "rejectedInvalidCalls": 54,
+  "native": {
+    "buildBonds": "passed",
+    "symmetry": "failed at Workbench menu-item click before the suite reached its analysis assertions; background execution was not measured",
+    "site": "open_menu(page).get_by_role('menuitemcheckbox',name='Symmetry',exact=True).click()",
+    "originalTimeoutMs": 30000,
+    "pageErrors": [],
+    "cause": "unclassified",
+    "budgetCoverage": false,
+    "productEffectExcluded": false,
+    "reRunPerformed": false
+  },
+  "ordinaryGate": "Not launched; no accepted-failure, predicate, timeout or threshold change",
+  "rawFailure": "/Users/fevange/Source/vibemol/out/test-artifacts/maintenance-clamp/symmetry.log",
+  "sourceAudit": {
+    "status": "passed",
+    "base": "3006f45d967eb1d55887637f0710fb3f34a7d500",
+    "wholeElementUtilsASTExactExceptThreeNamedBodiesAndOneGuard": true,
+    "newGuardCount": 1,
+    "changedFunctions": [
+      "clamp",
+      "clampOrZero",
+      "clampWithUpperPriority"
+    ],
+    "publicNamespaceKeysUnchanged": true,
+    "productionCallerCount": 18,
+    "callers": [
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 158,
+        "function": "quatFromUnitVectors",
+        "arguments": [
+          "vecDot(vFrom, vTo)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 195,
+        "function": "signedAngleAroundAxis",
+        "arguments": [
+          "vecDot(cross, n)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 196,
+        "function": "signedAngleAroundAxis",
+        "arguments": [
+          "vecDot(a, b)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 207,
+        "function": "chooseReferenceOccupiedPair",
+        "arguments": [
+          "vecDot(occupiedDirs[i], occupiedDirs[j])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 249,
+        "function": "visit",
+        "arguments": [
+          "vecDot(rotatedTemplate[templateIndex], occupiedDirs[targetIndex])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 276,
+        "function": "scoreChosen",
+        "arguments": [
+          "vecDot(dirI, rotatedTemplate[indices[j]])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/auto-hydrogen.js",
+        "line": 279,
+        "function": "scoreChosen",
+        "arguments": [
+          "vecDot(dirI, occupied)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 103,
+        "function": "quatFromUnitVectors",
+        "arguments": [
+          "vecDot(vFrom, vTo)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 138,
+        "function": "signedAngleAroundAxis",
+        "arguments": [
+          "vecDot(cross, n)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 139,
+        "function": "signedAngleAroundAxis",
+        "arguments": [
+          "vecDot(a, b)",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 154,
+        "function": "chooseReferenceOccupiedPair",
+        "arguments": [
+          "vecDot(occupiedDirs[i], occupiedDirs[j])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 180,
+        "function": "chooseTransPair",
+        "arguments": [
+          "vecDot(template[indices[i]], template[indices[j]])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 258,
+        "function": "visit",
+        "arguments": [
+          "vecDot(rotatedTemplate[templateIndex], occupiedDirs[targetIndex])",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/edit-halo.js",
+        "line": 470,
+        "function": "<callback>",
+        "arguments": [
+          "text.length * 6.8 + 20",
+          "82",
+          "176"
+        ]
+      },
+      {
+        "file": "assets/app/js/symmetry.js",
+        "line": 335,
+        "function": "extractRotationElementFromMatrix",
+        "arguments": [
+          "(traceOfMatrix(m) - 1) * 0.5",
+          "-1",
+          "1"
+        ]
+      },
+      {
+        "file": "assets/app/js/volume-geometry.js",
+        "line": 126,
+        "function": "sampleTrilinearGrid",
+        "arguments": [
+          "gx",
+          "0",
+          "nx - 1"
+        ]
+      },
+      {
+        "file": "assets/app/js/volume-geometry.js",
+        "line": 127,
+        "function": "sampleTrilinearGrid",
+        "arguments": [
+          "gy",
+          "0",
+          "ny - 1"
+        ]
+      },
+      {
+        "file": "assets/app/js/volume-geometry.js",
+        "line": 128,
+        "function": "sampleTrilinearGrid",
+        "arguments": [
+          "gz",
+          "0",
+          "nz - 1"
+        ]
+      }
+    ],
+    "callerCounts": {
+      "auto-hydrogen.js": 7,
+      "edit-halo.js": 7,
+      "symmetry.js": 1,
+      "volume-geometry.js": 3
+    },
+    "allCallerFilesByteExact": true,
+    "workbenchFourArgumentClampByteExact": true,
+    "maximumApplicationInputs": 4,
+    "newControllerDependencies": 0,
+    "newModuleLets": 0,
+    "finiteOrderedSignedZeroResultsPreserved": true,
+    "liveNaNTriggerDemonstrated": false,
+    "sourceSha256": "016d99ff3e693642db6f472bf36b6b44391a1bcaef608047d310f678e9365011"
+  },
+  "construction": {
+    "status": "passed",
+    "appBindings": 0,
+    "consumerBindings": {
+      "assets/app/js/element-utils.js": 4
+    }
+  }
+}
