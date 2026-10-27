@@ -1080,12 +1080,17 @@
     {
       "issue": 77,
       "url": "https://github.com/evangelistalab/vibemol/issues/77",
-      "status": "implemented in the 0.10.1 candidate; complete updated gate required",
+      "status": "implementation and approved baseline included in0.10.1; own complete candidate gate mandatory",
       "scope": "Remove the retired beta channel global, badge markup/styles, version suffix and beta deployment workflow.",
       "acceptedCiFailure": false,
       "scheduled": true,
       "release": "0.10.1",
-      "gateUnchanged": true
+      "gateUnchanged": true,
+      "baselineRecordingRun": 40512282141,
+      "baselineCaptureCommit": "47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802",
+      "exactDomIdRemovals": 102,
+      "rejectedFirstRun": 40505038734,
+      "comparisonExceptionAdded": false
     }
   ]
 }

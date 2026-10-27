@@ -198,3 +198,14 @@ of exactly those102 ID removals, preserving all other values/types. No mapping
 or ordinary comparison exception is permitted. The earlier C0 recording remains
 immutable historical evidence; the unpublished0.10.1 dataset will pin its new
 actual capture SHA after the replacement recording is independently verified.
+
+
+Replacement recording40512282141 captured47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802
+with two independent jobs, each recording102 captures twice. All four serialized
+capture files match exactly. Compared with the preceding0.10.1 recording, the
+only change is exactly one toolbarChannelBadge removal from dom.ids per capture,
+102 total; all other values and numeric types match exactly. Against the
+published0.10.0 baseline,204 version leaves and those102 ID entries change, with
+no other differences. The raw CI-generated golden is promoted without rewriting
+values. No ordinary comparison helper, mask or tolerance changes. The new
+candidate needs its own complete first gate; recording does not supply it.

@@ -59,5 +59,17 @@
     "everyOtherValueAndTypeMustMatchExactly": true,
     "noMappingOrComparisonException": true,
     "freshCompleteGateRequired": true
+  },
+  "baselineRefresh": {
+    "runId": 40512282141,
+    "source": "47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802",
+    "fourExactCaptureSerializations": true,
+    "capturesPerRun": 102,
+    "removedId": "toolbarChannelBadge",
+    "exactRemovals": 102,
+    "allOtherValuesAndTypesExactlyUnchanged": true,
+    "goldenGzipSha256": "22cdb234a17e7d7002bb180ce3d088d3bfebb7de1170f61cdb6b18c3654f1ab5",
+    "comparisonExceptionAdded": false,
+    "failedRunRemainsRejected": 40505038734
   }
 }

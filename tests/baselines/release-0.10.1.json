@@ -1,6 +1,6 @@
 {
   "version": "0.10.1",
-  "status": "baseline recorded; publication requires human sign-off after the complete candidate gate",
+  "status": "approved baseline recorded; exact promoted candidate requires its own complete gate before local human check/publication",
   "correctedPreviousTag": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
   "historical0100Capture": "3425e0231b71eeb8b8a11523806990f553265cba",
   "recordingWorkflow": "record-release-baseline.yml",
@@ -67,17 +67,35 @@
     "productionSourceIdentityScope": "Exact capture source and original promotion 51b90e5; the later authorized beta cleanup is validated separately against these unchanged goldens."
   },
   "recording": {
-    "status": "freshCIrecording authorized; exact one-ID removal per102captures",
-    "previousCaptureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
-    "previousGoldenGzipSha256": "ef5eef82f36a11938eaa98a589fc4dc97c2625ae0cd4f80ead8f5a1075505932",
+    "runId": 40512282141,
+    "attempt": 1,
+    "captureCommit": "47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802",
+    "captureTree": "58d42e3801b41b924c04379ca508184d1adaa04d",
+    "jobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "fourSerializationsExactlyIdentical": true,
+    "goldenGzipSha256": "22cdb234a17e7d7002bb180ce3d088d3bfebb7de1170f61cdb6b18c3654f1ab5",
     "authority": "Direct human reply: Re-record this exact change",
     "approvedChange": {
       "path": "dom.ids",
       "removedId": "toolbarChannelBadge",
-      "exactRemovals": 102,
-      "allOtherCapturedValuesAndTypesUnchanged": true
+      "exactRemovals": 102
     },
-    "mappingOrComparisonExceptionAllowed": false
+    "otherValuesAndTypesExactlyUnchanged": true,
+    "fromPrevious0101": {
+      "domIdRemovals": 102,
+      "versionLeafChanges": 0,
+      "otherDifferences": 0
+    },
+    "fromPublished0100": {
+      "domIdRemovals": 102,
+      "versionLeafChanges": 204,
+      "otherDifferences": 0
+    },
+    "mappingUsed": false,
+    "comparisonExceptionAdded": false,
+    "materialPaths": "not covered by characterization recording"
   },
   "rejectedBetaCandidate": {
     "head": "b31f736c2197e30bc57e7d3f47367f318807a23f",

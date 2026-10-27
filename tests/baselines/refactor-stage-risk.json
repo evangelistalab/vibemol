@@ -4053,6 +4053,17 @@
   },
   "release0101Preparation": {
     "contract": "tests/baselines/release-0.10.1.json",
+    "recordingRun": 40512282141,
+    "captureCommit": "47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802",
+    "exactAuthorizedDomIdRemovals": 102,
+    "versionLeafChangesFromPublished0100": 204,
+    "allOtherValuesAndTypesExactlyUnchanged": true,
+    "comparisonExceptionAdded": false,
+    "rejectedBetaCandidateRun": 40505038734,
+    "pushMainRequiresHumanSignOff": true
+  },
+  "original0101PreparationBeforeBetaRetirement": {
+    "contract": "tests/baselines/release-0.10.1.json",
     "recordingRun": 40444609180,
     "captureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
     "captureLeafChanges": 204,

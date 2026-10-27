@@ -1,6 +1,6 @@
 {
-  "purpose": "The0.10.1 captures include all six namespaces. This dataset is pinned to its immutable capture source; historical0.10.0 captures remain pinned separately to3425e02. No additive or version exception remains.",
+  "purpose": "The approved0.10.1 dataset includes the retired badge-ID deletion and all six namespaces, pinned to its actual immutable capture source. No additive, DOM or version exception remains.",
   "modules": [],
-  "baseCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+  "baseCommit": "47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802",
   "baseTagAtCapture": "v0.10.1"
 }
