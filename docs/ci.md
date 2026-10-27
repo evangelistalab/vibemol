@@ -2,7 +2,7 @@
 
 Checks/unit, five Chromium suite shards, two characterization workers and the WebKit Properties check start independently. Neither matrix cancels siblings when a worker fails. Chromium jobs install only Chromium; the WebKit job installs only WebKit. The binary cache key includes the installed Playwright package version, OS, architecture and browser. Each job still runs `playwright install --with-deps` so Linux system dependencies are present on cache hits, as required by the [Playwright CI guidance](https://playwright.dev/python/docs/ci).
 
-`browser_suite.py` measures each suite's subprocess wall time with `time.monotonic()`, including browser/server startup. It writes `wallTimeSeconds` per suite and for the batch; `seconds` remains a compatibility alias. The committed scheduling measurements in `tests/baselines/browser-suite-timings.json` came from run [38763532071](https://github.com/evangelistalab/vibemol/actions/runs/38763532071), attempt 1, with exact source and browser provenance. These are scheduling data, not acceptance evidence for a different candidate. That run's aggregate was 33/4/37 because of the separately recorded accessibility finding; the historical restored gate was34/3/37 after#21 was closed as test synchronization; the authorized#11/#45 repair now requires35/2/37, but this historical accessibility failure is not in the accepted set.
+`browser_suite.py` measures each suite's subprocess wall time with `time.monotonic()`, including browser/server startup. It writes `wallTimeSeconds` per suite and for the batch; `seconds` remains a compatibility alias. The committed scheduling measurements in `tests/baselines/browser-suite-timings.json` came from run [38763532071](https://github.com/evangelistalab/vibemol/actions/runs/38763532071), attempt 1, with exact source and browser provenance. These are scheduling data, not acceptance evidence for a different candidate. That run's aggregate was 33/4/37 because of the separately recorded accessibility finding; the historical restored gate was34/3/37 after#21 was closed as test synchronization; the authorized#11/#45 repair later used35/2/37. Subsequent#52/#53 repairs brought the current gate to37/0/37 with an intentionally empty accepted set; the historical accessibility failure was never accepted.
 
 | Slowest suite | Measured wall time |
 | --- | ---: |
@@ -14,9 +14,9 @@ Checks/unit, five Chromium suite shards, two characterization workers and the We
 
 The serial workflow took **10,278 s (171.30 min)** including setup, two characterization runs and WebKit. Its browser batch took 8,270 s; serial characterization took 1,880 s. `browser-shards.json` isolates Smoke and Looks. The other 35 suites use longest-processing-time allocation to the least-loaded of three shards (ties by suite/shard name): 1,867.74, 1,874.67 and 1,874.50 seconds. The projected suite critical path is Looks at 31.97 minutes, before setup, artifact transport and joins. Actual before/after workflow wall time and the candidate run are recorded in the PR after CI; estimates are not presented as measurements.
 
-Workers run each assigned suite once and retain its actual nonzero exit code and raw log. Completing evidence collection does not certify the gate. `join_browser_shards.py` requires every planned shard and all 37 unique suites, verifies test hashes, recomputes each failure classification from raw logs and current workflow source, then checks exactly **35 passing /2 failing /37**. The only accepted failures are axis-gizmo Escape/canvas focus and the selection card covering Coordinates Delete. The authorized#11 product repair and independent#45 harness synchronization remove Smoke from acceptance in the same PR before its first CI. Both exporter completion/activation records are required by the policy check, including four fresh Save readbacks per site.36/1 is rejected as over-performance; exact workflow keys remain required. [Diagnostic39129507791](https://github.com/evangelistalab/vibemol/actions/runs/39129507791) invalidated Edit320's fixed-sleep expectation: observable compact readiness and a presentation boundary now precede the unchanged overflow comparison and comparand log. #21 is closed as test synchronization; diagnostic results never supply merge acceptance.
+Workers run each assigned suite once and retain its actual nonzero exit code and raw log. Completing evidence collection does not certify the gate. `join_browser_shards.py` requires every planned shard and all 37 unique suites, verifies test hashes, recomputes each failure classification from raw logs and current workflow source, then checks exactly **37 passing /0 failing /37**. The accepted set is intentionally empty after#11/#45 and#52/#53 were repaired. Both exporter completion/activation records remain required by the policy check, including four fresh Save readbacks per site. Any failure, omission, duplication or different arithmetic blocks; the semantic matcher stays for attribution and negative controls, not as an allowance. [Diagnostic39129507791](https://github.com/evangelistalab/vibemol/actions/runs/39129507791) invalidated Edit320's fixed-sleep expectation: observable compact readiness and a presentation boundary now precede the unchanged overflow comparison and comparand log. #21 is closed as test synchronization; diagnostic results never supply merge acceptance.
 
-Each characterization worker runs one full 102-capture pass, checks unchanged committed goldens using the existing float-only tolerance, exercises four fresh launch/theme identity contexts and verifies session camera pinning. It explicitly leaves repeat certification pending. `join_characterize.py` independently checks both golden comparisons, exact serialized capture equality, the fixed 52-slot compositions and all reason minima in eight contexts. Workbench has 47 live + 5 issue-backed known absences; legacy has 48 + 4. Pixel hashes remain diagnostic. The default local two-run command and the separate original-tag baseline recording workflow retain their behavior.
+Each characterization worker runs one full 102-capture pass, checks unchanged committed goldens using the existing float-only tolerance, exercises four fresh launch/theme identity contexts and verifies session camera pinning. It explicitly leaves repeat certification pending. `join_characterize.py` independently checks both golden comparisons, exact serialized capture equality, the current48-slot compositions and all reason minima in eight contexts. Workbench has47live+1legacy-only known absence; legacy has48live+0absent. PR75 removed four explicitly retired null slots; earlier52-slot results retain their historical compositions. Pixel hashes remain diagnostic. The default local two-run command and the separate original-tag baseline recording workflow retain their behavior.
 
 Both joins require identical commit/tree, app/QA/golden/manifest hashes and CI run/attempt. Missing, duplicated, unfinished or mixed worker evidence fails. Joins run after failed workers so available diagnostics survive. Artifacts are:
 
@@ -33,7 +33,7 @@ For wall-time comparisons, use workflow creation to the latest job completion, a
 
 The eleven-job layout and both aggregate joins remain unchanged. The checks/unit job now requires the inverse construction-order audit in `tests/baselines/stage5/construction-order.json`; its separate artifact makes ten core artifacts, plus optional WebKit output. The self-test includes old-wrapper parameters and an early reading closure inside an existing callback. Unresolved early activation is a failed gate.
 
-Historical trajectory5a/vibration5b gates required an unchanged#11 failure signature. Those strict policy fixtures remain tested. The current post-release policy explicitly requires35/2/37, Smoke passed, the exact other two workflows, and both complete exporter records. The join independently recomputes the records from raw logs; `tools/check-refactor-run.py` checks both sites and all activation/fresh-Save fields. Historical strictness never substitutes for the newly authorized composition.
+Historical trajectory5a/vibration5b gates required an unchanged#11 failure signature. Those strict policy fixtures remain tested. The current post-release policy explicitly requires37/0/37, every suite passed, an intentionally empty accepted set, and both complete exporter records. The earlier35/2/37 two-workflow allowance belongs to the historical#11/#45 repair, not the current gate. The join independently recomputes the records from raw logs; `tools/check-refactor-run.py` checks both sites and all activation/fresh-Save fields. Historical strictness never substitutes for the newly authorized composition.
 
 Report Looks wall time and the actual completion of BOTH Studio and Properties material-family paths for every group run. If either path was not reached, record coverage as not exercised rather than absence of recurrence. The material-preset intermittent remains open after a passing run.
 
@@ -86,3 +86,36 @@ not ordinary merge acceptance, a recurring benchmark, or a new performance gate.
 Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runners
 and https://docs.github.com/en/actions/concepts/runners/larger-runners and
 https://docs.github.com/en/actions/reference/runners/larger-runners.
+
+## Browser worker configuration
+
+Every one of the37 entrypoints uses the direct synchronous Python Playwright
+library. There is no Playwright Test/pytest worker pool or half-CPU worker
+default in this execution path. `browser_suite.py` starts one suite with blocking
+`subprocess.run` and waits for it to exit before starting the next. Per runner:
+
+| Shard | Suite entrypoints | Concurrent suite workers |
+| --- | ---: | ---: |
+| Smoke | 1 | 1 |
+| Looks | 1 | 1 |
+| balanced-1 | 11 | 1 |
+| balanced-2 | 12 | 1 |
+| balanced-3 | 12 | 1 |
+
+The two characterization jobs and WebKit also use one synchronous owner each on
+separate hosted VMs. GitHub matrix concurrency is not a Playwright worker count
+inside one VM. The original40396382688 CPU profile already launched exactly one
+browser, one context and one page before measuring98.43% CPU use. One browser's
+software renderer can use multiple processes and threads. A one-worker owner
+also does not mean one page: Looks persistence/library tests and Sessions'
+cross-tab test deliberately open additional pages. Killing those pages would
+change test coverage, not configure a worker pool.
+
+`tests/baselines/browser-worker-configuration.json` enumerates all37 suites and
+the source hash of the serial runner. No ignored `--workers` argument or inert
+worker-count environment variable has been added. The first automatic main run
+after PR76,40434881659, provides a further observation of the existing one-worker
+configuration against the identical tested PR tree/run40428946697. Its wall-time
+and recorded long-task comparison is **1→1 observational variation**, not a
+2→1 concurrency experiment or a causal claim about contention. No extra CI run
+is dispatched for that observation.
