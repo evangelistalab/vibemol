@@ -142,3 +142,37 @@ were median 142→108 ms, p95 546→797 ms, maximum 6217→4476 ms. The summed
 duration of those tasks increased from 21,078 to 28,210 ms. These mixed changes do not establish
 improvement, especially since no worker configuration changed. No drift
 threshold or new allowance was added.
+
+
+## 0.10.1 release preparation
+
+The historical0.10.0 dataset was captured at
+`3425e0231b71eeb8b8a11523806990f553265cba`. Its release tag now names the
+shipping commit`44bcb5d534cecba27fd0ccfc60f74324a0920b73`. The comparator pins
+capture SHAs, so correcting that tag does not redirect historical comparisons.
+Raw historical evidence retains its original identity.
+
+The first authorized0.10.1 recording, run40444609180, captured source
+`1c4f2a23552f9f68a9723987c3cf3bc318ccc43f` on the CI-only branch after the tag
+correction was verified. Two independent jobs each recorded102 captures twice;
+all four serialized capture files are identical. Compared with the old goldens,
+exactly204 leaves change: `session.appVersion` and
+`session.preset.appVersion` in each capture,0.10.0→0.10.1. There are zero other
+capture differences. No value was projected or rewritten, and no version
+mapping helper exists. Golden promotion changes the repository tree after
+capture; the comparator therefore pins the capture source, not the later
+release commit. Both remain ancestors when local main fast-forwards.
+
+Recording is separate from acceptance. The promoted candidate must pass its own
+complete first ordinary37/0/37 conjunction, both exporters,102 goldens twice,
+48-slot identity composition/eight contexts/all minima, units, WebKit and
+construction-order audit. Material-family coverage is not exercised by the
+recording; it must be reported from the ordinary Looks suite.
+
+Main and the0.10.1 tag must remain unpushed until Francesco checks local main.
+GitHub Pages publishes the repository root from main at vibemol.org, independently
+of ordinary CI. Pushing main therefore publishes production after its Pages
+build. The CI-only branch must not be merged through GitHub; fast-forward local
+main to its exact accepted head for the human check. After sign-off, push main,
+tag that exact commit, verify the Pages build and served tree match it, then
+delete the CI branch. Beta deployment is retired; no beta workflow is dispatched.

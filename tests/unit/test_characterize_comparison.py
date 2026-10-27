@@ -48,11 +48,13 @@ class CharacterizationComparisonTests(unittest.TestCase):
                 owner = wrong[name]
                 for part in path[:-1]:
                     owner = owner[part]
-                self.assertEqual(owner[path[-1]], '0.10.0')
-                owner[path[-1]] = '0.11.0'
-                actual = first_difference(expected, wrong)
-                self.assertIsNotNone(actual)
-                self.assertIn('.'.join(path), actual)
+                self.assertEqual(owner[path[-1]], '0.10.1')
+                for invalid_version in ('0.10.0', '0.11.0'):
+                    with self.subTest(invalid_version=invalid_version):
+                        owner[path[-1]] = invalid_version
+                        actual = first_difference(expected, wrong)
+                        self.assertIsNotNone(actual)
+                        self.assertIn('.'.join(path), actual)
 
 
 class BrowserFailureReportingTests(unittest.TestCase):

@@ -1937,7 +1937,7 @@
     "editTool320": "Closed test-synchronization issue#21. Diagnostic39129507791 showed mixed304/304 and442/12 on both integration/5c; overflow was sampled before compact sync. Wait for observable compact=true and a presentation boundary, preserving the comparison/tolerance and logging. No production layout fix is included. Presented-frame flash remains a separate nonblocking product question."
   },
   "stage1BlockedByTheseFollowups": false,
-  "baselineCountScope": "Every current candidate executes all37 browser entry points once, with exactly34 passing/3 failing and the manifest exact three (suite,workflow) keys.35/2 over-performance stops.102 goldens twice/exact repeat and52slots/eight contexts/all minima remain additional gates. Historical33/4 results and failed attempts retain their original observations.",
+  "baselineCountScope": "Every current candidate executes all37 browser entry points exactly once, with37passing/0failing and an intentionally empty accepted set.102goldens twice/exact repeat and48composed slots/eight contexts/all minima remain additional gates. Historical results retain their original observations.",
   "beforeElementCachePrerequisite": {
     "work": "Repair the browser suite in a separate PR before any Stage 3 element-cache consolidation PR opens",
     "issue": "https://github.com/evangelistalab/vibemol/issues/4",
@@ -2270,7 +2270,7 @@
   },
   "ciArtifactEvidencePolicy": {
     "rule": "Evidence may be combined across CI runs only when those runs share the same artifact under test. Different trees cannot establish a property of a third tree.",
-    "cacheGroups": "Each new candidate gets one CI run on its exact tree: all37 suites once, current35/2/37 exact failing workflows,102goldens twice/exact repeat,52composed slots/eight contexts/all minima, and construction order. Historical cache conversions retain their recorded earlier counts.",
+    "cacheGroups": "Each new candidate requires one complete first-pass conjunction on its exact tree: all37 suites once,37/0/37 with intentionally empty accepted set,102goldens twice/exact repeat,48composed slots/eight contexts/all minima, and construction order. Historical cache conversions retain their recorded earlier counts.",
     "pr12": "Completed CI run 38141289409 is the merge evidence for harness-only #12; corrected workflow acceptance re-evaluates the same completed logs, without a rerun.",
     "pr8": "Merged on candidate run 38162234951, attempt 1, on da3b5e0cafd42837b8554c4c308df3a297cea3a6 against e427e075bef8f8295aa5284d378322bdb1e471ed: complete CI 34/3/37 and all 43 identities with every reason minimum. Older runs are historical, never combined merge proof.",
     "adaptive": "Approved #13 stack run 38177282064, attempt 1, is its own conjunction. Integrate #8 then #13 as an ordered unit; entire resulting integration tree equals the tested adaptive stack.",
@@ -3778,14 +3778,14 @@
     "failed": 0,
     "total": 37,
     "environment": "CI",
-    "status": "Required issue53 candidate composition, not an observed result",
+    "status": "Observed accepted main baseline before0.10.1 preparation; the release candidate requires its own complete first-pass gate",
     "acceptedDefects": [],
     "acceptedSetIntentionallyEmpty": true,
     "gate": {
       "passed": 37,
       "failed": 0,
       "total": 37,
-      "status": "Own complete first-pass issue53 conjunction required"
+      "status": "Accepted main first automatic run40434881659; own0.10.1 conjunction remains separately required"
     },
     "issue11AcceptedCiFailure": false,
     "issue52AcceptedCiFailure": false,
@@ -3793,7 +3793,10 @@
     "requiredExporterSites": [
       "trajectory",
       "vibration"
-    ]
+    ],
+    "runId": 40434881659,
+    "head": "fb1498c8f364c6fd8a5cb2214c50e550f235614a",
+    "identitySlots": 48
   },
   "preIssue52BrowserBaseline": {
     "passed": 35,
@@ -4047,5 +4050,14 @@
     "historicalCaptureCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
     "historicalCaptureResolution": "compare_ci_baselines.py pins the captured SHA, never the moved tag name.",
     "immutableEvidenceUnchanged": true
+  },
+  "release0101Preparation": {
+    "contract": "tests/baselines/release-0.10.1.json",
+    "recordingRun": 40444609180,
+    "captureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+    "captureLeafChanges": 204,
+    "residualDifferences": 0,
+    "versionMappingUsed": false,
+    "pushMainRequiresHumanSignOff": true
   }
 }

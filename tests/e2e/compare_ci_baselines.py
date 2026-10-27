@@ -14,7 +14,7 @@ import re
 BASELINE_COMMITS = {
     'v0.9.5-pre-refactor': '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d',
     'v0.10.0': '3425e0231b71eeb8b8a11523806990f553265cba',
-    'v0.10.1': None,  # Filled with the actual capture commit after CI recording.
+    'v0.10.1': '1c4f2a23552f9f68a9723987c3cf3bc318ccc43f',  # Actual capture source; release promotion has a different tree.
 }
 
 

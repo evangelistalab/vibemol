@@ -1,6 +1,6 @@
 {
   "version": "0.10.1",
-  "status": "preparing candidate; not published",
+  "status": "baseline recorded; publication requires human sign-off after the complete candidate gate",
   "correctedPreviousTag": "44bcb5d534cecba27fd0ccfc60f74324a0920b73",
   "historical0100Capture": "3425e0231b71eeb8b8a11523806990f553265cba",
   "recordingWorkflow": "record-release-baseline.yml",
@@ -26,5 +26,34 @@
   "newAppBindings": 0,
   "newControllerDependencies": 0,
   "letDeclarationLines": 250,
-  "variableLetBindings": 261
+  "variableLetBindings": 261,
+  "recording": {
+    "runId": 40444609180,
+    "attempt": 1,
+    "captureCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+    "captureTree": "86221cd78b88b2472e7ec49182fc8f57b2cf4034",
+    "jobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "fourSerializationsExactlyIdentical": true,
+    "versionLeafChanges": 204,
+    "versionPaths": [
+      [
+        "session",
+        "appVersion"
+      ],
+      [
+        "session",
+        "preset",
+        "appVersion"
+      ]
+    ],
+    "versionFrom": "0.10.0",
+    "versionTo": "0.10.1",
+    "residualDifferences": 0,
+    "versionMappingUsed": false,
+    "goldenGzipSha256": "ef5eef82f36a11938eaa98a589fc4dc97c2625ae0cd4f80ead8f5a1075505932",
+    "tagMoveVerifiedBeforeRecording": true,
+    "looksMaterialPaths": "not covered by characterization recording"
+  }
 }

@@ -1,7 +1,7 @@
 {
   "releaseLine": "0.9.x",
   "productionFixesAllowedInRefactor": false,
-  "rule": "Current authorized issue53 candidate requires exactly37/0/37. The accepted set is intentionally empty. Axis52 is closed; Coordinates53 is must-pass with its own regression/tagged reproduction. Matcher/join machinery stays. Any failing workflow, omitted/repeated suite or other arithmetic stops; never adjust expectations to observed CI. Both exporters, goldens, identity, units, WebKit and construction remain mandatory.",
+  "rule": "The0.10.1 candidate requires exactly37/0/37. The accepted set is intentionally empty. Axis52 and Coordinates53 are closed and must pass with their regression assertions. Matcher/join machinery stays. Any failing workflow, omitted/repeated suite or other arithmetic stops; never adjust expectations to observed CI. Both exporters, goldens,48-slot/eight-context identity/all minima, units, WebKit and construction remain mandatory.",
   "taggedBase": "v0.9.5-pre-refactor",
   "taggedBaseCommit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
   "carriedDefects": [
@@ -73,7 +73,7 @@
       "issue": 5,
       "scope": "Element identity/clamp divergences outside behavior-preserving extraction",
       "identityRepair": {
-        "status": "candidate; full gate required",
+        "status": "fixed and merged by PR76 after its complete first-pass gate",
         "contract": "tests/baselines/atomic-identity.json",
         "clampFindingsRemainOpen": true,
         "atomicCatalogDomain": [
@@ -84,7 +84,15 @@
           0,
           118
         ],
-        "dummySessionRestores": true
+        "dummySessionRestores": true,
+        "head": "f8a099fac09dc3742c7889921fa4ed2a440f6c1f",
+        "merge": "fb1498c8f364c6fd8a5cb2214c50e550f235614a",
+        "runId": 40428946697,
+        "postMergeRunId": 40434881659,
+        "gate": "37/0/37,102twice/exact repeat,48slots/eight contexts/all minima,483JS/144Python,WebKit/construction",
+        "heldClampCommit": "8e69a99b27e56b70b539c0f0681bbd463988a6c5",
+        "heldClampPushed": true,
+        "heldClampMerged": false
       }
     },
     {

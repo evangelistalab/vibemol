@@ -1,6 +1,6 @@
 {
-  "purpose": "Historical captures at3425e02 include all six namespaces. The v0.10.0 tag is corrected to shipping commit44bcb5d; captured data remain pinned to their actual SHA. No additive exception remains.",
+  "purpose": "The0.10.1 captures include all six namespaces. This dataset is pinned to its immutable capture source; historical0.10.0 captures remain pinned separately to3425e02. No additive or version exception remains.",
   "modules": [],
-  "baseCommit": "3425e0231b71eeb8b8a11523806990f553265cba",
-  "baseTagAtCapture": "v0.10.0"
+  "baseCommit": "1c4f2a23552f9f68a9723987c3cf3bc318ccc43f",
+  "baseTagAtCapture": "v0.10.1"
 }
