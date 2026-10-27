@@ -297,5 +297,29 @@
     "configurationChange": false,
     "sourceTreeIdentical": true,
     "interpretation": "1\u21921 observational comparison; no worker-count treatment or causal reduction claim. No --workers flag or inert environment variable is added."
+  },
+  "existingProfileCpuAttribution": {
+    "runId": 40396382688,
+    "newProfileDispatched": false,
+    "samples": 144,
+    "observedDenseWindowMs": 145867.155531,
+    "wholeVmBusyPercent": 98.43002237906697,
+    "processObservedCpuPercent": 98.4059218454123,
+    "byProcessName": {
+      "chrome-headless": {
+        "observedTickDelta": 56726,
+        "percentOfFourCpuCapacity": 97.65191943535892
+      },
+      "python": {
+        "observedTickDelta": 418,
+        "percentOfFourCpuCapacity": 0.7195730762609743
+      },
+      "MainThread": {
+        "observedTickDelta": 20,
+        "percentOfFourCpuCapacity": 0.03442933379239112
+      }
+    },
+    "limitations": "Readback of the existing one-browser/one-context/one-page profile only. Per-process max-minus-min ticks are a lower bound for processes first/last observed inside the window; exited-between-sample work is not invented. Process names do not identify Chrome GPU versus renderer roles. This does not diagnose old timeouts.",
+    "samplesSha256": "51d2bed72e1ee6dd64fe66061aa84891f60f591790ec03384df250956f0b6751"
   }
 }

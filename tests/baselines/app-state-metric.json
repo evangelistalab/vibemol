@@ -482,5 +482,17 @@
     "total": 11
   },
   "prior263Correction": "263 was Babel kind-let count including VmNumberInput and VmSlider; actual let-variable count is261. The two class bindings are unchanged at every checkpoint.",
-  "headline": "Published refactor:324\u2192260 app-IIFE let variables,64 removed/19.753086%; current main324\u2192261,63 removed/19.444444%. Earlier313\u2192249 numbers were declaration-line counts."
+  "headline": "Published refactor:324\u2192260 app-IIFE let variables,64 removed/19.753086%; current main324\u2192261,63 removed/19.444444%. Earlier313\u2192249 numbers were declaration-line counts.",
+  "sincePublication": {
+    "added": [
+      "appearancePresetAutosaveFailure",
+      "hintMessageSticky"
+    ],
+    "removed": [
+      "selectionFragmentCuePopoverHideTimer"
+    ],
+    "net": 1
+  },
+  "tool": "tools/diagnostics/recount_app_state.cjs",
+  "toolSha256": "c8975495d68f39c8f488f1b1e42085b13a7164c9e6e7c49bc95840c301e50200"
 }

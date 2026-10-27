@@ -15,6 +15,11 @@ The release removed 64 app variable bindings: **324 → 260, 19.7531%**.
 Its historical line reduction was **313 → 249, 20.4473%**. Current main removes
 63 bindings relative to tagged base: **324 → 261, 19.4444%**.
 
+Since publication, `appearancePresetAutosaveFailure` and `hintMessageSticky`
+were added for the approved restore-failure reporting repair; the dormant
+`selectionFragmentCuePopoverHideTimer` was removed. This accounts for the
+current net increase of one variable binding over the release.
+
 The extra eleven bindings existed before the refactor and have not grown:
 the Figure holders declare four names together (+3), Calculations holders five
 (+4), and Figure post-processing holders three (+2). One input-gesture line

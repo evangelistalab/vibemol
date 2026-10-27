@@ -106,7 +106,11 @@ The two characterization jobs and WebKit also use one synchronous owner each on
 separate hosted VMs. GitHub matrix concurrency is not a Playwright worker count
 inside one VM. The original40396382688 CPU profile already launched exactly one
 browser, one context and one page before measuring98.43% CPU use. One browser's
-software renderer can use multiple processes and threads. A one-worker owner
+software renderer can use multiple processes and threads. Re-reading the144
+saved dense-phase samples accounts for98.41% of the VM CPU capacity in the
+observed process tree, including97.65% in Chrome processes (against98.43%
+whole-VM busy time). No second profile was dispatched. Process names cannot
+distinguish GPU and renderer roles; this does not diagnose old timeouts. A one-worker owner
 also does not mean one page: Looks persistence/library tests and Sessions'
 cross-tab test deliberately open additional pages. Killing those pages would
 change test coverage, not configure a worker pool.
