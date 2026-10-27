@@ -28,8 +28,8 @@
     "after": 250
   },
   "actualModuleLetBindings": {
-    "before": 264,
-    "after": 263
+    "before": 262,
+    "after": 261
   },
   "native": {
     "passed": true,
@@ -153,5 +153,10 @@
       "bytes": 49075187,
       "members": 545
     }
-  }
+  },
+  "historicalBabelKindLetBindings": {
+    "before": 264,
+    "after": 263
+  },
+  "bindingCountCorrection": "Actual module variable-let bindings exclude the two unchanged ClassDeclaration bindings Babel labels kind let. The embedded sourceAudit is historical raw proof and retains its original264/263 broader counts; see app-state-metric.json."
 }

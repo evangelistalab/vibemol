@@ -1,0 +1,486 @@
+{
+  "scope": "Mutable lexical let bindings in the app IIFE only; excludes function/block-local lets and extracted-module state.",
+  "historicalMetric": "Number of source lines matching /^  let /",
+  "bindingMetric": "Babel lexical app-IIFE variable bindings declared with let; destructuring and multi-declarators counted individually. ClassDeclaration bindings are reported separately even though Babel calls their kind let.",
+  "parserVersion": "7.24.4",
+  "checkpoints": [
+    {
+      "ref": "v0.9.5-pre-refactor",
+      "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+      "appSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+      "historicalDeclarationLines": 313,
+      "astLetDeclarationStatements": 315,
+      "appScopeLetBindings": 324,
+      "babelLetKindBindings": 326,
+      "classBindings": [
+        {
+          "name": "VmNumberInput",
+          "line": 7395
+        },
+        {
+          "name": "VmSlider",
+          "line": 7557
+        }
+      ],
+      "mismatch": {
+        "regexOnly": [],
+        "astOnly": []
+      },
+      "multiBindingDeclarations": [
+        {
+          "line": 667,
+          "source": "let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;",
+          "names": [
+            "figureRendering",
+            "figurePanel",
+            "figureComposer",
+            "figureRenderer"
+          ]
+        },
+        {
+          "line": 1143,
+          "source": "let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = \"\", calculationsViewBeforeFit = null;",
+          "names": [
+            "calculationsPanel",
+            "calculationsPicker",
+            "calculationsRenderer",
+            "calculationsSignature",
+            "calculationsViewBeforeFit"
+          ]
+        },
+        {
+          "line": 32737,
+          "source": "let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;",
+          "names": [
+            "figureFinalTarget",
+            "figurePostMaterial",
+            "figurePostScene"
+          ]
+        }
+      ],
+      "sameLineDeclarations": [
+        {
+          "line": 18268,
+          "declarations": [
+            {
+              "line": 18268,
+              "source": "let __editDownPt = null;",
+              "names": [
+                "__editDownPt"
+              ]
+            },
+            {
+              "line": 18268,
+              "source": "let __editMoved = false;",
+              "names": [
+                "__editMoved"
+              ]
+            },
+            {
+              "line": 18268,
+              "source": "let __editClickIdx = -1;",
+              "names": [
+                "__editClickIdx"
+              ]
+            }
+          ]
+        }
+      ],
+      "reductionFromTagged": {
+        "declarationLines": {
+          "removed": 0,
+          "percent": 0
+        },
+        "bindings": {
+          "removed": 0,
+          "percent": 0
+        }
+      },
+      "independentDeclarationFirstCount": 324
+    },
+    {
+      "ref": "3425e0231b71eeb8b8a11523806990f553265cba",
+      "commit": "3425e0231b71eeb8b8a11523806990f553265cba",
+      "appSha256": "9d9d1a5928d27610232bd506bb84ad47932952b7bcd67aee41d81e16aef15bfa",
+      "historicalDeclarationLines": 249,
+      "astLetDeclarationStatements": 251,
+      "appScopeLetBindings": 260,
+      "babelLetKindBindings": 262,
+      "classBindings": [
+        {
+          "name": "VmNumberInput",
+          "line": 6709
+        },
+        {
+          "name": "VmSlider",
+          "line": 6871
+        }
+      ],
+      "mismatch": {
+        "regexOnly": [],
+        "astOnly": []
+      },
+      "multiBindingDeclarations": [
+        {
+          "line": 679,
+          "source": "let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;",
+          "names": [
+            "figureRendering",
+            "figurePanel",
+            "figureComposer",
+            "figureRenderer"
+          ]
+        },
+        {
+          "line": 1276,
+          "source": "let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = \"\", calculationsViewBeforeFit = null;",
+          "names": [
+            "calculationsPanel",
+            "calculationsPicker",
+            "calculationsRenderer",
+            "calculationsSignature",
+            "calculationsViewBeforeFit"
+          ]
+        },
+        {
+          "line": 30967,
+          "source": "let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;",
+          "names": [
+            "figureFinalTarget",
+            "figurePostMaterial",
+            "figurePostScene"
+          ]
+        }
+      ],
+      "sameLineDeclarations": [
+        {
+          "line": 17248,
+          "declarations": [
+            {
+              "line": 17248,
+              "source": "let __editDownPt = null;",
+              "names": [
+                "__editDownPt"
+              ]
+            },
+            {
+              "line": 17248,
+              "source": "let __editMoved = false;",
+              "names": [
+                "__editMoved"
+              ]
+            },
+            {
+              "line": 17248,
+              "source": "let __editClickIdx = -1;",
+              "names": [
+                "__editClickIdx"
+              ]
+            }
+          ]
+        }
+      ],
+      "reductionFromTagged": {
+        "declarationLines": {
+          "removed": 64,
+          "percent": 20.447284345047922
+        },
+        "bindings": {
+          "removed": 64,
+          "percent": 19.753086419753085
+        }
+      },
+      "independentDeclarationFirstCount": 260
+    },
+    {
+      "ref": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+      "commit": "d849429eca1fe7bdfc8eb14e7c80cb636336d6df",
+      "appSha256": "802dae6e37e69b3abcd40e13307d57063ffb29a99f096b2a1fa1930d0d4cd89f",
+      "historicalDeclarationLines": 251,
+      "astLetDeclarationStatements": 253,
+      "appScopeLetBindings": 262,
+      "babelLetKindBindings": 264,
+      "classBindings": [
+        {
+          "name": "VmNumberInput",
+          "line": 6783
+        },
+        {
+          "name": "VmSlider",
+          "line": 6945
+        }
+      ],
+      "mismatch": {
+        "regexOnly": [],
+        "astOnly": []
+      },
+      "multiBindingDeclarations": [
+        {
+          "line": 689,
+          "source": "let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;",
+          "names": [
+            "figureRendering",
+            "figurePanel",
+            "figureComposer",
+            "figureRenderer"
+          ]
+        },
+        {
+          "line": 1351,
+          "source": "let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = \"\", calculationsViewBeforeFit = null;",
+          "names": [
+            "calculationsPanel",
+            "calculationsPicker",
+            "calculationsRenderer",
+            "calculationsSignature",
+            "calculationsViewBeforeFit"
+          ]
+        },
+        {
+          "line": 31360,
+          "source": "let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;",
+          "names": [
+            "figureFinalTarget",
+            "figurePostMaterial",
+            "figurePostScene"
+          ]
+        }
+      ],
+      "sameLineDeclarations": [
+        {
+          "line": 17343,
+          "declarations": [
+            {
+              "line": 17343,
+              "source": "let __editDownPt = null;",
+              "names": [
+                "__editDownPt"
+              ]
+            },
+            {
+              "line": 17343,
+              "source": "let __editMoved = false;",
+              "names": [
+                "__editMoved"
+              ]
+            },
+            {
+              "line": 17343,
+              "source": "let __editClickIdx = -1;",
+              "names": [
+                "__editClickIdx"
+              ]
+            }
+          ]
+        }
+      ],
+      "reductionFromTagged": {
+        "declarationLines": {
+          "removed": 62,
+          "percent": 19.808306709265175
+        },
+        "bindings": {
+          "removed": 62,
+          "percent": 19.135802469135804
+        }
+      },
+      "independentDeclarationFirstCount": 262
+    },
+    {
+      "ref": "036bc3bdc7802ef4f56adcc82666547a4923c540",
+      "commit": "036bc3bdc7802ef4f56adcc82666547a4923c540",
+      "appSha256": "ec90d0ca7019d8bd714943f511a797ab604f0e230c99944c049a3f8672d058e6",
+      "historicalDeclarationLines": 250,
+      "astLetDeclarationStatements": 252,
+      "appScopeLetBindings": 261,
+      "babelLetKindBindings": 263,
+      "classBindings": [
+        {
+          "name": "VmNumberInput",
+          "line": 6779
+        },
+        {
+          "name": "VmSlider",
+          "line": 6941
+        }
+      ],
+      "mismatch": {
+        "regexOnly": [],
+        "astOnly": []
+      },
+      "multiBindingDeclarations": [
+        {
+          "line": 689,
+          "source": "let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;",
+          "names": [
+            "figureRendering",
+            "figurePanel",
+            "figureComposer",
+            "figureRenderer"
+          ]
+        },
+        {
+          "line": 1347,
+          "source": "let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = \"\", calculationsViewBeforeFit = null;",
+          "names": [
+            "calculationsPanel",
+            "calculationsPicker",
+            "calculationsRenderer",
+            "calculationsSignature",
+            "calculationsViewBeforeFit"
+          ]
+        },
+        {
+          "line": 31235,
+          "source": "let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;",
+          "names": [
+            "figureFinalTarget",
+            "figurePostMaterial",
+            "figurePostScene"
+          ]
+        }
+      ],
+      "sameLineDeclarations": [
+        {
+          "line": 17326,
+          "declarations": [
+            {
+              "line": 17326,
+              "source": "let __editDownPt = null;",
+              "names": [
+                "__editDownPt"
+              ]
+            },
+            {
+              "line": 17326,
+              "source": "let __editMoved = false;",
+              "names": [
+                "__editMoved"
+              ]
+            },
+            {
+              "line": 17326,
+              "source": "let __editClickIdx = -1;",
+              "names": [
+                "__editClickIdx"
+              ]
+            }
+          ]
+        }
+      ],
+      "reductionFromTagged": {
+        "declarationLines": {
+          "removed": 63,
+          "percent": 20.12779552715655
+        },
+        "bindings": {
+          "removed": 63,
+          "percent": 19.444444444444443
+        }
+      },
+      "independentDeclarationFirstCount": 261
+    },
+    {
+      "ref": "f8a099fac09dc3742c7889921fa4ed2a440f6c1f",
+      "commit": "f8a099fac09dc3742c7889921fa4ed2a440f6c1f",
+      "appSha256": "ec90d0ca7019d8bd714943f511a797ab604f0e230c99944c049a3f8672d058e6",
+      "historicalDeclarationLines": 250,
+      "astLetDeclarationStatements": 252,
+      "appScopeLetBindings": 261,
+      "babelLetKindBindings": 263,
+      "classBindings": [
+        {
+          "name": "VmNumberInput",
+          "line": 6779
+        },
+        {
+          "name": "VmSlider",
+          "line": 6941
+        }
+      ],
+      "mismatch": {
+        "regexOnly": [],
+        "astOnly": []
+      },
+      "multiBindingDeclarations": [
+        {
+          "line": 689,
+          "source": "let figureRendering = false, figurePanel = null, figureComposer = null, figureRenderer = null;",
+          "names": [
+            "figureRendering",
+            "figurePanel",
+            "figureComposer",
+            "figureRenderer"
+          ]
+        },
+        {
+          "line": 1347,
+          "source": "let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = \"\", calculationsViewBeforeFit = null;",
+          "names": [
+            "calculationsPanel",
+            "calculationsPicker",
+            "calculationsRenderer",
+            "calculationsSignature",
+            "calculationsViewBeforeFit"
+          ]
+        },
+        {
+          "line": 31235,
+          "source": "let figureFinalTarget = null, figurePostMaterial = null, figurePostScene = null;",
+          "names": [
+            "figureFinalTarget",
+            "figurePostMaterial",
+            "figurePostScene"
+          ]
+        }
+      ],
+      "sameLineDeclarations": [
+        {
+          "line": 17326,
+          "declarations": [
+            {
+              "line": 17326,
+              "source": "let __editDownPt = null;",
+              "names": [
+                "__editDownPt"
+              ]
+            },
+            {
+              "line": 17326,
+              "source": "let __editMoved = false;",
+              "names": [
+                "__editMoved"
+              ]
+            },
+            {
+              "line": 17326,
+              "source": "let __editClickIdx = -1;",
+              "names": [
+                "__editClickIdx"
+              ]
+            }
+          ]
+        }
+      ],
+      "reductionFromTagged": {
+        "declarationLines": {
+          "removed": 63,
+          "percent": 20.12779552715655
+        },
+        "bindings": {
+          "removed": 63,
+          "percent": 19.444444444444443
+        }
+      },
+      "independentDeclarationFirstCount": 261
+    }
+  ],
+  "excessIsUnchanged": true,
+  "extraBindingsBeyondLines": {
+    "multiDeclaratorExcess": 9,
+    "sameLineStatementExcess": 2,
+    "total": 11
+  },
+  "prior263Correction": "263 was Babel kind-let count including VmNumberInput and VmSlider; actual let-variable count is261. The two class bindings are unchanged at every checkpoint.",
+  "headline": "Published refactor:324\u2192260 app-IIFE let variables,64 removed/19.753086%; current main324\u2192261,63 removed/19.444444%. Earlier313\u2192249 numbers were declaration-line counts."
+}

@@ -4010,5 +4010,30 @@
         "members": 545
       }
     }
+  },
+  "appStateMetricReconciliation": {
+    "baseline": "tests/baselines/app-state-metric.json",
+    "scope": "app-IIFE variable-let bindings, not whole-program mutable state",
+    "tagged": {
+      "declarationLines": 313,
+      "variableLetBindings": 324,
+      "classBindings": 2
+    },
+    "published": {
+      "declarationLines": 249,
+      "variableLetBindings": 260,
+      "removedBindings": 64,
+      "reductionPercent": 19.753086419753085
+    },
+    "current": {
+      "head": "fb1498c8f364c6fd8a5cb2214c50e550f235614a",
+      "declarationLines": 250,
+      "variableLetBindings": 261,
+      "classBindings": 2,
+      "removedBindings": 63,
+      "reductionPercent": 19.444444444444446
+    },
+    "historicalLineCountsPreserved": true,
+    "prior263IncludedTwoClasses": true
   }
 }

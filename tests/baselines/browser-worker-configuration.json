@@ -1,0 +1,301 @@
+{
+  "sourceHead": "fb1498c8f364c6fd8a5cb2214c50e550f235614a",
+  "ordinaryRunnerSha256": "4b58584546bac7c5a8120872d689303ceb3ee7461af186ceb8a4974983626511",
+  "runnerProof": {
+    "serialForSuiteLine": 174,
+    "blockingSubprocessRunLine": 180
+  },
+  "suiteCount": 37,
+  "configurationChangeForWorkers1": "none; every ordinary suite already runs with one synchronous orchestration worker",
+  "ciShards": "Five separate GitHub-hosted VM jobs, not five workers sharing one VM; two characterization jobs and WebKit also have separate VMs.",
+  "baselineProfile": {
+    "runId": 40396382688,
+    "browsers": 1,
+    "contexts": 1,
+    "pages": 1,
+    "entrypoint": "tools/diagnostics/runner_characterization.py",
+    "denseCpuBusyPercent": 98.43002237906697
+  },
+  "ordinarySuites": [
+    {
+      "suite": "tests/e2e/asset_cache.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "972943c7726e419ca8c6a4e46feb711a484f9e0517a6858916302262e270c641"
+    },
+    {
+      "suite": "tests/e2e/periodic_table.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "f3dd1e3d425999cc3f4df91d01d4e37738b88d537a95a3318eb04b6c624cc4ac"
+    },
+    {
+      "suite": "tests/e2e/edit_tool.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "19c8525bc91e4de1b8a288a44cf68331bb1baadea71f1d477d967c219b1f1534"
+    },
+    {
+      "suite": "tests/e2e/build_bonds.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "dfd872c2b6aa981a84c7d84574a9e3ff381f0d3944401bd685f985e65c396a63"
+    },
+    {
+      "suite": "tests/e2e/build_orbit.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "86cfc611919540431e4fca2131553a0de3ffe473cad68f41f21a905dd542c6b7"
+    },
+    {
+      "suite": "tests/e2e/transform_selection.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "487eb4f88704a1969d87fba5a17a42ce1cecb943f61549b7106ca2bf5a473601"
+    },
+    {
+      "suite": "tests/e2e/figure.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "1b31e4ab0d1ddbdc216b44f3adfb241d24350468baf8e3fab5f0782672b11b50"
+    },
+    {
+      "suite": "tests/e2e/calculations.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "48032f174b1c5acc7c093f392f3d844ab9543814646cf476f5ca320cc6ce3be3"
+    },
+    {
+      "suite": "tests/e2e/ux_review.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "063c5d9d30ebadc5b15651c27290a6e432c597aaaaa6c09702bbcc374fa7d69e"
+    },
+    {
+      "suite": "tests/e2e/accessibility.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "9cee2e2477cabf568ac5784b626ca4089999324a75eb108dbeea74020d124db6"
+    },
+    {
+      "suite": "tests/e2e/measurements.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "89f129610d18e6755f903eef019ed373497a8fe429ecc4969ffee7de8d16403a"
+    },
+    {
+      "suite": "tests/e2e/build_panel.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "a5090eb28bc1920491380223bb218bd9d20c198672c224e97ac3ae6bccb7a769"
+    },
+    {
+      "suite": "tests/e2e/symmetry_panel.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "7dfa1d84c4cc8bb6443da76be6e4879d5209bfee0faf5a6db0462c49b2e5b28d"
+    },
+    {
+      "suite": "tests/e2e/hydrogen_contacts.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "57c62e65d56ecf66654ab4af3f5b9b344cb77b9bffd5e86b03b97bce5e8d2e05"
+    },
+    {
+      "suite": "tests/e2e/axis_gizmo.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "627b5f04f2ef6dafb383d09dae915dca6cb42e66287d50437e73aa1df105f06e"
+    },
+    {
+      "suite": "tests/e2e/workbench_release.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "206f2522a99fb7af55541f6c8ccce8b3c8a51ececa7673ca48d9aa9327196427"
+    },
+    {
+      "suite": "tests/e2e/smoke.py",
+      "shard": "smoke",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "17d0faa75a78dc3afd761f72e74df9fb813c2910bd9db7168c8f9c6030911666"
+    },
+    {
+      "suite": "tests/e2e/premerge.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "40072d4610741b78d87a0c2d1d36dc7c6b70e3e48168b2919ad6178f8cb1be76"
+    },
+    {
+      "suite": "tests/e2e/sessions.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "95cf8c50246953fcacd95e28d5483d7aff5de750252454ca8d913d6881cb61ee"
+    },
+    {
+      "suite": "tests/e2e/appearance_controls.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "9363a34cc3ad889044fe8d1bcb6ed57fe500454cb0667c82ea68ca6d98fc6974"
+    },
+    {
+      "suite": "tests/e2e/look_references.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "32eb09b51399b37441f61afd4a783ae68f31507b3778515fc3b06607f26894da"
+    },
+    {
+      "suite": "tests/e2e/look_tiles.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "0d1e882ea11e63f820b858bc182286e2a5479794ef8386c622825a54cf3dd155"
+    },
+    {
+      "suite": "tests/e2e/surface_schemes.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "ef7a9bae22584afb28de7c420ae0e0cf9536baa9728482cbb8c8e200db8378cc"
+    },
+    {
+      "suite": "tests/e2e/surface_shadows.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "0a19dc3088467016b06c4616852d45ecab8a10a9696b5a878e237d25eea7f8ef"
+    },
+    {
+      "suite": "tests/e2e/looks.py",
+      "shard": "looks",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "90d47c468e898c6c4a89cb6a7b76151f48a2b765dd85bed9e4cd821379bfc7ec"
+    },
+    {
+      "suite": "tests/e2e/camera_depth.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "ede5b980a3cd8b50b5bb0dc1ebf3695c766b2fdc07345465f7080c7345fe7b5e"
+    },
+    {
+      "suite": "tests/e2e/edit_picking.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "2e67fd433128fb5bdf9434724143a2bbcf0c77facc7a9c6ca4d6f423607edee3"
+    },
+    {
+      "suite": "tests/e2e/mode_consistency.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "2c594de7de0bc2310e6aefb53f00e017dc21b478508bdfb2ac7207691c952dd8"
+    },
+    {
+      "suite": "tests/e2e/style_studio.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "5af59eba18a6bf92d0c261df66ede2cf00be16b599efe995ab2067e950c7c51f"
+    },
+    {
+      "suite": "tests/e2e/style_lab.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "39f2f9a3d76856d2abda4a1a26336a6b8aa17f95b3e9fd2560d75630b1ecf7c3"
+    },
+    {
+      "suite": "tests/e2e/appearance_scopes.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "d06e9b3f3b826558067be4a7df37bbf8564ace54e798519b7e364a6920edad29"
+    },
+    {
+      "suite": "tests/e2e/properties_inspector.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "67d3e4de91446b6a5d3a336d1857c1c5501ecca9aab65aecd21b29619d81bde9"
+    },
+    {
+      "suite": "tests/e2e/properties_disclosures.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "9cd759256eaaced34ab00b167918aa0598c440418fbdb04ce0a5cf971db79ec3"
+    },
+    {
+      "suite": "tests/e2e/floating_panels.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "ce404d1320ee14302258f6fb36b2c1ae9612d00aae423b4a2c27edc83a944ffc"
+    },
+    {
+      "suite": "tests/e2e/workbench.py",
+      "shard": "balanced-2",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "afc061c88013892b263ea53f7f1d4b4fd36be8080a20d9b3bbaeb1cc645a8060"
+    },
+    {
+      "suite": "tests/e2e/workbench_consistency.py",
+      "shard": "balanced-3",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "45e953ea63ce36c29fccc4163b87a0d4023b63e21738761feca84ecf94209842"
+    },
+    {
+      "suite": "tests/e2e/workbench_bar.py",
+      "shard": "balanced-1",
+      "concurrentSuiteWorkersPerRunner": 1,
+      "playwrightTestWorkers": "not applicable: direct Python library",
+      "sourceSha256": "dbcdda7fe51e2c8b7aeab0450536650e5a0ba51958fc9b923ef963652ae14872"
+    }
+  ],
+  "additionalWorkers": [
+    {
+      "job": "Characterization(1)",
+      "orchestrationWorkers": 1
+    },
+    {
+      "job": "Characterization(2)",
+      "orchestrationWorkers": 1
+    },
+    {
+      "job": "WebKit Properties",
+      "orchestrationWorkers": 1
+    }
+  ],
+  "comparison": {
+    "controlRun": 40428946697,
+    "observationRun": 40434881659,
+    "configurationChange": false,
+    "sourceTreeIdentical": true,
+    "interpretation": "1\u21921 observational comparison; no worker-count treatment or causal reduction claim. No --workers flag or inert environment variable is added."
+  }
+}

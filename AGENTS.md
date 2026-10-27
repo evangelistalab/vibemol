@@ -24,6 +24,8 @@ The standing Smoke input diagnostic is `.github/workflows/smoke-input-diagnostic
 
 The original#4 umbrella is split into Axis Escape#52 and Coordinates#53.52 merged asb2eb6ca from corrected first-run40237309034:36/1/37,62native/1248table cases, both exporters,102x2/52x8/all minima,459JS/101Python/WebKit/construction54app/26provider,251lets. Looks1688.90s completed BOTH material paths; whole1743s/29.05min.53 merged as91e9fb6 from own first run40241618214 (37/0/37); first automatic main40244964729 also reported37/0/37. The accepted set is intentionally empty. Semantic classifiers remain for attribution/negative tests, never as an allowance. The bypassed Coordinates-region diagnostic preserves native failures and explicit continuations and never supplies acceptance.
 
+The app-state metric is reconciled against tagged v0.9.5-pre-refactor:313 declaration lines contain324 variable-let bindings. Published0.10.0 has249lines/260variable bindings (64removed,19.7531%); accepted main afterPR76 has250lines/261variable bindings (63removed,19.4444%). The earlier263 binding figure included two unchanged class declarations (VmNumberInput/VmSlider), which Babel labels kind let; exclude those from variable-let counts. Three multi-declarator statements add9bindings beyond one per statement, and one line contains three separate let statements (+2); all are unchanged from tagged base. Historical313/249/251 figures remain line counts. These are app-IIFE metrics, not total mutable state across extracted modules. See tests/baselines/app-state-metric.json and docs/maintenance/app-state-metric.md.
+
 ## Purpose
 This repository contains `VibeMol`, a static browser app for molecular visualization, plus a Python automation client.
 
