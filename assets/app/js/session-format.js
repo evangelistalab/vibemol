@@ -38,7 +38,8 @@
     requireValue(vol.units === 'angstrom' || vol.units === 'bohr' || vol.units == null, `${label}: unsupported units.`);
     const atoms = uniqueMap(vol.atoms, `${label} atoms`);
     for (const atom of vol.atoms) {
-      requireValue(integer(atom.Z, 1) && atom.Z <= 118 && [atom.x, atom.y, atom.z].every(finite), `${label}: invalid atom.`);
+      // Same bundled identity domain as file/structure import, including X/Dummy.
+      requireValue(integer(atom.Z, 0) && atom.Z <= 100 && [atom.x, atom.y, atom.z].every(finite), `${label}: invalid atom identity or coordinates.`);
     }
     requireValue(Array.isArray(vol.bonds), `${label}: missing bonds.`);
     const bonds = uniqueMap(vol.bonds, `${label} bonds`);

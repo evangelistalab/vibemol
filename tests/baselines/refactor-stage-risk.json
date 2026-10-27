@@ -26,7 +26,7 @@
       "stage": 3,
       "risk": "highest manual-verification burden",
       "scope": "DOM element caches, completed Build/adaptive plus Element Colors, Atoms menu, Selection and Symmetry/shared launcher.",
-      "reason": "Historical Stage3 cache conversion is complete. Current ordinary gate34/3/37 has the exact three manifest workflows. Closed#21 is a harness synchronization issue; state readiness replaces its fixed sleep. Production fixes remain outside this refactor and the material-preset intermittent stays open.",
+      "reason": "Historical Stage3 cache conversion is complete; its accepted34/3/37 results remain historical. The current ordinary gate is37/0/37 with an intentionally empty accepted set. Maintenance14/15 explicitly retires four named null slots to48 composed slots/eight contexts/all minima; historical52-slot evidence is unchanged. The material-preset risk remains open.",
       "bindingInventory": "Babel AST pre-code audit: the requested 43 leading null-initialized let names contain 40 direct lookups, one lookup alias, and two controllers. All node queries are unconditional in the app IIFE, spread across four wiring blocks. No initCalculations, lazy-open or conditional query sites. Keep helpRestoreFocusEl and both controllers outside els. Full names, IDs, enclosing function, query/assignment lines and creation sites are in lookup-site-audit.json.",
       "prRule": "Selection then Symmetry/shared launcher, each cut from pushed integration, own exact-candidate CI gate and sequential merge without intermediate review. Only the three canonical conversion blockers apply; identical tagged manual failures are findings.",
       "panelPrPlan": [
@@ -3965,6 +3965,50 @@
       "failed": 0,
       "total": 37
     },
-    "acceptedSetIntentionallyEmpty": true
+    "acceptedSetIntentionallyEmpty": true,
+    "status": "merged",
+    "acceptedFix": {
+      "pr": 75,
+      "head": "a8ae88d34f6729bbb7f35c44417ea38102aff6e1",
+      "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+      "merge": "036bc3bdc7802ef4f56adcc82666547a4923c540",
+      "runId": 40418833122,
+      "attempt": 1,
+      "fullConjunction": true,
+      "independentChecks": 697,
+      "gate": {
+        "passed": 37,
+        "failed": 0,
+        "total": 37
+      },
+      "identitySlots": 48,
+      "contexts": 8,
+      "allMinima": true,
+      "goldens": 102,
+      "runs": 2,
+      "exactRepeat": true,
+      "jsUnits": 474,
+      "pythonUnits": 144,
+      "trackedLetLines": 250,
+      "periodicInputs": 11,
+      "looks": {
+        "looksSeconds": 965.41,
+        "looksMinutes": 16.090166666666665,
+        "materialFamilyPaths": {
+          "Studio": true,
+          "Properties": true
+        },
+        "bothMaterialFamiliesPathsReached": true,
+        "recurred": false,
+        "coverageDisposition": "both paths completed",
+        "riskRemainsOpen": true
+      },
+      "wallMinutes": 39.416666666666664,
+      "archive": {
+        "sha256": "1f3fafa12fdac3a92deb313c88975afc9b55b45eadd4f130987b8ec9460c42ee",
+        "bytes": 49075187,
+        "members": 545
+      }
+    }
   }
 }

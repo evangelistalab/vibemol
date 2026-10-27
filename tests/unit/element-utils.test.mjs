@@ -30,7 +30,7 @@ test('element utilities load before atomic metadata without DOM or rendering dep
   assert.equal(context.VibeMolElementUtils.getElementSymbol(6), 'Z6');
 });
 
-test('all symbol lookup policies preserve their tagged-base input and metadata behavior', () => {
+test('display placeholders retain compatibility while chemistry rejects invalid identity', () => {
   const entries = legacy.functions.filter(entry => entry.function === 'getElementSymbol');
   assert.equal(entries.length, 4);
   const inputs = [0, 1, 6, 6.9, '6', '006', '6.9', -1, null, undefined, NaN, Infinity, true, false];
@@ -40,8 +40,8 @@ test('all symbol lookup policies preserve their tagged-base input and metadata b
     { 6: { symbol: 0 } }, { 6: { symbol: null } }, { 6: { symbol: { toString: () => 'Fe' } } }];
   for (const entry of entries) {
     const moved = entry.file.endsWith('/app.js') ? api.getElementSymbol
-      : entry.file.endsWith('/bond-inference.js') ? api.getElementSymbolRaw
       : api.getElementSymbolByAtomicNumber;
+    if (entry.file.endsWith('/bond-inference.js')) continue; // Chemistry's invalid-input policy is repaired by #5 below.
     for (const table of tables) {
       const prior = original(entry, table);
       for (const z of inputs) assert.deepEqual(result(moved, [z, table]), result(prior, [z]), entry.file + ': ' + String(z));
@@ -51,17 +51,20 @@ test('all symbol lookup policies preserve their tagged-base input and metadata b
   const spaced = { 6: { symbol: ' C ' } };
   assert.equal(api.getElementSymbol(6, spaced), 'C');
   assert.equal(api.getElementSymbolByAtomicNumber(6.9, spaced), ' C ');
-  assert.equal(api.getElementSymbolRaw(6.9, spaced), '');
+  assert.throws(() => api.getElementSymbolRaw(6.9, spaced), /Unsupported atomic number/);
+  assert.equal(api.getElementSymbolRaw(6, spaced), 'C');
 });
 
-test('both metal classifiers preserve all copies across boundaries and coercions', () => {
+test('both metal classifiers preserve every catalogued element and reject invalid identity', () => {
   const entries = legacy.functions.filter(entry => entry.function.startsWith('is'));
   assert.equal(entries.length, 6);
-  const inputs = [...Array.from({ length: 150 }, (_, z) => z - 10),
-    '21', '57', 20.9, 30.9, 71.9, 103.9, null, undefined, NaN, Infinity, true, 21n, Symbol('z')];
+  const inputs = [...Array.from({ length: 119 }, (_, z) => z), '21', '57'];
   for (const entry of entries) {
     const prior = original(entry);
     for (const z of inputs) assert.deepEqual(result(api[entry.function], [z]), result(prior, [z]), entry.file + ': ' + String(z));
+    for (const z of [-1,119,6.9,null,undefined,NaN,Infinity,true,21n,Symbol('z')]) {
+      assert.throws(() => api[entry.function](z), /Unsupported atomic number/);
+    }
   }
 });
 

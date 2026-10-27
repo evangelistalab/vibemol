@@ -71,21 +71,21 @@
   "otherCarriedFollowups": [
     {
       "issue": 5,
-      "scope": "Element identity/clamp divergences outside behavior-preserving extraction"
-    },
-    {
-      "issue": 14,
-      "scope": "One periodic controller for both routes. Workbench skips detached launcher query/wiring; legacy markup, query, onclick and connected identity slot remain.",
-      "evidence": "tests/baselines/evidence/stage3/colors/preflight/overlay-sweep.md",
-      "handoffPr": 23,
-      "actualPeriodicFactoryInputs": 11,
-      "status": "Workbench-only cleanup candidate; legacy function retained; complete gate required",
-      "controllerDependencyCount": 11
-    },
-    {
-      "issue": 15,
-      "scope": "Four explicitly named null slots and dormant paths/timer removed.48-slot composition is47+1null14 in Workbench and48+0 in legacy; all minima unchanged.",
-      "status": "cleanup candidate; complete gate required"
+      "scope": "Element identity/clamp divergences outside behavior-preserving extraction",
+      "identityRepair": {
+        "status": "candidate; full gate required",
+        "contract": "tests/baselines/atomic-identity.json",
+        "clampFindingsRemainOpen": true,
+        "atomicCatalogDomain": [
+          0,
+          100
+        ],
+        "purePhysicalDomain": [
+          0,
+          118
+        ],
+        "dummySessionRestores": true
+      }
     },
     {
       "issue": 40,
@@ -946,5 +946,125 @@
     "surfaceCoverageComplete": false,
     "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls",
     "sourceRun": 40230711618
-  }
+  },
+  "closedMaintenanceIssues": [
+    {
+      "issue": 14,
+      "scope": "One periodic controller for both routes. Workbench skips detached launcher query/wiring; legacy markup, query, onclick and connected identity slot remain.",
+      "evidence": "tests/baselines/evidence/stage3/colors/preflight/overlay-sweep.md",
+      "handoffPr": 23,
+      "actualPeriodicFactoryInputs": 11,
+      "status": "closed",
+      "controllerDependencyCount": 11,
+      "acceptedCiFailure": false,
+      "acceptedFix": {
+        "pr": 75,
+        "head": "a8ae88d34f6729bbb7f35c44417ea38102aff6e1",
+        "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+        "merge": "036bc3bdc7802ef4f56adcc82666547a4923c540",
+        "runId": 40418833122,
+        "attempt": 1,
+        "fullConjunction": true,
+        "independentChecks": 697,
+        "gate": {
+          "passed": 37,
+          "failed": 0,
+          "total": 37
+        },
+        "identitySlots": 48,
+        "contexts": 8,
+        "allMinima": true,
+        "goldens": 102,
+        "runs": 2,
+        "exactRepeat": true,
+        "jsUnits": 474,
+        "pythonUnits": 144,
+        "trackedLetLines": 250,
+        "periodicInputs": 11,
+        "looks": {
+          "looksSeconds": 965.41,
+          "looksMinutes": 16.090166666666665,
+          "materialFamilyPaths": {
+            "Studio": true,
+            "Properties": true
+          },
+          "bothMaterialFamiliesPathsReached": true,
+          "recurred": false,
+          "coverageDisposition": "both paths completed",
+          "riskRemainsOpen": true
+        },
+        "wallMinutes": 39.416666666666664,
+        "archive": {
+          "sha256": "1f3fafa12fdac3a92deb313c88975afc9b55b45eadd4f130987b8ec9460c42ee",
+          "bytes": 49075187,
+          "members": 545
+        }
+      }
+    },
+    {
+      "issue": 15,
+      "scope": "Four explicitly named null slots and dormant paths/timer removed.48-slot composition is47+1null14 in Workbench and48+0 in legacy; all minima unchanged.",
+      "status": "closed",
+      "acceptedCiFailure": false,
+      "acceptedFix": {
+        "pr": 75,
+        "head": "a8ae88d34f6729bbb7f35c44417ea38102aff6e1",
+        "base": "ef155d4d462d0618da769f60c875df4c5ffcc814",
+        "merge": "036bc3bdc7802ef4f56adcc82666547a4923c540",
+        "runId": 40418833122,
+        "attempt": 1,
+        "fullConjunction": true,
+        "independentChecks": 697,
+        "gate": {
+          "passed": 37,
+          "failed": 0,
+          "total": 37
+        },
+        "identitySlots": 48,
+        "contexts": 8,
+        "allMinima": true,
+        "goldens": 102,
+        "runs": 2,
+        "exactRepeat": true,
+        "jsUnits": 474,
+        "pythonUnits": 144,
+        "trackedLetLines": 250,
+        "periodicInputs": 11,
+        "looks": {
+          "looksSeconds": 965.41,
+          "looksMinutes": 16.090166666666665,
+          "materialFamilyPaths": {
+            "Studio": true,
+            "Properties": true
+          },
+          "bothMaterialFamiliesPathsReached": true,
+          "recurred": false,
+          "coverageDisposition": "both paths completed",
+          "riskRemainsOpen": true
+        },
+        "wallMinutes": 39.416666666666664,
+        "archive": {
+          "sha256": "1f3fafa12fdac3a92deb313c88975afc9b55b45eadd4f130987b8ec9460c42ee",
+          "bytes": 49075187,
+          "members": 545
+        }
+      }
+    }
+  ],
+  "sharedTimeoutOccurrences": [
+    {
+      "site": "Symmetry Workbench menu launch",
+      "scope": "local unmerged clamp candidate",
+      "status": "unclassified",
+      "ordinaryCiAccepted": false,
+      "carried": false,
+      "acceptedCiFailure": false,
+      "budgetCoverage": false,
+      "timeoutMs": 30000,
+      "raw": "out/test-artifacts/maintenance-clamp/symmetry.log",
+      "pageErrors": [],
+      "concurrentWork": "Checks/units ran in parallel as allowed; no timing attribution was installed, so causation is unknown.",
+      "rule": "No re-run, new individual issue, deadline increase or accepted-set change. Held clamp work remains separate."
+    }
+  ]
 }

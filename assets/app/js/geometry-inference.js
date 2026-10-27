@@ -1,8 +1,8 @@
 (function (global) {
   'use strict';
 
-  const { getElementSymbolByAtomicNumber, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
-  const getElementSymbol = z => getElementSymbolByAtomicNumber(z, global.ATOM_Z_TO_DATA);
+  const { getElementSymbolRaw, isTransitionMetalAtomicNumber, isLanthanideOrActinideAtomicNumber } = global.VibeMolElementUtils;
+  const getElementSymbol = z => getElementSymbolRaw(z, global.ATOM_Z_TO_DATA);
 
   const { countsTowardAtomValence } = global.VibeMolBondInference || {};
   const {
@@ -56,8 +56,19 @@
   const GROUP17 = new Set([9, 17, 35, 53, 85, 117]);
   const GROUP18 = new Set([10, 18, 36, 54, 86, 118]);
 
+  // Pure periodic arithmetic supports physical elements through118, independently
+  // of renderer metadata. Geometry inference additionally requires that metadata.
+  function requireGeometryAtomicNumber(value) {
+    const z = typeof value === 'number' ? value
+      : typeof value === 'string' && value.trim() ? Number(value) : NaN;
+    if (!Number.isInteger(z) || z < 0 || z > 118) {
+      throw new RangeError(`Unsupported atomic number: ${String(value)} (expected an integer from 0 to 118).`);
+    }
+    return z;
+  }
+
   function period(z) {
-    const n = z | 0;
+    const n = requireGeometryAtomicNumber(z);
     if (n <= 2) return 1;
     if (n <= 10) return 2;
     if (n <= 18) return 3;
@@ -68,7 +79,7 @@
   }
 
   function valenceElectrons(z) {
-    const n = z | 0;
+    const n = requireGeometryAtomicNumber(z);
     if (GROUP1.has(n)) return 1;
     if (GROUP2.has(n)) return 2;
     if (GROUP13.has(n)) return 3;
@@ -190,13 +201,13 @@
   }
 
   function baseValence(z, formalCharge = 0) {
-    const atomicNumber = z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(z);
     const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
     return computeBaseValenceFromAdjustedElectrons(adjustedVE);
   }
 
   function resolveEffectiveValence(z, totalBondOrder, formalCharge = 0) {
-    const atomicNumber = z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(z);
     const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
     const baseValenceValue = baseValence(atomicNumber, formalCharge);
     if (totalBondOrder <= baseValenceValue) return baseValenceValue;
@@ -214,7 +225,7 @@
   }
 
   function buildProjectedValenceCandidates(z, totalBondOrder, formalCharge = 0) {
-    const atomicNumber = z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(z);
     const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
     const minimum = resolveEffectiveValence(atomicNumber, totalBondOrder, formalCharge);
     const candidates = [minimum];
@@ -230,7 +241,7 @@
   }
 
   function buildMainGroupCandidates(z, formalCharge, currentBonds, totalBondOrder) {
-    const atomicNumber = z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(z);
     const adjustedVE = valenceElectrons(atomicNumber) - (Number(formalCharge) || 0);
     const projectedValenceCandidates = buildProjectedValenceCandidates(atomicNumber, totalBondOrder, formalCharge);
     const out = [];
@@ -308,7 +319,7 @@
   }
 
   function inferMainGroupGeometryFromState(state) {
-    const atomicNumber = state.z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(state.z);
     const formalCharge = Number(state.formalCharge) || 0;
     const bonds = Array.isArray(state.bonds) ? state.bonds : [];
     const currentBonds = bonds.length;
@@ -366,7 +377,7 @@
   }
 
   function inferTransitionMetalGeometryFromState(state) {
-    const atomicNumber = state.z | 0;
+    const atomicNumber = requireGeometryAtomicNumber(state.z);
     const bonds = Array.isArray(state.bonds) ? state.bonds : [];
     const currentBonds = bonds.length;
     const totalBondOrder = bonds.reduce((sum, bond) => sum + clampOrder(bond && bond.order), 0);
@@ -459,7 +470,8 @@
   }
 
   function inferGeometryFromState(state = {}) {
-    const atomicNumber = state.z | 0;
+    getElementSymbol(state.z); // Metadata/identity must be known before geometry.
+    const atomicNumber = requireGeometryAtomicNumber(state.z);
     if (isTransitionMetalAtomicNumber(atomicNumber) || isLanthanideOrActinideAtomicNumber(atomicNumber)) {
       return inferTransitionMetalGeometryFromState(state);
     }
@@ -488,7 +500,7 @@
       bonds.push({ order: bond.order, direction });
     }
     return inferGeometryFromState({
-      z: Number(atom.Z) | 0,
+      z: atom.Z,
       formalCharge: Number.isFinite(atom.formalCharge) ? Math.round(Number(atom.formalCharge)) : 0,
       bonds,
       preferredGeometryId: getStoredPreferredGeometryId(vol, idx, options),
