@@ -1408,6 +1408,48 @@ def assert_no_runtime_errors(page_errors: list[str], console_errors: list[str]) 
         )
 
 
+def click_spinor_info(page) -> None:
+    # The paired tagged/480096a diagnostic in spinor-launcher.json shows that
+    # offsetParent remains non-null after the legacy launcher auto-hides.
+    read_state = """(point) => {
+        const button = document.getElementById('spinorInfoBtn');
+        const launcher = document.getElementById('displayWindowAdaptiveMenu');
+        const rect = button?.getBoundingClientRect();
+        const center = point || (rect ? {x: rect.x + rect.width / 2, y: rect.y + rect.height / 2} : null);
+        const hit = center ? document.elementFromPoint(center.x, center.y) : null;
+        const pointerEvents = button ? getComputedStyle(button).pointerEvents : null;
+        const actual = {
+            connected: !!button?.isConnected,
+            visibleLayout: !!button && !button.hidden && button.offsetParent !== null,
+            positiveBounds: !!rect && rect.width > 0 && rect.height > 0,
+            enabled: !!button && !button.disabled,
+            pointerEligible: !!button && pointerEvents !== 'none',
+            launcherRevealed: !!launcher && !launcher.classList.contains('is-auto-hidden'),
+            hitIsButton: !!button && !!hit && button.contains(hit),
+        };
+        const expected = Object.fromEntries(Object.keys(actual).map(key => [key, true]));
+        return {actual, expected, ready: Object.keys(expected).every(key => actual[key] === expected[key]),
+            point: center, bounds: rect ? {x: rect.x, y: rect.y, width: rect.width, height: rect.height} : null,
+            pointerEvents, hit: hit ? {id: hit.id, tag: hit.tagName, classes: hit.className} : null,
+            launcher: launcher ? {classes: launcher.className, ariaHidden: launcher.getAttribute('aria-hidden'),
+                opacity: getComputedStyle(launcher).opacity, pointerEvents: getComputedStyle(launcher).pointerEvents} : null};
+    }"""
+    before = page.evaluate(read_state, None)
+    print('[smoke-spinor-launcher] ' + json.dumps(dict(phase='before native reveal', **before)), flush=True)
+    if not before['actual']['positiveBounds']:
+        raise AssertionError(before)
+    point = before['point']
+    page.mouse.move(point['x'], point['y'])
+    try:
+        page.wait_for_function('(point) => (' + read_state + ')(point).ready', arg=point)
+    finally:
+        readback = page.evaluate(read_state, point)
+        print('[smoke-spinor-launcher] ' + json.dumps(dict(phase='before click', **readback)), flush=True)
+    if not readback['ready']:
+        raise AssertionError(readback)
+    page.click('#spinorInfoBtn')
+
+
 def main() -> int:
     page_errors: list[str] = []
     console_errors: list[str] = []
@@ -5297,7 +5339,7 @@ def main() -> int:
                       && btn.offsetParent !== null;
                 }"""
             )
-            page.click('#spinorInfoBtn')
+            click_spinor_info(page)
             page.wait_for_function(
                 """() => {
                     const panel = document.getElementById('spinorInfoPanel');
@@ -5341,14 +5383,14 @@ def main() -> int:
                       && text.includes('Alpha (left) and beta (right) are the two spin components of the wavefunction.');
                 }"""
             )
-            page.click('#spinorInfoBtn')
+            click_spinor_info(page)
             page.wait_for_function(
                 """() => {
                     const panel = document.getElementById('spinorInfoPanel');
                     return !!panel && panel.getAttribute('aria-hidden') === 'true';
                 }"""
             )
-            page.click('#spinorInfoBtn')
+            click_spinor_info(page)
             page.wait_for_function(
                 """() => {
                     const panel = document.getElementById('spinorInfoPanel');
@@ -5362,7 +5404,7 @@ def main() -> int:
                     return !!panel && panel.getAttribute('aria-hidden') === 'true';
                 }"""
             )
-            page.click('#spinorInfoBtn')
+            click_spinor_info(page)
             page.wait_for_function(
                 """() => {
                     const panel = document.getElementById('spinorInfoPanel');
