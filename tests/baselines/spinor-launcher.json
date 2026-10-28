@@ -1,0 +1,151 @@
+{
+  "purpose": "Diagnostic citation for the harness-only native Spinor launcher repair; never ordinary acceptance or an accepted failure.",
+  "failedRun": {
+    "id": 40574924579,
+    "url": "https://github.com/evangelistalab/vibemol/actions/runs/40574924579",
+    "attempt": 1,
+    "commit": "480096a6d80577f5742fd2e388a10094c3a75f1e",
+    "result": "36/1/37; sole Smoke failure, canvas intercepts spinorInfoBtn",
+    "unchangedEvidenceFiles": 519
+  },
+  "diagnostic": {
+    "kind": "paired local, same immutable product trees and frozen480096a surface/cloud prelude",
+    "date": "2026-10-27",
+    "rawDirectory": "out/test-artifacts/spinor-interception",
+    "rawResultSha256": "6a7493e3d432e9c2fab535857cdeb93c573123895037cdc7c7e02eabf7106313",
+    "diagnosisSha256": "b9bc20cbcc13c5bfd9c2ce4fd05e054ac72a58d9e8647b603aa078be4dcb3927",
+    "toolchain": {
+      "playwright": "1.64.1",
+      "browser": "156.0.8078.4",
+      "python": "3.12.12 | packaged by Anaconda, Inc. | (main, Oct 14 2025, 16:12:22) [Clang 17.0.6 ]",
+      "platform": "macOS-26.7.1-arm64-arm-64bit",
+      "lockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be"
+    },
+    "sources": [
+      {
+        "source": "tagged",
+        "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+        "bounds": {
+          "x": 353,
+          "y": 272,
+          "width": 188,
+          "height": 32,
+          "right": 541,
+          "bottom": 304
+        },
+        "launcherWhileHidden": {
+          "classes": "adaptiveMenu is-auto-hidden",
+          "ariaHidden": "false",
+          "opacity": "0",
+          "pointerEvents": "none"
+        },
+        "buttonWhileHidden": {
+          "hidden": false,
+          "offsetParent": "displayWindowAdaptiveMenu",
+          "pointerEvents": "none"
+        },
+        "originalReadinessWhileHidden": true,
+        "hitWhileHidden": "canvas",
+        "clickElapsedMs": 30005.091874976642,
+        "pointerEventsDuringFailedClick": 0,
+        "nativeRevealHitIsButton": true,
+        "nativeRevealOpensPanel": true,
+        "pageErrors": [],
+        "residualBrowserContexts": 0
+      },
+      {
+        "source": "release",
+        "commit": "480096a6d80577f5742fd2e388a10094c3a75f1e",
+        "bounds": {
+          "x": 353,
+          "y": 272,
+          "width": 188,
+          "height": 32,
+          "right": 541,
+          "bottom": 304
+        },
+        "launcherWhileHidden": {
+          "classes": "adaptiveMenu is-auto-hidden",
+          "ariaHidden": "false",
+          "opacity": "0",
+          "pointerEvents": "none"
+        },
+        "buttonWhileHidden": {
+          "hidden": false,
+          "offsetParent": "displayWindowAdaptiveMenu",
+          "pointerEvents": "none"
+        },
+        "originalReadinessWhileHidden": true,
+        "hitWhileHidden": "canvas",
+        "clickElapsedMs": 30006.63020799402,
+        "pointerEventsDuringFailedClick": 0,
+        "nativeRevealHitIsButton": true,
+        "nativeRevealOpensPanel": true,
+        "pageErrors": [],
+        "residualBrowserContexts": 0
+      }
+    ],
+    "naturalIdleControl": "Waited on the existing auto-hidden class and opacity; no sleep, shortened timer, CSS mutation or forced click. Original30000ms click failed before a separately-labelled native reveal continuation.",
+    "sourceProof": {
+      "autoHideControllerTextAndASTIdentical": true,
+      "autoHideCSSIdentical": true,
+      "productionSourceChanged": false
+    }
+  },
+  "invalidatedExpectation": "Non-null offsetParent and hidden=false do not prove pointer eligibility: auto-hide preserves bounds but applies opacity0 and pointer-events:none.",
+  "repair": {
+    "scope": "tests/e2e/smoke.py, all four Spinor info clicks",
+    "actions": "Read/log bounds and state, move the native pointer to the button center, require connected/enabled/layout/pointer eligibility and exact native hit ownership, then perform the original native click.",
+    "comparands": "Actual and expected booleans plus bounds, launcher classes/opacity/pointer-events and hit target are emitted before reveal and before click on success or failure.",
+    "originalSpinorPredicatesUnchanged": true,
+    "timeoutOrRetryOrAcceptedSetChanges": false,
+    "newRuntimeBindings": 0,
+    "newControllerDependencies": 0,
+    "helperInputs": {
+      "parameters": [
+        "page"
+      ],
+      "closureReads": [
+        "json"
+      ],
+      "total": 2
+    }
+  },
+  "localRepairCheck": {
+    "passed": true,
+    "rawResultSha256": "2fcff3ee786a4eca12c7f633d6a5b53b6c8f20a4ad3f6a631e983752786b4a0e",
+    "candidateHarnessSha256": "8f3944bdfcf1973205666a59c01cfc78c98112c63841f5d43fe3c8a3e65eedfb",
+    "sources": [
+      {
+        "commit": "1c609b338344aaa49ffd11b9ee2ad834a6e0d85d",
+        "allFourOriginalInteractionsPassed": true,
+        "eligibleReadbacks": 4,
+        "initialLauncher": "adaptiveMenu is-auto-hidden",
+        "pageErrors": [],
+        "residualContexts": 0
+      },
+      {
+        "commit": "480096a6d80577f5742fd2e388a10094c3a75f1e",
+        "allFourOriginalInteractionsPassed": true,
+        "eligibleReadbacks": 4,
+        "initialLauncher": "adaptiveMenu is-auto-hidden",
+        "pageErrors": [],
+        "residualContexts": 0
+      }
+    ]
+  },
+  "ordinaryGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true,
+    "completeOwnFirstPassRequired": true,
+    "diagnosticIsNotAcceptance": true,
+    "unchangedGoldens": 102,
+    "repeats": 2,
+    "identitySlots": 48,
+    "contexts": 8,
+    "allMinimaRequired": true,
+    "unitsWebKitConstructionAndBothExportersRequired": true
+  }
+}
