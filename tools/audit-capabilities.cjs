@@ -315,6 +315,7 @@ function analyze(units, policy) {
       : 'Product-module export with executable tests but no product caller; retain tests and investigate wiring/intent separately.'; }
     else { bucket = 'unreached'; reason = 'No executable reference outside the defining/exposure files.'; }
     return {id: e.id, definition: e.definition, exposure: e.exposure, bucket, reason,
+      reviewedDisposition: policy.memberDispositions?.[e.id] || null,
       externalReferenceCount: e.refs.length, references: e.refs, invocations: e.invocations, dependencyInvocations: e.deps,
       valueKind: isFunction ? 'function' : 'data-or-factory-value',
       internalCalls: e.value.isIdentifier() ? (e.value.scope.getBinding(e.value.node.name)?.referencePaths || [])
@@ -411,10 +412,10 @@ function markdown(report) {
   for (const b of buckets) {
     rows.push('## '+b, '', '| Export member | External sites | Internal calls | Definition | Disposition |', '| --- | ---: | ---: | --- | --- |');
     for (const e of report.entries.filter(e => e.bucket === b)) {
-      const disposition = b === 'built-but-unwired' || b === 'unreached'
+      const disposition = e.reviewedDisposition || (b === 'built-but-unwired' || b === 'unreached'
         ? e.internalCalls.length ? 'Retain; implementation is used inside its home module. Review exported API intent separately.'
           : 'Retain; investigate intended use/alternative wiring before any per-item decision.'
-        : e.reason;
+        : e.reason);
       rows.push(`| ${e.id} | ${e.externalReferenceCount} | ${e.internalCalls.length} | ${source(e.definition)} | ${disposition} |`);
     }
     rows.push('');
