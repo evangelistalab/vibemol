@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "operation": {
+    "operation": "remove-api-member",
+    "namespace": "VibeMolElementUtils",
+    "member": "getElementSymbolByAtomicNumber"
+  },
+  "recordingRunId": 41136902724,
+  "attempt": 1,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41136902724",
+  "sourceCommit": "57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf",
+  "sourceTree": "1b7331ff776c1b7ea1523496a11dd93d9103794b",
+  "declarationSha256": "2b3fc441cac3027027b094017e8d56607849415276050016a9b4266079d87cf8",
+  "previousBaselineCommit": "6043d8e5632497edce0f179a45927b574c6ac0bb",
+  "previousGoldenGzipSha256": "22cdb234a17e7d7002bb180ce3d088d3bfebb7de1170f61cdb6b18c3654f1ab5",
+  "goldenGzipSha256": "94d13334a0f5cef41eac0925ad81993af0566ac6969f3481367eaa1e185a1903",
+  "goldenRawSha256": "8083ee20d7e7c409a7092aac96510af9797f9affbe8af047722e9aeb24ae942a",
+  "independentCiJobs": 2,
+  "runsPerJob": 2,
+  "capturesPerRun": 102,
+  "memberRemovalsPerRun": 102,
+  "residualDifferences": 0,
+  "fourRawSerializationsExactlyIdentical": true,
+  "rawCaptureSha256": "a6980e21ca9b45233eee1351a95ad498d019c2803b9122e354d2b8b19ffa0331",
+  "sessionVersionLeaves": 204,
+  "sessionVersion": "0.10.1",
+  "versionLeavesChanged": 0,
+  "localRecording": false,
+  "mappingOrOrdinaryComparisonException": false,
+  "recordingProvidesMergeAcceptance": false,
+  "ordinaryGatePolicy": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true,
+    "allCommonRequirementsRetained": true
+  },
+  "modeReusable": true,
+  "modeAllowedOperation": "remove-api-member",
+  "otherExportsAndProductFilesUnchanged": true,
+  "rawEvidence": "out/test-artifacts/dead-capabilities/followup/recording-41136902724/"
+}

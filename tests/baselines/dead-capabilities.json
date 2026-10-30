@@ -43,7 +43,6 @@
     "VibeMolEditUi.bindAdaptivePopoverItem",
     "VibeMolEditUi.createAdaptivePopoverController",
     "VibeMolEditUi.positionAdaptiveMenu",
-    "VibeMolElementUtils.getElementSymbolByAtomicNumber",
     "VibeMolFigureComposer.pngDensity",
     "VibeMolFigureComposer.svg",
     "VibeMolFloatingPanels.constrain",
@@ -151,5 +150,13 @@
     "VibeMolWorkbenchHost.editToolEscape"
   ],
   "notADeletionList": true,
-  "partC": "Deferred by the human; not scanned."
+  "partC": "Deferred by the human; not scanned.",
+  "retiredExports": [
+    {
+      "id": "VibeMolElementUtils.getElementSymbolByAtomicNumber",
+      "authority": "Direct human retirement and exact-delta recording authorization2026-10-30",
+      "recordingRunId": 41136902724,
+      "sourceCommit": "57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf"
+    }
+  ]
 }

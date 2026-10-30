@@ -49,3 +49,13 @@ helper and strict chemistry helper remain. The old test matrix is retained
 against the appropriate current contract. An independent projection prepared
 before recording confirms the expected102 API-name removals and zero other
 capture differences; actual CI readback must independently prove the same.
+
+The first executed recording is
+[run41136902724](https://github.com/evangelistalab/vibemol/actions/runs/41136902724),
+attempt1, source `57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf`. Both independent
+workers and the comparison passed. Independent artifact readback verified all
+four raw102-capture serializations, exactly102 removals in each, zero residual
+differences, and all204 version leaves unchanged at0.10.1. The promoted gzip is
+`94d13334a0f5cef41eac0925ad81993af0566ac6969f3481367eaa1e185a1903`.
+The small durable provenance record is
+`tests/baselines/api-surface-recording.json`; raw captures/logs remain ignored.

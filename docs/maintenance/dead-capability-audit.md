@@ -4,7 +4,7 @@ This is a retained inventory with dispositions, not permission to remove APIs or
 tests. The direct human request covers exports and the atom-annotation stores;
 dead DOM / unread `els` (Part C) remains deferred.
 
-The source snapshot is main `58b9e15b47ea3b5cedfa527548a845ca63a2c2f9`.
+The initial source snapshot is main `58b9e15b47ea3b5cedfa527548a845ca63a2c2f9`.
 The corrected taxonomy puts the primary result first:
 
 | Bucket | Members |
@@ -19,7 +19,7 @@ The corrected taxonomy puts the primary result first:
 
 The 89 namespaces exactly match the in-scope part of the existing runtime API
 census in `tests/baselines/characterize-summary.json`. That census has 571 members
-across 92 namespaces: the other 12 belong to ListPopover, Prefs and Tooltip,
+across 92 namespaces at that snapshot: the other 12 belong to ListPopover, Prefs and Tooltip,
 defined under `src/`, outside this request's definition scope. The audit starts
 from that contract and recovers source definitions, aliases and factory-return
 public APIs; it does not substitute a text grep for the surface check.
@@ -58,6 +58,14 @@ members have calls inside their defining module. The primary set is mostly
 unused exported faces of implementations already used privately. The remaining
 entries include constants and compatibility aliases; absence of a direct call
 does not by itself classify their history as abandoned or unfinished.
+
+The separately authorized alias retirement removes one member from the current
+inventory: **558 in-scope members, 65 built-but-unwired**, with all other bucket
+counts unchanged. The runtime census now has570 members across the same92
+namespaces. `initialCounts` in the baseline preserves the historical snapshot;
+the enumerated allowance set shrinks by the retired identity. See
+[the follow-up findings](capability-followup.md) for the retained popover /
+Fragments aliases, remaining call-free dispositions and coordination history.
 
 The store trace found exactly three atom-indexed maps in `structure.js` and
 112 read/write/snapshot/transport boundaries. No wholly orphaned UI-written
