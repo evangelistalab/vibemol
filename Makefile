@@ -111,6 +111,8 @@ check:
 	node --check tests/e2e/stall_diagnostics.js
 	node --check tools/diagnostics/instrument_smoke_predicates.cjs
 	python3 -m py_compile tools/diagnostics/camera_fit_census.py tools/diagnostics/compare_camera_fit.py
+	python3 -m py_compile tests/e2e/paired_controls.py tests/e2e/paired_controls_contract.py
+	node --check tests/e2e/paired_controls_probe.js
 	git diff --check
 
 test-unit:

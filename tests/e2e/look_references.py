@@ -218,4 +218,5 @@ if __name__ == '__main__':
     from helpers import run_appearance_scenarios
     from appearance_autosave import restore_reporting
     from appearance_registry import component_mode_validation, registry_symmetry
-    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, registry_symmetry, component_mode_validation, restore_reporting])
+    from paired_controls import paired_control_invariant
+    run_appearance_scenarios(p.ROOT, p.ARTIFACTS, [reference_ui, reference_persistence, reference_migration, registry_symmetry, component_mode_validation, restore_reporting, paired_control_invariant])
