@@ -107,7 +107,13 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
     setStage('render-readiness');
     const ready=await p.evaluate(waitForFigureReady,stableValue.toString(),60000);
     observations.readiness.push({stage,...ready});
-    if (listTargets) return {ok:true,targets:ready.targets,environment,observations};
+    if (listTargets) {
+      const cleanup=await chrome.close();observations.cleanup=cleanup;
+      if (controller.signal.aborted) throw controller.signal.reason;
+      requireNormalShutdown(cleanup);chrome=undefined;
+      await server.close();server=undefined;
+      return {ok:true,targets:ready.targets,environment,observations,cleanup};
+    }
     const selected=selectTargets(job.figure.targets,ready.targets),options={...job.figure,targets:selected};
     if (job.referenceEnvironment) {
       setStage('reference-environment');
