@@ -36,7 +36,7 @@
   "memberDispositions": {
     "VibeMolEditUi.createAdaptivePopoverController": "Retain pending a separate decision: formerly wired, superseded by unified Build/Symmetry lifecycle in861dddf. No inter-surface obstacle model; reconnecting it does not solve66/67.",
     "VibeMolEditUi.bindAdaptivePopoverItem": "Retain pending a separate decision: old hover/click binding was superseded with the unified Build lifecycle in861dddf; no positioning or obstacle policy to recover.",
-    "VibeMolEditUi.positionAdaptiveMenu": "Retain pending a separate decision: obsolete horizontal-only sidebar clamp; the live shared-canvas menu adds vertical placement. Neither avoids arbitrary sibling surfaces.",
+    "VibeMolEditUi.positionAdaptiveMenu": "Retain: shared horizontal-placement owner, now called by positionCanvasAdaptiveMenu with its existing gap, viewport policy and one toolbar snapshot. No sibling-obstacle policy is claimed.",
     "VibeMolFragments.resolveFragmentQuery": "Retain compatibility alias: delegates to resolveCatalogQuery without a kind filter. Build uses the same implementation with an explicit fragment/molecule filter.",
     "VibeMolFragments.getFragmentById": "Retain compatibility alias: delegates to getCatalogEntryById; unknown ids return null. No duplicate app implementation.",
     "VibeMolFragments.buildFragmentInstance": "Retain compatibility alias: delegates to buildCatalogInstance. All49 manifest entries match, including fusion and attachment metadata.",

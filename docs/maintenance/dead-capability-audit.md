@@ -60,10 +60,10 @@ entries include constants and compatibility aliases; absence of a direct call
 does not by itself classify their history as abandoned or unfinished.
 
 The separately authorized alias retirement removes one member from the current
-inventory: **558 in-scope members, 65 built-but-unwired**, with all other bucket
+inventory: **558 in-scope members, 64 built-but-unwired /318 live**, with all other bucket
 counts unchanged. The runtime census now has570 members across the same92
 namespaces. `initialCounts` in the baseline preserves the historical snapshot;
-the enumerated allowance set shrinks by the retired identity. See
+the enumerated allowance set shrinks by the retired identity and by positionAdaptiveMenu, whose horizontal arithmetic is now reused by the live canvas wrapper. See
 [the follow-up findings](capability-followup.md) for the retained popover /
 Fragments aliases, remaining call-free dispositions and coordination history.
 

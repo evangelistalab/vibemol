@@ -33,7 +33,7 @@ jobs:
         run: |
           mkdir -p out/test-artifacts/construction-order
           node tools/audit-construction-order.cjs --self-test
-          node --test tests/unit/capability-audit.test.cjs
+          node --test tests/unit/capability-audit.test.cjs tests/unit/annotation-store-audit.test.cjs
           node tools/audit-capabilities.cjs --out out/test-artifacts/construction-order/capabilities.json
           node tools/audit-annotation-stores.cjs out/test-artifacts/construction-order/annotation-stores.json
           VIBEMOL_ESCAPE_CONTRACT_REPORT=out/test-artifacts/construction-order/escape-contract.json node tools/check-escape-contract.cjs

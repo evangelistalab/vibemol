@@ -60,6 +60,8 @@
    *   toolbarEl: HTMLElement|null,
    *   sidebarCollapsed: boolean,
    *   gap?: number,
+   *   toolbarRect?: DOMRect|null,
+   *   viewportWidth?: number,
    * }} options
    */
   function positionAdaptiveMenu(options = {}) {
@@ -69,12 +71,12 @@
     let left = gap;
     const toolbarEl = options.toolbarEl || null;
     if (!options.sidebarCollapsed && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = toolbarEl.getBoundingClientRect();
+      const toolbarRect = options.toolbarRect === undefined ? toolbarEl.getBoundingClientRect() : options.toolbarRect;
       if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
         left = Math.round(toolbarRect.right + gap);
       }
     }
-    const viewportWidth = Math.max(
+    const viewportWidth = Number.isFinite(options.viewportWidth) ? Math.max(1, Math.round(options.viewportWidth)) : Math.max(
       1,
       Math.round(window.innerWidth || 0),
       Math.round((document.documentElement && document.documentElement.clientWidth) || 0)

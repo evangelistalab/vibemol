@@ -42,7 +42,6 @@
     "VibeMolCoordination.listHaloCoordinationChoices",
     "VibeMolEditUi.bindAdaptivePopoverItem",
     "VibeMolEditUi.createAdaptivePopoverController",
-    "VibeMolEditUi.positionAdaptiveMenu",
     "VibeMolFigureComposer.pngDensity",
     "VibeMolFigureComposer.svg",
     "VibeMolFloatingPanels.constrain",
@@ -158,5 +157,11 @@
       "recordingRunId": 41136902724,
       "sourceCommit": "57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf"
     }
-  ]
+  ],
+  "sharedPlacementOwner": {
+    "id": "VibeMolEditUi.positionAdaptiveMenu",
+    "authority": "Direct human horizontal-arithmetic consolidation",
+    "productCaller": "app.js:positionCanvasAdaptiveMenu",
+    "newApiMembers": 0
+  }
 }

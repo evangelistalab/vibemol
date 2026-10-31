@@ -55,6 +55,45 @@ function owner(p) {
   return '<top-level>';
 }
 
+function scanUnit(u, add, discovered, functions) {
+  const file = u.file, name = path.basename(file);
+  traverse(u.ast, {
+    FunctionDeclaration(p) { functions.set(file+'#'+p.node.id.name, p); },
+    ReturnStatement(p) {
+      if (name !== 'structure.js') return;
+      const value = p.node.argument;
+      if (value?.type !== 'MemberExpression' || value.computed || value.property.name !== 'byAtomId') return;
+      const store = value.object;
+      const annotations = store?.object;
+      if (store?.type === 'MemberExpression' && !store.computed
+          && annotations?.type === 'MemberExpression' && !annotations.computed
+          && annotations.property.name === 'annotations' && annotations.object.type === 'Identifier'
+          && annotations.object.name === 'vol') discovered.add(store.property.name);
+    },
+    CallExpression(p) {
+      const callee = p.get('callee'), name = callee.isIdentifier() ? callee.node.name : callee.node.property?.name;
+      for (const [s, stem] of Object.entries(stems)) {
+        if (name === `getAtom${stem}Meta`) add(p, [s], 'read', name);
+        if (name === `setAtom${stem}Meta`) add(p, [s], 'write', name);
+        if (name === `get${stem}AnnotationsMap`) add(p, [s], 'map-access', name,
+          purpose[owner(p)] || 'Create/access the map; see getter/setter/pruning owner for mutation semantics.');
+      }
+      if (name === 'cloneVolumeAnnotationsSnapshot') add(p, stores, 'snapshot-read-and-prune', name,
+        'Capture all annotations for an edit history/transaction snapshot; snapshot helper also prunes dangling ids.');
+    },
+    MemberExpression(p) {
+      const text = p.toString();
+      if (!/\.annotations(?:\.|$)/.test(text)) return;
+      if (p.parentPath.isMemberExpression() && p.parentPath.node.object === p.node) return;
+      const names = stores.filter(s => text.includes('.annotations.' + s));
+      const assignment = p.parentPath.isAssignmentExpression() && p.parentPath.node.left === p.node;
+      const operation = assignment ? 'direct-write' : 'direct-read';
+      add(p, names.length ? names : stores, operation, text,
+        purpose[owner(p)] || (owner(p).startsWith('get') ? 'Create/read map shape at the storage boundary.' : null));
+    },
+  });
+}
+
 function collect(root = ROOT) {
   const edges = [], discovered = new Set(), functions = new Map();
   for (const name of fs.readdirSync(path.join(root, 'assets/app/js')).filter(x => x.endsWith('.js')).sort()) {
@@ -63,35 +102,7 @@ function collect(root = ROOT) {
     const add = (p, names, operation, route, why) => edges.push({stores: names, file,
       line: p.node.loc.start.line, owner: owner(p), operation, route,
       purpose: why || purpose[owner(p)] || null});
-    traverse(u.ast, {
-      FunctionDeclaration(p) { functions.set(file+'#'+p.node.id.name, p); },
-      ReturnStatement(p) {
-        if (name !== 'structure.js') return;
-        const m = p.get('argument').toString().match(/^vol\.annotations\.(\w+)\.byAtomId$/);
-        if (m) discovered.add(m[1]);
-      },
-      CallExpression(p) {
-        const callee = p.get('callee'), name = callee.isIdentifier() ? callee.node.name : callee.node.property?.name;
-        for (const [s, stem] of Object.entries(stems)) {
-          if (name === `getAtom${stem}Meta`) add(p, [s], 'read', name);
-          if (name === `setAtom${stem}Meta`) add(p, [s], 'write', name);
-          if (name === `get${stem}AnnotationsMap`) add(p, [s], 'map-access', name,
-            purpose[owner(p)] || 'Create/access the map; see getter/setter/pruning owner for mutation semantics.');
-        }
-        if (name === 'cloneVolumeAnnotationsSnapshot') add(p, stores, 'snapshot-read-and-prune', name,
-          'Capture all annotations for an edit history/transaction snapshot; snapshot helper also prunes dangling ids.');
-      },
-      MemberExpression(p) {
-        const text = p.toString();
-        if (!/\.annotations(?:\.|$)/.test(text)) return;
-        if (p.parentPath.isMemberExpression() && p.parentPath.node.object === p.node) return;
-        const names = stores.filter(s => text.includes('.annotations.' + s));
-        const assignment = p.parentPath.isAssignmentExpression() && p.parentPath.node.left === p.node;
-        const operation = assignment ? 'direct-write' : 'direct-read';
-        add(p, names.length ? names : stores, operation, text,
-          purpose[owner(p)] || (owner(p).startsWith('get') ? 'Create/read map shape at the storage boundary.' : null));
-      },
-    });
+    scanUnit(u, add, discovered, functions);
   }
   assert.deepEqual([...discovered].sort(), [...stores].sort(), 'New/removed structure.js annotation maps require an explicit audit disposition');
   // Generic whole-volume serialization does not spell each map name at its use
@@ -173,5 +184,5 @@ function main() {
   }
   console.log(JSON.stringify({stores, edges: report.edges.length, missingPurposes: report.missingPurposes}));
 }
-module.exports = {collect};
+module.exports = {collect, scanUnit};
 if (require.main === module) main();

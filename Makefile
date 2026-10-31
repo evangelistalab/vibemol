@@ -87,6 +87,7 @@ check:
 	node --check tools/audit-capabilities.cjs
 	node --check tools/audit-annotation-stores.cjs
 	node --check tests/unit/capability-audit.test.cjs
+	node --check tests/unit/annotation-store-audit.test.cjs
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
 	python3 -m py_compile tests/e2e/api_surface_recording.py

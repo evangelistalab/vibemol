@@ -1,9 +1,17 @@
 # Call-free export follow-up
 
+**Conclusion: no unwired capability was found in the three investigated clusters.**
+The adaptive-popover lifecycle was superseded, Fragments exposes compatibility
+aliases to its working catalog implementation, and coordination preferences have
+working consumers from introduction. The built-and-forgotten-feature hypothesis
+is **refuted by this audit**. Unused exported names are not evidence of
+forgotten product behavior. This conclusion retains the audit's stated limits:
+it is not a transitive reachability proof or proof that every control renders.
+
 This is an investigation, not authorization to wire or remove the six popover /
-fragment exports. The sole authorized production cleanup is retirement of
+fragment exports. The initial authorized production cleanup was retirement of
 `VibeMolElementUtils.getElementSymbolByAtomicNumber`; its tests move to the
-current strict helper. All other call-free entries remain, with explicit
+current strict helper. The subsequent human instruction also consolidates the duplicated horizontal placement arithmetic; no obsolete controller is reconnected. All other call-free entries remain, with explicit
 per-member dispositions in `tools/capability-dispositions.json` and the inventory.
 
 ## Adaptive popovers: superseded lifecycle, leftover horizontal arithmetic
@@ -115,5 +123,36 @@ The claim that the annotation is wholly unread, or that the split disconnected
 its inference consumer, is refuted by these readbacks.
 
 Raw readbacks and the extracted historical handler bodies are under ignored
-`out/test-artifacts/dead-capabilities/followup/`. No coordination or placement
-behavior changes accompany the alias retirement.
+`out/test-artifacts/dead-capabilities/followup/`. No coordination behavior changes accompany this work.
+
+## Authorized horizontal-placement consolidation
+
+The current canvas wrapper now calls the existing positionAdaptiveMenu helper
+for horizontal placement. It passes the existing 12px gap, window-only viewport
+width and the already-read toolbar rectangle. This preserves the current clamp,
+rounding and one toolbar/menu measurement per call, while the wrapper retains
+its 56px/sidebar-top vertical policy and right reset. Original helper callers
+retain their document-width fallback and default 16px gap. No API member,
+controller, module let, collision policy or hover behavior is added.
+
+This promotes that one exported face from built-but-unwired to live and shrinks
+the exact allowance by its identity. It does not turn the superseded popover
+lifecycle into a missing capability, nor claim either #66 or #67 is fixed.
+
+The annotation scan now matches return values structurally and declines bare
+returns without printing a null AST. The sibling-node review found resolve /
+object already guard missing nodes; bare yield is legal, while await, throw and
+arrow bodies require arguments or bodies by grammar. Both valid arrow-body
+forms and those syntax constraints are permanent controls. The scanner's actual
+three-store /112-boundary corpus is also a regression control.
+
+All 21 workflow job definitions are pinned to ubuntu-24.04. This is the immediate
+compatibility measure, with [Ubuntu 26.04 follow-up #81](https://github.com/evangelistalab/vibemol/issues/81)
+left open. The locked Playwright 1.64.1 already has native 26.04 WebKit and
+install-deps support (ICU78). The failed run restored an ABI-ambiguous Linux
+cache and launched an ICU74-linked binary; release-specific caches plus a cold /
+warm native 26.04 trial are deferred. No system-library workaround is included.
+
+Run41144464219 remains failed and its immutable evidence is preserved. The
+updated PR stays held until its own complete standing conjunction is verified;
+no diagnostic, local unit result or runner pin supplies acceptance by itself.
