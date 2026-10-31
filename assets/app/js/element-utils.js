@@ -21,11 +21,6 @@
     return `Z${z | 0}`;
   }
 
-  function getElementSymbolByAtomicNumber(z, table) {
-    const info = table && table[z | 0];
-    return info && info.symbol ? String(info.symbol) : `Z${z | 0}`;
-  }
-
   function getElementSymbolRaw(z, table) {
     const n = requireAtomicNumber(z);
     const symbol = table && table[n] && table[n].symbol;
@@ -65,7 +60,6 @@
 
   global.VibeMolElementUtils = Object.freeze({
     getElementSymbol,
-    getElementSymbolByAtomicNumber,
     getElementSymbolRaw,
     isTransitionMetalAtomicNumber,
     isLanthanideOrActinideAtomicNumber,

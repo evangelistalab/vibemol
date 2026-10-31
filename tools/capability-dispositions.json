@@ -1,0 +1,56 @@
+{
+  "harnessNamespaces": [
+    "VibeMolTesting"
+  ],
+  "consoleNamespaces": [
+    "VibeMolStructure",
+    "VibeMolPreset",
+    "VibeMolSession",
+    "VibeMolRecovery",
+    "VibeMolEmbed",
+    "VibeMolCalculations",
+    "VibeMolAppearanceLooks",
+    "VibeMolFigure",
+    "VibeMolUFFLocal"
+  ],
+  "consoleReasons": {
+    "VibeMolStructure": "Explicit public structure transport/automation API; retain console and client operations.",
+    "VibeMolPreset": "Documented portable preset automation API, including metadata/schema queries.",
+    "VibeMolSession": "Documented public workspace import/export/validation API.",
+    "VibeMolRecovery": "Public browser-local recovery operations; not limited to current internal callers.",
+    "VibeMolEmbed": "Public iframe/file-loading integration contract.",
+    "VibeMolCalculations": "Explicit public calculations automation and inspection surface.",
+    "VibeMolAppearanceLooks": "Public Look application/inspection API used by external render clients.",
+    "VibeMolFigure": "Public figure composition/inspection API.",
+    "VibeMolUFFLocal": "Explicit browser-console local UFF inspection/optimization surface."
+  },
+  "limits": [
+    "Direct executable references are not transitive reachability: code that calls a capability may itself be unreachable.",
+    "A UI handler can be wired to an element that never renders; this audit does not prove UI reachability. Dead DOM/els (Part C) is deferred.",
+    "Export inventory covers direct members of every VibeMol namespace published in assets/app/js, including factory-return public APIs; nested object schemas and controller instance methods are not separate namespace members.",
+    "Lexical aliases, destructuring and qualified static brackets are resolved. Computed dynamic property names, arbitrary reflection, runtime mutation and external consumers cannot be proved statically.",
+    "Executable JS, HTML scripts and Python-embedded JS are scanned. Historical evidence/baselines, comments and prose are not callers. Unparseable Python string fragments retain explicit qualified member references and are listed separately.",
+    "live includes product reads of exported data. Function imports/availability guards alone do not prove a product caller. deps-passed requires a recorded invocation in the specific receiving factory.",
+    "Console/API intent is a reviewed disposition, not proof of a caller. Nothing in this audit authorizes removal."
+  ],
+  "memberDispositions": {
+    "VibeMolEditUi.createAdaptivePopoverController": "Retain pending a separate decision: formerly wired, superseded by unified Build/Symmetry lifecycle in861dddf. No inter-surface obstacle model; reconnecting it does not solve66/67.",
+    "VibeMolEditUi.bindAdaptivePopoverItem": "Retain pending a separate decision: old hover/click binding was superseded with the unified Build lifecycle in861dddf; no positioning or obstacle policy to recover.",
+    "VibeMolEditUi.positionAdaptiveMenu": "Retain: shared horizontal-placement owner, now called by positionCanvasAdaptiveMenu with its existing gap, viewport policy and one toolbar snapshot. No sibling-obstacle policy is claimed.",
+    "VibeMolFragments.resolveFragmentQuery": "Retain compatibility alias: delegates to resolveCatalogQuery without a kind filter. Build uses the same implementation with an explicit fragment/molecule filter.",
+    "VibeMolFragments.getFragmentById": "Retain compatibility alias: delegates to getCatalogEntryById; unknown ids return null. No duplicate app implementation.",
+    "VibeMolFragments.buildFragmentInstance": "Retain compatibility alias: delegates to buildCatalogInstance. All49 manifest entries match, including fusion and attachment metadata.",
+    "VibeMolCoordination.listHaloCoordinationChoices": "Retain capability for a separate decision. Unit-tested; current halo builds choices from profile.choices and inference.compatibleGeometryIds. Not evidence that stored coordination is orphaned.",
+    "VibeMolBondInference.classifyBondCleanupDiff": "Retain tested cleanup-diff helper; no wiring or removal is authorized by this pass.",
+    "VibeMolBondInference.collectBondCandidates": "Retain tested bond-candidate helper and its availability contract; no wiring or removal in this pass.",
+    "VibeMolCalculationsModel.defaultShell": "Retain tested Calculations helper; no wiring or removal in this pass.",
+    "VibeMolCoordination.isCoordinationChoiceCompatible": "Retain tested coordination predicate; no wiring or removal in this pass.",
+    "VibeMolFloatingPanels.list": "Retain test-facing inspection of floating registrations; no wiring or removal in this pass.",
+    "VibeMolMinaoRenderer.DEFAULT_CONTOUR": "Retain tested renderer constant; no wiring or removal in this pass.",
+    "VibeMolRendering.maxAbs": "Retain mathematical helper/availability contract; no wiring or removal in this pass.",
+    "VibeMolSessionRecovery.DATABASE": "Retain recovery-store constant used by tests; no wiring or removal in this pass.",
+    "VibeMolStructureCore.removeVolumeBond": "Retain tested structure mutator and dependency seam; no wiring or removal in this pass.",
+    "VibeMolUFF.energyComponents": "Retain tested force-field inspection helper; no wiring or removal in this pass.",
+    "VibeMolUI.renderCoordsContent": "Retain presentation helper/availability contract; no wiring or removal in this pass."
+  }
+}

@@ -1075,7 +1075,17 @@
       "rule": "No re-run, new individual issue, deadline increase or accepted-set change. Held clamp work remains separate."
     }
   ],
-  "deferredMaintenance": [],
+  "deferredMaintenance": [
+    {
+      "issue": 81,
+      "url": "https://github.com/evangelistalab/vibemol/issues/81",
+      "status": "open; Ubuntu24.04 pin defers native26.04 migration",
+      "scope": "Release-specific Playwright browser caches and cold/warm Ubuntu26.04 WebKit validation; locked1.64.1 already supports26.04 and ICU78",
+      "acceptedCiFailure": false,
+      "failedRunId": 41144464219,
+      "libraryWorkaround": false
+    }
+  ],
   "releaseMaintenance": [
     {
       "issue": 77,

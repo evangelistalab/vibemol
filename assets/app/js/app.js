@@ -10567,21 +10567,15 @@
     if (!els.displayWindowAdaptiveMenuEl) return;
     const gap = 12;
     const inset = getCanvasAdaptiveMenuTopInset();
-    let left = gap;
     let top = inset;
-    if (!isSidebarCollapsedUi() && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function') {
-      const toolbarRect = toolbarEl.getBoundingClientRect();
-      if (toolbarRect && Number.isFinite(toolbarRect.right) && toolbarRect.width > 0) {
-        left = Math.round(toolbarRect.right + gap);
-      }
-      if (toolbarRect && Number.isFinite(toolbarRect.top)) {
-        top = Math.max(inset, Math.round(toolbarRect.top + inset));
-      }
+    const sidebarCollapsed = isSidebarCollapsedUi();
+    const toolbarRect = !sidebarCollapsed && toolbarEl && typeof toolbarEl.getBoundingClientRect === 'function'
+      ? toolbarEl.getBoundingClientRect() : null;
+    if (toolbarRect && Number.isFinite(toolbarRect.top)) {
+      top = Math.max(inset, Math.round(toolbarRect.top + inset));
     }
-    const viewportWidth = Math.max(1, Math.round(window.innerWidth || 0));
-    const menuWidth = Math.max(0, Math.round(els.displayWindowAdaptiveMenuEl.getBoundingClientRect().width || els.displayWindowAdaptiveMenuEl.offsetWidth || 0));
-    const maxLeft = Math.max(gap, viewportWidth - menuWidth - gap);
-    els.displayWindowAdaptiveMenuEl.style.left = `${Math.min(left, maxLeft)}px`;
+    positionAdaptiveMenuUi({ menuEl: els.displayWindowAdaptiveMenuEl, toolbarEl, sidebarCollapsed, gap,
+      toolbarRect, viewportWidth: window.innerWidth || 0 });
     els.displayWindowAdaptiveMenuEl.style.top = `${top}px`;
     els.displayWindowAdaptiveMenuEl.style.right = 'auto';
   }

@@ -146,6 +146,18 @@
       "before": "51b90e5814765fd09c650184a66d991733ba7b64",
       "worktree": ".",
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Capability audit shared adaptive-menu horizontal owner",
+      "before": "339c4e82796572360d271fc409788ac3d826b647",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/edit-ui.js"
+      ],
+      "recheck": [
+        "positionAdaptiveMenuUi"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "6043d8e5632497edce0f179a45927b574c6ac0bb",
+  "baselineGzipSha256": "22cdb234a17e7d7002bb180ce3d088d3bfebb7de1170f61cdb6b18c3654f1ab5",
+  "captures": 102,
+  "delta": {
+    "operation": "remove-api-member",
+    "namespace": "VibeMolElementUtils",
+    "member": "getElementSymbolByAtomicNumber"
+  },
+  "authority": "Direct human authorization 2026-10-30: retire the unused alias; record exactly 102 API-member removals and zero other capture changes, then require the complete 37/0/37 gate."
+}

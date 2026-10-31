@@ -39,20 +39,38 @@ test('display placeholders retain compatibility while chemistry rejects invalid 
     { 6: { symbol: '' } }, { 6: { symbol: '  ' } }, { 6: { symbol: 123 } },
     { 6: { symbol: 0 } }, { 6: { symbol: null } }, { 6: { symbol: { toString: () => 'Fe' } } }];
   for (const entry of entries) {
-    const moved = entry.file.endsWith('/app.js') ? api.getElementSymbol
-      : api.getElementSymbolByAtomicNumber;
     if (entry.file.endsWith('/bond-inference.js')) continue; // Chemistry's invalid-input policy is repaired by #5 below.
-    for (const table of tables) {
+    for (const [tableIndex, table] of tables.entries()) {
       const prior = original(entry, table);
-      for (const z of inputs) assert.deepEqual(result(moved, [z, table]), result(prior, [z]), entry.file + ': ' + String(z));
+      for (const z of inputs) {
+        const label = entry.file + ': ' + String(z) + ', table ' + tableIndex;
+        if (entry.file.endsWith('/app.js')) {
+          assert.deepEqual(result(api.getElementSymbol, [z, table]), result(prior, [z]), label);
+          continue;
+        }
+        // Coordination and geometry now use the strict metadata helper (#76).
+        // Keep every old input/table case, asserting the current contract rather
+        // than preserving the retired truncating alias's invalid-input behavior.
+        const canonical = [[0, 0], [1, 1], [6, 6], ['6', 6], ['006', 6]]
+          .find(([input]) => Object.is(input, z));
+        if (!canonical) {
+          assert.throws(() => api.getElementSymbolRaw(z, table), /Unsupported atomic number/, label);
+        } else if (tableIndex === 3 && canonical[1] !== 0) {
+          const expected = canonical[1] === 1 ? 'H' : 'C';
+          assert.equal(api.getElementSymbolRaw(z, table), expected, label);
+        } else {
+          assert.throws(() => api.getElementSymbolRaw(z, table), /Missing element metadata/, label);
+        }
+      }
     }
   }
-  // Demonstrate the differences being retained instead of normalizing callers.
+  // Display placeholders and chemistry deliberately have different contracts.
   const spaced = { 6: { symbol: ' C ' } };
   assert.equal(api.getElementSymbol(6, spaced), 'C');
-  assert.equal(api.getElementSymbolByAtomicNumber(6.9, spaced), ' C ');
+  assert.equal(api.getElementSymbol(6.9, spaced), 'Z6');
   assert.throws(() => api.getElementSymbolRaw(6.9, spaced), /Unsupported atomic number/);
   assert.equal(api.getElementSymbolRaw(6, spaced), 'C');
+  assert.equal('getElementSymbolByAtomicNumber' in api, false);
 });
 
 test('both metal classifiers preserve every catalogued element and reject invalid identity', () => {

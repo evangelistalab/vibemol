@@ -482,7 +482,8 @@ def main():
     parser.add_argument('--update-baseline', action='store_true')
     parser.add_argument('--record-release-tag', choices=('v0.10.0', 'v0.10.1'),
                         help='Explicit CI release recording from a verified source; never a version exemption.')
-    parser.add_argument('--record-source-commit', help='Full immutable SHA for the authorized0.10.1 candidate recording.')
+    parser.add_argument('--record-source-commit', help='Full immutable SHA for an explicitly declared CI recording candidate.')
+    parser.add_argument('--record-api-delta', help='Tracked declaration of one API-member removal; CI records only the exact declared delta.')
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
                         help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')
@@ -498,14 +499,18 @@ def main():
     if args.update_baseline:
         assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
     baseline_identity = {'commit': BASE_COMMIT, 'tag': BASE_TAG} if args.update_baseline or args.prepare_fixtures else None
-    if args.record_release_tag:
+    api_previous = api_declaration = None
+    if args.record_api_delta:
+        from api_surface_recording import require_source
+        baseline_identity, api_previous, api_declaration = require_source(ROOT, args.source_root, args, ARTIFACTS / 'api-baseline-source.json')
+    elif args.record_release_tag:
         from release_baseline_recording import require_published_release_source, require_release_candidate_source
         recorder = require_release_candidate_source if args.record_release_tag == 'v0.10.1' else require_published_release_source
         baseline_identity = recorder(ROOT, args.source_root, args, ARTIFACTS / 'release-baseline-source.json')
     else:
         assert args.record_source_commit is None, 'Candidate SHA requires explicit release recording mode.'
     meta = metadata(args.source_root, baseline_identity)
-    if (args.update_baseline or args.prepare_fixtures) and not args.record_release_tag:
+    if (args.update_baseline or args.prepare_fixtures) and not (args.record_release_tag or args.record_api_delta):
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()
         assert tagged == BASE_COMMIT, 'The pre-refactor tag must still identify the original base.'
         original = subprocess.check_output(['git', 'show', BASE_COMMIT + ':assets/app/js/app.js'], cwd=ROOT)
@@ -554,6 +559,10 @@ def main():
                 capture_hashes.append(hashlib.sha256(json.dumps(captures, indent=2).encode()).hexdigest())
                 (ARTIFACTS / f'characterize-run-{run}.json').write_text(json.dumps(captures, indent=2) + '\n')
                 (ARTIFACTS / f'characterize-pixels-{run}.json').write_text(json.dumps(pixels, indent=2) + '\n')
+                if api_declaration is not None:
+                    from api_surface_recording import verify_captures
+                    delta_report = verify_captures(api_previous, captures, api_declaration)
+                    (ARTIFACTS / f'api-delta-run-{run}.json').write_text(json.dumps(delta_report, indent=2) + '\n')
                 if baseline is None:
                     baseline, pixel_baseline = captures, pixels
                 else:

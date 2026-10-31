@@ -1,19 +1,24 @@
-name: Record release characterization baseline
+name: Record declared characterization baseline
 
 on:
   workflow_dispatch:
     inputs:
       source_commit:
-        description: Exact authorized 0.10.1 candidate commit (40 hex characters)
+        description: Exact authorized candidate commit (40 hex characters)
         required: true
         type: string
+      mode:
+        description: Recording contract
+        type: choice
+        default: release-0.10.1
+        options: [release-0.10.1, declared-api-removal]
 
 permissions:
   contents: read
 
 jobs:
   record:
-    if: github.ref == 'refs/heads/codex/release-0-10-1-ci'
+    if: inputs.mode == 'declared-api-removal' || github.ref == 'refs/heads/codex/release-0-10-1-ci'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
@@ -29,6 +34,9 @@ jobs:
           python-version: '3.12.15'
       - name: Install ordinary CI's pinned dependencies
         run: pip install -r api/requirements-ci.lock
+      - name: Declared-delta negative controls
+        if: inputs.mode == 'declared-api-removal'
+        run: python -m unittest discover -s tests/unit -p 'test_api_surface_recording.py'
       - name: Resolve Playwright version
         id: playwright
         run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
@@ -43,12 +51,17 @@ jobs:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/release-record-pycache
           VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/release-baseline
           VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
+          VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
         run: |
           test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
           source_root="$RUNNER_TEMP/release-source"
           mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
           git archive "$VIBEMOL_EXPECTED_SOURCE_COMMIT" | tar -x -C "$source_root"
-          python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.1 --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
+          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ]; then
+            python tests/e2e/characterize.py --source-root "$source_root" --record-api-delta tests/baselines/api-surface-delta.json --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
+          else
+            python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.1 --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
+          fi
           cp tests/baselines/characterize.json.gz tests/baselines/characterize-summary.json "$VIBEMOL_TEST_ARTIFACT_DIR/"
       - uses: actions/upload-artifact@v4
         if: always()
@@ -74,7 +87,13 @@ jobs:
       - name: Require four exact 102-capture serializations before promotion
         env:
           VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
-        run: python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.1 --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ]; then
+            python tests/e2e/api_surface_recording.py out/test-artifacts/release-baselines --declaration tests/baselines/api-surface-delta.json --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          else
+            python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.1 --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          fi
       - uses: actions/upload-artifact@v4
         with:
           name: characterization-ci-comparison
