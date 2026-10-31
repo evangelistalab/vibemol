@@ -214,4 +214,8 @@ def main():
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'figure',errors,console);raise
         finally:browser.close()
+        executable=pw.chromium.executable_path
+    # Retire the original renderer before the serial native-runner cases.
+    from figure_runner import run as run_figure_runner
+    run_figure_runner(executable,p.ARTIFACTS/'figure-runner')
 if __name__=='__main__':main()

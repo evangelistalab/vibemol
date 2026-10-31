@@ -84,6 +84,10 @@ version-assets:
 	python3 tools/sync_asset_versions.py
 
 check:
+	node --check api/figure-runner.mjs
+	node --check api/figure-browser.mjs
+	node --check api/figure-job.mjs
+	python3 -m py_compile tests/e2e/figure_runner.py
 	node --check tools/audit-capabilities.cjs
 	node --check tools/audit-annotation-stores.cjs
 	node --check tests/unit/capability-audit.test.cjs

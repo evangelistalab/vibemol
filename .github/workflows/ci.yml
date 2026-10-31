@@ -58,6 +58,10 @@ jobs:
         shard: [smoke, looks, balanced-1, balanced-2, balanced-3]
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: matrix.shard == 'balanced-3'
+        with:
+          node-version: '22'
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12.15'

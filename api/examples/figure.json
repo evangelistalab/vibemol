@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "session": "../../tests/fixtures/characterize/two-scenes.vibemol-session.gz",
+  "output": "../../out/figure-example",
+  "environment": {
+    "browserVersion": "156.0.8078.4",
+    "theme": "light",
+    "font": "geist",
+    "backend": "swiftshader",
+    "viewport": {"width": 1280, "height": 900, "deviceScaleFactor": 1}
+  },
+  "figure": {
+    "targets": "all",
+    "cols": 2,
+    "widthIn": 6.5,
+    "dpi": 300,
+    "camera": "fit",
+    "sharedIso": true,
+    "iso": 0.03,
+    "sharedLook": true,
+    "background": "white",
+    "format": "png"
+  }
+}
