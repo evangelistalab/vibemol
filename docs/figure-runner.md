@@ -26,6 +26,22 @@ For an isolated trusted-fixture CI job, `environment.sandbox: false` explicitly
 adds `--no-sandbox`, matching ordinary Playwright CI. It is recorded in the
 environment/flags and checked on replay. Normal local jobs keep the sandbox.
 
+An optional one-time installer obtains the same pinned browser without making
+Playwright a runner dependency:
+
+```sh
+npm install --prefix out/figure-toolchain --no-save --ignore-scripts playwright-core@1.64.1
+PLAYWRIGHT_BROWSERS_PATH="$PWD/out/figure-browser" node out/figure-toolchain/node_modules/playwright-core/cli.js install chromium-headless-shell
+```
+
+On Linux, add `--with-deps` to that install command if the browser's system
+libraries are missing. The executable is below
+`out/figure-browser/chromium_headless_shell-1248/`, in
+`chrome-headless-shell-linux64/` or `chrome-headless-shell-mac-arm64/` as
+appropriate. Pass its `chrome-headless-shell` executable to `--browser`.
+This installation is separate from running the classic-script app; it adds no
+build step. Ordinary CI already installs this distribution from its shared lock.
+
 ```sh
 node api/figure-runner.mjs api/examples/figure.json --browser /path/to/chrome
 node api/figure-runner.mjs api/examples/figure.json --browser /path/to/chrome --list-targets
