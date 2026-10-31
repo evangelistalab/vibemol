@@ -82,14 +82,18 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
     const environment=await p.evaluate(async()=>{
       const family=getComputedStyle(document.documentElement).getPropertyValue('--vm-font-sans').trim();
       const primary=family.split(',')[0].trim();
-      const loaded=await document.fonts.load(`16px ${primary}`);
+      const unquote=name=>name.replace(/^['"]|['"]$/g,'');
+      // FontFaceSet.load defaults to a space and misses unicode-range subsets
+      // first needed by a custom label. Load every face of the selected family.
+      const faces=[...document.fonts].filter(f=>unquote(f.family)===unquote(primary));
+      const loaded=await Promise.all(faces.map(f=>f.load()));
       await document.fonts.ready;
       const canvas=document.querySelector('#canvas'),gl=canvas?.getContext('webgl2')||canvas?.getContext('webgl');
       const ext=gl?.getExtension('WEBGL_debug_renderer_info');
       return {appVersion:VibeMolAssets.version,theme:document.documentElement.dataset.theme,font:VibeMolPrefs.getFontPair(),
         viewport:{width:innerWidth,height:innerHeight,deviceScaleFactor:devicePixelRatio},fontFamily:family,
-        loadedFonts:loaded.map(f=>({family:f.family,weight:f.weight,style:f.style,status:f.status})),
-        fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>({family:f.family,weight:f.weight,style:f.style,status:f.status})),
+        loadedFonts:loaded.map(f=>({family:f.family,weight:f.weight,style:f.style,unicodeRange:f.unicodeRange,status:f.status})),
+        fonts:[...document.fonts].filter(f=>f.status==='loaded').map(f=>({family:f.family,weight:f.weight,style:f.style,unicodeRange:f.unicodeRange,status:f.status})),
         renderer:ext?gl.getParameter(ext.UNMASKED_RENDERER_WEBGL):null,vendor:ext?gl.getParameter(ext.UNMASKED_VENDOR_WEBGL):null,
         glVersion:gl?.getParameter(gl.VERSION),userAgent:navigator.userAgent,locale:navigator.language,
         timezone:Intl.DateTimeFormat().resolvedOptions().timeZone,hardwareConcurrency:navigator.hardwareConcurrency};

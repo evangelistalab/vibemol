@@ -77,7 +77,9 @@ There is no post-load fixed sleep and no retry of a failed export. The runner:
 1. Waits for the exact navigation loader's DOMContentLoaded and the public APIs.
 2. Sets theme and font preferences before startup in a fresh disposable profile.
 3. Awaits session import, font readiness and completion/cancellation of finite
-   CSS animations/transitions. It explicitly loads the requested bundled face
+   CSS animations/transitions. It explicitly loads every declared unicode-range
+   subset of the requested bundled typeface before composing, including subsets
+   first needed by custom labels (a space-only font load is insufficient),
    and checks that the theme, face, viewport, device scale and SwiftShader
    renderer match their requested values.
 4. Requires the public viewport **and** target inventory to remain stable over

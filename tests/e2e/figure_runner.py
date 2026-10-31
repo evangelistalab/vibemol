@@ -79,14 +79,16 @@ def run(executable, artifacts):
 
     svg = copy.deepcopy(base)
     svg['environment'].update(theme='dark', font='inter')
-    svg['figure'].update(format='svg', targets=[{'id':'molecule-2', 'label':'Water <A> & B'}])
+    svg['figure'].update(format='svg', targets=[{'id':'molecule-2', 'label':'Water <A> & š'}])
     del svg['figure']['widthIn']
     svg['figure']['width'] = 512
     _, sb, _ = invoke('svg', svg)
     sr = json.loads((sb/'environment.json').read_text())
     root = ET.parse(sb/'figure.svg').getroot()
-    check('SVG target label/escaping', [t.text for t in root.findall('{http://www.w3.org/2000/svg}text')], ['Water <A> & B'])
+    check('SVG target label/escaping', [t.text for t in root.findall('{http://www.w3.org/2000/svg}text')], ['Water <A> & š'])
     check('SVG explicit environment', [sr['observed']['theme'], sr['observed']['font']], ['dark', 'inter'])
+    check('all Inter subsets loaded before composing', len(sr['observed']['loadedFonts']), 2)
+    check('extended-Latin font bytes recorded', '/assets/app/fonts/Inter-Variable-LatinExt.woff2' in sr['app']['resources'], True)
 
     listed, listing, _ = invoke('listing', base, ('--list-targets',))
     check('target listing', [t['id'] for t in listed['targets']], ['cube-1', 'molecule-2'])
