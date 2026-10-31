@@ -109,13 +109,18 @@ class PinnedFigureBrowserTests(unittest.TestCase):
         self.probe.assert_not_called()
 
     def test_mac_arm64_install_path_uses_manifest_revision(self):
-        self.full = self.root/'custom-cache/chromium-1248/chrome-mac-arm64/Google Chrome for Testing'
+        self.full = self.root/'custom-cache/chromium-1248/chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing'
         shell = self.root/'custom-cache/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell'
         shell.parent.mkdir(parents=True)
         shell.write_text('fixture')
         shell.chmod(0o755)
         with patch('pinned_figure_browser.sys.platform', 'darwin'), patch('pinned_figure_browser.platform.machine', return_value='arm64'):
             self.assertEqual(self.resolve(), str(shell))
+
+    def test_ambiguous_revision_ancestors_do_not_choose_a_cache_root(self):
+        self.full = self.root/'chromium-1248/cache/chromium-1248/chrome-linux64/chrome'
+        self.fails('cache root cannot be derived', str(self.full))
+        self.probe.assert_not_called()
 
 
 if __name__ == '__main__':

@@ -34,13 +34,16 @@ def resolve_pinned_headless_browser(full_executable, launched_version, metadata_
         raise RuntimeError(f'Pinned Figure browser metadata unavailable/invalid: {metadata_path}: {error}; no browser fallback') from error
 
     full_path = Path(full_executable)
-    if len(full_path.parents) < 3 or full_path.parents[1].name != 'chromium-'+str(full['revision']):
+    # macOS's public full-browser path is nested inside an .app bundle; the
+    # manifest-named installation ancestor, not a fixed depth, identifies cache.
+    installations = [parent for parent in full_path.parents if parent.name == 'chromium-'+str(full['revision'])]
+    if not full_path.is_absolute() or len(installations) != 1:
         raise RuntimeError(f'Pinned Figure cache root cannot be derived from {full_path}; expected chromium-{full["revision"]} from {metadata_path}; no browser fallback')
     distribution = {('linux', 'x86_64'): 'linux64', ('linux', 'aarch64'): 'linux-arm64',
                     ('darwin', 'arm64'): 'mac-arm64', ('darwin', 'x86_64'): 'mac-x64'}.get((sys.platform, platform.machine()))
     if distribution is None:
         raise RuntimeError(f'Pinned Figure headless distribution unsupported: {sys.platform}/{platform.machine()}; metadata {metadata_path}; no browser fallback')
-    executable = full_path.parents[2]/('chromium_headless_shell-'+str(shell['revision']))/('chrome-headless-shell-'+distribution)/'chrome-headless-shell'
+    executable = installations[0].parent/('chromium_headless_shell-'+str(shell['revision']))/('chrome-headless-shell-'+distribution)/'chrome-headless-shell'
     if not executable.is_file() or not os.access(executable, os.X_OK):
         raise RuntimeError(f'Pinned Figure headless executable missing/not executable: {executable}; metadata {metadata_path}; no browser fallback')
     try:
