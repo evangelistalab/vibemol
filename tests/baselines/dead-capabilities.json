@@ -162,6 +162,40 @@
     "id": "VibeMolEditUi.positionAdaptiveMenu",
     "authority": "Direct human horizontal-arithmetic consolidation",
     "productCaller": "app.js:positionCanvasAdaptiveMenu",
-    "newApiMembers": 0
+    "newApiMembers": 0,
+    "validation": {
+      "sourceCommit": "d3e79a98d4cad04593653fa4be91de2e6546a6b7",
+      "differential": {
+        "before": "339c4e82796572360d271fc409788ac3d826b647",
+        "cases": 768,
+        "stylesExactlyEqual": true,
+        "toolbarAndMenuReadCountsExactlyEqual": true,
+        "viewportPoliciesPreserved": true,
+        "newModuleLetBindings": 0
+      },
+      "stateMetric": {
+        "before": {
+          "variableLetBindings": 261,
+          "declarationLines": 250
+        },
+        "after": {
+          "variableLetBindings": 261,
+          "declarationLines": 250
+        }
+      },
+      "constructionBindings": 3,
+      "constructionStages": 16,
+      "newControllerDependencies": 0,
+      "ordinaryGateStillRequired": true
+    }
+  },
+  "followupConclusion": {
+    "unwiredCapabilityFound": false,
+    "builtAndForgottenHypothesis": "refuted by the investigated clusters",
+    "adaptivePopover": "superseded lifecycle",
+    "fragments": "aliases of the live canonical catalog",
+    "coordination": "working preference wire since introduction; no existing-ligand rearrangement implemented",
+    "transitiveReachabilityProved": false,
+    "controlRenderingProved": false
   }
 }

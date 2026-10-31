@@ -11,7 +11,9 @@ it is not a transitive reachability proof or proof that every control renders.
 This is an investigation, not authorization to wire or remove the six popover /
 fragment exports. The initial authorized production cleanup was retirement of
 `VibeMolElementUtils.getElementSymbolByAtomicNumber`; its tests move to the
-current strict helper. The subsequent human instruction also consolidates the duplicated horizontal placement arithmetic; no obsolete controller is reconnected. All other call-free entries remain, with explicit
+current strict helper. The subsequent human instruction also consolidates the
+duplicated horizontal placement arithmetic; no obsolete controller is reconnected.
+All other call-free entries remain, with explicit
 per-member dispositions in `tools/capability-dispositions.json` and the inventory.
 
 ## Adaptive popovers: superseded lifecycle, leftover horizontal arithmetic
@@ -133,7 +135,11 @@ width and the already-read toolbar rectangle. This preserves the current clamp,
 rounding and one toolbar/menu measurement per call, while the wrapper retains
 its 56px/sidebar-top vertical policy and right reset. Original helper callers
 retain their document-width fallback and default 16px gap. No API member,
-controller, module let, collision policy or hover behavior is added.
+controller, module let, collision policy or hover behavior is added. The actual
+app-IIFE metric remains250 declaration lines /261 variable-let bindings. A
+768-case comparison against339c4e8 matches styles and layout-read counts exactly;
+construction checks pass all16 stages, including the two new locals and the
+existing helper binding rechecked at its reading sites.
 
 This promotes that one exported face from built-but-unwired to live and shrinks
 the exact allowance by its identity. It does not turn the superseded popover
