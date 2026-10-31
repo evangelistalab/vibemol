@@ -12,7 +12,7 @@ playback, Figure/export and graph presentation are not structural undo actions.
 
 Source loading (including append), replacement, source/layer deletion and opening
 a session are explicit structural-history boundaries. They clear the structural
-history and say so before the action; they do not acquire an inverse by accident.
+history; they do not acquire an inverse by accident.
 A rename/visibility change that preserves source identity need not clear history,
 and structural undo must not revert it. A drag/preview is one entry at commit,
 not one entry per pointermove; auto-H/cascade/cleanup side effects belong to that
@@ -28,6 +28,26 @@ That is a different product scope, not an optimization that this proposal hides.
 The 24 MiB-source example costs at least 24 MiB while retained, even with perfect
 sharing; fifty distinct such deletions retain at least 1.17 GiB. Do not implement
 the broader scope without a separate decision on its memory/eviction UX.
+
+### Confirmations at source boundaries
+
+Use the existing confirmation dialog pattern before committing the destructive
+action, not a hint afterward. Cancellation changes neither scene nor history.
+
+| Source operation | Confirmation policy |
+| --- | --- |
+| Delete source, delete a scene/group containing sources, or Clear workspace | Always confirm when anything would be removed. Name the affected sources/count, say the deletion cannot be undone with Ctrl/Cmd-Z, and offer Cancel plus the existing Save Session route before an explicit Delete/Replace confirmation. Include dependent layers in the loss description. |
+| Replace import, replacing a source, or Open Session over a nonempty workspace | Confirm the sources/dependencies that will be discarded and that structural history will be cleared. A previously saved filename is not a recovery guarantee. Prepare/validate the incoming data before asking; a failed preparation must not discard anything. |
+| Remove a layer without removing its retained source | Confirm that layer/dependent-layer removal is not undoable; name the affected layers. If it also releases the last retained source, use the source-deletion warning above. |
+| Append/load while retaining all existing sources | No destructive-data warning. If structural history is nonempty, confirm explicitly that loading clears its N undo/redo entries. No prompt for the initial empty load, or an append with no history to lose. |
+| Open Session into an empty workspace | No loss confirmation unless history would be cleared. Validation still precedes installation. |
+| Export/Save, rename, visibility, camera navigation | No source-loss prompt and no structural-history reset when source identity is preserved. |
+
+One confirmation covers a batch and its history loss; do not stack one dialog per
+source. New data becoming available after an asynchronous load does not authorize
+discarding edits made since the user confirmed: recheck the source generation
+and history revision immediately before committing, and reconfirm changed loss.
+These are proposed interaction requirements, not implemented dialogs.
 
 ## Mutable sets and sharing by operation
 
@@ -72,18 +92,36 @@ individual annotation-map paths, and individual frame buffers (or bounded numeri
 blocks for larger buffers). It is a starting point to benchmark, not a claimed
 measured optimum.
 
-Plain structural records/maps are recursively frozen. Numeric storage is private
-behind version handles; `Object.freeze(typedArray)` is NOT a read-only guarantee.
-No `.buffer`, mutable `subarray`, raw setter or writable alias escapes a sealed
-version. A draft owns changed copies. Sealing transfers its buffers into private
-ownership and detaches draft aliases; a read/export returns an owned copy or
-non-mutating value access. Bulk renderer/worker adapters may cache disposable
-read copies keyed by version, never hand out history's backing buffers.
+**This is not enforced by the current app.** Its mutable `vol.*` arrays cannot be
+shared safely with history as they stand. A structural ownership boundary is the
+first implementation prerequisite, before adding history or enabling any sharing;
+there is no interim stage that relies on callers promising not to mutate arrays.
+
+Private version storage owns backing buffers behind opaque handles. Public
+handles expose neither storage objects nor `.buffer`/mutable `subarray`/setters.
+On adoption, copy caller-owned buffers; on sealing a draft, transfer its owned
+ArrayBuffers into the private store (detaching every draft view), and drop the
+draft capability. Reject SharedArrayBuffer, whose aliases cannot be detached.
+Unchanged chunks refer to already private sealed versions. Draft access always
+copies a changed chunk before its first write. No callbacks receive backing
+views, including callbacks used to iterate or serialize a version.
+
+Only plain records/arrays are recursively frozen. `Object.freeze(Map/Set)` does
+not disable their mutators, and nonempty typed arrays cannot be made read-only
+with `Object.freeze`; neither is the ownership mechanism. Maps/sets stay private
+and export frozen plain entries or owned copies. Numeric read/export APIs return
+owned copies or scalar values. Bulk renderer/worker adapters may cache disposable
+read copies keyed by version, never hand out history's backing buffers. Mutating
+those copies must not change a version, another reader, or a later restore.
 
 This requires adapting the existing raw `vol.*` readers/writers; it is not a
 wrapper that can coexist with arbitrary legacy writes. Every affected writer
 must cross the draft/commit boundary, and a static writer census plus negative
-alias tests must prove that before a class ships. The bulk-reader adapter's
+alias tests must prove that before a class ships. Those tests retain original
+input views, draft views/subarrays and exported copies, attempt writes before and
+after sealing, and compare independent bytes/digests of every retained version.
+They also assert detached draft buffers, rejected shared buffers, inaccessible
+private storage and no escaped mutable Map/Set. The bulk-reader adapter's
 cost must be measured. Initial private/cached read copies can add a constant
 source-sized cost; they must not multiply with history depth. Do not claim that
 using `Object.freeze` on the root alone enforces any of this.
@@ -103,8 +141,18 @@ and redo share that budget; moving the cursor does not duplicate snapshots.
 Count each shared buffer once; count an old buffer retained only by history in
 full. Account for metadata conservatively and report chunk/buffer/entry counts.
 64 MiB is a retained-payload budget, not a promise that V8/DOM/GPU RSS is 64 MiB.
-Oldest complete entries may expire to meet it, with the remaining undo depth
-visible. Do not silently perform an unrecorded edit when one entry exceeds the
+Oldest complete entries may expire to meet it. At that same commit, publish an
+explicit message through the existing status/hint channel: e.g. “History limit:
+52 earlier edits expired; 7 undo steps remain.” Name whether the 200-entry or
+64 MiB limit caused it; count whole entries actually removed, not an estimate.
+Keep a durable indicator beside the existing Undo/Redo controls with the remaining
+depth and oldest retained action, plus the latest truncation count/reason. Announce
+the change accessibly. A transient toast alone is insufficient; later mode hints
+must not erase the only evidence. Coalesce evictions from one transaction into
+one notice, and distinguish “edit applied; earlier history expired” from failure.
+Boundary confirmations above separately disclose clearing the entire history.
+
+Do not silently perform an unrecorded edit when one entry exceeds the
 cap: reject before live mutation and explain the limit. That behavior and the
 source-history boundary are intended visible changes requiring product approval.
 
@@ -161,7 +209,9 @@ commit and redo (redo must not call it); active-frame edits and atom reordering;
 corrupted/missing dependent fields; setter returns normally but drops a field;
 failed restoration plus failed recovery; raw-array alias mutation attempts;
 source-generation/history boundaries; 200-entry and byte eviction; and retained
-memory before/after eviction/clear. Measure edit commit, undo readback and rebuild
+memory before/after eviction/clear. Assert the source-confirmation cancellation,
+stale-confirmation check, and truncation notice/composition, including its durable
+indicator after a hint timeout and mode change. Measure edit commit, undo readback and rebuild
 latency separately on the spike's atom-only, grid-heavy and trajectory workspaces.
 
 No controller extraction is needed for the Figure runner. For a future approved

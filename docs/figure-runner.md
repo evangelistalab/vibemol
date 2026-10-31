@@ -42,6 +42,15 @@ appropriate. Pass its `chrome-headless-shell` executable to `--browser`.
 This installation is separate from running the classic-script app; it adds no
 build step. Ordinary CI already installs this distribution from its shared lock.
 
+The Figure harness resolves that shell from the installed Playwright
+`driver/package/browsers.json`, using the configured browser cache root. It checks
+the exact manifest revision, executable permission and binary version against the
+browser launched by the original Figure suite. Missing/unreadable metadata,
+unsupported overrides, a missing binary or a version mismatch fails with the
+metadata/executable path; it never searches PATH or substitutes system Chrome.
+The original Figure checks run and retire their browser before resolution and
+the serial runner matrix, with separate completion markers for both phases.
+
 ```sh
 node api/figure-runner.mjs api/examples/figure.json --browser /path/to/chrome
 node api/figure-runner.mjs api/examples/figure.json --browser /path/to/chrome --list-targets

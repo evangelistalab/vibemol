@@ -206,18 +206,29 @@ def auto_iso(page,url):
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
-        # Use the exact headless binary actually launched by ordinary CI;
-        # BrowserType.executable_path can point to the separate full Chrome.
-        executable=browser.new_browser_cdp_session().send('Browser.getBrowserCommandLine')['arguments'][0]
+        full_executable=pw.chromium.executable_path
+        launched_version=browser.version
         page=browser.new_page(viewport={'width':1440,'height':1000},device_scale_factor=1)
         errors=[];console=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:console.append(m.text) if m.type=='error' else None)
         page.on('dialog',lambda d:d.dismiss())
         try:
-            run(page,url);auto_iso(page,url);samples(page,url);assert not errors,errors;assert not console,console
+            run(page,url)
+            print('[figure] original run: passed',flush=True)
+            auto_iso(page,url)
+            print('[figure] original auto_iso: passed',flush=True)
+            samples(page,url)
+            print('[figure] original samples: passed',flush=True)
+            assert not errors,errors;assert not console,console
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'figure',errors,console);raise
         finally:browser.close()
     # Retire the original renderer before the serial native-runner cases.
+    print('[figure] original suite complete; browser retired; page/console errors: 0',flush=True)
+    import playwright
+    from pathlib import Path
+    from pinned_figure_browser import resolve_pinned_headless_browser
+    executable=resolve_pinned_headless_browser(full_executable,launched_version,
+        Path(playwright.__file__).parent/'driver/package/browsers.json')
     from figure_runner import run as run_figure_runner
     run_figure_runner(executable,p.ARTIFACTS/'figure-runner')
 if __name__=='__main__':main()
