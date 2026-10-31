@@ -16,7 +16,7 @@ on:
 jobs:
   coordinates-region:
     if: github.event_name != 'workflow_dispatch' || inputs.scope == 'coordinates'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -38,7 +38,7 @@ jobs:
           path: out/test-artifacts/coordinates-region/
   escape-contract:
     if: github.event_name == 'workflow_dispatch' && inputs.scope == 'escape'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -87,7 +87,7 @@ jobs:
           path: out/test-artifacts/escape-diagnostic/
   escape-reproduction:
     if: github.event_name == 'workflow_dispatch' && inputs.scope == 'escape-reproduction'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
