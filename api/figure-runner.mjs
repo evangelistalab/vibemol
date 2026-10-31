@@ -6,7 +6,7 @@ import {gunzipSync} from 'node:zlib';
 import os from 'node:os';
 import {execFileSync} from 'node:child_process';
 import {validateJob,selectTargets,stableValue,FigureError} from './figure-job.mjs';
-import {digest,serveApp,launchChrome,waitForFigureReady} from './figure-browser.mjs';
+import {digest,serveApp,launchChrome,waitForFigureReady,requireNormalShutdown} from './figure-browser.mjs';
 
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
 const MAX_SESSION_BYTES=512*1024*1024;
@@ -29,6 +29,7 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
   let stage='validation',job,server,chrome,output,lock,temporary;
   const setStage=value=>{stage=value;onStage(value);};
   const observations={readiness:[],blockedRequests:[]},started=new Date().toISOString();
+  const deadlineAt=Date.now()+deadlineMs;
   const timer=setTimeout(()=>controller.abort(new FigureError('deadline',`Figure job exceeded its ${deadlineMs} ms wall deadline.`,{stage})),deadlineMs);
   try {
     controller.signal.throwIfAborted();
@@ -44,7 +45,7 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
     const input=await readFile(sessionPath),bytes=sessionPath.endsWith('.gz')?gunzipSync(input,{maxOutputLength:MAX_SESSION_BYTES}):input;
     const text=new TextDecoder('utf-8',{fatal:true}).decode(bytes),envelope=JSON.parse(text);
     if (envelope.kind!=='vibemol.session'||envelope.sessionVersion!==1) throw new FigureError('validation','Expected a version-1 vibemol.session file.');
-    setStage('browser');server=await serveApp(appRoot,text);chrome=await launchChrome(browser,controller.signal,{sandbox:job.environment.sandbox});
+    setStage('browser');server=await serveApp(appRoot,text);chrome=await launchChrome(browser,controller.signal,{sandbox:job.environment.sandbox,deadlineAt});
     const {protocol:p,version}=chrome;
     observations.browser=version;
     const commandLine=(await p.send('Browser.getBrowserCommandLine',{},null)).arguments;
@@ -157,7 +158,10 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
     const targets=await p.send('Target.getTargets',{},null);
     const livePages=targets.targetInfos.filter(t=>t.type==='page');
     if (livePages.length!==1) throw new FigureError('cleanup','Unexpected extra browser pages.',{pages:livePages});
-    record.cleanup={pagesBeforeClose:livePages.length,...await chrome.close()};chrome=undefined;
+    record.cleanup={pagesBeforeClose:livePages.length,...await chrome.close()};
+    observations.cleanup=record.cleanup;
+    if (controller.signal.aborted) throw controller.signal.reason;
+    requireNormalShutdown(record.cleanup);chrome=undefined;
     await server.close();server=undefined;record.cleanup.serverClosed=true;
     await writeFile(path.join(temporary,imageName),image,{flag:'wx'});
     await writeFile(path.join(temporary,'session.vibemol-session'),bytes,{flag:'wx'});
@@ -176,14 +180,14 @@ export async function runFigureJob(jobPath,{browser,appRoot=ROOT,signal,deadline
     }
     error.figureReport=failure;throw error;
   } finally {
-    clearTimeout(timer);signal?.removeEventListener('abort',abort);
+    signal?.removeEventListener('abort',abort);
     // Even a browser/profile cleanup error must not strand the server or lock.
     try {await chrome?.close();}
     finally {
       try {await server?.close();}
       finally {
         try {if (temporary) await rm(temporary,{recursive:true,force:true});}
-        finally {if (lock) {try {await lock.close();} finally {await rm(output+'.lock',{force:true});}}}
+        finally {try {if (lock) {try {await lock.close();} finally {await rm(output+'.lock',{force:true});}}}finally{clearTimeout(timer);}}
       }
     }
   }

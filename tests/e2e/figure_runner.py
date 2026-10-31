@@ -55,6 +55,8 @@ def run(executable, artifacts):
     check('only one research page before close', record['cleanup']['pagesBeforeClose'], 1)
     check('browser/profile/server retired', [record['cleanup'][k] for k in ('browserExited', 'profileRemoved', 'serverClosed')], [True]*3)
     check('normal close acknowledged without forced kill', record['cleanup']['exitSignal'], None)
+    check('normal close exit code', record['cleanup']['exitCode'], 0)
+    check('no forced shutdown', record['cleanup']['forced'], False)
     check('actual browser sandbox flag', record['observed']['sandbox'], base['environment']['sandbox'])
     check('loaded resource hashes include renderer and font',
           all(any(part in name for name in record['app']['resources']) for part in ('app.js', 'Geist-Variable.woff2')), True)

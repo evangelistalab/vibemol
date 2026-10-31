@@ -14,6 +14,10 @@ the ordinary CI browser, Chromium **156.0.8078.4** (Playwright 1.64.1's browser
 distribution). Supply that executable, or deliberately edit the full version
 pin to match a different installed browser. The runner never silently updates
 or substitutes the pin. `chrome --version` prints the installed version.
+Prefer the pinned **Chrome Headless Shell** distribution. Full Chrome on the
+development Mac reproduced its own teardown watchdog even on empty pages
+(about 11 seconds after acknowledging close, exit 2). The runner treats any
+abnormal/forced shutdown as failure, not a successful reproducible bundle.
 
 The browser sandbox defaults to true and never silently falls back. Ubuntu's
 AppArmor policy can deny the user namespaces used by downloaded Chromium;
@@ -114,11 +118,15 @@ recorded typeface for vector labels; retain/install that bundled font when
 viewing or converting SVG elsewhere.
 
 The runner closes its browser, removes its profile and closes the loopback
-server before publishing a complete bundle. A sibling exclusive lock prevents
+server before publishing a complete bundle. Normal shutdown must exit 0 without
+a signal or forced kill; acknowledgement and process-exit timings are recorded.
+A sibling exclusive lock prevents
 two jobs claiming the same output. Temporary files are removed on failure.
 SIGINT/SIGTERM or the JS API's AbortSignal cancel; the Figure abort signal is
-sent and the disposable browser is retired, forcibly after a 3-second teardown
-backstop if needed. Cancellation never publishes a successful image bundle.
+sent and the disposable browser's private process group is discarded. Normal
+shutdown uses the same absolute job deadline; there is no short shutdown timing
+threshold. At that deadline the group is killed and the job fails. Cancellation
+never publishes a successful image bundle.
 The API `runFigureJob(path, {browser, signal, onStage})` exposes deterministic
 phase notifications, including for cancellation before composing.
 

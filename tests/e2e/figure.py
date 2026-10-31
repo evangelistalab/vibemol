@@ -206,6 +206,9 @@ def auto_iso(page,url):
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
+        # Use the exact headless binary actually launched by ordinary CI;
+        # BrowserType.executable_path can point to the separate full Chrome.
+        executable=browser.new_browser_cdp_session().send('Browser.getBrowserCommandLine')['arguments'][0]
         page=browser.new_page(viewport={'width':1440,'height':1000},device_scale_factor=1)
         errors=[];console=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('console',lambda m:console.append(m.text) if m.type=='error' else None)
         page.on('dialog',lambda d:d.dismiss())
@@ -214,7 +217,6 @@ def main():
         except Exception:
             p.write_failure_artifacts(page,p.ARTIFACTS,'figure',errors,console);raise
         finally:browser.close()
-        executable=pw.chromium.executable_path
     # Retire the original renderer before the serial native-runner cases.
     from figure_runner import run as run_figure_runner
     run_figure_runner(executable,p.ARTIFACTS/'figure-runner')

@@ -10,6 +10,10 @@ export const digest = bytes => createHash('sha256').update(bytes).digest('hex');
 export const CHROME_FLAGS=Object.freeze(['--headless','--enable-automation','--no-first-run','--no-default-browser-check','--disable-extensions',
   '--disable-background-networking','--disable-component-update','--disable-sync','--force-color-profile=srgb',
   '--lang=en-US','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']);
+export function requireNormalShutdown(cleanup) {
+  if (cleanup.forced||cleanup.exitCode!==0||cleanup.exitSignal!==null)
+    throw new FigureError('cleanup','Chrome did not shut down normally; no output bundle was published.',{cleanup});
+}
 
 // Every pending protocol request rejects on disconnect or deadline, including startup.
 export class Protocol {
@@ -74,30 +78,37 @@ export async function serveApp(root,sessionText) {
   return {origin:`http://127.0.0.1:${server.address().port}`,resources,errors,close:()=>new Promise(resolve=>{server.closeAllConnections();server.close(resolve);})};
 }
 
-export async function launchChrome(executable,signal,{sandbox=true}={}) {
+export async function launchChrome(executable,signal,{sandbox=true,deadlineAt=Date.now()+300000}={}) {
   signal.throwIfAborted();
   const profile=await mkdtemp(path.join(tmpdir(),'vibemol-figure-'));
   const args=[...CHROME_FLAGS,...(sandbox?[]:['--no-sandbox']),'--remote-debugging-port=0',`--user-data-dir=${profile}`,'about:blank'];
-  const child=spawn(executable,args,{stdio:['ignore','ignore','pipe']});let stderr='',protocol;
+  const child=spawn(executable,args,{stdio:['ignore','ignore','pipe'],detached:true});let stderr='',protocol,closed;
   const exited=new Promise(resolve=>{child.once('exit',resolve);child.once('error',resolve);});
   const close=async()=>{
-    const force=setTimeout(()=>child.kill('SIGKILL'),3000);
+    if (closed) return closed;
+    const start=performance.now();let forced=false,closeAckMs=null;
+    const kill=()=>{if(child.exitCode!==null||child.signalCode!==null)return;forced=true;try {process.kill(-child.pid,'SIGKILL');}catch {child.kill('SIGKILL');}};
+    // Normal shutdown shares the job's absolute deadline, not a short new
+    // performance threshold. Cancellation discards this private process group.
+    const force=setTimeout(kill,Math.max(1,deadlineAt-Date.now()));
     // AbortSignal may already be set: send the Figure abort/Browser.close directly.
     if (protocol?.socket.readyState===1) {
       protocol.socket.send(JSON.stringify({id:++protocol.next,method:'Runtime.evaluate',sessionId:protocol.session,
         params:{expression:'globalThis.__vmFigureAbort?.abort()'}}));
       // Await delivery/ack (or disconnect); closing the socket immediately after
       // queuing Browser.close can drop that command and force every teardown.
-      try {await protocol.closeBrowser();} catch {}
-      protocol.dispose();
+      if (signal.aborted) {kill();protocol.dispose();}
+      else {try {await protocol.closeBrowser();closeAckMs=performance.now()-start;} catch {}}
     }
     if (child.exitCode===null) {
-      if (!protocol) child.kill('SIGTERM');
+      if (!protocol) {if(signal.aborted)kill();else child.kill('SIGTERM');}
       await exited;
     }
+    protocol?.dispose();
     clearTimeout(force);
     await rm(profile,{recursive:true,force:true,maxRetries:3});
-    return {browserExited:true,profileRemoved:true,exitCode:child.exitCode,exitSignal:child.signalCode};
+    closed={browserExited:true,profileRemoved:true,exitCode:child.exitCode,exitSignal:child.signalCode,
+      forced,closeAckMs,elapsedMs:performance.now()-start};return closed;
   };
   try {
     const endpoint=await new Promise((resolve,reject)=>{

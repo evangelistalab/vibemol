@@ -6,7 +6,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {validateJob,selectTargets,stableValue,FigureError,FIGURE_DEFAULTS} from '../../api/figure-job.mjs';
 import {loadGlobalModules} from './load-global-module.mjs';
-import {Protocol,serveApp,waitForFigureReady} from '../../api/figure-browser.mjs';
+import {Protocol,serveApp,waitForFigureReady,requireNormalShutdown} from '../../api/figure-browser.mjs';
 import {runFigureJob} from '../../api/figure-runner.mjs';
 
 const example=JSON.parse(await readFile(new URL('../../api/examples/figure.json',import.meta.url),'utf8'));
@@ -87,6 +87,11 @@ test('teardown waits for Browser.close acknowledgement even after cancellation',
   const closing=p.closeBrowser(),request=socket.sent.at(-1);
   assert.equal(request.method,'Browser.close');assert.equal(socket.readyState,1);
   socket.receive({id:request.id,result:{}});await closing;p.dispose();
+});
+test('a finished image cannot mask a forced or abnormal browser shutdown',()=>{
+  requireNormalShutdown({forced:false,exitCode:0,exitSignal:null});
+  for(const cleanup of [{forced:true,exitCode:null,exitSignal:'SIGKILL'},{forced:false,exitCode:2,exitSignal:null}])
+    assert.throws(()=>requireNormalShutdown(cleanup),e=>e.stage==='cleanup'&&e.detail.cleanup===cleanup);
 });
 test('local server exposes only app assets and the supplied session, never arbitrary files',async()=>{
   const root=await mkdtemp(path.join(tmpdir(),'vm-figure-server-test-'));
