@@ -19,7 +19,7 @@ permissions:
 jobs:
   record:
     if: inputs.mode == 'declared-api-removal' || github.ref == 'refs/heads/codex/release-0-10-1-ci'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
       fail-fast: false
@@ -72,7 +72,7 @@ jobs:
 
   compare:
     needs: record
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
