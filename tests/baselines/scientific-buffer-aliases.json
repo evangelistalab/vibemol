@@ -1118,5 +1118,119 @@
     "End-of-stage bytes cannot detect a write restored before comparison; write traps cover selected borrow APIs, with source-code inspection for private helpers.",
     "Detachment alone cannot distinguish readers from writers; indexed detached writes may be silent.",
     "Shallow session capture and mutable basis metadata are not safe retained history snapshots."
-  ]
+  ],
+  "nativeEvidence": {
+    "auditCodeCommit": "dfe56c9808b698d2779af8a027f46f7d7637702d",
+    "auditedAppRevision": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+    "appSha256": "a2ad0e6d49fca556cc3c474a06a3e6f311537e465dc81146fd5ca845b496770e",
+    "probeSha256": {
+      "tools/diagnostics/scientific_aliases.py": "0744667a180072ffda51d2a36ef51409027f5c33160b45af28f761736c1ee7be",
+      "tools/diagnostics/scientific_aliases.js": "327d1fd95d51edc59506d8b14056f3a6d40f355cef422b1ed11b764182235ed3"
+    },
+    "environment": {
+      "playwright": "1.64.1",
+      "browser": "156.0.8078.4",
+      "executable": "/Users/fevange/Source/vibemol/out/test-artifacts/figure-runner/browsers/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "python": "3.12.12 | packaged by Anaconda, Inc. | (main, Oct 14 2025, 16:12:22) [Clang 17.0.6 ]",
+      "lockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be"
+    },
+    "cases": [
+      {
+        "name": "synchronous",
+        "sourceArraysObserved": 36,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 22302,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [
+          "arithmetic"
+        ],
+        "derivedChangesDetected": 1
+      },
+      {
+        "name": "worker",
+        "sourceArraysObserved": 36,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 22301,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [
+          "autoiso",
+          "autoiso",
+          "arithmetic"
+        ],
+        "derivedChangesDetected": 1
+      },
+      {
+        "name": "coordinate-owners",
+        "sourceArraysObserved": 19,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 8,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [],
+        "derivedChangesDetected": 1
+      }
+    ],
+    "positiveControls": {
+      "guards": [
+        {
+          "name": "index",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "set",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "subarray",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "callback-array",
+          "blocked": true,
+          "sourceUnchanged": true
+        }
+      ],
+      "detach": {
+        "readThrows": true,
+        "methodWriteThrows": true,
+        "indexWriteThrows": false,
+        "indexRead": null,
+        "transferredOwnerUnchanged": true
+      }
+    },
+    "residualContexts": 0,
+    "checkpointFiles": 42,
+    "sourceWritersFound": 0,
+    "diagnosticOnly": true,
+    "rawSummarySha256": "0524587de4972042b14c9db93e770eb5674c8987068e4099d0429fe8de345775",
+    "rawLogSha256": "68dfaeae2056f62b38f5a6e77055dd56ece0714b536502a62975251baa39797e"
+  },
+  "postMergeMainGate": {
+    "runId": 41261857334,
+    "head": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "firstAttempt": true,
+    "CIWaitMinutes": 43.71666666666667,
+    "LooksMinutes": 24.437666666666665,
+    "bothExporters": true,
+    "bothMaterialFamilyPaths": true
+  }
 }

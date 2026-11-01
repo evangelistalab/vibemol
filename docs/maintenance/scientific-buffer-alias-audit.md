@@ -135,3 +135,25 @@ all 11 jobs, both exporters/58 activation records, 102 goldens twice/exact repea
 48 slots/eight contexts/all minima, 497 JS/190 Python, WebKit and construction.
 Looks 1466.26 s (24.44 min) completes both material paths; total 43.72 min.
 No CI retry was performed.
+
+## Final committed probe readback
+
+Executed audit code commit `dfe56c9808b698d2779af8a027f46f7d7637702d` against unchanged
+main app bytes, using Playwright 1.64.1 / Chromium 156.0.8078.4. The whole matrix
+completed serially with zero residual contexts. These counts are cumulative
+observed source arrays, including primitive coefficient arrays, not memory cost
+or counts of simultaneously live app owners.
+
+| Case | Source arrays | Guarded calls | Source byte changes | Write-trap violations | Worker requests |
+| --- | ---: | ---: | ---: | ---: | --- |
+| synchronous | 36 | 22302 | 0 | 0 | arithmetic |
+| worker | 36 | 22301 | 0 | 0 | autoiso, autoiso, arithmetic |
+| coordinate-owners | 19 | 8 | 0 | 0 | none |
+
+The worker case explicitly covers both scalar and four-channel phase Auto-iso,
+plus arithmetic. No original source buffer was transferred; borrowed arithmetic
+input byte lengths remained intact. Actual mutable vibration scratch changes
+were detected, while source equilibrium/displacement bytes stayed identical.
+All four intentional write controls were rejected; detach controls retain their
+read/write distinction. Exact hashes, toolchain, source revision and native
+comparands are recorded in the inventory and ignored raw diagnostic output.
