@@ -44,7 +44,29 @@ const purpose = {
   commitFuseRingPlacement: 'Write group/entry provenance on committed fused-ring atoms.',
   appendFragmentAtWorld: 'Write group/entry provenance on attached fragment atoms.',
   applyRecordSpatialState: 'Replace all annotation maps while restoring an Undo/Redo spatial snapshot.',
+  editApiFragmentMembership: 'Resolve validated fragment instance membership from copied builder provenance; no geometry mutation.',
+  createEditApiInsertionPlanner: 'Remap copied clipboard builder/coordination/metal annotations into an owned insertion candidate.',
+  editApiCapture: 'Deep-copy complete scoped annotation state for validation, fingerprints and requested/applied readback.',
+  createEditApiCandidateValidator: 'Reject dangling annotation identities and unsupported coordination/metal values before commit.',
+  editApiRealizeIds: 'Remap only explicitly minted atom/group identities in owned candidate annotation maps; retain existing ids and opaque values.',
+  editApiHistory: 'Pass complete before/after annotation snapshots to the existing structural history owner.',
 };
+
+function reviewedPurpose(p) {
+  const name = owner(p);
+  if (purpose[name]) return purpose[name];
+  // Generic callback names are scoped to their construction site; a different
+  // remove/apply callback must not inherit an unrelated reviewed disposition.
+  if (name === 'remove' && p.findParent(x => x.isFunctionDeclaration()
+      && x.node.id?.name === 'createEditApiDraftFactory')) {
+    return 'Prune deleted atom annotation entries in an owned build draft, before any live mutation.';
+  }
+  if (name === 'apply' && p.findParent(x => x.isVariableDeclarator()
+      && x.node.id.name === 'editApiCommit')) {
+    return 'Commit the validated complete annotation snapshot through the existing spatial-state owner, alongside atoms, operations and bonds.';
+  }
+  return null;
+}
 
 function owner(p) {
   for (let f = p.getFunctionParent(); f; f = f.getFunctionParent()) {
@@ -76,7 +98,7 @@ function scanUnit(u, add, discovered, functions) {
         if (name === `getAtom${stem}Meta`) add(p, [s], 'read', name);
         if (name === `setAtom${stem}Meta`) add(p, [s], 'write', name);
         if (name === `get${stem}AnnotationsMap`) add(p, [s], 'map-access', name,
-          purpose[owner(p)] || 'Create/access the map; see getter/setter/pruning owner for mutation semantics.');
+          reviewedPurpose(p) || 'Create/access the map; see getter/setter/pruning owner for mutation semantics.');
       }
       if (name === 'cloneVolumeAnnotationsSnapshot') add(p, stores, 'snapshot-read-and-prune', name,
         'Capture all annotations for an edit history/transaction snapshot; snapshot helper also prunes dangling ids.');
@@ -89,7 +111,7 @@ function scanUnit(u, add, discovered, functions) {
       const assignment = p.parentPath.isAssignmentExpression() && p.parentPath.node.left === p.node;
       const operation = assignment ? 'direct-write' : 'direct-read';
       add(p, names.length ? names : stores, operation, text,
-        purpose[owner(p)] || (owner(p).startsWith('get') ? 'Create/read map shape at the storage boundary.' : null));
+        reviewedPurpose(p) || (owner(p).startsWith('get') ? 'Create/read map shape at the storage boundary.' : null));
     },
   });
 }

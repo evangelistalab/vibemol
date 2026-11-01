@@ -1,8 +1,8 @@
 {
   "baseline": {
-    "commit": "57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf",
-    "tag": "declared-api-removal",
-    "appSha256": "4744507bd4e8e6baf7fd7047531e6961bc2dad2cf3ba6487d93219a63dda73fb",
+    "commit": "4c34216e0423a74507d7e2cd807f1b2d633fe33a",
+    "tag": "declared-api-delta",
+    "appSha256": "dfa09d2d6a1982348b5c9bd3bae8ff6ea3b3a651b11cdb056283cad60078437a",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -18,10 +18,10 @@
       0
     ],
     "metrics": {
-      "lines": 31894,
-      "functionDeclarations": 1172,
+      "lines": 32844,
+      "functionDeclarations": 1243,
       "letDeclarations": 250,
-      "constDeclarations": 570
+      "constDeclarations": 592
     },
     "captureProvenance": {
       "os": "Linux",
@@ -31,9 +31,9 @@
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41136902724",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41331755619",
         "runAttempt": "1",
-        "runnerImage": "ubuntu26"
+        "runnerImage": "ubuntu24"
       }
     }
   },
@@ -60,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "da10418951c07cb0931c6520f15afe470923fbd78765a5c6b3945346cf7ef335",
-      "da10418951c07cb0931c6520f15afe470923fbd78765a5c6b3945346cf7ef335"
+      "845b1ae0f5bf4d9bfea1740d3f4afeaa04c8da91bd44cfc4fb72f8dc61190bcf",
+      "845b1ae0f5bf4d9bfea1740d3f4afeaa04c8da91bd44cfc4fb72f8dc61190bcf"
     ]
   },
   "api": {
@@ -254,6 +254,20 @@
       "EXCLUSIVE_WINDOW_IDS",
       "WINDOW_IDS",
       "createDisplayWindowsController"
+    ],
+    "VibeMolEdit": [
+      "applyBuild",
+      "clearSelection",
+      "context",
+      "copySelection",
+      "enter",
+      "getSelection",
+      "listBuildCatalog",
+      "listBuildSites",
+      "resolveSelection",
+      "setSelection",
+      "translate",
+      "validateBuild"
     ],
     "VibeMolEditCommands": [
       "createAtomSnapshotCommand"
@@ -635,7 +649,6 @@
     ],
     "VibeMolTesting": [
       "attachFragmentFromAnchorIndex",
-      "copyEditSelectionToClipboard",
       "getActiveTransformGesture",
       "getBondCarrierSnapshots",
       "getBondCenterCueState",
@@ -647,7 +660,6 @@
       "getEditSelectionIndices",
       "getHaloGhostPreviewKind",
       "getHaloGhostWorlds",
-      "getHaloReplaceTargetWorlds",
       "getHintMessage",
       "getLookLightingSnapshot",
       "getLookMaterialSnapshot",
@@ -655,7 +667,6 @@
       "getMoleculeRenderSnapshot",
       "getOpenNonEditWindows",
       "getSceneGraphSnapshot",
-      "getSelectionCoordinationChoices",
       "getSimulationBoxSnapshot",
       "getSurfaceMaterialSnapshot",
       "getTransformAngleGuideClient",
@@ -663,14 +674,10 @@
       "getWboitSnapshot",
       "isFuseRingPreviewActive",
       "listNonEditWindows",
-      "pasteEditClipboardSelection",
       "performSelectionMoveDrag",
       "pickEditHitAtClient",
-      "pickTransformValueLabelAtClient",
-      "probeSelectionMoveDragStart",
       "projectActiveAtomToClient",
       "projectHaloGhostToClient",
-      "projectHaloReplaceTargetToClient",
       "rebuildScene",
       "replaceGestureTerminalHydrogen",
       "setEditSelectionIndices",
@@ -820,7 +827,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "8083ee20d7e7c409a7092aac96510af9797f9affbe8af047722e9aeb24ae942a",
+  "goldenSha256": "2c9b1321f5e9eae79e1f68e660e9fe356b35390ca8febe5ce8a6dcfb2254bd83",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []

@@ -96,11 +96,35 @@ def run(page,url):
  load(CARBON);build('growAtom',element='N',anchor={'kind':'labels','labels':['C1']},direction=[1,0,0],bondOrder=1,attachPolicy='append')
  load(CARBON);build('attachFragment',entryId='methyl',anchor={'kind':'labels','labels':['C1']},direction=[1,0,0],bondOrder=1,attachPolicy='append',spinAngle=.3)
  load(METHANE);build('replaceHydrogen',element='O',anchor={'kind':'labels','labels':['C1']},hydrogen={'kind':'labels','labels':['H1']},bondOrder=1)
- ready(page,'()=>VibeMolEdit.listBuildCatalog().value.some(e=>e.entryId==="fusionphenyl")');load(XYZ);build('fuseFragment',entryId='fusionphenyl',host={'kind':'labels','labels':['C1','C2']},bondOrder=1,spinAngle=.2)
+ ready(page,'()=>VibeMolEdit.listBuildCatalog().value.some(e=>e.entryId==="fusionphenyl")');load(XYZ);fused=build('fuseFragment',entryId='fusionphenyl',host={'kind':'labels','labels':['C1','C2']},bondOrder=1,spinAngle=.2)
+ # Real fused provenance must distinguish owned atoms from the shared host,
+ # and survive copying/insertion with a new instance identity.
+ fragment=page.evaluate('''()=>{const c=VibeMolEdit.context().value,g=c.fragments[0],owned=VibeMolEdit.resolveSelection({kind:'fragment',instanceId:g.instanceId,role:'owned'}),footprint=VibeMolEdit.resolveSelection({kind:'fragment',instanceId:g.instanceId,role:'footprint'}),copy=VibeMolEdit.copySelection(owned.value);return {g,owned,footprint,copy};}''')
+ assert fragment['owned']['ok'] and fragment['footprint']['ok'] and fragment['copy']['ok'],fragment
+ compare('fused-owned-members',sorted(fragment['owned']['value']['atomIds']),sorted(fused['value']['created']))
+ host=fused['applied']['fragmentOps'][-1]['hostBondAtomIds']
+ compare('fused-footprint-members',sorted(fragment['footprint']['value']['atomIds']),sorted(set(fused['value']['created']+host)))
+ inserted=build('insertSelection',envelope=fragment['copy']['value'],position=[0,5,0],quaternion=[0,0,0,1])
+ inserted_group=inserted['context']['fragments'][-1]
+ compare('inserted-fragment-members',sorted(inserted_group['owned']),sorted(inserted['value']['created']))
+ compare('inserted-fragment-new-instance',inserted_group['instanceId']!=fragment['g']['instanceId'],True)
  load(CARBON);build('placeCatalog',entryKind='molecule',entryId='benzene',position=[4,0,0],quaternion=[0,0,0,1])
  row=page.evaluate('()=>{const before=VibeMolStructure.exportActive();const c=VibeMolEdit.context().value;const request={operation:"placeAtom",system:{systemId:c.systemId,fingerprint:c.fingerprint},element:"H",position:[20,0,0],hydrogens:"preserve",warnings:"allow"};const beforeEffects=__editApiEffects();const validated=VibeMolEdit.validateBuild(request);return {before,after:VibeMolStructure.exportActive(),validated,beforeEffects,afterEffects:__editApiEffects()}}')
  assert row['validated']['ok'],row;compare('validation-no-write',row['after']['volume'],row['before']['volume']);compare('validation-no-effects',row['afterEffects'],row['beforeEffects'])
  row=page.evaluate('()=>{const c=VibeMolEdit.context().value;return VibeMolEdit.listBuildSites({system:{systemId:c.systemId,fingerprint:c.fingerprint},anchor:{kind:"labels",labels:["C1"]},element:"H",bondOrder:1})}');print('[edit-api-sites] '+json.dumps(row),flush=True);assert row['ok'],row
+ # Validate explicit H adjustment without consuming permanent IDs, then apply
+ # the same request and read the complete predicted/applied structure back.
+ load(CARBON)
+ adjusted=page.evaluate('''()=>{const c=VibeMolEdit.context().value,request={operation:'placeAtom',system:{systemId:c.systemId,fingerprint:c.fingerprint},element:'C',position:[3,0,0],hydrogens:'adjust',warnings:'allow'},before=__editApiEffects(),validated=VibeMolEdit.validateBuild(request),afterValidation=__editApiEffects(),applied=VibeMolEdit.applyBuild(request);return {validated,applied,before,afterValidation};}''')
+ assert adjusted['validated']['ok'] and adjusted['applied']['ok'],adjusted
+ compare('hydrogen-validation-no-effects',adjusted['afterValidation'],adjusted['before'])
+ compare('explicit-hydrogen-adjustment',dict(created=len(adjusted['applied']['value']['created']),hydrogens=sum(a['Z']==1 for a in adjusted['applied']['applied']['atoms'])),dict(created=5,hydrogens=4))
+ compare('hydrogen-requested-applied',adjusted['applied']['requested'],adjusted['applied']['applied'])
+ new=page.evaluate('''()=>{const before=__editApiEffects(),request={operation:'placeAtom',system:'new',element:'O',position:[0,0,0],hydrogens:'preserve',warnings:'allow'},validated=VibeMolEdit.validateBuild(request),afterValidation=__editApiEffects(),applied=VibeMolEdit.applyBuild(request);return {validated,applied,before,afterValidation,after:__editApiEffects()};}''')
+ assert new['validated']['ok'] and new['applied']['ok'],new
+ compare('new-validation-no-effects',new['afterValidation'],new['before'])
+ compare('explicit-new-system',dict(records=new['after']['create']-new['before']['create'],atoms=len(new['applied']['applied']['atoms']),Z=new['applied']['applied']['atoms'][0]['Z']),dict(records=1,atoms=1,Z=8))
+ compare('new-requested-applied',new['applied']['requested'],new['applied']['applied'])
  # Source resolution remains available; structural writes fail before even an
  # invalid operation can partially apply. Compare the complete exported source.
  trajectory='2\nframe0\nC 0 0 0\nH 1 0 0\n2\nframe1\nC .1 0 0\nH 1.1 0 0\n'
@@ -114,6 +138,7 @@ def run(page,url):
 
 def compatibility(page,url):
  import smoke
+ errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
  page.goto(url+'?workspaceLab=0&appearanceStudy=1&qa=1');ready(page,'()=>!!(window.VibeMolEdit&&window.VibeMolTesting)');ready(page,'()=>VibeMolEdit.listBuildCatalog().value.some(e=>e.entryId==="fusionphenyl")')
  def load(text):
   compare('wrapper-load',p.load(page,[{'name':'wrapper.xyz','text':text}])['ok'],True)
@@ -150,6 +175,7 @@ def compatibility(page,url):
  before=page.evaluate('()=>VibeMolStructure.exportActive().volume')
  bad=page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0,999])');compare('strict-wrapper-code',bad['error']['code'],'INDEX_OUT_OF_RANGE')
  compare('strict-wrapper-unchanged',page.evaluate('()=>VibeMolStructure.exportActive().volume'),before)
+ compare('compatibility-page-errors',errors,[])
 
 
 def run_matrix(output):

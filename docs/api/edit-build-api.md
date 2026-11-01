@@ -18,25 +18,28 @@ creation is supported. Standalone rotation is excluded: pivot, axis and affected
 fragment/bond semantics require a separate contract. Placement quaternion and
 attachment/fusion spin already orient newly placed content.
 
-## Dependency recut before completion
+## Dependency boundaries
 
-The implementation audit counts genuine injected inputs **plus bound helper
-reads**, rather than merely the length of `deps`. It found the initial combined
-build service at 17 and catalog/site query unit at 16. These do not ship as such.
-The revised cut is:
+The standing audit enumerates 55 private units and counts injected callbacks,
+bound helpers and function-valued parameters, including every draft method a
+planner calls. Every unit is below 15 inputs; the largest has 14. No broad host
+object hides several capabilities behind one field.
 
-- Candidate preparation: source lookup/new snapshot, request validator, draft
-  factory, placement/attachment/fusion/insertion planners and candidate validator;
-  plus data, target, scope and fault helpers (13 inputs).
-- Build application façade: preparation, commit, source reader, resolver receipt
-  inspector, draft factory and candidate validator; plus result, scope and vector helpers (9 inputs).
-- Catalog enumeration: entry reader, result wrapper and copy helper (3 inputs).
-- Site resolution: the seven remaining domain inputs plus the data, element,
-  fault, quaternion, shape and target helpers (13 inputs); the result wrapper
-  belongs to the façade (one further input if kept locally: 14).
+| Unit | Inputs |
+| --- | ---: |
+| System reader / selection owner / predicate resolver | 11 / 11 / 5 |
+| Candidate preparation / build application façade | 13 / 11 |
+| Catalog enumeration / build-site query | 3 / 14 |
+| Placement / attachment / fusion planners | 11 / 14 / 11 |
+| Selection-envelope validator / insertion planner | 6 / 11 |
+| Identity-realization owner / commit adapter | 5 / 11 |
 
-These are existing transaction stages, not an opaque `host` object hiding a broad
-controller. Final measured lists and construction results accompany the PR.
+Envelope validation and insertion are separate stages: the first validates the
+whole payload; the second transforms and stages owned data. Identity realization
+receives the three allocators and bond-ID helper explicitly. The commit adapter
+receives the narrow realization operation, rather than an allocator bundle.
+The exact names, callback-parameter counts and reused halo/hydrogen-kernel inputs
+are recorded in `tests/baselines/edit-api.json`.
 
 ## Calls and authority
 
@@ -210,26 +213,7 @@ keyboard move controls before clicking, following the Metal matrix precedent;
 it still requires native hit eligibility. No placement rule or latent allowance
 is added. The full ordinary gate remains required and those probes supply none.
 
-## Allocator forwarding recut
-
-The first committed wiring forwarded an object containing three allocator
-callbacks through the commit adapter. Treating that field as one input would
-understate genuine inputs (15 when flattened). Before ordinary CI, replace it
-with the already-planned identity-realization owner: atom allocator, group
-allocator, operation allocator and bond-ID helper, plus the realization kernel
-(five inputs). The commit adapter then receives that narrow realization operation
-and has eleven inputs. The owner only realizes prepared IDs; it performs no
-source lookup, validation, UI write or history recording. This is a transaction
-stage, not an opaque host bundle. The first recording stays separate evidence
-for its own source and will not be promoted for the revised commit.
-
-The same final audit counts the private draft's method arguments as real
-callbacks: placement has four, attachment six, fusion four and insertion five.
-That put the combined envelope-validation/insertion unit at16. Re-cut before
-ordinary CI: a pure envelope validator (six inputs) checks all atom, metadata and
-bond fields; the insertion planner (six injected inputs plus five draft methods,
-eleven total) only transforms and stages the validated data. Attachment is14,
-placement/fusion11. No function-valued argument is treated as free data.
+## Identity provenance
 
 Identity provenance is also explicit: the private draft records every minted ID
 and its kind. Realization remaps only known identity fields, never arbitrary

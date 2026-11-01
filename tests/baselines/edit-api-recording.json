@@ -1,0 +1,41 @@
+{
+  "runId": 41331755619,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41331755619",
+  "attempt": 1,
+  "sourceCommit": "4c34216e0423a74507d7e2cd807f1b2d633fe33a",
+  "status": "passed",
+  "declaration": "tests/baselines/api-surface-delta.json",
+  "independentCiJobs": 2,
+  "runsPerJob": 2,
+  "capturesPerRun": 102,
+  "memberRemovalsPerRun": 714,
+  "namespaceAdditionsPerRun": 102,
+  "addedMemberStringsPerRun": 1224,
+  "residualDifferences": 0,
+  "fourSerializationsExactlyIdentical": true,
+  "rawSerializationSha256": "4ccfc19b83df8db3ae15b400809fb2965c700091203fd9c4ca1fab29f435ebd3",
+  "goldenGzipSha256": "ea8f51f9bd7834d3d0ee5e623a5beb04ec4557fc0ce664229cefc3b1ccedfd19",
+  "summarySha256": "1e7b05e33c94d74fb00496efa302d935e588f68e8b8d96b16c5fd913e750b3b8",
+  "comparisonSha256": "8e09496f8a734bced14713b98d67e679092b65fc5f81587019d5cf74bd2149d7",
+  "archiveSha256": "8be7afd54285ad611b67e055c89a79dc11a436df2ba9c89a4308abfd7cae6f7c",
+  "archiveBytes": 8920697,
+  "rawArtifactLocation": "out/test-artifacts/validated-edit-api/record-41331755619",
+  "unchangedRuntimeAndCapturePaths": [
+    "assets",
+    "src",
+    "index.html",
+    "tests/e2e/characterize.py",
+    "tests/e2e/api_surface_recording.py",
+    "tests/e2e/release_baseline_recording.py",
+    "tests/baselines/api-surface-delta.json",
+    ".github/workflows/record-release-baseline.yml"
+  ],
+  "finalSourceRelationship": "Only additive API tests, annotation-audit purposes/controls, documentation and promoted golden/summary/provenance may follow this source. The first ordinary gate runs on the complete final commit.",
+  "ordinaryAcceptance": false,
+  "supersededRecording": {
+    "runId": 41329506172,
+    "sourceCommit": "ada7b341751806661874b999b825e3dae34eccd1",
+    "outcome": "passed",
+    "disposition": "Preserved separately; never promoted for the revised runtime."
+  }
+}
