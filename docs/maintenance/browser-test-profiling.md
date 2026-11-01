@@ -7,9 +7,11 @@ acceptance or a retry of PR86. Its source remains held separately.
 
 `tools/profile_browser_tests.py` records:
 
-- Every synchronous Playwright API call: method, category, caller, scenario,
-  wall duration and outcome. Locator construction and cached properties are
-  not browser operations. A wait invocation counts once, not once per poll.
+- Every synchronous Playwright `_sync` browser dispatch: method, category,
+  caller, scenario, wall duration and outcome. Locator construction, cached
+  properties and `EventInfo.value` future waits do not use this dispatch and
+  are excluded. A wait invocation counts once, not once per poll. Time outside
+  measured dispatches is reported separately rather than assumed absent.
 - Individual original scenarios, preserving their entry-point list and setup.
 - Page V8 CPU samples at5000 microseconds and raw browser Performance metrics.
   Every page profiler is stopped, disabled and detached before context close.
@@ -56,6 +58,26 @@ Full diagnostic (on a fresh output directory):
 python tools/profile_browser_tests.py --suite looks --out out/test-artifacts/browser-profile/looks
 ```
 
-Three browserless accounting controls check import classification, nested timing
-and CPU self/inclusive accounting. The native self-test verifies real input,
+Five browserless accounting controls check import classification, nested timing,
+CPU self/inclusive accounting, process-stat parsing/roles and preservation of a
+completed result in the event journal. The native self-test verifies real input,
 readback, sampled work and cleanup before the original suite starts.
+
+For Linux native-process measurements, run the companion wrapper on a fresh
+output directory:
+
+```sh
+python tools/profile_browser_processes.py --suite looks --out out/test-artifacts/browser-profile/measured-looks
+```
+
+The existing `browser-ci-probes.yml` workflow has an explicit
+`browser-performance` dispatch scope. Supply its exact `source_commit` and the
+profiling branch as the workflow ref; the two matrix jobs profile the original
+Looks and Look References entry points independently. The legacy diagnostic
+jobs are skipped in this scope. This workflow must already be registered on
+main; a new workflow file existing only on a branch cannot be dispatched.
+
+The first measured results and interpretation are in
+[browser-test-profiling-results.md](browser-test-profiling-results.md). The small
+observational reference is `tests/baselines/browser-profile-reference.json`;
+it adds no performance threshold or ordinary-gate allowance.

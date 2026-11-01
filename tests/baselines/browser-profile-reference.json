@@ -1,0 +1,799 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Observational browser profiling reference; no threshold, tolerance or ordinary-gate acceptance.",
+  "runId": 41343567756,
+  "attempt": 1,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41343567756",
+  "harnessCommit": "ced5a678dafc8fe924230cf4affde51ad12c125d",
+  "runtimeAndOriginalSuiteBase": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+  "runtimeOriginalAssertionsWaitsFixturesAndGoldensUnchanged": true,
+  "operationDefinition": "One pinned Playwright SyncBase._sync browser API dispatch. Locator construction, cached properties and EventInfo.value future waits are excluded; a wait invocation counts once, not per poll. Exclusive wall time excludes nested child dispatch time.",
+  "suites": {
+    "looks": {
+      "suiteWallSeconds": 1283.4620638299998,
+      "apiOperations": 3201,
+      "apiExclusiveSeconds": 1250.0875565510057,
+      "meanApiCallSeconds": 0.39053032069697147,
+      "amortizedSuiteSecondsPerApiCall": 0.4009565960106216,
+      "outsideMeasuredApiSeconds": 33.37450727899409,
+      "observerCommandSeconds": 29.48415795200019,
+      "categories": [
+        {
+          "name": "input",
+          "count": 474,
+          "totalSeconds": 472.17287832800145,
+          "meanSeconds": 0.9961453129282731,
+          "medianSeconds": 0.6626860585000713,
+          "p95Seconds": 3.400702057000018,
+          "maximumSeconds": 5.699581112999965,
+          "inclusiveSeconds": 472.17287832800145,
+          "errors": 0
+        },
+        {
+          "name": "javascript-evaluation",
+          "count": 1413,
+          "totalSeconds": 442.06116479800323,
+          "meanSeconds": 0.3128529121004977,
+          "medianSeconds": 0.1645680199999333,
+          "p95Seconds": 1.1520464390000598,
+          "maximumSeconds": 4.47769438499995,
+          "inclusiveSeconds": 442.06116479800323,
+          "errors": 0
+        },
+        {
+          "name": "read-or-other",
+          "count": 985,
+          "totalSeconds": 181.54670082200155,
+          "meanSeconds": 0.18431137139289497,
+          "medianSeconds": 0.0775109200001225,
+          "p95Seconds": 0.6386074629999712,
+          "maximumSeconds": 2.729868240999963,
+          "inclusiveSeconds": 181.54670082200155,
+          "errors": 0
+        },
+        {
+          "name": "navigation",
+          "count": 47,
+          "totalSeconds": 82.33252630000044,
+          "meanSeconds": 1.7517558787234135,
+          "medianSeconds": 0.7927365190000017,
+          "p95Seconds": 5.382530287999998,
+          "maximumSeconds": 6.035145838999995,
+          "inclusiveSeconds": 82.33252630000044,
+          "errors": 0
+        },
+        {
+          "name": "explicit-wait",
+          "count": 88,
+          "totalSeconds": 34.58725151499945,
+          "meanSeconds": 0.39303694903408465,
+          "medianSeconds": 0.11846852500002569,
+          "p95Seconds": 1.7029535370000417,
+          "maximumSeconds": 2.9607988519999253,
+          "inclusiveSeconds": 34.58725151499945,
+          "errors": 0
+        },
+        {
+          "name": "file-input",
+          "count": 10,
+          "totalSeconds": 10.473997649999887,
+          "meanSeconds": 1.0473997649999887,
+          "medianSeconds": 0.8302763254999945,
+          "p95Seconds": 1.7645663849999664,
+          "maximumSeconds": 1.7645663849999664,
+          "inclusiveSeconds": 10.473997649999887,
+          "errors": 0
+        },
+        {
+          "name": "fixture-import",
+          "count": 44,
+          "totalSeconds": 9.315342286999837,
+          "meanSeconds": 0.21171232470454174,
+          "medianSeconds": 0.1615636115000143,
+          "p95Seconds": 0.538744998000027,
+          "maximumSeconds": 0.7210284279999541,
+          "inclusiveSeconds": 9.315342286999837,
+          "errors": 0
+        },
+        {
+          "name": "session-import",
+          "count": 19,
+          "totalSeconds": 8.970088015000044,
+          "meanSeconds": 0.4721098955263181,
+          "medianSeconds": 0.5463039920000483,
+          "p95Seconds": 0.8280244339999854,
+          "maximumSeconds": 0.8280244339999854,
+          "inclusiveSeconds": 8.970088015000044,
+          "errors": 0
+        },
+        {
+          "name": "session-export",
+          "count": 18,
+          "totalSeconds": 6.286485080000034,
+          "meanSeconds": 0.349249171111113,
+          "medianSeconds": 0.4022992079999881,
+          "p95Seconds": 0.8694125160000112,
+          "maximumSeconds": 0.8694125160000112,
+          "inclusiveSeconds": 6.286485080000034,
+          "errors": 0
+        },
+        {
+          "name": "lifecycle",
+          "count": 103,
+          "totalSeconds": 2.3411217559999074,
+          "meanSeconds": 0.022729337436892306,
+          "medianSeconds": 0.011454114000002846,
+          "p95Seconds": 0.05776585200010231,
+          "maximumSeconds": 0.09539472400001614,
+          "inclusiveSeconds": 2.3411217559999074,
+          "errors": 0
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "complete_look_tiles",
+          "sourceFile": "tests/e2e/look_tiles.py",
+          "sourceSha256": "60b37294b95a89ec201c7db346a71be7da00c2d9528d4fb910defb67f8a96716",
+          "startedSeconds": 249.24263548700003,
+          "status": "passed",
+          "seconds": 216.26195596600007,
+          "apiOperations": 185,
+          "apiExclusiveSeconds": 215.49738974199983
+        },
+        {
+          "name": "material_families",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "ae9db0d4a0bfae037b7d09b0058e22c6a4b7497048ab4fcc8c4a02485185f3fd",
+          "startedSeconds": 622.512066007,
+          "status": "passed",
+          "seconds": 134.034375717,
+          "apiOperations": 281,
+          "apiExclusiveSeconds": 133.02511067400155
+        },
+        {
+          "name": "reference_ui",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "9a9eac4572338223cf94155e171a127d7a31623e97880cf0b21e5e9ba7f00686",
+          "startedSeconds": 1.6307071509999957,
+          "status": "passed",
+          "seconds": 131.47807394699998,
+          "apiOperations": 128,
+          "apiExclusiveSeconds": 131.4339381069998
+        },
+        {
+          "name": "independent_colors",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "4c29e63c7781a65c2647dd724e97848dd20056071e4367aecc45aca255261f49",
+          "startedSeconds": 503.979920034,
+          "status": "passed",
+          "seconds": 117.16573493399994,
+          "apiOperations": 344,
+          "apiExclusiveSeconds": 116.2379598750017
+        },
+        {
+          "name": "shared_material_presets",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "87bebd1707bce85ec16f61bca89116f0066a5442a4d49305e744995733d79583",
+          "startedSeconds": 1165.2221518049998,
+          "status": "passed",
+          "seconds": 117.06767626999999,
+          "apiOperations": 236,
+          "apiExclusiveSeconds": 115.07607287100086
+        },
+        {
+          "name": "bond_colors_and_preset_controls",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "bf08afc0afabddb7170e0db82433e4652ef018c609b3284ab25d8a4ddca84936",
+          "startedSeconds": 886.997317853,
+          "status": "passed",
+          "seconds": 93.65207438100015,
+          "apiOperations": 713,
+          "apiExclusiveSeconds": 93.41674661500167
+        },
+        {
+          "name": "reference_persistence",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "8ae15cd1ca4467e6da232edacf54df684a36dbf44690dbb4df437a036851d42d",
+          "startedSeconds": 135.62653809699998,
+          "status": "passed",
+          "seconds": 87.72298515199998,
+          "apiOperations": 73,
+          "apiExclusiveSeconds": 86.5739963900001
+        },
+        {
+          "name": "components_and_saving",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "5b8eb5966563732b1f302715cf30b158f22419f562f4a5546c202d789211c91e",
+          "startedSeconds": 1061.013149702,
+          "status": "passed",
+          "seconds": 67.35074611599998,
+          "apiOperations": 285,
+          "apiExclusiveSeconds": 66.18347038199954
+        },
+        {
+          "name": "basic_surface_finish",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "e617099597342143072414f39b3320c5da2b2e11cf56ea9a193d9775dde03f97",
+          "startedSeconds": 992.725297246,
+          "status": "passed",
+          "seconds": 67.06392164999988,
+          "apiOperations": 111,
+          "apiExclusiveSeconds": 63.411646449002546
+        },
+        {
+          "name": "surface_schemes",
+          "sourceFile": "tests/e2e/surface_schemes.py",
+          "sourceSha256": "de8cf941d8fa85affc3f72c4726567a5826a20500ab565c8e130efbd9202b37c",
+          "startedSeconds": 468.499592312,
+          "status": "passed",
+          "seconds": 34.2766637819999,
+          "apiOperations": 126,
+          "apiExclusiveSeconds": 30.37738080799977
+        },
+        {
+          "name": "surfaces_and_sessions",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "36a0731a4699aa010f7d0b1967304c3d292b015fa94c9f8e4d716d01a35405a6",
+          "startedSeconds": 1129.2277758649998,
+          "status": "passed",
+          "seconds": 34.03276635599991,
+          "apiOperations": 76,
+          "apiExclusiveSeconds": 33.13968323299946
+        },
+        {
+          "name": "surface_opacity_controls",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "d0da6d2c9a40397ac01d802c3a22ee44bd227a11025538be9c590618a2fb4fe1",
+          "startedSeconds": 771.0200654070001,
+          "status": "passed",
+          "seconds": 28.89215388299999,
+          "apiOperations": 63,
+          "apiExclusiveSeconds": 28.86494259099993
+        },
+        {
+          "name": "bond_sphere_fit",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "dfd6d7a5e5b477e5e086a0d377bceecc868a00a6ae5517eaf50164629726d1cd",
+          "startedSeconds": 849.302380361,
+          "status": "passed",
+          "seconds": 24.894396751000045,
+          "apiOperations": 151,
+          "apiExclusiveSeconds": 24.8427582019998
+        },
+        {
+          "name": "reference_migration",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "3737982a40b963cadda29750ca1293e306beb4d2b0bf249f9bc8ef88404b54d1",
+          "startedSeconds": 225.154512942,
+          "status": "passed",
+          "seconds": 22.851982012000008,
+          "apiOperations": 52,
+          "apiExclusiveSeconds": 21.044590552999978
+        },
+        {
+          "name": "split_surface_shadows",
+          "sourceFile": "tests/e2e/surface_shadows.py",
+          "sourceSha256": "3d811a88258e9e421f50d81b3d207e1e79422e3abf1ac6309f5fd05149ba723d",
+          "startedSeconds": 827.974816108,
+          "status": "passed",
+          "seconds": 19.582252461000053,
+          "apiOperations": 51,
+          "apiExclusiveSeconds": 19.563373732999707
+        },
+        {
+          "name": "shadow_camera_fit",
+          "sourceFile": "tests/e2e/surface_shadows.py",
+          "sourceSha256": "73ed43c6cccc54bf8ae44b759deefc0c423d95645253b0ac292d4a3d56a36d95",
+          "startedSeconds": 802.499578747,
+          "status": "passed",
+          "seconds": 12.330841900999985,
+          "apiOperations": 67,
+          "apiExclusiveSeconds": 12.29301631600049
+        },
+        {
+          "name": "surface_opacity_rendering",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "3e46e5d8fa7b7d4bc4c9bfa86c6358ebebfcf6134417668ddfa37bac32584274",
+          "startedSeconds": 757.81965654,
+          "status": "passed",
+          "seconds": 11.036760200000003,
+          "apiOperations": 9,
+          "apiExclusiveSeconds": 10.993569625999726
+        },
+        {
+          "name": "surfaces_cast_and_receive",
+          "sourceFile": "tests/e2e/surface_shadows.py",
+          "sourceSha256": "c36a28d78915f93c4d76c6077214ccb5e99f0f0e6da508b56881c90a7fc8de49",
+          "startedSeconds": 816.107359834,
+          "status": "passed",
+          "seconds": 10.590715656000043,
+          "apiOperations": 60,
+          "apiExclusiveSeconds": 10.546498400999894
+        },
+        {
+          "name": "hydrogen_bond_restrictions",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "cb2b148872a7133e37fc6c0a562cd6eca5ebe826e4ec842da9d0a2299d0c871a",
+          "startedSeconds": 875.444720709,
+          "status": "passed",
+          "seconds": 10.297329484999977,
+          "apiOperations": 77,
+          "apiExclusiveSeconds": 10.242284166000218
+        },
+        {
+          "name": "material_color_fill",
+          "sourceFile": "tests/e2e/looks.py",
+          "sourceSha256": "20aff1fc8e72a51d3c43d032f13e77cb200d417fc63fc403c971658640ece48c",
+          "startedSeconds": 981.791313777,
+          "status": "passed",
+          "seconds": 9.348302828999977,
+          "apiOperations": 11,
+          "apiExclusiveSeconds": 9.342680706999772
+        }
+      ],
+      "environment": {
+        "playwright": "1.64.1",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "os": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "machine": "x86_64",
+        "cpuCount": 4,
+        "browserVersions": [
+          "156.0.8078.4"
+        ]
+      },
+      "scenarioCount": 20,
+      "pageCount": 34,
+      "profileErrors": [],
+      "residualContexts": 0,
+      "allPagesFinalized": true,
+      "slowestMethods": [
+        {
+          "name": "Page.evaluate",
+          "count": 1312,
+          "totalSeconds": 300.99311711300356,
+          "meanSeconds": 0.22941548560442346,
+          "medianSeconds": 0.15413267100012717,
+          "p95Seconds": 0.6333202280000023,
+          "maximumSeconds": 4.47769438499995,
+          "inclusiveSeconds": 300.99311711300356,
+          "errors": 0
+        },
+        {
+          "name": "Locator.click",
+          "count": 148,
+          "totalSeconds": 297.5097066730008,
+          "meanSeconds": 2.010200720763519,
+          "medianSeconds": 1.6574078904999965,
+          "p95Seconds": 4.872638704999986,
+          "maximumSeconds": 5.699581112999965,
+          "inclusiveSeconds": 297.5097066730008,
+          "errors": 0
+        },
+        {
+          "name": "Locator.evaluate",
+          "count": 182,
+          "totalSeconds": 165.6399630669996,
+          "meanSeconds": 0.9101096871813165,
+          "medianSeconds": 0.5589213695000126,
+          "p95Seconds": 2.7169437069999844,
+          "maximumSeconds": 2.9005828159999965,
+          "inclusiveSeconds": 165.6399630669996,
+          "errors": 0
+        },
+        {
+          "name": "Locator.select_option",
+          "count": 193,
+          "totalSeconds": 110.60564132299926,
+          "meanSeconds": 0.5730862244714988,
+          "medianSeconds": 0.4646427610000501,
+          "p95Seconds": 1.8252611620000039,
+          "maximumSeconds": 2.4372951680000057,
+          "inclusiveSeconds": 110.60564132299926,
+          "errors": 0
+        },
+        {
+          "name": "Page.goto",
+          "count": 41,
+          "totalSeconds": 63.480492528000354,
+          "meanSeconds": 1.5483046958048867,
+          "medianSeconds": 0.784304915000007,
+          "p95Seconds": 4.85311203699996,
+          "maximumSeconds": 6.035145838999995,
+          "inclusiveSeconds": 63.480492528000354,
+          "errors": 0
+        }
+      ],
+      "processCpu": {
+        "observedTotalCpuSeconds": 4374.470000000006,
+        "graphicsSharePercent": 96.09849878956766,
+        "roles": {
+          "gpu-process": {
+            "observedCpuSeconds": 4203.800000000006,
+            "meanObservedCores": 3.273435093960348,
+            "maximumIntervalCores": 3.9205234337257093,
+            "peakSummedRssBytesNotUnique": 470450176
+          },
+          "host-or-other": {
+            "observedCpuSeconds": 17.079999999999977,
+            "meanObservedCores": 0.01329993610658038,
+            "maximumIntervalCores": 0.7577116454510074,
+            "peakSummedRssBytesNotUnique": 798355456
+          },
+          "browser-main": {
+            "observedCpuSeconds": 10.9699999999999,
+            "meanObservedCores": 0.008542172077821172,
+            "maximumIntervalCores": 0.1477911830314301,
+            "peakSummedRssBytesNotUnique": 248045568
+          },
+          "renderer": {
+            "observedCpuSeconds": 116.29000000000005,
+            "meanObservedCores": 0.09055325350317535,
+            "maximumIntervalCores": 0.8302873434913328,
+            "peakSummedRssBytesNotUnique": 597499904
+          },
+          "utility": {
+            "observedCpuSeconds": 5.2699999999999765,
+            "meanObservedCores": 0.004103668810402716,
+            "maximumIntervalCores": 0.12808569196057276,
+            "peakSummedRssBytesNotUnique": 106811392
+          },
+          "playwright-driver": {
+            "observedCpuSeconds": 21.060000000000198,
+            "meanObservedCores": 0.016399101545935935,
+            "maximumIntervalCores": 0.9461128347096751,
+            "peakSummedRssBytesNotUnique": 478240768
+          }
+        },
+        "samplerWorkSeconds": 23.974892410001175
+      },
+      "originalSuiteSha256": "90d47c468e898c6c4a89cb6a7b76151f48a2b765dd85bed9e4cd821379bfc7ec",
+      "rawReportSha256": "19de0dad94fd7733a62ccbc974740c9c03b53818c7bbeed459124450ed8e3e56",
+      "rawOperationsSha256": "692fefd74303ce68fc3ddafb8424fc679936b13acafee4e1649ed08d7f07256c",
+      "rawEventsSha256": "1759549fe3d51c7d33bf201319f33b578efb36bcbb76111b592589bc1de7f301",
+      "rawProcessSamplesSha256": "580cfef4232b31a6325d624c8938c4ad929b81790b27790187088094711621ad"
+    },
+    "look_references": {
+      "suiteWallSeconds": 677.367836155,
+      "apiOperations": 3540,
+      "apiExclusiveSeconds": 659.3636051689998,
+      "meanApiCallSeconds": 0.1862609054149717,
+      "amortizedSuiteSecondsPerApiCall": 0.19134684637146893,
+      "outsideMeasuredApiSeconds": 18.004230986000152,
+      "observerCommandSeconds": 8.821895170999596,
+      "categories": [
+        {
+          "name": "explicit-wait",
+          "count": 253,
+          "totalSeconds": 225.3415897799998,
+          "meanSeconds": 0.8906782204743074,
+          "medianSeconds": 0.0445884370000158,
+          "p95Seconds": 3.86414505099998,
+          "maximumSeconds": 4.485494273000029,
+          "inclusiveSeconds": 225.68673509199962,
+          "errors": 0
+        },
+        {
+          "name": "javascript-evaluation",
+          "count": 2368,
+          "totalSeconds": 196.49307992499965,
+          "meanSeconds": 0.08297849658994917,
+          "medianSeconds": 0.04669191350001256,
+          "p95Seconds": 0.20998062999990452,
+          "maximumSeconds": 2.8034494369999976,
+          "inclusiveSeconds": 197.35196693599968,
+          "errors": 0
+        },
+        {
+          "name": "input",
+          "count": 209,
+          "totalSeconds": 136.97195169099962,
+          "meanSeconds": 0.6553681899090891,
+          "medianSeconds": 0.22467763899999227,
+          "p95Seconds": 3.2693119269999897,
+          "maximumSeconds": 6.903519128999989,
+          "inclusiveSeconds": 136.97195169099962,
+          "errors": 0
+        },
+        {
+          "name": "navigation",
+          "count": 71,
+          "totalSeconds": 68.03147402999959,
+          "meanSeconds": 0.9581897750704167,
+          "medianSeconds": 0.5438246649999314,
+          "p95Seconds": 5.119684796000001,
+          "maximumSeconds": 5.943191455999994,
+          "inclusiveSeconds": 89.28510932399963,
+          "errors": 0
+        },
+        {
+          "name": "read-or-other",
+          "count": 432,
+          "totalSeconds": 25.14324977900116,
+          "meanSeconds": 0.058201967081021204,
+          "medianSeconds": 0.02093057700000145,
+          "p95Seconds": 0.14838189000000312,
+          "maximumSeconds": 2.5390832780000068,
+          "inclusiveSeconds": 25.85121170900117,
+          "errors": 0
+        },
+        {
+          "name": "lifecycle",
+          "count": 195,
+          "totalSeconds": 3.2715794299998535,
+          "meanSeconds": 0.01677733041025566,
+          "medianSeconds": 0.007375822000000198,
+          "p95Seconds": 0.041481158999999934,
+          "maximumSeconds": 0.07229032599997254,
+          "inclusiveSeconds": 3.2715794299998535,
+          "errors": 0
+        },
+        {
+          "name": "session-import",
+          "count": 4,
+          "totalSeconds": 1.8985675510000135,
+          "meanSeconds": 0.4746418877500034,
+          "medianSeconds": 0.47352974500000755,
+          "p95Seconds": 0.7158717110000055,
+          "maximumSeconds": 0.7158717110000055,
+          "inclusiveSeconds": 1.8985675510000135,
+          "errors": 0
+        },
+        {
+          "name": "session-export",
+          "count": 3,
+          "totalSeconds": 1.2756768460000387,
+          "meanSeconds": 0.42522561533334624,
+          "medianSeconds": 0.4059226060000185,
+          "p95Seconds": 0.7181740560000094,
+          "maximumSeconds": 0.7181740560000094,
+          "inclusiveSeconds": 1.2756768460000387,
+          "errors": 0
+        },
+        {
+          "name": "fixture-import",
+          "count": 5,
+          "totalSeconds": 0.9364361370000509,
+          "meanSeconds": 0.1872872274000102,
+          "medianSeconds": 0.16986151099999347,
+          "p95Seconds": 0.4683069479999986,
+          "maximumSeconds": 0.4683069479999986,
+          "inclusiveSeconds": 0.9364361370000509,
+          "errors": 0
+        }
+      ],
+      "scenarios": [
+        {
+          "name": "restore_reporting",
+          "sourceFile": "tests/e2e/appearance_autosave.py",
+          "sourceSha256": "9843d6be0d1c38c573213354be76be699d0bf4c99b7a0f0eda6442bda58bd6ae",
+          "startedSeconds": 236.70542726399998,
+          "status": "passed",
+          "seconds": 329.175443128,
+          "apiOperations": 1819,
+          "apiExclusiveSeconds": 320.3888942959995
+        },
+        {
+          "name": "reference_ui",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "9a9eac4572338223cf94155e171a127d7a31623e97880cf0b21e5e9ba7f00686",
+          "startedSeconds": 1.5442751439999967,
+          "status": "passed",
+          "seconds": 124.14265563299999,
+          "apiOperations": 128,
+          "apiExclusiveSeconds": 124.09749077900003
+        },
+        {
+          "name": "paired_control_invariant",
+          "sourceFile": "tests/e2e/paired_controls.py",
+          "sourceSha256": "63e1c9a4375e2947910baabbe91bed68aedee661ea4658cf408ebf5f9efb20a3",
+          "startedSeconds": 566.816896865,
+          "status": "passed",
+          "seconds": 110.46531357399999,
+          "apiOperations": 1388,
+          "apiExclusiveSeconds": 107.81754864700042
+        },
+        {
+          "name": "reference_persistence",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "8ae15cd1ca4467e6da232edacf54df684a36dbf44690dbb4df437a036851d42d",
+          "startedSeconds": 128.022147068,
+          "status": "passed",
+          "seconds": 79.153203969,
+          "apiOperations": 73,
+          "apiExclusiveSeconds": 78.11616416699994
+        },
+        {
+          "name": "reference_migration",
+          "sourceFile": "tests/e2e/look_references.py",
+          "sourceSha256": "3737982a40b963cadda29750ca1293e306beb4d2b0bf249f9bc8ef88404b54d1",
+          "startedSeconds": 208.941878967,
+          "status": "passed",
+          "seconds": 20.763083918999996,
+          "apiOperations": 52,
+          "apiExclusiveSeconds": 19.20558684199986
+        },
+        {
+          "name": "registry_symmetry",
+          "sourceFile": "tests/e2e/appearance_registry.py",
+          "sourceSha256": "a7ed00932fec6ae6585897a61712cad4863257aadb374dea6b56df6c18fbad04",
+          "startedSeconds": 230.78312670000003,
+          "status": "passed",
+          "seconds": 2.2189777520000007,
+          "apiOperations": 23,
+          "apiExclusiveSeconds": 1.9907735200000616
+        },
+        {
+          "name": "component_mode_validation",
+          "sourceFile": "tests/e2e/appearance_registry.py",
+          "sourceSha256": "ad1ea994c8d68a34b297fb959a04af0665092fdefcdb7e282894eec1c2e349a2",
+          "startedSeconds": 233.785362098,
+          "status": "passed",
+          "seconds": 2.195665851000001,
+          "apiOperations": 20,
+          "apiExclusiveSeconds": 2.072835098999974
+        }
+      ],
+      "environment": {
+        "playwright": "1.64.1",
+        "python": "3.12.15 (main, Oct  1 2026, 02:35:59) [GCC 13.3.0]",
+        "os": "Linux-7.0.0-1017-azure-x86_64-with-glibc2.39",
+        "machine": "x86_64",
+        "cpuCount": 4,
+        "browserVersions": [
+          "156.0.8078.4"
+        ]
+      },
+      "scenarioCount": 7,
+      "pageCount": 64,
+      "profileErrors": [],
+      "residualContexts": 0,
+      "allPagesFinalized": true,
+      "slowestMethods": [
+        {
+          "name": "Page.wait_for_function",
+          "count": 163,
+          "totalSeconds": 222.3299911790006,
+          "meanSeconds": 1.3639876759447889,
+          "medianSeconds": 0.7437922889999982,
+          "p95Seconds": 3.887063194999996,
+          "maximumSeconds": 4.485494273000029,
+          "inclusiveSeconds": 222.67513649100042,
+          "errors": 0
+        },
+        {
+          "name": "Page.evaluate",
+          "count": 2173,
+          "totalSeconds": 159.05280154299993,
+          "meanSeconds": 0.07319503062264147,
+          "medianSeconds": 0.045986147000007804,
+          "p95Seconds": 0.19545548899998266,
+          "maximumSeconds": 1.2704273890000195,
+          "inclusiveSeconds": 159.05280154299993,
+          "errors": 0
+        },
+        {
+          "name": "Locator.click",
+          "count": 185,
+          "totalSeconds": 116.17045283799962,
+          "meanSeconds": 0.6279483937189169,
+          "medianSeconds": 0.20900390299993887,
+          "p95Seconds": 3.5209911980000044,
+          "maximumSeconds": 6.903519128999989,
+          "inclusiveSeconds": 116.17045283799962,
+          "errors": 0
+        },
+        {
+          "name": "Page.goto",
+          "count": 68,
+          "totalSeconds": 53.40566053599959,
+          "meanSeconds": 0.7853773608235234,
+          "medianSeconds": 0.5392227890000072,
+          "p95Seconds": 2.640645501999984,
+          "maximumSeconds": 5.943191455999994,
+          "inclusiveSeconds": 74.65929582999964,
+          "errors": 0
+        },
+        {
+          "name": "Locator.evaluate",
+          "count": 13,
+          "totalSeconds": 22.483405005999977,
+          "meanSeconds": 1.729492692769229,
+          "medianSeconds": 1.693868529999989,
+          "p95Seconds": 2.8034494369999976,
+          "maximumSeconds": 2.8034494369999976,
+          "inclusiveSeconds": 22.483405005999977,
+          "errors": 0
+        }
+      ],
+      "processCpu": {
+        "observedTotalCpuSeconds": 1858.81,
+        "graphicsSharePercent": 87.00351300025285,
+        "roles": {
+          "playwright-driver": {
+            "observedCpuSeconds": 17.739999999999988,
+            "meanObservedCores": 0.026158296441172624,
+            "maximumIntervalCores": 0.2165644689094036,
+            "peakSummedRssBytesNotUnique": 304467968
+          },
+          "renderer": {
+            "observedCpuSeconds": 166.85999999999976,
+            "meanObservedCores": 0.2460413384540057,
+            "maximumIntervalCores": 0.8531910619127346,
+            "peakSummedRssBytesNotUnique": 539652096
+          },
+          "utility": {
+            "observedCpuSeconds": 12.689999999999994,
+            "meanObservedCores": 0.018711881727084594,
+            "maximumIntervalCores": 0.1969850339408982,
+            "peakSummedRssBytesNotUnique": 110850048
+          },
+          "host-or-other": {
+            "observedCpuSeconds": 23.120000000000015,
+            "meanObservedCores": 0.03409130855241894,
+            "maximumIntervalCores": 0.4229989498795293,
+            "peakSummedRssBytesNotUnique": 153858048
+          },
+          "gpu-process": {
+            "observedCpuSeconds": 1617.23,
+            "meanObservedCores": 2.384666389715763,
+            "maximumIntervalCores": 3.9283742872302008,
+            "peakSummedRssBytesNotUnique": 475054080
+          },
+          "browser-main": {
+            "observedCpuSeconds": 21.17000000000007,
+            "meanObservedCores": 0.03121596029648403,
+            "maximumIntervalCores": 0.23638204072907784,
+            "peakSummedRssBytesNotUnique": 251392000
+          }
+        },
+        "samplerWorkSeconds": 13.204345039000955
+      },
+      "originalSuiteSha256": "15a5ab5ff00490ffc1811a84321bba059b734d475ee77be3d9234816a07d053a",
+      "rawReportSha256": "687d5c5462abf1e0d2a2208b76b9d1e2d41d01e6f5bbe915dc79bbea30fbbf34",
+      "rawOperationsSha256": "f8614855980fdf634ed1ae30bc58aa1a44af7089b54c184c1b671ed97b73f283",
+      "rawEventsSha256": "29f291a99ceec18448ff4f1002d1c32f13892367b71ad32447c443910ae32a68",
+      "rawProcessSamplesSha256": "c1aaaf71f71a43f0d56608110e9ca073df025e412b9c566f4092d6a16f8890b1"
+    }
+  },
+  "coverage": {
+    "looksMaterialFamilies": [
+      "Studio completed",
+      "Properties completed"
+    ],
+    "lookReferencesMaterialFamilies": "Not run by this suite",
+    "ordinaryGate": "Not run by this diagnostic; 37/0/37 conjunction unchanged"
+  },
+  "findings": {
+    "intentionalTimerWaits": [
+      {
+        "file": "tests/e2e/appearance_autosave.py",
+        "line": 220,
+        "calls": 45,
+        "exclusiveSeconds": 172.5736093990002,
+        "purpose": "Observe actual hint auto-hide deadline plus margin"
+      },
+      {
+        "file": "tests/e2e/appearance_autosave.py",
+        "line": 266,
+        "calls": 45,
+        "exclusiveSeconds": 33.62809336699985,
+        "purpose": "Observe a real autosave write opportunity"
+      }
+    ],
+    "unusedParentPage": {
+      "suite": "look_references",
+      "scenario": "restore_reporting",
+      "pages": 50,
+      "maximumConcurrentPages": 2,
+      "parentLifetimeSeconds": 329.98,
+      "causalSpeedImpact": "Not measured; all contexts close by suite end."
+    },
+    "limitations": [
+      "One run per suite on separate 4-vCPU Ubuntu24.04 workers; Intel Looks and AMD Look References. Rates are not universal.",
+      "Profile overhead is nonzero and was not subtracted; separate observer commands and sampler work overlap other intervals.",
+      "Import call timing includes only work awaited by its Promise; subsequent rendering can be charged to later interactions.",
+      "V8 samples omit much native graphics work. Graphics-process CPU is measured; the profile does not identify a particular shader or prove external contention.",
+      "No deduplication, production optimization, assertion/wait change or ordinary accepted-failure change was made."
+    ]
+  }
+}
