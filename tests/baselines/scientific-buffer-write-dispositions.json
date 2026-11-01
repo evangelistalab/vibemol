@@ -1,0 +1,1023 @@
+{
+  "sourceCommit": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+  "groups": [
+    {
+      "file": "assets/app/js/app.js",
+      "function": "drawPhaseWheel",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 602,
+          "function": "drawPhaseWheel",
+          "source": "img.data[ii + 0] = Math.round(r * 255)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 603,
+          "function": "drawPhaseWheel",
+          "source": "img.data[ii + 1] = Math.round(g * 255)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 604,
+          "function": "drawPhaseWheel",
+          "source": "img.data[ii + 2] = Math.round(b * 255)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 605,
+          "function": "drawPhaseWheel",
+          "source": "img.data[ii + 3] = 255",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 607,
+          "function": "drawPhaseWheel",
+          "source": "img.data[ii + 3] = 0",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "getToonGradientTexture",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 2492,
+          "function": "getToonGradientTexture",
+          "source": "img.data[o + 0] = v",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 2493,
+          "function": "getToonGradientTexture",
+          "source": "img.data[o + 1] = v",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 2494,
+          "function": "getToonGradientTexture",
+          "source": "img.data[o + 2] = v",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 2495,
+          "function": "getToonGradientTexture",
+          "source": "img.data[o + 3] = 255",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "img.data",
+          "origin": [
+            "field:img.data"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "accumulateMoldenShellContribution",
+      "category": "fresh output before publication",
+      "reason": "Its data parameter is allocated in evaluateMoldenGrid at app.js:10075 before cache insertion; coefficient subarrays are read only.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 10043,
+          "function": "accumulateMoldenShellContribution",
+          "source": "data[idx(i, j, k)] += value",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "data",
+          "origin": [
+            "parameter:data"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "normalizeSettings",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 25807,
+          "function": "normalizeSettings",
+          "source": "settings['appearance.references'] = lookModule.normalizeReferenceState(settings['appearance.references'])",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "settings",
+          "origin": [
+            "parameter:settings"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "normalizeImportedSettingValue",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 25831,
+          "function": "normalizeImportedSettingValue",
+          "source": "warnings.push(`Mapped deprecated style value ${raw || '(empty)'} -> ${normalized}`)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:warnings"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "flattenAutosavePresetSettings",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 26344,
+          "function": "flattenAutosavePresetSettings",
+          "source": "out[nextKey] = cloneJsonLike(value)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "out",
+          "origin": [
+            "parameter:out"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "assignAutosavePresetSetting",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 26356,
+          "function": "assignAutosavePresetSetting",
+          "source": "cursor[part] = {}",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "cursor",
+          "origin": [
+            "parameter:target"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 26359,
+          "function": "assignAutosavePresetSetting",
+          "source": "cursor[parts[parts.length - 1]] = cloneJsonLike(value)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "cursor",
+          "origin": [
+            "parameter:target"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "syncVolumeAuxStateAfterCoordsEdit",
+      "category": "reference replacement",
+      "reason": "Replaces a frame slot or normalizes a field to a newly allocated array; no writes to prior sample bytes.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 28219,
+          "function": "syncVolumeAuxStateAfterCoordsEdit",
+          "source": "vol.trajectory.frames[frameIndex] = snapshotAtomCoordinates(vol, atomCount)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "vol.trajectory.frames",
+          "origin": [
+            "field:vol.trajectory.frames"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "parsePsi4OutputVibrationPayload",
+      "category": "fresh output before publication",
+      "reason": "Displacement arrays are filled during parsing, before attachment/consumer exposure.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 29200,
+          "function": "parsePsi4OutputVibrationPayload",
+          "source": "rec.displacements[3 * a + 0] = vals[3 * m + 0]",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "rec.displacements",
+          "origin": [
+            "field:rec.displacements"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 29201,
+          "function": "parsePsi4OutputVibrationPayload",
+          "source": "rec.displacements[3 * a + 1] = vals[3 * m + 1]",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "rec.displacements",
+          "origin": [
+            "field:rec.displacements"
+          ]
+        },
+        {
+          "file": "assets/app/js/app.js",
+          "line": 29202,
+          "function": "parsePsi4OutputVibrationPayload",
+          "source": "rec.displacements[3 * a + 2] = vals[3 * m + 2]",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "rec.displacements",
+          "origin": [
+            "field:rec.displacements"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "renderFigurePixels",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 31292,
+          "function": "renderFigurePixels",
+          "source": "data.data.set(bytes.subarray((size-y-1)*stride,(size-y)*stride),y*stride)",
+          "kind": "method:set",
+          "origin": [
+            "field:data.data"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "function": "loadDemo",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/app.js",
+          "line": 31413,
+          "function": "loadDemo",
+          "source": "volumes.push({ name: 'Demo Water', vol })",
+          "kind": "method:push",
+          "origin": [
+            "owned-array@1641",
+            "parameter:value",
+            "copy-or-owned-container@9581",
+            "copy-or-owned-container@9583",
+            "owned-array@28554",
+            "copy-or-owned-container@28561",
+            "parameter:next",
+            "owned-array@31458"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/file-loader.js",
+      "function": "attempt",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/file-loader.js",
+          "line": 190,
+          "function": "attempt",
+          "source": "failures.push(`${item.inputName}: ${err && err.message || err}`)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:plan"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/file-loader.js",
+      "function": "commitFilePlan",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/file-loader.js",
+          "line": 194,
+          "function": "commitFilePlan",
+          "source": "failures.push('Open one session file at a time. Add other files after the session opens.')",
+          "kind": "method:push",
+          "origin": [
+            "parameter:plan"
+          ]
+        },
+        {
+          "file": "assets/app/js/file-loader.js",
+          "line": 220,
+          "function": "commitFilePlan",
+          "source": "failures.push(`${item.inputName}: ${err && err.message || err}`)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:plan"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/preset.js",
+      "function": "flattenSettingsTree",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/preset.js",
+          "line": 253,
+          "function": "flattenSettingsTree",
+          "source": "out[nextKey] = deps.cloneJsonLike(value)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "out",
+          "origin": [
+            "parameter:out"
+          ]
+        },
+        {
+          "file": "assets/app/js/preset.js",
+          "line": 256,
+          "function": "flattenSettingsTree",
+          "source": "out[nextKey] = nextKey === 'surface.colorScheme' && global.VibeMolLooks ? global.VibeMolLooks.normalizeSurfaceScheme(value) : value",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "out",
+          "origin": [
+            "parameter:out"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/pubchem.js",
+      "function": "hasPubChemConformer",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/pubchem.js",
+          "line": 158,
+          "function": "hasPubChemConformer",
+          "source": "cache.set(cacheKey, has3D)",
+          "kind": "method:set",
+          "origin": [
+            "parameter:cache"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/structure.js",
+      "function": "rehydrateClonedVolume",
+      "category": "reference replacement",
+      "reason": "Replaces a frame slot or normalizes a field to a newly allocated array; no writes to prior sample bytes.",
+      "sites": [
+        {
+          "file": "assets/app/js/structure.js",
+          "line": 845,
+          "function": "rehydrateClonedVolume",
+          "source": "vol[key] = Float32Array.from(vol[key])",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "vol",
+          "origin": [
+            "parameter:vol"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/symmetry.js",
+      "function": "addElementUnique",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/symmetry.js",
+          "line": 1276,
+          "function": "addElementUnique",
+          "source": "elements.push(next)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:elements"
+          ]
+        },
+        {
+          "file": "assets/app/js/symmetry.js",
+          "line": 1281,
+          "function": "addElementUnique",
+          "source": "elements.push(next)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:elements"
+          ]
+        },
+        {
+          "file": "assets/app/js/symmetry.js",
+          "line": 1287,
+          "function": "addElementUnique",
+          "source": "elements.push(next)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:elements"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "function": "bondGradient",
+      "category": "private optimizer workspace",
+      "reason": "createUFFSystem copies coords at uff.js:655 before gradient/minimizer writes; adapter starts with atom values, not frame/grid/MO buffers.",
+      "sites": [
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 350,
+          "function": "bondGradient",
+          "source": "grad[i3] -= dEdr * dx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 350,
+          "function": "bondGradient",
+          "source": "grad[i3 + 1] -= dEdr * dy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 350,
+          "function": "bondGradient",
+          "source": "grad[i3 + 2] -= dEdr * dz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 351,
+          "function": "bondGradient",
+          "source": "grad[j3] += dEdr * dx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 351,
+          "function": "bondGradient",
+          "source": "grad[j3 + 1] += dEdr * dy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 351,
+          "function": "bondGradient",
+          "source": "grad[j3 + 2] += dEdr * dz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "function": "angleGradient",
+      "category": "private optimizer workspace",
+      "reason": "createUFFSystem copies coords at uff.js:655 before gradient/minimizer writes; adapter starts with atom values, not frame/grid/MO buffers.",
+      "sites": [
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 398,
+          "function": "angleGradient",
+          "source": "grad[3 * i + d] += di",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 399,
+          "function": "angleGradient",
+          "source": "grad[3 * k + d] += dk",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 400,
+          "function": "angleGradient",
+          "source": "grad[3 * j + d] -= (di + dk)",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "function": "torsionGradient",
+      "category": "private optimizer workspace",
+      "reason": "createUFFSystem copies coords at uff.js:655 before gradient/minimizer writes; adapter starts with atom values, not frame/grid/MO buffers.",
+      "sites": [
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 432,
+          "function": "torsionGradient",
+          "source": "xyz[idx] = orig + EPS",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "xyz",
+          "origin": [
+            "parameter:xyz"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 435,
+          "function": "torsionGradient",
+          "source": "xyz[idx] = orig - EPS",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "xyz",
+          "origin": [
+            "parameter:xyz"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 438,
+          "function": "torsionGradient",
+          "source": "xyz[idx] = orig",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "xyz",
+          "origin": [
+            "parameter:xyz"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 439,
+          "function": "torsionGradient",
+          "source": "grad[idx] += (Ep - Em) / (2.0 * EPS)",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "function": "inversionGradient",
+      "category": "private optimizer workspace",
+      "reason": "createUFFSystem copies coords at uff.js:655 before gradient/minimizer writes; adapter starts with atom values, not frame/grid/MO buffers.",
+      "sites": [
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 529,
+          "function": "inversionGradient",
+          "source": "grad[3 * i] += dE_dW * tg1x",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 530,
+          "function": "inversionGradient",
+          "source": "grad[3 * i + 1] += dE_dW * tg1y",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 531,
+          "function": "inversionGradient",
+          "source": "grad[3 * i + 2] += dE_dW * tg1z",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 532,
+          "function": "inversionGradient",
+          "source": "grad[j3] -= dE_dW * (tg1x + tg3x + tg4x)",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 533,
+          "function": "inversionGradient",
+          "source": "grad[j3 + 1] -= dE_dW * (tg1y + tg3y + tg4y)",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 534,
+          "function": "inversionGradient",
+          "source": "grad[j3 + 2] -= dE_dW * (tg1z + tg3z + tg4z)",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 535,
+          "function": "inversionGradient",
+          "source": "grad[3 * k] += dE_dW * tg3x",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 536,
+          "function": "inversionGradient",
+          "source": "grad[3 * k + 1] += dE_dW * tg3y",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 537,
+          "function": "inversionGradient",
+          "source": "grad[3 * k + 2] += dE_dW * tg3z",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 538,
+          "function": "inversionGradient",
+          "source": "grad[3 * l] += dE_dW * tg4x",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 539,
+          "function": "inversionGradient",
+          "source": "grad[3 * l + 1] += dE_dW * tg4y",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 540,
+          "function": "inversionGradient",
+          "source": "grad[3 * l + 2] += dE_dW * tg4z",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "function": "vdwGradient",
+      "category": "private optimizer workspace",
+      "reason": "createUFFSystem copies coords at uff.js:655 before gradient/minimizer writes; adapter starts with atom values, not frame/grid/MO buffers.",
+      "sites": [
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 616,
+          "function": "vdwGradient",
+          "source": "grad[i3] -= fx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 616,
+          "function": "vdwGradient",
+          "source": "grad[i3 + 1] -= fy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 616,
+          "function": "vdwGradient",
+          "source": "grad[i3 + 2] -= fz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 617,
+          "function": "vdwGradient",
+          "source": "grad[j3] += fx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 617,
+          "function": "vdwGradient",
+          "source": "grad[j3 + 1] += fy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 617,
+          "function": "vdwGradient",
+          "source": "grad[j3 + 2] += fz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 645,
+          "function": "vdwGradient",
+          "source": "grad[i3] -= fx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 645,
+          "function": "vdwGradient",
+          "source": "grad[i3 + 1] -= fy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 645,
+          "function": "vdwGradient",
+          "source": "grad[i3 + 2] -= fz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 646,
+          "function": "vdwGradient",
+          "source": "grad[j3] += fx",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 646,
+          "function": "vdwGradient",
+          "source": "grad[j3 + 1] += fy",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        },
+        {
+          "file": "assets/app/js/uff.js",
+          "line": 646,
+          "function": "vdwGradient",
+          "source": "grad[j3 + 2] += fz",
+          "kind": "read-modify-write",
+          "computed": true,
+          "target": "grad",
+          "origin": [
+            "parameter:grad"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/vibration.js",
+      "function": "applyActiveVibrationPhase",
+      "category": "mutable derived output",
+      "reason": "The controller owns frameBuffer; it is distinct from source equilibrium and displacement buffers. Native probe observes this write.",
+      "sites": [
+        {
+          "file": "assets/app/js/vibration.js",
+          "line": 513,
+          "function": "applyActiveVibrationPhase",
+          "source": "frame[i] = eq[i] + (amp * disp[i] * wave)",
+          "kind": "indexed/property-write",
+          "computed": true,
+          "target": "frame",
+          "origin": [
+            "field:vib.frameBuffer"
+          ]
+        }
+      ]
+    },
+    {
+      "file": "assets/app/js/view-utils.js",
+      "function": "raycast",
+      "category": "outside source numeric buffers",
+      "reason": "UI/image/material/preset/error/cache/annotation/picking collection; no scalar-grid, trajectory-frame, mode-input or MO coefficient storage.",
+      "sites": [
+        {
+          "file": "assets/app/js/view-utils.js",
+          "line": 179,
+          "function": "raycast",
+          "source": "intersections.push(hit)",
+          "kind": "method:push",
+          "origin": [
+            "parameter:intersections"
+          ]
+        }
+      ]
+    }
+  ],
+  "borrowedSourceWritersFound": 0
+}

@@ -1,0 +1,1236 @@
+{
+  "schemaVersion": 1,
+  "sourceCommit": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+  "sourceTree": "2ec18eae0d68d041b7249a1b1c6d2cc6f59b551c",
+  "scope": "Published source numeric arrays: scalar/2C samples, trajectory frames, vibrational inputs, orbital and primitive coefficients. Mutable derived output and metadata are classified separately.",
+  "conclusion": {
+    "rawReferencesAreHandedOut": true,
+    "currentProductBorrowedSourceWritersFound": 0,
+    "ownershipImplemented": false,
+    "undoImplemented": false
+  },
+  "entries": [
+    {
+      "id": "parse-cube",
+      "kind": "parser publication",
+      "file": "assets/app/js/parsers.js",
+      "function": "parseCube",
+      "line": 153,
+      "buffers": "scalar data",
+      "consumers": "file-loader / schema / record.vol",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Fresh allocation becomes source; no consumer mutation."
+    },
+    {
+      "id": "parse-spinor",
+      "kind": "parser publication",
+      "file": "assets/app/js/parsers.js",
+      "function": "parseTwoComponentCube",
+      "line": 270,
+      "buffers": "alphaRe/alphaIm/betaRe/betaIm; data aliases selected channel",
+      "consumers": "file-loader, scalar/phase/total renderers",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Separate input channels; selecting data changes a reference, not samples."
+    },
+    {
+      "id": "parse-xyz",
+      "kind": "parser publication",
+      "file": "assets/app/js/parsers.js",
+      "function": "parseXYZ",
+      "line": 390,
+      "buffers": "trajectory.frames[]",
+      "consumers": "record, scene trajectory, playback",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Each parsed frame is allocated before publication; subsequent frame reads are read-only."
+    },
+    {
+      "id": "parse-molden",
+      "kind": "parser publication",
+      "file": "assets/app/js/parsers.js",
+      "function": "parseMolden",
+      "line": 820,
+      "buffers": "MO coefficients and primitive coefficient arrays",
+      "consumers": "record.molden, evaluator, calculation metadata",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Parser-owned initialization only; no post-publication coefficient writer."
+    },
+    {
+      "id": "parse-vibration",
+      "kind": "parser publication",
+      "file": "assets/app/js/app.js",
+      "function": "parseVibrationDisplacements",
+      "line": 29265,
+      "buffers": "mode displacements",
+      "consumers": "attachVibrationDataToRecord / vibration controller",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Validation builds fresh Float32 displacement arrays."
+    },
+    {
+      "id": "schema-adoption",
+      "kind": "adoption / copy",
+      "file": "assets/app/js/structure.js",
+      "function": "rehydrateClonedVolume",
+      "line": 836,
+      "buffers": "grid channels, frames, equilibrium, modes, coefficients",
+      "consumers": "source hydration, structure import",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Retains existing Float32 grid/frame views; converts plain arrays; cloned modes/MOs own copies. No sample mutation."
+    },
+    {
+      "id": "cache-publication",
+      "kind": "raw borrow",
+      "file": "assets/app/js/grid-store.js",
+      "function": "createGridStore",
+      "line": 6,
+      "buffers": "computed orbital grid.data",
+      "consumers": "evaluateMoldenGrid -> layers / compatibility volume",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Frozen grid/geometry metadata; data remains a writable typed array by convention. Existing consumers read it."
+    },
+    {
+      "id": "layer-grid",
+      "kind": "raw borrow",
+      "file": "assets/app/js/app.js",
+      "function": "getLayerCubeData",
+      "line": 8840,
+      "buffers": "scalar, arithmetic and cached orbital data",
+      "consumers": "rendering, Auto-iso, arithmetic, duplicate, Figure",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Returns existing source/layer/cache objects; consumers do not modify published sample bytes."
+    },
+    {
+      "id": "compat-grid",
+      "kind": "reference replacement",
+      "file": "assets/app/js/app.js",
+      "function": "ensureMoldenGridForRecord",
+      "line": 10110,
+      "buffers": "cached orbital data",
+      "consumers": "record.vol.data compatibility field",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Copies origin/axes/nxyz; aliases grid.data. No cache sample write."
+    },
+    {
+      "id": "component-selection",
+      "kind": "reference replacement",
+      "file": "assets/app/js/app.js",
+      "function": "selectActiveRawComponent",
+      "line": 30464,
+      "buffers": "2C channel selected as data",
+      "consumers": "scalar renderer and Figure Auto-iso",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Rebinds vol.data to the selected existing channel."
+    },
+    {
+      "id": "mo-subarray",
+      "kind": "raw subarray borrow",
+      "file": "assets/app/js/app.js",
+      "function": "evaluateMoldenGrid",
+      "line": 10054,
+      "buffers": "mo.coefficients.subarray",
+      "consumers": "accumulateMoldenShellContribution",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Coefficient views are only read. The written data parameter is a new, not-yet-published grid."
+    },
+    {
+      "id": "surface-render",
+      "kind": "raw borrow",
+      "file": "assets/app/js/volume-geometry.js",
+      "function": "makeIsosurface",
+      "line": 272,
+      "buffers": "scalar grid data",
+      "consumers": "field sampler / gradient / marching-cubes callbacks",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Input samples read; callbacks give vendor code numeric values. Mesh/normal/index arrays are new output."
+    },
+    {
+      "id": "spinor-render",
+      "kind": "raw borrow",
+      "file": "assets/app/js/volume-2c.js",
+      "function": "make2CPhaseIsosurface",
+      "line": 50,
+      "buffers": "2C real/imaginary channels",
+      "consumers": "phase and total-colored meshes",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Read input channels; write new vertex/color/normal output."
+    },
+    {
+      "id": "cloud-render",
+      "kind": "raw borrow",
+      "file": "assets/app/js/cloud-rendering.js",
+      "function": "buildCloudPoints",
+      "line": 440,
+      "buffers": "scalar / 2C channels",
+      "consumers": "points/cubes; scalar/phase/total variants",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Percentiles sort collected copies. Positions, colors and matrices are derived output."
+    },
+    {
+      "id": "statistics",
+      "kind": "raw borrow",
+      "file": "assets/app/js/rendering.js",
+      "function": "computeVolumeStats",
+      "line": 82,
+      "buffers": "scalar / 2C channels",
+      "consumers": "maxAbs / maxMagnitude / maxTotalDensity / statistics",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Read-only input loops."
+    },
+    {
+      "id": "app-metrics",
+      "kind": "raw borrow",
+      "file": "assets/app/js/app.js",
+      "function": "getScalarFieldIntegralStats",
+      "line": 30595,
+      "buffers": "grid/channel samples",
+      "consumers": "surface metrics and iso calibration",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Read-only input loops; metric-cache writes do not modify samples."
+    },
+    {
+      "id": "autoiso-sync",
+      "kind": "raw borrow",
+      "file": "assets/app/js/autoiso.js",
+      "function": "estimateAutoIsoValue",
+      "line": 127,
+      "buffers": "scalar / phase-like channels",
+      "consumers": "histogram / stride sampler",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Reads source samples; histograms are private output."
+    },
+    {
+      "id": "autoiso-worker",
+      "kind": "copied exposure",
+      "file": "assets/app/js/autoiso.js",
+      "function": "buildAutoIsoWorkerPayload",
+      "line": 180,
+      "buffers": "scalar / four channels",
+      "consumers": "Auto-iso worker",
+      "publishedSourceNumericWrite": false,
+      "disposition": "slice() copies each channel, then postMessage structured-clones; no source transfer."
+    },
+    {
+      "id": "arithmetic-fallback",
+      "kind": "raw borrow",
+      "file": "assets/app/js/arithmetic-grid.js",
+      "function": "createComputation",
+      "line": 252,
+      "buffers": "operand grid.data",
+      "consumers": "trilinear sampler / cooperative step",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Reads inputs; writes a newly allocated result array."
+    },
+    {
+      "id": "arithmetic-worker",
+      "kind": "copied exposure",
+      "file": "assets/app/js/arithmetic-runner.js",
+      "function": "createArithmeticRunner",
+      "line": 4,
+      "buffers": "operand grid.data",
+      "consumers": "arithmetic worker request / response",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Request structured-clones with no transfer list. Only newly allocated worker result data is transferred back."
+    },
+    {
+      "id": "arithmetic-install",
+      "kind": "ownership publication",
+      "file": "assets/app/js/arithmetic-layers.js",
+      "function": "createArithmeticLayers",
+      "line": 5,
+      "buffers": "new result data / old result reference",
+      "consumers": "staged recompute / cloneScalarVolumeForArithmetic",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Stages new results and rebinds only after identity/config checks; prior bytes untouched."
+    },
+    {
+      "id": "layer-duplicate",
+      "kind": "raw borrow or copy",
+      "file": "assets/app/js/app.js",
+      "function": "duplicateCubeLayer",
+      "line": 9190,
+      "buffers": "source/cache grid data",
+      "consumers": "copied cube layers",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Non-arithmetic layers share input fields; arithmetic result data is explicitly copied."
+    },
+    {
+      "id": "trajectory-input",
+      "kind": "raw frame borrow",
+      "file": "assets/app/js/trajectory-playback.js",
+      "function": "applyTrajectoryFrameForInfo",
+      "line": 131,
+      "buffers": "trajectory.frames[index]",
+      "consumers": "app applyAtomCoordinateFrame",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Copies numeric values into atoms/mesh state; does not write the input frame."
+    },
+    {
+      "id": "vibration-input",
+      "kind": "raw borrow; separate mutable output",
+      "file": "assets/app/js/vibration.js",
+      "function": "applyActiveVibrationPhase",
+      "line": 501,
+      "buffers": "equilibrium / mode.displacements",
+      "consumers": "private frameBuffer -> applyAtomCoordinateFrame",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Reads equilibrium/displacement. In-place frameBuffer writes are deliberate derived output, not source corruption."
+    },
+    {
+      "id": "coordinate-owner",
+      "kind": "owner reference replacement",
+      "file": "assets/app/js/app.js",
+      "function": "syncVolumeAuxStateAfterCoordsEdit",
+      "line": 28213,
+      "buffers": "active trajectory frame / equilibrium",
+      "consumers": "coordinate field commits",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Allocates replacement buffers. Old published arrays stay unchanged; native probe verifies it."
+    },
+    {
+      "id": "reorder-owner",
+      "kind": "owner reference replacement / metadata mutation",
+      "file": "assets/app/js/app.js",
+      "function": "applyAtomOrderToVolumeAuxState",
+      "line": 28173,
+      "buffers": "all trajectory frames / modes / equilibrium; basis map",
+      "consumers": "coordinate order commit",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Allocates permuted numeric buffers. Basis atomIndex metadata changes in place; MO coefficients stay unchanged."
+    },
+    {
+      "id": "existing-history",
+      "kind": "copied exposure",
+      "file": "assets/app/js/app.js",
+      "function": "cloneCoordsPanelEditState",
+      "line": 28051,
+      "buffers": "frames / equilibrium / modes / coefficients",
+      "consumers": "existing Coordinates Undo/Redo",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Deep numeric copies. Restoration installs copies; no existing source-sample write."
+    },
+    {
+      "id": "session-capture",
+      "kind": "short-lived raw borrow",
+      "file": "assets/app/js/session.js",
+      "function": "captureVolume",
+      "line": 33,
+      "buffers": "grids / frames / modes / basis and coefficients",
+      "consumers": "capture -> FORMAT.validate / encode",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Shallow capture is not an immutable snapshot. Product export immediately validates/packs; do not retain it for Undo."
+    },
+    {
+      "id": "session-encode",
+      "kind": "copied exposure",
+      "file": "assets/app/js/session-format.js",
+      "function": "encode",
+      "line": 252,
+      "buffers": "all numeric arrays in captured payload",
+      "consumers": "pending serialization buffers / base64",
+      "publishedSourceNumericWrite": false,
+      "disposition": "pack() copies every typed array before the first await. Endian normalization mutates only these copies."
+    },
+    {
+      "id": "session-decode",
+      "kind": "ownership adoption",
+      "file": "assets/app/js/session.js",
+      "function": "hydrate",
+      "line": 132,
+      "buffers": "decoded numeric arrays",
+      "consumers": "new sources / graph / app state",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Decoder allocates private buffers; hydration adopts them. The supported import API does not pass caller-owned live views."
+    },
+    {
+      "id": "structure-transport",
+      "kind": "copied exposure",
+      "file": "assets/app/js/structure-transport.js",
+      "function": "createStructureTransportController",
+      "line": 7,
+      "buffers": "volume scientific arrays",
+      "consumers": "public structure export / import",
+      "publishedSourceNumericWrite": false,
+      "disposition": "cloneStructuredData copies typed arrays and buffers; public representation is JSON copies."
+    },
+    {
+      "id": "figure",
+      "kind": "raw borrow",
+      "file": "assets/app/js/app.js",
+      "function": "activateFigureTarget",
+      "line": 31233,
+      "buffers": "all selected source/cache grids",
+      "consumers": "prepare / rebuild / capture / restore",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Uses the same read-only render/Auto-iso paths. Diagnostic Figure composition leaves source bytes unchanged."
+    },
+    {
+      "id": "uff-workspace",
+      "kind": "owned mutable workspace",
+      "file": "assets/app/js/uff.js",
+      "function": "createUFFSystem",
+      "line": 651,
+      "buffers": "optimizer xyz / gradients",
+      "consumers": "finite differences / minimization",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Copies coords into a private Float64Array. Temporary torsion/gradient writes cannot reach grid/frame/MO source buffers."
+    },
+    {
+      "id": "minao-preview",
+      "kind": "owned mutable output",
+      "file": "assets/app/js/minao-renderer.js",
+      "function": "grid",
+      "line": 27,
+      "buffers": "AO preview grid",
+      "consumers": "positive/negative geometry preview",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Allocates output; negative data uses map() to create a second buffer. Source basis coefficients only read."
+    },
+    {
+      "id": "public-surface",
+      "kind": "copied / metadata exposure",
+      "file": "assets/app/js/app.js",
+      "function": "getSessionState",
+      "line": 31441,
+      "buffers": "private live records vs supported APIs",
+      "consumers": "Session.export*, Structure.export*, Testing snapshots, Figure metadata",
+      "publishedSourceNumericWrite": false,
+      "disposition": "Internal state carries raw sources; supported public exports encode/copy, and Testing/Figure snapshots expose selected metadata rather than raw sample arrays."
+    }
+  ],
+  "recordAndGraphCarriers": [
+    {
+      "key": "getActiveRecord",
+      "line": 1291,
+      "owner": "createVibrationController",
+      "function": "<app>",
+      "source": "() => (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "applyAtomCoordinateFrame",
+      "line": 1293,
+      "owner": "createVibrationController",
+      "function": "<app>",
+      "source": "applyAtomCoordinateFrame",
+      "scientificReferenceReachable": true,
+      "disposition": "readonly frame argument"
+    },
+    {
+      "key": "getSceneGraphController",
+      "line": 1307,
+      "owner": "createTrajectoryPlaybackController",
+      "function": "<app>",
+      "source": "() => sceneGraphController",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 1308,
+      "owner": "createTrajectoryPlaybackController",
+      "function": "<app>",
+      "source": "() => (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "applyAtomCoordinateFrame",
+      "line": 1310,
+      "owner": "createTrajectoryPlaybackController",
+      "function": "<app>",
+      "source": "applyAtomCoordinateFrame",
+      "scientificReferenceReachable": true,
+      "disposition": "readonly frame argument"
+    },
+    {
+      "key": "getGrid",
+      "line": 1660,
+      "owner": "window.VibeMolArithmeticLayers.createArithmeticLayers",
+      "function": "<app>",
+      "source": "getLayerCubeData",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveCubeLayer",
+      "line": 1685,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getActiveCubeLayer",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getCubeLayersInScene",
+      "line": 1689,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getCubeLayersInScene",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getLayerSourceVolume",
+      "line": 1691,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getLayerSourceVolume",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getNextCubeLabelId",
+      "line": 1695,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getNextCubeLabelId",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getSceneActiveCubeLayer",
+      "line": 1696,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getSceneActiveCubeLayer",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getSceneMoleculeVolume",
+      "line": 1697,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getSceneMoleculeVolume",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getSelectedCubeLayerIds",
+      "line": 1698,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getSelectedCubeLayerIds",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getSelectedCubeLayers",
+      "line": 1699,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getSelectedCubeLayers",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVisibleCubeLayerCount",
+      "line": 1702,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "getVisibleCubeLayerCount",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "sceneGraphController",
+      "line": 1713,
+      "owner": "window.VibeMolSceneOutliner.createSceneOutliner",
+      "function": "getSceneOutliner",
+      "source": "sceneGraphController",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVolumes",
+      "line": 5253,
+      "owner": "createAutoIsoController",
+      "function": "<app>",
+      "source": "() => volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getRecord",
+      "line": 11074,
+      "owner": "window.VibeMolMeasurementsPanel.create",
+      "function": "<app>",
+      "source": "measurementRecord",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getRecord",
+      "line": 11098,
+      "owner": "window.VibeMolCalculationsPanel.create",
+      "function": "<app>",
+      "source": "measurementRecord",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getRecord",
+      "line": 11106,
+      "owner": "window.VibeMolCalculationsPicker.create",
+      "function": "<app>",
+      "source": "measurementRecord",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVolumes",
+      "line": 11988,
+      "owner": "createEditStateController",
+      "function": "<app>",
+      "source": "() => volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVolumes",
+      "line": 12700,
+      "owner": "createEditPlacementController",
+      "function": "<app>",
+      "source": "() => volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 12718,
+      "owner": "createEditToolsController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 12771,
+      "owner": "createAutoHydrogenController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 16933,
+      "owner": "createEditGizmosController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 16954,
+      "owner": "createEditTransformController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 17128,
+      "owner": "createEditHaloController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getCurrentVolume",
+      "line": 25536,
+      "owner": "createAppearanceInspectorController",
+      "function": "<app>",
+      "source": "() => { const layer = getSurfaceAppearanceLayer(); return getLayerSourceVolume(layer); }",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVolumes",
+      "line": 25793,
+      "owner": "createPresetController",
+      "function": "<app>",
+      "source": "() => volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getActiveRecord",
+      "line": 27003,
+      "owner": "createStructureTransportController",
+      "function": "<app>",
+      "source": "() => ((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null)",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getVolumeCount",
+      "line": 27017,
+      "owner": "createStructureTransportController",
+      "function": "<app>",
+      "source": "() => volumes.length",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getUniqueVolumeName",
+      "line": 27021,
+      "owner": "createStructureTransportController",
+      "function": "<app>",
+      "source": "getUniqueVolumeName",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getSceneGraphSnapshot",
+      "line": 27068,
+      "owner": "Object.freeze",
+      "function": "<app>",
+      "source": "() => ({ focusedSceneId: String(sceneGraphController.getState().focusedSceneId || ''), activeLayerId: String(sceneGraphController.getState().activeLayerId || ''), selectedLayerIds: sceneGraphController.getSelection().map(layer => layer.id), scenes: sceneGraphController.getScenes(",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getVolumes",
+      "line": 29748,
+      "owner": "createFileLoader",
+      "function": "<app>",
+      "source": "() => volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getUniqueVolumeName",
+      "line": 29793,
+      "owner": "createFileLoader",
+      "function": "<app>",
+      "source": "getUniqueVolumeName",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "sources",
+      "line": 31443,
+      "owner": "local return object",
+      "function": "getSessionState",
+      "source": "sceneSources",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "records",
+      "line": 31443,
+      "owner": "local return object",
+      "function": "getSessionState",
+      "source": "volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "sources",
+      "line": 31450,
+      "owner": "local return object",
+      "function": "applySessionState",
+      "source": "sceneSources.getSources()",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "records",
+      "line": 31450,
+      "owner": "local return object",
+      "function": "applySessionState",
+      "source": "volumes",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getState",
+      "line": 31521,
+      "owner": "window.VibeMolSessionModule.createSessionController",
+      "function": "<app>",
+      "source": "getSessionState",
+      "scientificReferenceReachable": true,
+      "disposition": "raw source/record or graph reachable; no numeric-source writer"
+    },
+    {
+      "key": "getState",
+      "line": 31599,
+      "owner": "Object.freeze",
+      "function": "<app>",
+      "source": "sessionRecovery.getState",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    },
+    {
+      "key": "getState",
+      "line": 31734,
+      "owner": "window.VibeMolEditToolUi.createController",
+      "function": "<app>",
+      "source": "getEditToolState",
+      "scientificReferenceReachable": false,
+      "disposition": "metadata, IDs, count, name or UI status only"
+    }
+  ],
+  "sourceFiles": [
+    {
+      "file": "assets/app/js/app.js",
+      "sha256": "a2ad0e6d49fca556cc3c474a06a3e6f311537e465dc81146fd5ca845b496770e"
+    },
+    {
+      "file": "assets/app/js/appearance-editor.js",
+      "sha256": "bed455df2064d10777e454a3a5f03ee9631c490cd2c0f6d7a71f3ba8afcce053"
+    },
+    {
+      "file": "assets/app/js/appearance-looks.js",
+      "sha256": "af72369a4ed9aa2b5a0ea4e84ad2d97a8ef38630bde3d7399d04f4e4ce65fd8b"
+    },
+    {
+      "file": "assets/app/js/appearance-model.js",
+      "sha256": "aadbf82cda37a3e28ada8791393a33203944035f3cf7bc6563b27e293d5c398a"
+    },
+    {
+      "file": "assets/app/js/appearance-ui.js",
+      "sha256": "dc466074b6227fd4f9ad5cdbf909ba00d8a0c956c1b78f76222fd0cbfdabab64"
+    },
+    {
+      "file": "assets/app/js/arithmetic-grid.js",
+      "sha256": "285705eaebb26a8ec839caf2d592468111af6d1d9eb7f042392be8acd60c3e93"
+    },
+    {
+      "file": "assets/app/js/arithmetic-layers.js",
+      "sha256": "8edb4d27eec2e3787bde9f53e905eb218568e6a0d326e10e8bf58685696c20e1"
+    },
+    {
+      "file": "assets/app/js/arithmetic-runner.js",
+      "sha256": "b9f38365c22032859e0c9827df9adba22414eb6728a7da018c75818596d6fecd"
+    },
+    {
+      "file": "assets/app/js/arithmetic-worker.js",
+      "sha256": "feeea9b265a707698966b29a79edb5eed645d7c2bebf0c710b2d7dbbd308c033"
+    },
+    {
+      "file": "assets/app/js/asset-urls.js",
+      "sha256": "c7a6d815e4e7ae26440681f045a6b721ca118620ba63323ca2eb2780237f1283"
+    },
+    {
+      "file": "assets/app/js/auto-hydrogen.js",
+      "sha256": "ed7077c555eb9937e567926cccfc6148d681906f0b51b854ce7f1f52326b214f"
+    },
+    {
+      "file": "assets/app/js/autoiso-worker.js",
+      "sha256": "7d40fcce765dd13950d5c9cabefd90118427e32d6ee047ae2fe65b2814aff86a"
+    },
+    {
+      "file": "assets/app/js/autoiso.js",
+      "sha256": "544f94f4762c0ca4a2a72069b0d361c78faf04d6b050de71a2af5f6cfc4aa563"
+    },
+    {
+      "file": "assets/app/js/axis-gizmo.js",
+      "sha256": "1e996ddb4c4e4f508bb21f229af0b90550c6d7324ee9b82cb42b0f7070ff93e5"
+    },
+    {
+      "file": "assets/app/js/bond-editing.js",
+      "sha256": "c79b792db9a3229b9eb5c484158af2fd36f8b2332695b7b4e658f71ad47a1d14"
+    },
+    {
+      "file": "assets/app/js/bond-geometry.js",
+      "sha256": "3e25539b477de782861d588a0bc535f7dc108e23d5aa2f714cef164f7e9aa6ad"
+    },
+    {
+      "file": "assets/app/js/bond-inference.js",
+      "sha256": "8b5d118c142e128799a31069430a0142b64e2acd1e21d514f9e7443deaaa38c2"
+    },
+    {
+      "file": "assets/app/js/calculations-model.js",
+      "sha256": "2c797e531dbc762809e17be98a47f81d8297427c69fd491378ca7d3d04925db7"
+    },
+    {
+      "file": "assets/app/js/calculations-panel.js",
+      "sha256": "af6e248ff3fd68efb47510817a266d8fcdee0a6595e8ce3250470282a4fc6b33"
+    },
+    {
+      "file": "assets/app/js/calculations-picker.js",
+      "sha256": "eb2e5547776db7099efa4f99f2895a9af09500d858e2b19c5f54c3555dc8672d"
+    },
+    {
+      "file": "assets/app/js/cloud-rendering.js",
+      "sha256": "1839826e3466191314020bd663eea11b2170309eb757a2bb1b5a4162c5aa2585"
+    },
+    {
+      "file": "assets/app/js/coordination.js",
+      "sha256": "ccc8f0f56191fd653bf9ce85552dcf5bb8605c87dd24d2969eaf2ac09fa11227"
+    },
+    {
+      "file": "assets/app/js/display-windows.js",
+      "sha256": "758d9b9abe8e28efc3d458b6090f4b7444eabb32bf776b4ef0a1dc4949fa3677"
+    },
+    {
+      "file": "assets/app/js/edit-commands.js",
+      "sha256": "b339c41b5632d285f6e721171480984bff561cb9b4b1f5458da6f29437850a73"
+    },
+    {
+      "file": "assets/app/js/edit-gestures.js",
+      "sha256": "9e398445745a3d76b34cc0a2eeadde9e33abc33bc3cf56687760b23d653c0390"
+    },
+    {
+      "file": "assets/app/js/edit-gizmos.js",
+      "sha256": "b19993d3cbe55393e641e03eb6a6b127bc4965553aa1694cc1cb2902d316d4b6"
+    },
+    {
+      "file": "assets/app/js/edit-halo.js",
+      "sha256": "395b6df54c0576233b9ef86f3748d1478311d353cff0db3507a44c995731b807"
+    },
+    {
+      "file": "assets/app/js/edit-placement.js",
+      "sha256": "4ef9dd86b8b3e7599ed9fc1b02b0df886422bba84011342e1aebcc31b7d74216"
+    },
+    {
+      "file": "assets/app/js/edit-state.js",
+      "sha256": "d60a2a61f3494b4dd9183a4a921bcab14a4150feb62fe6c86762242050f96401"
+    },
+    {
+      "file": "assets/app/js/edit-tool-ui.js",
+      "sha256": "a621f23d6e6b74505693e91011e9ce8f7d22b94949c7945a25021cee3bed55cd"
+    },
+    {
+      "file": "assets/app/js/edit-tools.js",
+      "sha256": "4f0dff6049289e534fddbeca7a335888ea81f88e82943de24640a0d4eb0b59b9"
+    },
+    {
+      "file": "assets/app/js/edit-transform.js",
+      "sha256": "f304ef2fa19633987eede24325eb4deadd4e224d3e89163857bea628f856a66d"
+    },
+    {
+      "file": "assets/app/js/edit-ui.js",
+      "sha256": "c4ff6322583e93d9b62648b89c15db2f10d88bd638d6e7f11b97a041000bf1c5"
+    },
+    {
+      "file": "assets/app/js/edit-utils.js",
+      "sha256": "8cd22ec8b16f822fd59767c8fff428f5d01af48a9dc9b219ae47c975a951ebd0"
+    },
+    {
+      "file": "assets/app/js/element-utils.js",
+      "sha256": "8462cb69a4d543ba8e11d2e0e8b09b23d8a0a9feea1bc5df3bbd74dcfbab8782"
+    },
+    {
+      "file": "assets/app/js/figure-composer.js",
+      "sha256": "a00958a61a7182b320fea4c0d32d97d62ba0619f7639eb66562cc8778fe46bc3"
+    },
+    {
+      "file": "assets/app/js/figure-panel.js",
+      "sha256": "4b0a4f7e04eb058755b29a3a883214adee5acf401c88afac5a08d370aab19858"
+    },
+    {
+      "file": "assets/app/js/figure-renderer.js",
+      "sha256": "849684bfd46e63bb6ed2f0e54846585d59657260cf0d1a471a81af8c85e92f74"
+    },
+    {
+      "file": "assets/app/js/file-loader.js",
+      "sha256": "f275d45eb81ac0c951ddc453afb2cb13acc186887ac11a479890ab52edcf1a72"
+    },
+    {
+      "file": "assets/app/js/floating-panels.js",
+      "sha256": "d38da3d73c55c2ea15f8c3f9eb1db67d192a43b55158bc6ea390a1f09fbebbf5"
+    },
+    {
+      "file": "assets/app/js/fragments.js",
+      "sha256": "8a8d913e1c40650ce13d14bf3d5ac74adf1aa1bb4670b32f6f330ced09e44253"
+    },
+    {
+      "file": "assets/app/js/geometry-inference.js",
+      "sha256": "7b69334f143a0eea8d1dd7c0df41bea6d8a5b78a91f2cc57f7b7854d6dbdca2a"
+    },
+    {
+      "file": "assets/app/js/grid-store.js",
+      "sha256": "1dd04862fed04dbc4014435f9df8706dfae43ec16a9214769a6eac1d55e7a1f5"
+    },
+    {
+      "file": "assets/app/js/hydrogen-bonds.js",
+      "sha256": "3fd74885d6c38199fb12d4e0c9708994bc5c335e22a5312f8e4db18722c43378"
+    },
+    {
+      "file": "assets/app/js/interaction.js",
+      "sha256": "2943a6d47eda4835d7581f5d199fa93416397c1f268b5b8e06429e512151399f"
+    },
+    {
+      "file": "assets/app/js/io-utils.js",
+      "sha256": "d671e873a5bbb64d297c948155881431f3a480ac55cc6e2d8111715f51afb713"
+    },
+    {
+      "file": "assets/app/js/looks-ui.js",
+      "sha256": "4a987c2b43799314a11681fdacc63480f968be1111332c05b8f1bebe42020f37"
+    },
+    {
+      "file": "assets/app/js/measurements-panel.js",
+      "sha256": "d776196b2bbd2246e1eaeceaa88bbcbf8b5b45f3aafd7ee64cf4076dc07a46e6"
+    },
+    {
+      "file": "assets/app/js/measurements.js",
+      "sha256": "c1dc016bc30b55bb5cf33afab11ebb247b2467539b9128ed5a7a48d119ff243b"
+    },
+    {
+      "file": "assets/app/js/minao-renderer.js",
+      "sha256": "e7eedafe1e2ddd9cb20caa9e1b0973664e93bacbb89ae39b2e628bb7f15ede05"
+    },
+    {
+      "file": "assets/app/js/parsers.js",
+      "sha256": "ee81b15b04c60cab8b81c195a129ba97da6d773016a3a4a27510f8644ab7170d"
+    },
+    {
+      "file": "assets/app/js/periodic-table.js",
+      "sha256": "5771c34e0947afbe31372841f51e9610dca31ada655d7604197d8f9d39b2694a"
+    },
+    {
+      "file": "assets/app/js/preset.js",
+      "sha256": "f6d3b697945e803d67dc46dbe03840749f340cbfab134a61a66455c2fa0623b4"
+    },
+    {
+      "file": "assets/app/js/properties-inspector.js",
+      "sha256": "0f156a7089211bf0c5a839c23936065feb06232ccd91f335aa666340533ac2f0"
+    },
+    {
+      "file": "assets/app/js/pubchem.js",
+      "sha256": "e26de75bae7fcdfd8edc159cb08d8ba812daa68a308ea2e29063332681d62cd5"
+    },
+    {
+      "file": "assets/app/js/qa-characterize.js",
+      "sha256": "ae0140d54ffd509b508b61dae5959c7d6d4e9bfc6e9134f741c239fd5b1ce23e"
+    },
+    {
+      "file": "assets/app/js/rendering.js",
+      "sha256": "39bc287df38936f9c472deb06921285a8d8243cda9782d7f7e8313809251972e"
+    },
+    {
+      "file": "assets/app/js/scene-export.js",
+      "sha256": "69028d01090c0866c8bd86bdcb7ce445c478a260b49dbe485bf75b61e8ff9313"
+    },
+    {
+      "file": "assets/app/js/scene-graph.js",
+      "sha256": "2faf8ff7a0a9146fd9732f73126436f738b5a7d09f995061331fa9d4b495fd68"
+    },
+    {
+      "file": "assets/app/js/scene-outliner.js",
+      "sha256": "caf1e1d8761e1274c130c45a11e11de86a0af9ed8e16a1ac6e1d192e620fc115"
+    },
+    {
+      "file": "assets/app/js/scene-sources.js",
+      "sha256": "2f6cebf65fb3b0c7310b931352ce3543bc24c648a3a1f085512e3bd7a01b92c6"
+    },
+    {
+      "file": "assets/app/js/session-format.js",
+      "sha256": "3478febdf576ad9a335c3d5906f087aee1987180e10a27cacd09b5d52f9d50dd"
+    },
+    {
+      "file": "assets/app/js/session-recovery.js",
+      "sha256": "c5ea11670687b4c2231ffb2521a18a45399a6a799e885f6e46061948cade016a"
+    },
+    {
+      "file": "assets/app/js/session.js",
+      "sha256": "003d9a875f5297337d5569cb79ba2849a32526af8d3619e74da781cb7e5a11bb"
+    },
+    {
+      "file": "assets/app/js/structure-transport.js",
+      "sha256": "8995f93acfa27c5eb7512eb67444bb09f3f9ca825903c39e24102986a44e140c"
+    },
+    {
+      "file": "assets/app/js/structure.js",
+      "sha256": "604e9d51e7b95f40f8a67f9c1ca70ac11fdcbf58769d0746c234e6ca9fc90bba"
+    },
+    {
+      "file": "assets/app/js/style-studio.js",
+      "sha256": "96bfda2543d70a8d3a103ab8f22886381d5d58a7c3e8d08d0a467de886d74165"
+    },
+    {
+      "file": "assets/app/js/symmetry-panel.js",
+      "sha256": "59f3a599f6c97e9c070ff293f9b518402f328b9763edac4a53d6d82b73e5eb64"
+    },
+    {
+      "file": "assets/app/js/symmetry.js",
+      "sha256": "3f188fca38329f2b07900126904e1c9cd4e9dc189e61ac9991f2344a5bfead49"
+    },
+    {
+      "file": "assets/app/js/trajectory-clock.js",
+      "sha256": "25a1814d8ef1e8c62ce8cae8ac769f291fbe552094d9aaf55ad1540b281f326c"
+    },
+    {
+      "file": "assets/app/js/trajectory-playback.js",
+      "sha256": "18fe3450a725a12b70011bf9ce316b0846b5475c738795d713f113632fd61a55"
+    },
+    {
+      "file": "assets/app/js/trajectory-ui.js",
+      "sha256": "d506b019f34e7625c58a09f2b66b4ab0b29eac7be1d54e9c71fc6544e572d318"
+    },
+    {
+      "file": "assets/app/js/trajectory-video.js",
+      "sha256": "28453bd4dfd4d6f78a6ac502b6030cbf3f8809edcc76d0f7b340df69ba27ae26"
+    },
+    {
+      "file": "assets/app/js/uff-adapter.js",
+      "sha256": "142ac0458866c16bccc342f519d83e7d0a21fe7404bb5c48a82541477923c9dc"
+    },
+    {
+      "file": "assets/app/js/uff.js",
+      "sha256": "307f71f57f65e6671aeeaf9eef6cd443800256015b416fea2acf93ea325f31e0"
+    },
+    {
+      "file": "assets/app/js/ui.js",
+      "sha256": "666572b09a273c53ec89b91069f00c64c06196e4c4a7946124eb986e5d480d9b"
+    },
+    {
+      "file": "assets/app/js/vibration.js",
+      "sha256": "90d0cb0d570c4dc367025482815d8ccc82ddca72fe08bb999135a3254abd1732"
+    },
+    {
+      "file": "assets/app/js/view-utils.js",
+      "sha256": "56abf5c8d6f58e728cb04a5030b22bd81d342e8eb979ac34259bc9670ccec790"
+    },
+    {
+      "file": "assets/app/js/volume-2c.js",
+      "sha256": "3eba4da707deda4122056aebe64f6a05d662997a5e712344008d33ab0bc3376b"
+    },
+    {
+      "file": "assets/app/js/volume-geometry.js",
+      "sha256": "be5d495fa2c103f950f0b39eabd9b0b77be0bfa32073351f53ffe6300b182166"
+    },
+    {
+      "file": "assets/app/js/workbench-model.js",
+      "sha256": "28ce0cac98dbcf9a51c3b4eddfa20edd377cf591b651b1d60f754765b0685557"
+    },
+    {
+      "file": "assets/app/js/workbench.js",
+      "sha256": "38afef219a87a89eec2cf238644f98f44b956a81459218eb1d439375c740b364"
+    }
+  ],
+  "staticCensus": {
+    "files": 82,
+    "fieldFunctions": 107,
+    "mutationCandidates": 1011,
+    "note": "Candidate counts include UI, material, metadata and fresh-output writes; not defect counts or a reachability proof."
+  },
+  "limits": [
+    "Static field/binding census is conservative, not whole-program alias analysis.",
+    "Runtime fixtures cover the recorded routes, not every scene size or external console consumer.",
+    "End-of-stage bytes cannot detect a write restored before comparison; write traps cover selected borrow APIs, with source-code inspection for private helpers.",
+    "Detachment alone cannot distinguish readers from writers; indexed detached writes may be silent.",
+    "Shallow session capture and mutable basis metadata are not safe retained history snapshots."
+  ],
+  "nativeEvidence": {
+    "auditCodeCommit": "dfe56c9808b698d2779af8a027f46f7d7637702d",
+    "auditedAppRevision": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+    "appSha256": "a2ad0e6d49fca556cc3c474a06a3e6f311537e465dc81146fd5ca845b496770e",
+    "probeSha256": {
+      "tools/diagnostics/scientific_aliases.py": "0744667a180072ffda51d2a36ef51409027f5c33160b45af28f761736c1ee7be",
+      "tools/diagnostics/scientific_aliases.js": "327d1fd95d51edc59506d8b14056f3a6d40f355cef422b1ed11b764182235ed3"
+    },
+    "environment": {
+      "playwright": "1.64.1",
+      "browser": "156.0.8078.4",
+      "executable": "/Users/fevange/Source/vibemol/out/test-artifacts/figure-runner/browsers/chromium_headless_shell-1248/chrome-headless-shell-mac-arm64/chrome-headless-shell",
+      "viewport": {
+        "width": 1280,
+        "height": 900
+      },
+      "deviceScaleFactor": 1,
+      "python": "3.12.12 | packaged by Anaconda, Inc. | (main, Oct 14 2025, 16:12:22) [Clang 17.0.6 ]",
+      "lockSha256": "a08e78d4f4073f86890837e908b2bdc1885af7fc89d771435e27c52d8958b8be"
+    },
+    "cases": [
+      {
+        "name": "synchronous",
+        "sourceArraysObserved": 36,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 22302,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [
+          "arithmetic"
+        ],
+        "derivedChangesDetected": 1
+      },
+      {
+        "name": "worker",
+        "sourceArraysObserved": 36,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 22301,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [
+          "autoiso",
+          "autoiso",
+          "arithmetic"
+        ],
+        "derivedChangesDetected": 1
+      },
+      {
+        "name": "coordinate-owners",
+        "sourceArraysObserved": 19,
+        "derivedArraysObserved": 2,
+        "guardedCalls": 8,
+        "sourceByteChanges": 0,
+        "writeTrapViolations": 0,
+        "sourceBufferTransfers": 0,
+        "directBufferAccesses": 0,
+        "workerKinds": [],
+        "derivedChangesDetected": 1
+      }
+    ],
+    "positiveControls": {
+      "guards": [
+        {
+          "name": "index",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "set",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "subarray",
+          "blocked": true,
+          "sourceUnchanged": true
+        },
+        {
+          "name": "callback-array",
+          "blocked": true,
+          "sourceUnchanged": true
+        }
+      ],
+      "detach": {
+        "readThrows": true,
+        "methodWriteThrows": true,
+        "indexWriteThrows": false,
+        "indexRead": null,
+        "transferredOwnerUnchanged": true
+      }
+    },
+    "residualContexts": 0,
+    "checkpointFiles": 42,
+    "sourceWritersFound": 0,
+    "diagnosticOnly": true,
+    "rawSummarySha256": "0524587de4972042b14c9db93e770eb5674c8987068e4099d0429fe8de345775",
+    "rawLogSha256": "68dfaeae2056f62b38f5a6e77055dd56ece0714b536502a62975251baa39797e"
+  },
+  "postMergeMainGate": {
+    "runId": 41261857334,
+    "head": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "firstAttempt": true,
+    "CIWaitMinutes": 43.71666666666667,
+    "LooksMinutes": 24.437666666666665,
+    "bothExporters": true,
+    "bothMaterialFamilyPaths": true
+  }
+}
