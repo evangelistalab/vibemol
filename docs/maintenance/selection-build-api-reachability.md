@@ -47,6 +47,10 @@ Calling a public controller factory does not solve that: its app dependencies
 and active instance are private. Testing hooks can demonstrate reachability but
 should not be presented as a supported user API.
 
+Preset builder extensions restore/prune operation annotations on existing atoms;
+they do not replay placement to construct geometry. Native CDP can also drive
+ordinary controls; that is UI automation rather than an active geometry API.
+
 Whole-structure import can express a resulting molecule, including bonds and
 annotations. It does not provide incremental selection, placement intent,
 existing-scene targeting, cancellation, validation/readback or history semantics.

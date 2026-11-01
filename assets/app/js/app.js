@@ -515,9 +515,18 @@
       Object.defineProperty(object, key, { enumerable: true, configurable: false,
         get: () => value, set: next => { value = transform(next, new WeakMap()); } });
     }
+    function immutableBank(entries, label) {
+      // app.js is non-strict: freeze alone would silently discard a slot write.
+      return new Proxy(Object.freeze(entries), {
+        set: (_target, key) => fail(label, `replace slot ${String(key)}`),
+        defineProperty: (_target, key) => fail(label, `define slot ${String(key)}`),
+        deleteProperty: (_target, key) => fail(label, `delete slot ${String(key)}`),
+        setPrototypeOf: () => fail(label, 'setPrototypeOf'),
+      });
+    }
     function bank(value, label, seen) {
       if (!Array.isArray(value)) return value;
-      return Object.freeze(value.map((v, i) => adopt(v, `${label}[${i}]`, seen)));
+      return immutableBank(value.map((v, i) => adopt(v, `${label}[${i}]`, seen)), label);
     }
     function trajectory(value, seen) {
       if (!value) return value;
@@ -529,11 +538,11 @@
       if (!value) return value;
       const result = { ...value };
       field(result, 'equilibrium', (v, memo) => adopt(v, 'vibration.equilibrium', memo), seen);
-      field(result, 'modes', (modes, memo) => !Array.isArray(modes) ? modes : Object.freeze(modes.map((mode, i) => {
+      field(result, 'modes', (modes, memo) => !Array.isArray(modes) ? modes : immutableBank(modes.map((mode, i) => {
         const next = { ...mode };
         field(next, 'displacements', (v, inner) => adopt(v, `vibration.modes[${i}].displacements`, inner), memo);
         return next;
-      })), seen);
+      }), 'vibration.modes'), seen);
       // Derived animation scratch is not scientific source storage. Own its
       // ingress too, but keep it writable and distinct from equilibrium.
       if (value.frameBuffer) result.frameBuffer = ownedCopy(value.frameBuffer);
@@ -545,11 +554,11 @@
       for (const block of result.basis?.atomBlocks || []) for (const shell of block.shells || []) for (const primitive of shell.primitives || []) {
         field(primitive, 'coefficients', (v, memo) => adopt(v, 'molden.primitive.coefficients', memo), seen);
       }
-      field(result, 'mos', (mos, memo) => !Array.isArray(mos) ? mos : Object.freeze(mos.map((mo, i) => {
+      field(result, 'mos', (mos, memo) => !Array.isArray(mos) ? mos : immutableBank(mos.map((mo, i) => {
         const next = { ...mo };
         field(next, 'coefficients', (v, inner) => adopt(v, `molden.mos[${i}].coefficients`, inner), memo);
         return next;
-      })), seen);
+      }), 'molden.mos'), seen);
       return result;
     }
     function publishVolume(volume) {

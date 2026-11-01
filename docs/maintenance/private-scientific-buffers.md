@@ -58,7 +58,8 @@ adapters; its raw durations are observations, not a performance gate.
 
 The derived vibration `frameBuffer` remains writable, separately allocated from
 equilibrium. Coordinates edits replace the frame bank through its owner rather
-than assigning one slot in a frozen bank. Basis atom indices and other structural
+than assigning one slot in a sealed bank. Banks also trap slot writes explicitly,
+because freeze alone would silently ignore assignment in non-strict app code. Basis atom indices and other structural
 metadata remain mutable; coefficients do not. Unchanged sealed versions may be
 shared, while a changed buffer is copied before publication. This supplies the
 scientific-storage prerequisite, not the proposed history's metadata ownership.

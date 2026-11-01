@@ -128,7 +128,7 @@
   "localVerification": {
     "jsUnitTests": 504,
     "pythonUnitTests": 192,
-    "constructionAppBindings": 195,
+    "constructionAppBindings": 204,
     "constructionConsumerBindings": 11,
     "sourceByteChanges": 0,
     "writeTrapViolations": 0,

@@ -51,7 +51,10 @@ test('volume source banks preserve intentional aliases, permit version replaceme
  owner.publishVolume(volume);assert.equal(volume.data,volume.alphaRe);raw[0]=9;assert.equal(volume.data[0],3);
  const old=volume.trajectory.frames[0];volume.trajectory.frames=volume.trajectory.frames.map(()=>new Float32Array([9,8,7]));
  assert.deepEqual(Array.from(old),[1,2,3]);assert.equal(volume.trajectory.frames[0][0],9);
- assert.throws(()=>{volume.trajectory.frames[0]=old});
+ assert.throws(()=>{volume.trajectory.frames[0]=old},/scientific-buffer-write/);
+ // The actual app is non-strict: this must still throw instead of silently
+ // discarding a future unadopted replacement.
+ assert.throws(()=>Function('bank','bank[0]=null')(volume.trajectory.frames),/scientific-buffer-write/);
  volume.vibration.frameBuffer[0]=8;assert.equal(volume.vibration.equilibrium[0],1);
  const basis=volume.molden.basis.atomBlocks[0];basis.atomIndex=4;assert.equal(basis.atomIndex,4);
  assert.throws(()=>{basis.shells[0].primitives[0].coefficients[0]=8});
