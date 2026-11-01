@@ -506,8 +506,8 @@
       const mode = info.mode;
       const wave = Math.sin(Number(phase) || 0);
       const amp = Number(vib.amplitude) || 0;
-      const eq = vib.equilibrium;
-      const disp = mode.displacements;
+      const eq = vib.equilibrium.slice();
+      const disp = mode.displacements.slice();
       const frame = vib.frameBuffer;
       for (let i = 0; i < frame.length; i++) {
         frame[i] = eq[i] + (amp * disp[i] * wave);

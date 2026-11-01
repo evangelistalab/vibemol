@@ -5643,6 +5643,9 @@
    */
   function applyAtomCoordinateFrame(vol, frame, atomCount, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !frame) return;
+    // One independent native read copy per frame, never Proxy indexing in the
+    // atom loop (and never a callback receiving a private backing view).
+    frame = frame.slice();
     moleculePickCache.clear();
     const record = options.record || (Array.isArray(volumes) ? volumes.find((item) => item && item.vol === vol) : null);
     const targets = getMoleculeRenderTargetsForRecord(record);

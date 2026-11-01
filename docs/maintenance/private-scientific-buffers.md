@@ -49,7 +49,9 @@ The app does not patch `ArrayBuffer.isView` globally. The standing test's tempor
 measurement adapter is separate from production.
 
 Bulk readers receive one disposable native-array copy per operation. Grid loops
-do not index through a Proxy and never allocate per sample. Arithmetic workers
+do not index through a Proxy and never allocate per sample. Trajectory frame
+application and vibration phase evaluation also copy once at their frame
+boundary, preserving the continuous phase calculation and its 0.2s delta cap. Arithmetic workers
 receive copies rather than attempting to clone a facade; cooperative arithmetic
 and Auto-iso similarly copy before their loops. Copies are not cached between
 readers, so modifying one cannot poison a later read. The measured million-value
