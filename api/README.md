@@ -2,6 +2,11 @@
 
 Minimal automation client for rendering VibeMol images from local molecular files.
 
+For publication figures from saved workspaces, use the supported
+[Figure job runner](../docs/figure-runner.md): session + Figure options + pinned
+environment, PNG/SVG output and a reproducibility record. It drives the existing
+browser renderer directly without requiring Playwright at runtime.
+
 ## What it does
 - Opens hosted VibeMol: `https://evangelistalab.org/vibemol/`
 - Uploads one local molecular file (`.cube`, `.cub`, `.2ccube`, `.xyz`, `.hess`, `.dat`, `.out`, `.output`)
