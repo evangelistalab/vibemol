@@ -84,6 +84,8 @@ version-assets:
 	python3 tools/sync_asset_versions.py
 
 check:
+	node --check tests/e2e/scientific_buffers.js
+	python3 -m py_compile tests/e2e/scientific_buffers.py
 	node --check api/figure-runner.mjs
 	node --check api/figure-browser.mjs
 	node --check api/figure-job.mjs

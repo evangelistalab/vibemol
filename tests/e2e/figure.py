@@ -231,4 +231,8 @@ def main():
         Path(playwright.__file__).parent/'driver/package/browsers.json')
     from figure_runner import run as run_figure_runner
     run_figure_runner(executable,p.ARTIFACTS/'figure-runner')
+    # Both prior phases have retired their browsers. Three fresh serial contexts
+    # enforce the published-source rule without adding a 38th suite.
+    from scientific_buffers import run_matrix as run_scientific_buffers
+    run_scientific_buffers(p.ARTIFACTS/'scientific-buffers')
 if __name__=='__main__':main()

@@ -1,11 +1,11 @@
-"""Scratch diagnostic: exact source-byte comparisons, not an ordinary merge gate."""
+"""Standing published-source write traps, run serially within the Figure suite."""
 import json,sys,hashlib,os,argparse,subprocess,importlib.metadata
 import playwright
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tests/e2e'))
 import premerge as p
 from surface_shadows import settle
-parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--owners-only',action='store_true');ARGS=parser.parse_args();OUT=ARGS.output.resolve();OUT.mkdir(parents=True,exist_ok=False)
+OUT=None
 INIT=Path(__file__).with_suffix('.js').read_text()
 TRJ=''.join(f'2\nframe {i}\nC {-0.7+i*.1} 0 0\nC {0.7+i*.1} 0 0\n' for i in range(4))
 XYZ='2\nvibration\nC -0.7 0 0\nC 0.7 0 0\n'
@@ -63,7 +63,28 @@ def coordinate_owners(page,url):
  assert p.load(page,[{'name':'owner.molden','text':molden}])['ok'];mode_edit();checkpoint(page,case,'molden-before-order');page.evaluate("()=>__scientificAliasProbe.oldCoeffs=__scientificAliasProbe.source('molden').molden.mos.map(m=>m.coefficients)");edit(1,'order',1)
  r=page.evaluate("()=>{const m=__scientificAliasProbe.source('molden').molden;return {basisIndices:m.basis.atomBlocks.map(b=>b.atomIndex),sameCoefficientBuffers:m.mos.every((mo,i)=>mo.coefficients===__scientificAliasProbe.oldCoeffs[i])}}");print('[owner-basis] '+json.dumps(r),flush=True);assert r=={'basisIndices':[1,0],'sameCoefficientBuffers':True};checkpoint(page,case,'molden-metadata-only');assert not errors,errors;return checkpoint(page,case,'final')
 
-def main():
+def validate_results(results):
+ assert len(results)==3,{'cases':len(results),'expected':3}
+ for result in results:
+  assert result['stage']=='final',result['stage']
+  assert result['guardedCalls']>0,result['guardedCalls']
+  assert result['arrays'] and any('source' in a['kinds'] for a in result['arrays'])
+  assert not result['sourceChanges'],result['sourceChanges']
+  assert not result['violations'],result['violations']
+  assert not result['bufferAccesses'],result['bufferAccesses']
+  assert not any(m['transferredSourceIds'] for m in result['workerMessages'])
+  assert any('frameBuffer' in label for a in result['derivedChanges'] for label in a['labels']),result['derivedChanges']
+ # The routing case must really reach both workers, not silently exercise sync.
+ assert {m['kind'] for m in results[1]['workerMessages']}=={'autoiso','arithmetic'},results[1]['workerMessages']
+
+def validate_controls(controls):
+ assert [x['name'] for x in controls['guards']]==['index','set','subarray','callback-array'],controls
+ assert all(x['blocked'] and x['sourceUnchanged'] for x in controls['guards']),controls
+ assert controls['detach']['readThrows'] and controls['detach']['methodWriteThrows'] and controls['detach']['transferredOwnerUnchanged'],controls
+
+def run_matrix(output,owners_only=False):
+ global OUT
+ OUT=Path(output).resolve();OUT.mkdir(parents=True,exist_ok=False)
  results=[]
  with p.run_http_server(ROOT) as url,p.sync_playwright() as pw:
   browser=pw.chromium.launch(headless=True)
@@ -73,19 +94,29 @@ def main():
    lock=(ROOT/'api/requirements-ci.lock').read_text();expected=next(l.split('==',1)[1] for l in lock.splitlines() if l.startswith('playwright=='));assert importlib.metadata.version('playwright')==expected
    environment={'playwright':expected,'browser':browser.version,'executable':executable,'viewport':{'width':1280,'height':900},'deviceScaleFactor':1,'python':sys.version,'lockSha256':hashlib.sha256(lock.encode()).hexdigest()}
    (OUT/'environment.json').write_text(json.dumps(environment,indent=2))
-   for case in (() if ARGS.owners_only else ('synchronous','worker')):
+   for case in (() if owners_only else ('synchronous','worker')):
     context=browser.new_context(viewport={'width':1280,'height':900},device_scale_factor=1)
-    try:results.append(run(context.new_page(),url,case))
+    try:
+     page=context.new_page();results.append(run(page,url,case));validate_controls(page.evaluate('()=>({guards:__scientificAliasProbe.controls,detach:__scientificAliasProbe.detachControl})'))
     except Exception:
      page=context.pages[0];p.write_failure_artifacts(page,OUT,case,[],[]);raise
     finally:context.close()
     assert len(browser.contexts)==0
    context=browser.new_context(viewport={'width':1280,'height':900},device_scale_factor=1)
-   try:results.append(coordinate_owners(context.new_page(),url))
+   try:
+    page=context.new_page();results.append(coordinate_owners(page,url));validate_controls(page.evaluate('()=>({guards:__scientificAliasProbe.controls,detach:__scientificAliasProbe.detachControl})'))
    except Exception:
     page=context.pages[0];p.write_failure_artifacts(page,OUT,'coordinate-owners',[],[]);raise
    finally:context.close()
    assert len(browser.contexts)==0
   finally:browser.close()
- (OUT/'summary.json').write_text(json.dumps({'diagnosticOnly':True,'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'auditedAppRevision':'d281e8ff4d9ad0ef41d987f07f4fa255d023ac33','appSha256':hashlib.sha256((ROOT/'assets/app/js/app.js').read_bytes()).hexdigest(),'probeSha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__).resolve(),Path(__file__).with_suffix('.js').resolve())},'cases':results,'residualContexts':0},indent=2))
+ if not owners_only:validate_results(results)
+ summary={'standingCheck':not owners_only,'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'appSha256':hashlib.sha256((ROOT/'assets/app/js/app.js').read_bytes()).hexdigest(),'probeSha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__).resolve(),Path(__file__).with_suffix('.js').resolve())},'cases':results,'residualContexts':0}
+ (OUT/'summary.json').write_text(json.dumps(summary,indent=2))
+ print('[scientific-buffers] '+json.dumps({'standingCheck':not owners_only,'cases':len(results),'sourceChanges':0,'writeViolations':0,'sourceTransfers':0,'residualContexts':0}),flush=True)
+ return summary
+
+def main():
+ parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--output',type=Path,required=True);parser.add_argument('--owners-only',action='store_true');args=parser.parse_args()
+ run_matrix(args.output,args.owners_only)
 if __name__=='__main__':main()

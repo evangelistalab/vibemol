@@ -115,7 +115,7 @@ a system browser, and requires a new output directory:
 
 ```sh
 PLAYWRIGHT_BROWSERS_PATH=/path/to/pinned-cache \
-python tools/diagnostics/scientific_aliases.py --output out/test-artifacts/alias-new-run
+python tests/e2e/scientific_buffers.py --output out/test-artifacts/alias-new-run
 ```
 
 `--owners-only` selects the native Coordinates case. The full run includes both
@@ -157,3 +157,18 @@ were detected, while source equilibrium/displacement bytes stayed identical.
 All four intentional write controls were rejected; detach controls retain their
 read/write distinction. Exact hashes, toolchain, source revision and native
 comparands are recorded in the inventory and ignored raw diagnostic output.
+
+## Standing enforcement
+
+Direct human authorization promotes the instrument to `tests/e2e/scientific_buffers.py`
+and its sibling JS. Figure runs the complete matrix after retiring both its original
+browser and the native runner. Three serial fresh contexts, worker-route coverage,
+all four positive write controls, exact source bytes, zero borrowed-write violations,
+zero original-source transfers and zero residual contexts are mandatory. Derived
+vibration output must actually change, so a dormant probe cannot pass. Unit negative
+controls reject missing coverage and ineffective traps. The ordinary gate remains
+37/0/37; this is a required phase of Figure, not a diagnostic supplying acceptance.
+
+The historical audit above remains pinned to its measured source. Ownership is a
+separate increment; this standing check first enforces the existing consumer rule.
+Its finite runtime coverage and conservative static limitations still apply.
