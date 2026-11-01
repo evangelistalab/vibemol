@@ -30,7 +30,7 @@
     return out;
   }
 
-  function captureVolume(vol) {
+  function captureVolume(vol, copies = new WeakMap()) {
     const out = pick(vol, VOLUME_FIELDS);
     out.natoms = vol.atoms.length;
     out.units = vol.units || 'bohr';
@@ -55,7 +55,7 @@
     // Retained-session-capture case: do not rely on encode copying before its
     // first await. Capture itself owns numeric arrays, frame containers and
     // basis metadata, even if a caller holds it while live state changes.
-    return global.VibeMolStructureCore.cloneStructuredData(out);
+    return global.VibeMolStructureCore.cloneStructuredData(out, copies);
   }
 
   function activeContext(graph) {
@@ -80,6 +80,7 @@
     } catch (_) { return null; }
   }
   function capture({ graph, sources, records, activeRecord, preset, view, appVersion }) {
+    const volumeCopies = new WeakMap();
     const scenes = graph.getScenes();
     const recordsToSave = new Set(records);
     for (const scene of scenes) {
@@ -102,7 +103,7 @@
         moldenGridStepAng: record.moldenGridStepAng ?? 0.35,
         moldenGridPaddingAng: record.moldenGridPaddingAng ?? 3,
       });
-      entries.push({ id: source.id, name: record.name, sceneKey, recordState, volume: captureVolume(record.vol) });
+      entries.push({ id: source.id, name: record.name, sceneKey, recordState, volume: captureVolume(record.vol, volumeCopies) });
     }
     const state = graph.getState();
     const context = activeContext(graph);
@@ -122,7 +123,7 @@
             if (graph.isCubeLikeLayer(layer)) Object.assign(out, graph.createCubeAppearance(layer));
             if (layer.cubeData && (layer.kind === 'arithmetic' || (!layer.record
               || (layer.isSceneGraphDuplicate && layer.record.vol.kind !== 'molden' && layer.cubeData !== layer.record.vol)))) {
-              out.volume = captureVolume(layer.cubeData);
+              out.volume = captureVolume(layer.cubeData, volumeCopies);
             }
             return out;
           }),

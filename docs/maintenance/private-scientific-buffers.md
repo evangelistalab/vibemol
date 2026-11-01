@@ -71,8 +71,9 @@ edited. Supported export previously packed its copies before its first await;
 no existing user-data corruption is claimed from this probe.
 
 `captureVolume` now copies before returning, preserving within-capture aliases.
-Full capture also owns record, graph, preset and view metadata without duplicating
-the already copied volumes. The named unit cases retain a capture across a yield,
+Full capture shares one copy memo across sources, preserving encoder buffer
+deduplication both within and between volumes. It also owns record, graph, preset
+and view metadata without duplicating the already copied volumes. The named unit cases retain a capture across a yield,
 change live values and replacements, mutate capture data in the opposite direction,
 and verify exported/decoded values. They do not rely on encode's current scheduling.
 

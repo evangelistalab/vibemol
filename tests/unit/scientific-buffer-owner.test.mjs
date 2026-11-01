@@ -72,7 +72,11 @@ test('bulk readers get independent native arrays and preserve aliases only withi
 
 test('retained-session-capture owns source bytes, containers and basis metadata independently of encode timing',async()=>{
  const ctx=loadGlobalModules(['assets/app/js/structure.js','assets/app/js/session-format.js','assets/app/js/session.js']);
- const owner=create(()=>{}),volume=owner.publishVolume(fixture()),capture=ctx.VibeMolSessionModule.captureVolume(volume);
+ const owner=create(()=>{}),volume=owner.publishVolume(fixture()),record={name:'retained',vol:volume,_sceneGraphSceneKey:'scene'};
+ const scene={id:'scene',name:'retained',sceneKey:'scene',moleculeRecord:record,layers:[{id:'molecule',kind:'molecule',record}]};
+ const graph={getScenes:()=>[scene],getState:()=>({focusedSceneId:'scene',activeSceneId:'scene',activeLayerId:'molecule',selectedLayerIds:['molecule'],syncMaster:{}}),isCubeLikeLayer:()=>false};
+ const snapshot=ctx.VibeMolSessionModule.capture({graph,sources:{register:()=>({id:'source'})},records:[record],activeRecord:record,preset:{},view:{},appVersion:'test'});
+ const capture=snapshot.sources[0].volume;
  const oldFrame=capture.trajectory.frames[0],oldBasis=capture.molden.basis.atomBlocks[0].atomIndex;
  await Promise.resolve();
  volume.trajectory.frames=[new Float32Array([9,8,7])];volume.atoms[0].x=8;volume.molden.basis.atomBlocks[0].atomIndex=4;

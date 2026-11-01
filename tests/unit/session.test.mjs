@@ -128,6 +128,7 @@ test('buffers are deduplicated and copied before asynchronous encoding yields', 
   vol.isTwoComponent = true;
   vol.alphaRe = vol.data;
   vol.alphaIm = new Float32Array([0,1]); vol.betaRe = vol.alphaIm; vol.betaIm = vol.alphaIm;
+  fixture.records[1].vol.data=vol.data;
   const writing = format.encode(capture());
   vol.data[0] = 9;
   const text = await writing;
@@ -136,6 +137,7 @@ test('buffers are deduplicated and copied before asynchronous encoding yields', 
   assert.equal(saved.data[0], 0.125);
   assert.equal(saved.data, saved.alphaRe);
   assert.equal(saved.alphaIm, saved.betaRe);
+  assert.equal(saved.data,restored.sources[1].volume.data);
 });
 
 test('retained session capture owns graph, record, preset and view metadata before encoding starts',async()=>{
