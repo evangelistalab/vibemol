@@ -256,6 +256,7 @@
     if (op === 'product' && entries.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
     const grid = validateInputGrids(entries, limits);
     if (!grid.ok) return grid;
+    const readEntries = entries.map(entry => ({ ...entry, vol: { ...entry.vol, data: entry.vol.data.slice() } }));
     const out = new Float32Array(grid.voxelCount);
     const [, ny, nz] = grid.baseVol.nxyz;
     let cursor = 0;
@@ -268,8 +269,8 @@
         const k = cursor % nz;
         for (let n = 0; n < entries.length; n += 1) {
           const entry = entries[n];
-          const sample = grid.sameGrid ? Number(entry.vol.data[cursor]) || 0 : sampleTrilinear(
-            grid.specs[n], entry.vol.data,
+          const sample = grid.sameGrid ? Number(readEntries[n].vol.data[cursor]) || 0 : sampleTrilinear(
+            grid.specs[n], readEntries[n].vol.data,
             grid.baseVol.origin[0] + i * grid.resamplePlan.step[0],
             grid.baseVol.origin[1] + j * grid.resamplePlan.step[1],
             grid.baseVol.origin[2] + k * grid.resamplePlan.step[2]

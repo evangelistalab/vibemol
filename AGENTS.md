@@ -860,3 +860,36 @@ captures, the human explicitly authorized a fresh CI-recorded 0.10.1 baseline
 with exactly those102 dom.ids removals and every other value/type unchanged.
 No mapping or comparison exception is allowed; the failed run remains failed. The earlier accepted candidate/run
 51b90e5/40447991258 remains historical evidence for its own tree only.
+
+
+## Scientific-buffer ownership and standing enforcement
+
+The alias inventory is `docs/maintenance/scientific-buffer-alias-audit.md` and
+`tests/baselines/scientific-buffer-aliases.json`; its original no-writer result
+remains pinned to d281e8f. Figure now runs `tests/e2e/scientific_buffers.py` after
+retiring its original browser and native runner. Three serial fresh contexts,
+write controls, worker routes, exact source bytes, no source transfers and zero
+residual contexts are required within the existing 37 suites. The accepted set
+remains intentionally empty. This standing phase supplies acceptance only as
+part of its own complete ordinary gate; historical diagnostics do not.
+
+The app-private scientific owner has zero domain closure dependencies plus one
+optional violation reporter. Bulk wrappers have two reads (owner/original reader).
+Copy ingress and egress, seal via transfer/detach, reject SharedArrayBuffer, and
+never expose backing views to callbacks. Numeric-bearing Molden container replacements
+are adoption boundaries too. The standing browser phase must inspect actual live
+app records and run blocked-write/copy-isolation controls; byte stability and
+isolated owner unit tests alone do not prove integration. Vibration frameBuffer is derived mutable
+output, not source. Session capture must own buffers AND metadata before return;
+`retained-session-capture-independent` must not rely on encode-before-await timing.
+See `docs/maintenance/private-scientific-buffers.md` and its contract inventory.
+App state remains250 declaration lines/261 variable-let bindings; no new module let.
+Scientific ownership does not implement Undo or make structural metadata immutable.
+
+The separate selection/Build reconnaissance is
+`docs/maintenance/selection-build-api-reachability.md`: 40 members/33 functions
+across seven measured product facades, zero incremental active Edit/Build
+mutation methods, and28 enumerated Edit-related testing functions of42.
+Calculations focus and MINAO assignment are separate from Edit selection. Pure
+catalog factories are not active app controllers. No AI interface, interchange
+feature, command bus or Undo implementation is released by that reconnaissance.

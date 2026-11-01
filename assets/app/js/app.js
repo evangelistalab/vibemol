@@ -1,4 +1,6 @@
 (function () {
+  // Pure private storage precedes even function-reference guards below.
+  const scientificBufferOwner = createScientificBufferOwner();
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   const getElementSymbol = z => window.VibeMolElementUtils.getElementSymbol(z, ATOM_Z_TO_DATA);
@@ -95,18 +97,18 @@
   const DEFAULT_POS_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.pos;
   const DEFAULT_NEG_SURFACE_COLOR = DEFAULT_SURFACE_SCHEME.neg;
 
-  const { arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry } = window.VibeMolParsers || {};
+  const { arrayMinMax: arrayMinMaxCore, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry } = window.VibeMolParsers || {};
   if (![arrayMinMax, parseCube, parseTwoComponentCube, parseXYZ, parseMolden, parsePsi4Geometry].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolParsers is not loaded. Ensure assets/app/js/parsers.js is included before assets/app/js/app.js.');
   }
 
   const {
-    maxAbs,
+    maxAbs: maxAbsCore,
     isPhaseLikeComponent,
-    maxMagnitude,
-    maxTotalDensity,
-    getAlphaBetaMagnitudeMaxima,
-    computeVolumeStats,
+    maxMagnitude: maxMagnitudeCore,
+    maxTotalDensity: maxTotalDensityCore,
+    getAlphaBetaMagnitudeMaxima: getAlphaBetaMagnitudeMaximaCore,
+    computeVolumeStats: computeVolumeStatsCore,
   } = window.VibeMolRendering || {};
   if (![maxAbs, isPhaseLikeComponent, maxMagnitude, maxTotalDensity, getAlphaBetaMagnitudeMaxima, computeVolumeStats].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolRendering is not loaded. Ensure assets/app/js/rendering.js is included before assets/app/js/app.js.');
@@ -412,8 +414,225 @@
     throw new Error('VibeMolSceneGraph is not loaded. Ensure assets/app/js/scene-graph.js is included before assets/app/js/app.js.');
   }
 
+  // Private scientific-buffer owner: begin.
+  // No app/domain closure dependencies. Backing views and draft capabilities
+  // never escape; read methods expose scalars or independent owned copies.
+  function createScientificBufferOwner(reportViolation = message => console.error(message)) {
+    const isNumericView = ArrayBuffer.isView;
+    const storage = new WeakMap(), drafts = new WeakMap(), published = new WeakSet();
+    const types = { Int8Array, Uint8Array, Uint8ClampedArray, Int16Array, Uint16Array, Int32Array, Uint32Array, Float32Array, Float64Array };
+    const mutators = new Set(['set', 'fill', 'sort', 'reverse', 'copyWithin', 'push', 'pop', 'shift', 'unshift', 'splice']);
+    const callbacks = new Set(['forEach', 'map', 'filter', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex']);
+    const reads = new Set(['at', 'includes', 'indexOf', 'lastIndexOf', 'join', 'toString', 'toLocaleString', 'entries', 'keys', 'values', 'toReversed', 'toSorted', 'with']);
+    function fail(label, operation) {
+      const message = `[scientific-buffer-write] ${label}: ${operation}`;
+      reportViolation(message);
+      throw new TypeError(message);
+    }
+    function rejectShared(value) {
+      if (Object.prototype.toString.call(value) === '[object SharedArrayBuffer]'
+          || (isNumericView(value) && Object.prototype.toString.call(value.buffer) === '[object SharedArrayBuffer]')) {
+        throw new TypeError('Shared scientific buffers cannot be privately owned.');
+      }
+    }
+    function ownedCopy(value) {
+      rejectShared(value);
+      if (storage.has(value)) value = storage.get(value);
+      if (Array.isArray(value)) return Array.prototype.slice.call(value);
+      if (!isNumericView(value) || value instanceof DataView) throw new TypeError('Expected a numeric scientific array.');
+      const Type = types[value.constructor.name];
+      if (!Type) throw new TypeError('Unsupported scientific numeric type.');
+      // A native constructor copies even a subview or subclass. Never invoke a
+      // caller-overridden slice/constructor that could return its own storage.
+      return new Type(value);
+    }
+    function readonly(target, label) {
+      const view = new Proxy(target, {
+        set: (_target, key) => fail(label, `write ${String(key)}`),
+        defineProperty: (_target, key) => fail(label, `define ${String(key)}`),
+        deleteProperty: (_target, key) => fail(label, `delete ${String(key)}`),
+        setPrototypeOf: () => fail(label, 'setPrototypeOf'),
+        get(array, key, receiver) {
+          if (key === 'buffer') return Array.isArray(array) ? undefined : array.slice().buffer;
+          if (key === 'valueOf') return () => receiver;
+          if (key === 'constructor') return array.constructor;
+          if (mutators.has(key)) return () => fail(label, String(key));
+          // subarray deliberately copies; it is never a writable private alias.
+          if (key === 'slice' || key === 'subarray') return (...args) => array.slice(...args);
+          if (callbacks.has(key)) return (fn, thisArg) => array[key]((v, i) => fn.call(thisArg, v, i, receiver));
+          if (key === 'reduce' || key === 'reduceRight') return (fn, ...initial) => array[key]((acc, v, i) => fn(acc, v, i, receiver), ...initial);
+          if (reads.has(key) || key === Symbol.iterator) return array[key].bind(array);
+          const value = Reflect.get(array, key, array);
+          // Object prototype methods receive the facade, never the private view.
+          return typeof value === 'function' ? value.bind(receiver) : value;
+        },
+      });
+      storage.set(view, target);
+      return view;
+    }
+    function beginDraft(value) {
+      const view = ownedCopy(value);
+      if (Array.isArray(view)) throw new TypeError('A sealed draft needs a transferable numeric array.');
+      const token = Object.freeze({ view });
+      drafts.set(token, { view, length: view.length, constructor: view.constructor });
+      return token;
+    }
+    function sealDraft(token, label = 'draft') {
+      const draft = drafts.get(token);
+      if (!draft) throw new TypeError('Unknown or already sealed scientific draft.');
+      drafts.delete(token);
+      if (draft.view.buffer.byteLength !== draft.length * draft.view.BYTES_PER_ELEMENT) throw new TypeError('Scientific draft was detached outside its owner.');
+      const buffer = structuredClone(draft.view.buffer, { transfer: [draft.view.buffer] });
+      return readonly(new draft.constructor(buffer), label);
+    }
+    function adopt(value, label = 'source', seen = new WeakMap()) {
+      if (value == null) return value;
+      rejectShared(value);
+      if (storage.has(value)) return value;
+      if (seen.has(value)) return seen.get(value);
+      let sealed;
+      if (Array.isArray(value)) {
+        if (!Array.prototype.every.call(value, v => typeof v === 'number')) throw new TypeError('Expected numeric coefficients.');
+        sealed = readonly(Object.freeze(Array.prototype.slice.call(value)), label);
+      } else sealed = sealDraft(beginDraft(value), label);
+      seen.set(value, sealed);
+      return sealed;
+    }
+    function copy(value, seen = new WeakMap()) {
+      if (value == null || typeof value !== 'object') return value;
+      rejectShared(value);
+      if (seen.has(value)) return seen.get(value);
+      if (storage.has(value) || isNumericView(value)) {
+        const result = ownedCopy(value); seen.set(value, result); return result;
+      }
+      if (value instanceof ArrayBuffer) { const result = value.slice(0); seen.set(value, result); return result; }
+      const result = Array.isArray(value) ? [] : {}; seen.set(value, result);
+      for (const [key, next] of Object.entries(value)) if (typeof next !== 'function') result[key] = copy(next, seen);
+      return result;
+    }
+    function field(object, key, transform, initialSeen) {
+      let value = transform(object[key], initialSeen);
+      Object.defineProperty(object, key, { enumerable: true, configurable: false,
+        get: () => value, set: next => { value = transform(next, new WeakMap()); } });
+    }
+    function immutableBank(entries, label) {
+      // app.js is non-strict: freeze alone would silently discard a slot write.
+      return new Proxy(Object.freeze(entries), {
+        set: (_target, key) => fail(label, `replace slot ${String(key)}`),
+        defineProperty: (_target, key) => fail(label, `define slot ${String(key)}`),
+        deleteProperty: (_target, key) => fail(label, `delete slot ${String(key)}`),
+        setPrototypeOf: () => fail(label, 'setPrototypeOf'),
+      });
+    }
+    function bank(value, label, seen) {
+      if (!Array.isArray(value)) return value;
+      return immutableBank(value.map((v, i) => adopt(v, `${label}[${i}]`, seen)), label);
+    }
+    function trajectory(value, seen) {
+      if (!value) return value;
+      const result = { ...value };
+      field(result, 'frames', (v, memo) => bank(v, 'trajectory.frames', memo), seen);
+      return result;
+    }
+    function vibration(value, seen) {
+      if (!value) return value;
+      const result = { ...value };
+      field(result, 'equilibrium', (v, memo) => adopt(v, 'vibration.equilibrium', memo), seen);
+      field(result, 'modes', (modes, memo) => !Array.isArray(modes) ? modes : immutableBank(modes.map((mode, i) => {
+        const next = { ...mode };
+        field(next, 'displacements', (v, inner) => adopt(v, `vibration.modes[${i}].displacements`, inner), memo);
+        return next;
+      }), 'vibration.modes'), seen);
+      // Derived animation scratch is not scientific source storage. Own its
+      // ingress too, but keep it writable and distinct from equilibrium.
+      if (value.frameBuffer) result.frameBuffer = ownedCopy(value.frameBuffer);
+      return result;
+    }
+    function basis(value, seen) {
+      if (!value) return value;
+      const result = copy(value);
+      field(result, 'atomBlocks', (blocks, memo) => !Array.isArray(blocks) ? blocks : immutableBank(blocks.map(block => {
+        const nextBlock = { ...block };
+        field(nextBlock, 'shells', (shells, inner) => !Array.isArray(shells) ? shells : immutableBank(shells.map(shell => {
+          const nextShell = { ...shell };
+          field(nextShell, 'primitives', (primitives, innerMemo) => !Array.isArray(primitives) ? primitives : immutableBank(primitives.map(primitive => {
+            const nextPrimitive = { ...primitive };
+            field(nextPrimitive, 'coefficients', (v, coefficientMemo) => adopt(v, 'molden.primitive.coefficients', coefficientMemo), innerMemo);
+            return nextPrimitive;
+          }), 'molden.primitives'), inner);
+          return nextShell;
+        }), 'molden.shells'), memo);
+        return nextBlock;
+      }), 'molden.atomBlocks'), seen);
+      return result;
+    }
+    function molden(value, seen) {
+      if (!value) return value;
+      const result = { ...value };
+      field(result, 'basis', basis, seen);
+      field(result, 'mos', (mos, memo) => !Array.isArray(mos) ? mos : immutableBank(mos.map((mo, i) => {
+        const next = { ...mo };
+        field(next, 'coefficients', (v, inner) => adopt(v, `molden.mos[${i}].coefficients`, inner), memo);
+        return next;
+      }), 'molden.mos'), seen);
+      return result;
+    }
+    function publishVolume(volume) {
+      if (!volume || published.has(volume)) return volume;
+      const seen = new WeakMap();
+      // Prepare on an isolated descriptor holder: invalid/shared inputs fail
+      // before any non-configurable publication descriptors are installed.
+      const holder = {};
+      for (const key of ['data', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm']) holder[key] = adopt(volume[key], key, seen);
+      holder.trajectory = trajectory(volume.trajectory, seen);
+      holder.vibration = vibration(volume.vibration, seen);
+      holder.molden = molden(volume.molden, seen);
+      for (const key of ['data', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm']) {
+        let value = holder[key];
+        Object.defineProperty(volume, key, { enumerable: true, configurable: false, get: () => value,
+          set: next => { value = adopt(next, key); } });
+      }
+      for (const [key, transform] of [['trajectory', trajectory], ['vibration', vibration], ['molden', molden]]) {
+        let value = holder[key];
+        Object.defineProperty(volume, key, { enumerable: true, configurable: false, get: () => value,
+          set: next => { value = transform(next, new WeakMap()); } });
+      }
+      published.add(volume);
+      return volume;
+    }
+    function readVolume(volume) {
+      if (!volume) return volume;
+      const result = { ...volume }, seen = new WeakMap();
+      for (const key of ['data', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm']) {
+        if (volume[key]) result[key] = copy(volume[key], seen);
+      }
+      return result;
+    }
+    return Object.freeze({ adopt, copy, beginDraft, sealDraft, publishVolume, readVolume });
+  }
+  // Private scientific-buffer owner: end.
+
+  // Bulk consumers receive disposable copies, not per-sample Proxy reads.
+  function makeIsosurface(volume, ...args) { return makeIsosurfaceCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function make2CPhaseIsosurface(volume, ...args) { return make2CPhaseIsosurfaceCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function make2CTotalColoredIsosurface(volume, ...args) { return make2CTotalColoredIsosurfaceCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudCubes(volume, ...args) { return buildCloudCubesCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudPoints(volume, ...args) { return buildCloudPointsCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudCubes2CPhase(volume, ...args) { return buildCloudCubes2CPhaseCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudPoints2CPhase(volume, ...args) { return buildCloudPoints2CPhaseCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudCubes2CTotal(volume, ...args) { return buildCloudCubes2CTotalCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function buildCloudPoints2CTotal(volume, ...args) { return buildCloudPoints2CTotalCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function maxTotalDensity(volume, ...args) { return maxTotalDensityCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function getAlphaBetaMagnitudeMaxima(volume, ...args) { return getAlphaBetaMagnitudeMaximaCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function computeVolumeStats(volume, ...args) { return computeVolumeStatsCore(scientificBufferOwner.readVolume(volume), ...args); }
+  function arrayMinMax(data, ...args) { return arrayMinMaxCore(scientificBufferOwner.copy(data), ...args); }
+  function maxAbs(data, ...args) { return maxAbsCore(scientificBufferOwner.copy(data), ...args); }
+  function maxMagnitude(data, other, ...args) { return maxMagnitudeCore(scientificBufferOwner.copy(data), scientificBufferOwner.copy(other), ...args); }
+
+
+
   const ArithmeticGrid = window.VibeMolArithmeticGrid || {};
-  const orbitalGridStore = window.VibeMolGridStore.createGridStore();
+  const orbitalGridStore = window.VibeMolGridStore.createGridStore({ publishGrid: grid => scientificBufferOwner.publishVolume(grid) });
   const arithmeticRunner = window.VibeMolArithmeticRunner.createArithmeticRunner();
   if (![ArithmeticGrid.compute, ArithmeticGrid.validateInputGrids, ArithmeticGrid.formatResampleNotice].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolArithmeticGrid is not loaded. Ensure assets/app/js/arithmetic-grid.js is included before assets/app/js/app.js.');
@@ -439,7 +658,7 @@
   const { createCylinder: createBondCylinderGeometry, componentOffsets: getBondComponentOffsets, fitBond: fitBondToAtoms } = window.VibeMolBondGeometry || {};
   if (![createBondCylinderGeometry, getBondComponentOffsets, fitBondToAtoms].every(fn => typeof fn === 'function')) throw new Error('VibeMolBondGeometry is not loaded.');
 
-  const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface } = window.VibeMolVolumeGeometry || {};
+  const { atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface: makeIsosurfaceCore } = window.VibeMolVolumeGeometry || {};
   if (![atomUnitsToAng, worldToAtomUnits, voxelToWorld, makeIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolumeGeometry is not loaded. Ensure assets/app/js/volume-geometry.js is included before assets/app/js/app.js.');
   }
@@ -508,12 +727,12 @@
   }
 
   const {
-    buildCloudCubes,
-    buildCloudPoints,
-    buildCloudCubes2CPhase,
-    buildCloudPoints2CPhase,
-    buildCloudCubes2CTotal,
-    buildCloudPoints2CTotal,
+    buildCloudCubes: buildCloudCubesCore,
+    buildCloudPoints: buildCloudPointsCore,
+    buildCloudCubes2CPhase: buildCloudCubes2CPhaseCore,
+    buildCloudPoints2CPhase: buildCloudPoints2CPhaseCore,
+    buildCloudCubes2CTotal: buildCloudCubes2CTotalCore,
+    buildCloudPoints2CTotal: buildCloudPoints2CTotalCore,
   } = window.VibeMolCloudRendering || {};
   if (![
     buildCloudCubes,
@@ -526,7 +745,7 @@
     throw new Error('VibeMolCloudRendering is not loaded. Ensure assets/app/js/cloud-rendering.js is included before assets/app/js/app.js.');
   }
 
-  const { hsvToRgb, make2CPhaseIsosurface, make2CTotalColoredIsosurface } = window.VibeMolVolume2C || {};
+  const { hsvToRgb, make2CPhaseIsosurface: make2CPhaseIsosurfaceCore, make2CTotalColoredIsosurface: make2CTotalColoredIsosurfaceCore } = window.VibeMolVolume2C || {};
   if (![hsvToRgb, make2CPhaseIsosurface, make2CTotalColoredIsosurface].every(fn => typeof fn === 'function')) {
     throw new Error('VibeMolVolume2C is not loaded. Ensure assets/app/js/volume-2c.js is included before assets/app/js/app.js.');
   }
@@ -5440,6 +5659,9 @@
    */
   function applyAtomCoordinateFrame(vol, frame, atomCount, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !frame) return;
+    // One independent native read copy per frame, never Proxy indexing in the
+    // atom loop (and never a callback receiving a private backing view).
+    frame = frame.slice();
     moleculePickCache.clear();
     const record = options.record || (Array.isArray(volumes) ? volumes.find((item) => item && item.vol === vol) : null);
     const targets = getMoleculeRenderTargetsForRecord(record);
@@ -8866,7 +9088,7 @@
 
   function cloneScalarVolumeForArithmetic(baseVol, data, name) {
     const nxyz = Array.isArray(baseVol && baseVol.nxyz) ? baseVol.nxyz.slice() : [0, 0, 0];
-    return Object.assign({}, baseVol, {
+    return scientificBufferOwner.publishVolume(Object.assign({}, baseVol, {
       title: String(name || 'Arithmetic layer'),
       comment: 'VibeMol arithmetic layer',
       nxyz,
@@ -8882,7 +9104,7 @@
       betaRe: undefined,
       betaIm: undefined,
       activeRaw: null,
-    });
+    }));
   }
 
   function cloneArithmeticCubeData(vol, name) {
@@ -11807,7 +12029,7 @@
     });
     pruneInvalidCoordinationPreferences(normalized);
     pruneInvalidMetalBondingPreferences(normalized);
-    return normalized;
+    return scientificBufferOwner.publishVolume(normalized);
   }
 
   /**
@@ -28070,11 +28292,11 @@
     const vol = record.vol;
     vol.atoms = snapshot.atoms.map((a) => normalizeVolumeAtom(a));
     if (snapshot.trajectory) vol.trajectory = cloneTrajectoryState(snapshot.trajectory);
-    else delete vol.trajectory;
+    else vol.trajectory = undefined;
     if (snapshot.vibration) vol.vibration = cloneVibrationState(snapshot.vibration);
-    else delete vol.vibration;
+    else vol.vibration = undefined;
     if (snapshot.molden) vol.molden = cloneMoldenState(snapshot.molden);
-    else delete vol.molden;
+    else vol.molden = undefined;
     vol.natoms = vol.atoms.length;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     stopAllTrajectoryPlayback({ syncUi: false });
@@ -28216,7 +28438,7 @@
     if (vol.trajectory && Array.isArray(vol.trajectory.frames) && vol.trajectory.frames.length) {
       const frameIndex = Math.max(0, Math.min(vol.trajectory.frames.length - 1, Number(vol.trajectory.frameIndex) | 0));
       vol.trajectory.frameIndex = frameIndex;
-      vol.trajectory.frames[frameIndex] = snapshotAtomCoordinates(vol, atomCount);
+      vol.trajectory.frames = vol.trajectory.frames.map((frame, index) => index === frameIndex ? snapshotAtomCoordinates(vol, atomCount) : frame);
     }
     if (vol.vibration && Array.isArray(vol.vibration.modes)) {
       vol.vibration.atomCount = atomCount;

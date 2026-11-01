@@ -30,7 +30,7 @@
     return out;
   }
 
-  function captureVolume(vol) {
+  function captureVolume(vol, copies = new WeakMap()) {
     const out = pick(vol, VOLUME_FIELDS);
     out.natoms = vol.atoms.length;
     out.units = vol.units || 'bohr';
@@ -52,7 +52,10 @@
       // The selected orbital's compatibility grid is a disposable cache.
       Object.assign(out, { data: new Float32Array(0), nxyz: [0, 0, 0], origin: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] });
     }
-    return out;
+    // Retained-session-capture case: do not rely on encode copying before its
+    // first await. Capture itself owns numeric arrays, frame containers and
+    // basis metadata, even if a caller holds it while live state changes.
+    return global.VibeMolStructureCore.cloneStructuredData(out, copies);
   }
 
   function activeContext(graph) {
@@ -77,6 +80,7 @@
     } catch (_) { return null; }
   }
   function capture({ graph, sources, records, activeRecord, preset, view, appVersion }) {
+    const volumeCopies = new WeakMap();
     const scenes = graph.getScenes();
     const recordsToSave = new Set(records);
     for (const scene of scenes) {
@@ -99,12 +103,12 @@
         moldenGridStepAng: record.moldenGridStepAng ?? 0.35,
         moldenGridPaddingAng: record.moldenGridPaddingAng ?? 3,
       });
-      entries.push({ id: source.id, name: record.name, sceneKey, recordState, volume: captureVolume(record.vol) });
+      entries.push({ id: source.id, name: record.name, sceneKey, recordState, volume: captureVolume(record.vol, volumeCopies) });
     }
     const state = graph.getState();
     const context = activeContext(graph);
     activeRecord = context.record || activeRecord;
-    return {
+    const captured = {
       kind: FORMAT.KIND, sessionVersion: FORMAT.VERSION, appVersion,
       name: sessionName(graph), savedAt: new Date().toISOString(),
       sources: entries, records: Array.from(recordsToSave, record => ids.get(record)), activeSourceId: ids.get(activeRecord) || null,
@@ -119,7 +123,7 @@
             if (graph.isCubeLikeLayer(layer)) Object.assign(out, graph.createCubeAppearance(layer));
             if (layer.cubeData && (layer.kind === 'arithmetic' || (!layer.record
               || (layer.isSceneGraphDuplicate && layer.record.vol.kind !== 'molden' && layer.cubeData !== layer.record.vol)))) {
-              out.volume = captureVolume(layer.cubeData);
+              out.volume = captureVolume(layer.cubeData, volumeCopies);
             }
             return out;
           }),
@@ -127,6 +131,13 @@
       }),
       preset, view,
     };
+    // Volumes already own their copies. Copy the remaining graph, record,
+    // preset and view metadata without copying those large arrays twice.
+    const copiedVolumes = new WeakMap(entries.map(entry => [entry.volume, entry.volume]));
+    for (const scene of captured.graph.scenes) for (const layer of scene.layers) {
+      if (layer.volume) copiedVolumes.set(layer.volume, layer.volume);
+    }
+    return global.VibeMolStructureCore.cloneStructuredData(captured, copiedVolumes);
   }
 
   function hydrate(session, { prepareVolume = value => value } = {}) {

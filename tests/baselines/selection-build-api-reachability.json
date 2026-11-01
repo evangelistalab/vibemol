@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 1,
+  "source": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+  "purpose": "Selection/Build substrate reconnaissance only. No new API, command bus, AI interface, forte2 interchange or undo code.",
+  "surface": {
+    "VibeMolStructure": [
+      "kind",
+      "version",
+      "exportActive",
+      "exportActiveText",
+      "parseText",
+      "importFromText"
+    ],
+    "VibeMolSession": [
+      "kind",
+      "version",
+      "exportText",
+      "export",
+      "importText",
+      "import",
+      "validateText"
+    ],
+    "VibeMolEmbed": [
+      "version",
+      "loadFiles"
+    ],
+    "VibeMolPreset": [
+      "kind",
+      "version",
+      "listKeys",
+      "listSchema",
+      "export",
+      "import",
+      "download"
+    ],
+    "VibeMolCalculations": [
+      "enter",
+      "ready",
+      "state",
+      "toggleAtom",
+      "selectAtoms",
+      "selectShell",
+      "selectComponent",
+      "addPlane",
+      "configure",
+      "export",
+      "cacheSize"
+    ],
+    "VibeMolUFFLocal": [
+      "createActiveLocalUffContext",
+      "optimizeActiveStructureWithUff"
+    ],
+    "VibeMolFigure": [
+      "compose",
+      "listTargets",
+      "limits",
+      "open",
+      "viewport"
+    ]
+  },
+  "surfaceMemberCount": 40,
+  "surfaceCallableCount": 33,
+  "testingMemberCount": 42,
+  "editRelatedTestingMembers": [
+    "isFuseRingPreviewActive",
+    "getEditSelectionCount",
+    "getEditSelectionIndices",
+    "getEditBuildState",
+    "getBondCarrierSnapshots",
+    "setEditSelectionIndices",
+    "copyEditSelectionToClipboard",
+    "pasteEditClipboardSelection",
+    "getHaloGhostPreviewKind",
+    "getHaloGhostWorlds",
+    "getHaloReplaceTargetWorlds",
+    "projectHaloGhostToClient",
+    "projectHaloReplaceTargetToClient",
+    "getSelectionCoordinationChoices",
+    "probeSelectionMoveDragStart",
+    "performSelectionMoveDrag",
+    "triggerHaloGhostByIndex",
+    "triggerHaloReplaceTargetByAtomIndex",
+    "replaceGestureTerminalHydrogen",
+    "attachFragmentFromAnchorIndex",
+    "pickEditHitAtClient",
+    "projectActiveAtomToClient",
+    "getTransformAngleGuideClient",
+    "getTransformDistanceGuideClient",
+    "getBondSideCueState",
+    "getBondCenterCueState",
+    "pickTransformValueLabelAtClient",
+    "getActiveTransformGesture"
+  ],
+  "activeEditBuildProductMutationMethods": [],
+  "pureCatalogModule": [
+    "FRAGMENT_LIBRARY",
+    "getCatalogEntries",
+    "resolveCatalogQuery",
+    "getCatalogEntryById",
+    "buildCatalogInstance",
+    "resolveFragmentQuery",
+    "getFragmentById",
+    "buildFragmentInstance",
+    "loadFragmentLibraryFromManifest",
+    "resetFragmentLibraryToBuiltins"
+  ],
+  "factoryExportsAreNotActiveControllerHandles": {
+    "VibeMolEditTools": [
+      "createEditToolsController"
+    ],
+    "VibeMolEditPlacement": [
+      "createEditPlacementController"
+    ]
+  },
+  "nativeReceipts": [
+    {
+      "name": "supported session import",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "supported structure exports atoms",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "testing Edit selection write/read",
+      "actual": [
+        0
+      ],
+      "expected": [
+        0
+      ]
+    },
+    {
+      "name": "supported MINAO component selection",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "supported Calculations selection",
+      "actual": 1,
+      "expected": 1
+    },
+    {
+      "name": "pure fragment query reachable",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "pure catalog instance contains atoms",
+      "actual": true,
+      "expected": true
+    },
+    {
+      "name": "pure query does not place geometry",
+      "actual": 3,
+      "expected": 3
+    }
+  ],
+  "nativeEnvironment": {
+    "browser": "156.0.8078.4",
+    "nativeCDP": true,
+    "pageErrors": [],
+    "cleanup": {
+      "browserExited": true,
+      "profileRemoved": true,
+      "exitCode": 0,
+      "exitSignal": null,
+      "forced": false,
+      "closeAckMs": 0.7732919999998558,
+      "elapsedMs": 1492.7907500000001
+    }
+  },
+  "limits": [
+    "Export enumeration alone is not proof of semantic support; static invocation bodies were checked.",
+    "Calculations atom focus is separate from MINAO assignments and Edit selection.",
+    "Pure catalog/structure helpers operate on caller data; they do not place into the active app.",
+    "Whole structure/session import can express resulting geometry but is not an incremental Build command or Undo contract.",
+    "Native reconnaissance is not a merge gate or full combinatorial Build validation."
+  ]
+}

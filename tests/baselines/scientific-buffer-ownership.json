@@ -1,0 +1,158 @@
+{
+  "schemaVersion": 1,
+  "scope": "App-published scientific numeric storage; pure parsers and caller-owned helper inputs remain caller-owned. No undo implementation.",
+  "dependencies": {
+    "factory": "createScientificBufferOwner",
+    "domainClosureReads": [],
+    "optionalInputs": [
+      "reportViolation"
+    ],
+    "count": 1,
+    "bulkWrappers": [
+      "scientificBufferOwner",
+      "original bulk reader"
+    ],
+    "bulkWrapperCount": 2
+  },
+  "ownedFields": [
+    "data",
+    "alphaRe",
+    "alphaIm",
+    "betaRe",
+    "betaIm",
+    "trajectory.frames[]",
+    "vibration.equilibrium",
+    "vibration.modes[].displacements",
+    "molden.mos[].coefficients",
+    "molden.basis.atomBlocks[].shells[].primitives[].coefficients"
+  ],
+  "publicationBoundaries": [
+    "app.ensureVolumeSchema",
+    "orbitalGridStore.publishGrid",
+    "app.cloneScalarVolumeForArithmetic",
+    "published volume whole-buffer/trajectory/vibration/molden assignment setters",
+    "molden.basis/atomBlocks/shells/primitives replacement setters; scalar atomIndex stays mutable"
+  ],
+  "mutableDerived": [
+    "vibration.frameBuffer"
+  ],
+  "mutableMetadata": [
+    "atoms",
+    "bonds",
+    "annotations",
+    "Molden basis atomIndex",
+    "playback positions/options"
+  ],
+  "rules": [
+    "copy caller input before adoption",
+    "seal by transfer-and-detach; reject repeated/foreign/detached drafts",
+    "reject shared buffers",
+    "backing buffers stay private; buffer/slice/subarray export independent copies",
+    "callbacks receive only the readonly facade",
+    "whole-array replacement creates a new immutable version",
+    "one disposable native copy per bulk reader operation; never per sample",
+    "session capture owns buffers and metadata before return, independently of encoding order",
+    "every standing checkpoint verifies actual live app sources are protected; live blocked-write/copy controls cover all five source families"
+  ],
+  "retainedSessionCapture": {
+    "name": "retained-session-capture-independent",
+    "before": [
+      {
+        "ref": "v0.9.5-pre-refactor",
+        "before": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "after": {
+          "frame": 9,
+          "atom": 8,
+          "basis": 7
+        },
+        "expectedRetained": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "sameFrame": true
+      },
+      {
+        "ref": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+        "before": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "after": {
+          "frame": 9,
+          "atom": 8,
+          "basis": 7
+        },
+        "expectedRetained": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "sameFrame": true
+      }
+    ],
+    "interpretation": "Latent retention hazard on tagged and main. Existing supported export immediately encoded it; no current user-data corruption established. Capture is now explicitly independent."
+  },
+  "surfaceChange": {
+    "newNamespaces": [],
+    "newExportMembers": [],
+    "goldenDelta": null
+  },
+  "constructionAudit": "Private scientific-buffer ownership and retained session capture",
+  "gate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true
+  },
+  "appState": [
+    {
+      "ref": "v0.9.5-pre-refactor",
+      "variableLetBindings": 324,
+      "declarationLines": 313
+    },
+    {
+      "ref": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+      "variableLetBindings": 261,
+      "declarationLines": 250
+    },
+    {
+      "ref": "working-tree",
+      "variableLetBindings": 261,
+      "declarationLines": 250
+    }
+  ],
+  "localVerification": {
+    "jsUnitTests": 505,
+    "pythonUnitTests": 193,
+    "constructionAppBindings": 231,
+    "constructionConsumerBindings": 11,
+    "sourceByteChanges": 0,
+    "writeTrapViolations": 0,
+    "sourceTransfers": 0,
+    "residualContexts": 0,
+    "fullOrdinaryGateRequiredBeforeMerge": true
+  },
+  "previousCandidate": {
+    "head": "1e9cd5de07dbf9ee0d12924efc2c2784805b41a1",
+    "runId": 41273057514,
+    "ordinaryGate": "37/0/37",
+    "independentChecks": 103,
+    "archiveSha256": "34c323542f2e1e619b48cd135ffa9d062cb46d44061a6608eac7f082409fe2e6",
+    "scope": "Passed standing gate before live ownership assertion and nested-basis adoption refinement; not acceptance for the revision."
+  },
+  "liveNegativeControl": {
+    "source": "59392f66b0ba842e062d1d4c9bdb94f9715912b9",
+    "expectedFailure": "Unowned published source",
+    "family": "cube",
+    "field": "data",
+    "type": "Float32Array",
+    "sourceMutationAttempted": false,
+    "meaning": "The revised live check rejects unchanged main without the ownership layer, so isolated owner tests cannot mask missing app integration."
+  }
+}

@@ -1,0 +1,91 @@
+{
+  "runId": 41269118241,
+  "head": "04a4a9c5c0680fc4318924d9f509b4d2ed6c0fcc",
+  "base": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+  "tree": "9542beb4f9891407058a2234977c9ee728ec0e8a",
+  "actualCheckout": "728b0aea0d81c0c173a20b5c6dace29eff547ccc",
+  "attempt": 1,
+  "completeConjunctionVerified": true,
+  "independentChecks": 95,
+  "browser": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "allExecutedOnce": true,
+    "actualFailingWorkflows": []
+  },
+  "exporters": [
+    {
+      "prefix": "trajectory",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    },
+    {
+      "prefix": "vibration",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    }
+  ],
+  "activationReadbacks": 58,
+  "Looks": {
+    "seconds": 1484.5,
+    "minutes": 24.741666666666667,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "riskRemainsOpen": true
+  },
+  "wallMinutes": 49.9,
+  "acceptedSetIntentionallyEmpty": true,
+  "ciRerunPerformed": false,
+  "pr": 84,
+  "mergeCommit": "59392f66b0ba842e062d1d4c9bdb94f9715912b9",
+  "sourceChanges": false,
+  "gate": "Complete ordinary first-pass conjunction; diagnostic runs never supplied acceptance.",
+  "units": {
+    "js": 497,
+    "python": 192,
+    "auditControls": 17
+  },
+  "constructionStages": 16,
+  "scientific": {
+    "cases": 3,
+    "checkpoints": 42,
+    "residualContexts": 0,
+    "sourceArrays": [
+      36,
+      36,
+      19
+    ],
+    "derivedArrays": [
+      2,
+      2,
+      2
+    ],
+    "sourceChanges": 0,
+    "writeViolations": 0,
+    "sourceTransfers": 0
+  },
+  "archive": {
+    "archive": "out/test-artifacts/scientific-buffer-audit/ci-41269118241-immutable-evidence.tar.gz",
+    "bytes": 53440817,
+    "sha256": "13d6896e2b9adc8de0eb56149cf0afad793fc33da64d28df39fa74fed991db64",
+    "head": "04a4a9c5c0680fc4318924d9f509b4d2ed6c0fcc",
+    "tree": "9542beb4f9891407058a2234977c9ee728ec0e8a",
+    "runId": 41269118241,
+    "completeConjunctionVerified": true
+  }
+}

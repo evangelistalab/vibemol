@@ -36,7 +36,7 @@
             worker.postMessage({ operation, outputName, limits: settings.limits, operands: operands.map(entry => ({
               label: entry.label,
               coefficient: entry.coefficient,
-              vol: { origin: entry.vol.origin, axes: entry.vol.axes, nxyz: entry.vol.nxyz, data: entry.vol.data },
+              vol: { origin: entry.vol.origin, axes: entry.vol.axes, nxyz: entry.vol.nxyz, data: entry.vol.data.slice() },
             })) });
           } catch { finish(null); }
         });
