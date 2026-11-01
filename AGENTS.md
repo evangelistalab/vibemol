@@ -876,7 +876,10 @@ part of its own complete ordinary gate; historical diagnostics do not.
 The app-private scientific owner has zero domain closure dependencies plus one
 optional violation reporter. Bulk wrappers have two reads (owner/original reader).
 Copy ingress and egress, seal via transfer/detach, reject SharedArrayBuffer, and
-never expose backing views to callbacks. Vibration frameBuffer is derived mutable
+never expose backing views to callbacks. Numeric-bearing Molden container replacements
+are adoption boundaries too. The standing browser phase must inspect actual live
+app records and run blocked-write/copy-isolation controls; byte stability and
+isolated owner unit tests alone do not prove integration. Vibration frameBuffer is derived mutable
 output, not source. Session capture must own buffers AND metadata before return;
 `retained-session-capture-independent` must not rely on encode-before-await timing.
 See `docs/maintenance/private-scientific-buffers.md` and its contract inventory.

@@ -4,20 +4,24 @@ import sys
 import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'e2e'))
-from scientific_buffers import validate_results, validate_controls
+from scientific_buffers import validate_results, validate_controls, validate_ownership
 
 class ScientificBufferContractTests(unittest.TestCase):
     def results(self):
-        row=dict(stage='final',guardedCalls=1,arrays=[dict(kinds=['source'])],sourceChanges=[],
+        row=dict(stage='final',livePublication=[dict(path='data',privateView=True)],guardedCalls=1,arrays=[dict(kinds=['source'])],sourceChanges=[],
                  violations=[],bufferAccesses=[],derivedChanges=[dict(labels=['vibration.frameBuffer'])],workerMessages=[])
         rows=[copy.deepcopy(row) for _ in range(3)]
+        expected=dict(privateView=True,indexBlocked=True,copyIsolated=True,bufferCopyIsolated=True,sourceUnchanged=True,reportedWrites=1)
+        control=dict(type='Float32Array',before=1,after=1,passed=True,actual=expected,expected=expected)
+        for index,result in enumerate(rows):
+            result['ownershipControls']={kind:[copy.deepcopy(control)] for kind in (('cube','spin','molden','trajectory','vibration') if index<2 else ('molden','trajectory','vibration'))}
         rows[1]['workerMessages']=[dict(kind=k,transferredSourceIds=[]) for k in ('autoiso','arithmetic')]
         return rows
 
     def test_missing_coverage_and_source_mutations_fail(self):
         validate_results(self.results())
         for key,value in [('stage','partial'),('guardedCalls',0),('arrays',[]),('sourceChanges',[1]),
-                          ('violations',[1]),('bufferAccesses',[1]),('derivedChanges',[])]:
+                          ('violations',[1]),('bufferAccesses',[1]),('derivedChanges',[]),('livePublication',[]),('livePublication',[dict(privateView=False)])]:
             with self.subTest(key=key),self.assertRaises(AssertionError):
                 rows=self.results();rows[0][key]=value;validate_results(rows)
         with self.assertRaises(AssertionError):validate_results(self.results()[:2])
@@ -33,3 +37,11 @@ class ScientificBufferContractTests(unittest.TestCase):
             with self.assertRaises(AssertionError):
                 broken=copy.deepcopy(controls);broken['guards'][0][key]=False;validate_controls(broken)
         with self.assertRaises(AssertionError):validate_controls(dict(guards=[],detach=controls['detach']))
+
+    def test_missing_or_unblocked_live_publication_fails(self):
+        groups=self.results()[0]['ownershipControls'];kinds=set(groups)
+        validate_ownership(groups,kinds)
+        with self.assertRaises(AssertionError):validate_ownership({},kinds)
+        for key,value in [('privateView',False),('indexBlocked',False),('copyIsolated',False),('bufferCopyIsolated',False),('sourceUnchanged',False),('reportedWrites',0)]:
+            with self.subTest(key=key),self.assertRaises(AssertionError):
+                broken=copy.deepcopy(groups);broken['cube'][0]['actual'][key]=value;validate_ownership(broken,kinds)

@@ -548,12 +548,28 @@
       if (value.frameBuffer) result.frameBuffer = ownedCopy(value.frameBuffer);
       return result;
     }
+    function basis(value, seen) {
+      if (!value) return value;
+      const result = copy(value);
+      field(result, 'atomBlocks', (blocks, memo) => !Array.isArray(blocks) ? blocks : immutableBank(blocks.map(block => {
+        const nextBlock = { ...block };
+        field(nextBlock, 'shells', (shells, inner) => !Array.isArray(shells) ? shells : immutableBank(shells.map(shell => {
+          const nextShell = { ...shell };
+          field(nextShell, 'primitives', (primitives, innerMemo) => !Array.isArray(primitives) ? primitives : immutableBank(primitives.map(primitive => {
+            const nextPrimitive = { ...primitive };
+            field(nextPrimitive, 'coefficients', (v, coefficientMemo) => adopt(v, 'molden.primitive.coefficients', coefficientMemo), innerMemo);
+            return nextPrimitive;
+          }), 'molden.primitives'), inner);
+          return nextShell;
+        }), 'molden.shells'), memo);
+        return nextBlock;
+      }), 'molden.atomBlocks'), seen);
+      return result;
+    }
     function molden(value, seen) {
       if (!value) return value;
-      const result = { ...value, basis: copy(value.basis) };
-      for (const block of result.basis?.atomBlocks || []) for (const shell of block.shells || []) for (const primitive of shell.primitives || []) {
-        field(primitive, 'coefficients', (v, memo) => adopt(v, 'molden.primitive.coefficients', memo), seen);
-      }
+      const result = { ...value };
+      field(result, 'basis', basis, seen);
       field(result, 'mos', (mos, memo) => !Array.isArray(mos) ? mos : immutableBank(mos.map((mo, i) => {
         const next = { ...mo };
         field(next, 'coefficients', (v, inner) => adopt(v, `molden.mos[${i}].coefficients`, inner), memo);

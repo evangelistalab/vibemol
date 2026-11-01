@@ -23,7 +23,10 @@ reach an unconstructed owner.
 
 App schema adoption, the orbital cache's explicit publication callback and
 arithmetic-volume creation publish private scientific storage. Setters copy
-subsequent whole-buffer or trajectory/vibration/Molden replacements. Source
+subsequent whole-buffer or trajectory/vibration/Molden replacements. Numeric-bearing
+Molden basis containers (basis, atom blocks, shells and primitives) also adopt on
+replacement; their banks reject direct slot replacement while atomIndex remains
+mutable. A regression test first demonstrated the raw-alias bypass and now rejects it. Source
 samples, trajectory frames, equilibrium/displacements, MO coefficients and
 primitive coefficients are protected. Parser/pure-helper results remain owned
 by their callers until app adoption; creating an unrelated GridStore without
@@ -87,3 +90,21 @@ not a whole-program alias or reachability proof. Characterization alone is not
 evidence for retained-capture independence.
 
 Contract inventory: `tests/baselines/scientific-buffer-ownership.json`.
+
+## Live integration controls
+
+Byte stability alone cannot prove the owner is connected: a read-only workload
+can pass on the old raw arrays. Every standing checkpoint now examines the actual
+app record returned by the controller's getter, excluding parser outputs and
+disposable render copies, and requires protected source views. Thirteen family
+groups across the three cases exercise scalar, 2C, orbital, trajectory and
+vibration storage. They attempt a real indexed write, verify its named rejection
+and unchanged value, and mutate slice/buffer copies to prove isolation. Only the
+one expected, verified rejection is removed from the diagnostic violation list;
+unexpected reports or mutations remain failures and no source value is repaired.
+
+The same new check deliberately rejects unchanged main59392f6 at cube.data, before
+any mutation attempt. This negative control shows that removing app adoption
+cannot leave the owner unit tests green while the browser check silently passes.
+The original1e9cd5d candidate's complete103-check gate is archived unchanged; it
+does not supply acceptance for this stricter revision.

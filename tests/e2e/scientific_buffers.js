@@ -20,6 +20,7 @@
     return Reflect.apply(originalError,this,args);
   };
   let guardedCalls = 0;
+  let activeAppRecord = null;
   const mutationMethods = new Set(['set', 'fill', 'sort', 'reverse', 'copyWithin']);
   function readonly(array, label) {
     if (!numericView(array) || array instanceof DataView) return array;
@@ -172,6 +173,7 @@
       observe(value, name + ':return');
       return value;
     });
+    if (name.endsWith('.deps.getActiveRecord')) activeAppRecord = result;
     observe(result, name + ':return');
     return result;
   }
@@ -280,6 +282,7 @@
     return result;
   };
   async function checkpoint(stage) {
+    const livePublication = checkPublishedOwnership();
     const rows = [];
     for (const a of arrays) {
       const bytes = bytesOf(a.value);
@@ -300,6 +303,7 @@
     }
     return {
       stage,
+      livePublication,
       guardedCalls,
       violations: violations.slice(),
       bufferAccesses: bufferAccesses.slice(),
@@ -365,12 +369,74 @@
     indexRead: old[0] ?? null,
     transferredOwnerUnchanged: new Float32Array(owned)[0] === 1
   };
+  function publicationInputs(vol) {
+    const inputs = [];
+    for (const key of sourceFields) if (vol[key]) inputs.push([key,vol[key]]);
+    vol.trajectory?.frames?.forEach((v,i)=>inputs.push([`trajectory.frames[${i}]`,v]));
+    if (vol.vibration) {
+      inputs.push(['vibration.equilibrium',vol.vibration.equilibrium]);
+      vol.vibration.modes?.forEach((mode,i)=>inputs.push([`vibration.modes[${i}].displacements`,mode.displacements]));
+    }
+    vol.molden?.mos?.forEach((mo,i)=>inputs.push([`molden.mos[${i}].coefficients`,mo.coefficients]));
+    vol.molden?.basis?.atomBlocks?.forEach((block,i)=>block.shells?.forEach((shell,j)=>shell.primitives?.forEach((primitive,k)=>
+      inputs.push([`molden.basis[${i}].shells[${j}].primitives[${k}].coefficients`,primitive.coefficients]))));
+    return inputs;
+  }
+  function checkPublishedOwnership() {
+    controllers.VibeMolTrajectoryPlayback?.getActiveTrajectoryInfo();
+    const vol=activeAppRecord?.vol;
+    if(!vol)throw Error('No live published volume at a source checkpoint.');
+    const rows=publicationInputs(vol).map(([path,value])=>({path,type:value?.constructor?.name,
+      privateView:!!value&&(Array.isArray(value)?Object.isFrozen(value):numericView(value)&&!nativeIsView(value))}));
+    if(!rows.length||rows.some(row=>!row.privateView))throw Error('Live source ownership: '+JSON.stringify({expectedPrivate:true,actual:rows}));
+    return rows;
+  }
+  function checkOwnership(vol, label) {
+    if (!vol || violations.length) throw Error('Published ownership precondition: '+JSON.stringify({label,volumePresent:!!vol,violations}));
+    const inputs=publicationInputs(vol);
+    if (!inputs.length) throw Error('No published source controls: '+label);
+    return inputs.map(([path,value])=>{
+      const privateView=!!value && (Array.isArray(value)?Object.isFrozen(value):numericView(value)&&!nativeIsView(value));
+      if (!privateView) throw Error('Unowned published source: '+JSON.stringify({label,path,type:value?.constructor?.name,expectedPrivate:true,actualPrivate:privateView}));
+      const before=value[0],size=value.length,copy=value.slice();
+      if(size)copy[0]=Number(before)+1;
+      const copyIsolated=Object.is(value[0],before);
+      let bufferCopyIsolated=null;
+      if(!Array.isArray(value)) {
+        const bufferCopy=new value.constructor(value.buffer);
+        if(size)bufferCopy[0]=Number(before)+1;
+        bufferCopyIsolated=Object.is(value[0],before);
+      }
+      const start=violations.length;let blocked=false,error=null;
+      try {value[0]=size?Number(before)+1:1;} catch(e) {error=String(e.message);blocked=error.startsWith('[scientific-buffer-write]');}
+      const reported=violations.slice(start);
+      const actual={privateView,indexBlocked:blocked,copyIsolated,bufferCopyIsolated,sourceUnchanged:Object.is(value[0],before),reportedWrites:reported.length};
+      const expected={privateView:true,indexBlocked:true,copyIsolated:true,bufferCopyIsolated:Array.isArray(value)?null:true,sourceUnchanged:true,reportedWrites:1};
+      const passed=JSON.stringify(actual)===JSON.stringify(expected)&&reported.every(x=>x.label==='private-owner'&&x.operation.startsWith('[scientific-buffer-write]'));
+      const row={label,path,type:value.constructor.name,size,before:before??null,after:value[0]??null,actual,expected,passed,error};
+      // Clear exactly the single intentional, verified rejection. An unexpected
+      // write/report is preserved and fails; no source value is ever repaired.
+      if(!passed)throw Error('Published ownership control: '+JSON.stringify(row));
+      violations.splice(start,1);
+      return row;
+    });
+  }
   window.__scientificAliasProbe = {
     checkpoint,
     volume,
     controllers,
     controls,
     detachControl,
+    checkOwnership,
+    publishedSource: kind => {
+      // Force the real app getter, not a parser result or disposable read copy.
+      controllers.VibeMolTrajectoryPlayback?.getActiveTrajectoryInfo();
+      const vol=activeAppRecord?.vol;
+      const matches=vol&&(kind==='cube'?vol.kind!=='molden'&&!vol.isTwoComponent&&vol.data?.length:
+        kind==='molden'?vol.kind==='molden':kind==='trajectory'?vol.trajectory:kind==='vibration'?vol.vibration:vol.isTwoComponent);
+      if(!matches)throw Error('Live ownership source: '+JSON.stringify({kind,actual:vol?.kind,isTwoComponent:vol?.isTwoComponent,trajectory:!!vol?.trajectory,vibration:!!vol?.vibration}));
+      return vol;
+    },
     source: kind => volumes.map(x => x.vol).find(v => kind === 'cube' ? v.kind !== 'molden' && !v.isTwoComponent && v.data?.length : kind === 'molden' ? v.kind === 'molden' : kind === 'trajectory' ? v.trajectory : kind === 'vibration' ? v.vibration : v.isTwoComponent),
     borrowReceipt: () => arrays.map(a => ({
       id: a.id,

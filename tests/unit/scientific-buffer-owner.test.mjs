@@ -73,6 +73,23 @@ test('bulk readers get independent native arrays and preserve aliases only withi
  assert.throws(()=>{volume.data=new Float32Array(new SharedArrayBuffer(8))},/Shared/);assert.equal(volume.data[0],1);
 });
 
+test('replacing any numeric-bearing Molden container adopts coefficients before publication',()=>{
+ const owner=create(()=>{}),volume=owner.publishVolume(fixture());
+ const raw=[2],basis={atomBlocks:[{atomIndex:0,shells:[{primitives:[{exponent:1,coefficients:raw}]}]}]};
+ volume.molden.basis=basis;raw[0]=9;
+ const block=volume.molden.basis.atomBlocks[0];assert.equal(block.shells[0].primitives[0].coefficients[0],2);
+ for(const [object,key,value,read] of [
+  [volume.molden.basis,'atomBlocks',basis.atomBlocks,v=>v[0].shells[0].primitives[0].coefficients],
+  [block,'shells',basis.atomBlocks[0].shells,v=>v[0].primitives[0].coefficients],
+  [block.shells[0],'primitives',basis.atomBlocks[0].shells[0].primitives,v=>v[0].coefficients],
+ ]) {
+  object[key]=value;const coefficients=read(object[key]);const before=coefficients[0];
+  raw[0]+=1;assert.equal(coefficients[0],before);
+  assert.throws(()=>Function('bank','bank[0]=null')(object[key]),/scientific-buffer-write/);
+ }
+ block.atomIndex=3;assert.equal(block.atomIndex,3);
+});
+
 test('retained-session-capture owns source bytes, containers and basis metadata independently of encode timing',async()=>{
  const ctx=loadGlobalModules(['assets/app/js/structure.js','assets/app/js/session-format.js','assets/app/js/session.js']);
  const owner=create(()=>{}),volume=owner.publishVolume(fixture()),record={name:'retained',vol:volume,_sceneGraphSceneKey:'scene'};

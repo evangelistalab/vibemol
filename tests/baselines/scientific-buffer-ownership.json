@@ -30,7 +30,8 @@
     "app.ensureVolumeSchema",
     "orbitalGridStore.publishGrid",
     "app.cloneScalarVolumeForArithmetic",
-    "published volume whole-buffer/trajectory/vibration/molden assignment setters"
+    "published volume whole-buffer/trajectory/vibration/molden assignment setters",
+    "molden.basis/atomBlocks/shells/primitives replacement setters; scalar atomIndex stays mutable"
   ],
   "mutableDerived": [
     "vibration.frameBuffer"
@@ -50,7 +51,8 @@
     "callbacks receive only the readonly facade",
     "whole-array replacement creates a new immutable version",
     "one disposable native copy per bulk reader operation; never per sample",
-    "session capture owns buffers and metadata before return, independently of encoding order"
+    "session capture owns buffers and metadata before return, independently of encoding order",
+    "every standing checkpoint verifies actual live app sources are protected; live blocked-write/copy controls cover all five source families"
   ],
   "retainedSessionCapture": {
     "name": "retained-session-capture-independent",
@@ -126,14 +128,31 @@
     }
   ],
   "localVerification": {
-    "jsUnitTests": 504,
-    "pythonUnitTests": 192,
-    "constructionAppBindings": 215,
+    "jsUnitTests": 505,
+    "pythonUnitTests": 193,
+    "constructionAppBindings": 231,
     "constructionConsumerBindings": 11,
     "sourceByteChanges": 0,
     "writeTrapViolations": 0,
     "sourceTransfers": 0,
     "residualContexts": 0,
     "fullOrdinaryGateRequiredBeforeMerge": true
+  },
+  "previousCandidate": {
+    "head": "1e9cd5de07dbf9ee0d12924efc2c2784805b41a1",
+    "runId": 41273057514,
+    "ordinaryGate": "37/0/37",
+    "independentChecks": 103,
+    "archiveSha256": "34c323542f2e1e619b48cd135ffa9d062cb46d44061a6608eac7f082409fe2e6",
+    "scope": "Passed standing gate before live ownership assertion and nested-basis adoption refinement; not acceptance for the revision."
+  },
+  "liveNegativeControl": {
+    "source": "59392f66b0ba842e062d1d4c9bdb94f9715912b9",
+    "expectedFailure": "Unowned published source",
+    "family": "cube",
+    "field": "data",
+    "type": "Float32Array",
+    "sourceMutationAttempted": false,
+    "meaning": "The revised live check rejects unchanged main without the ownership layer, so isolated owner tests cannot mask missing app integration."
   }
 }
