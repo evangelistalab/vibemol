@@ -32719,7 +32719,9 @@
       const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
       if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
       const target = uiState.ghosts.find((ghost) => (ghost.index | 0) === ghostIndex)
-        || null;
+        // Read-only legacy projection: occupied template directions leave sparse
+        // indices. Keep first-available resolution; selection writes stay exact.
+        || uiState.ghosts[0];
       if (!(target && target.world)) return null;
       const projected = projectWorldToClient(new THREE.Vector3(
         Number(target.world.x) || 0,

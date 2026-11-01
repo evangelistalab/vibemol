@@ -15,6 +15,25 @@ EVIDENCE=ROOT/'tests/baselines/evidence/browser-ci-gate'
 
 
 class WorkflowGateTests(unittest.TestCase):
+    def test_halo_substitution_events_are_counted_per_suite(self):
+        self.assertEqual(GATE.failure_details('', 'looks.py')['haloProjection'],
+                         dict(calls=0, substitutions=0, comparands=[], substitutionEvents=[]))
+        exact = dict(requested=0, available=[0, 1], resolved=0)
+        fallback = dict(requested=0, available=[1, 2], resolved=1)
+        log = '[halo-projection] ' + json.dumps(exact) + '\n'
+        log += '[halo-projection] ' + json.dumps(fallback) + '\n'
+        log += '[halo-projection-substitution] ' + json.dumps(fallback) + '\n'
+        self.assertEqual(GATE.failure_details(log, 'smoke.py')['haloProjection'],
+                         dict(calls=2, substitutions=1, comparands=[exact, fallback], substitutionEvents=[fallback]))
+
+    def test_halo_event_accounting_rejects_missing_duplicate_or_spurious_events(self):
+        fallback = dict(requested=0, available=[1, 2], resolved=1)
+        event = '[halo-projection-substitution] ' + json.dumps(fallback) + '\n'
+        call = '[halo-projection] ' + json.dumps(fallback) + '\n'
+        for log in (call, call + event + event, event):
+            with self.subTest(log=log), self.assertRaisesRegex(AssertionError, 'accounting'):
+                GATE.failure_details(log, 'smoke.py')
+
     def result(self,suite,log,source=''):
         return dict(exitCode=1,test='tests/e2e/'+suite,**GATE.failure_details(log,suite,source))
     def recognized(self,suite,log,source=''):

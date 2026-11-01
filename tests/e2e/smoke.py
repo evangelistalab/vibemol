@@ -758,13 +758,20 @@ def project_active_atom(page, atom_index: int) -> tuple[float, float]:
 
 
 def project_halo_ghost(page, ghost_index: int = 0) -> tuple[float, float]:
-    result = page.evaluate(
+    observation = page.evaluate(
         """(index) => {
-            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectHaloGhostToClient !== 'function') return null;
-            return window.VibeMolTesting.projectHaloGhostToClient(index);
+            const testing = window.VibeMolTesting;
+            const available = testing?.getHaloGhostWorlds?.().map(ghost => ghost.index) || [];
+            const result = typeof testing?.projectHaloGhostToClient === 'function'
+                ? testing.projectHaloGhostToClient(index) : null;
+            return {requested: index, available, resolved: result?.index ?? null, result};
         }""",
         ghost_index,
     )
+    result = observation.pop('result')
+    print('[halo-projection] ' + json.dumps(observation), flush=True)
+    if observation['requested'] != observation['resolved']:
+        print('[halo-projection-substitution] ' + json.dumps(observation), flush=True)
     if not isinstance(result, dict) or not result.get('visible'):
         raise AssertionError(f'Could not project halo ghost {ghost_index}: {result!r}')
     return float(result['x']), float(result['y'])

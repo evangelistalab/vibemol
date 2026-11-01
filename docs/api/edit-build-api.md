@@ -41,6 +41,24 @@ receives the narrow realization operation, rather than an allocator bundle.
 The exact names, callback-parameter counts and reused halo/hydrogen-kernel inputs
 are recorded in `tests/baselines/edit-api.json`.
 
+Two units reach 14, rather than the proposal's projected maximum of 12:
+
+- `createEditApiAttachmentPlanner`: eight injected inputs (`THREE`,
+  `adjustHydrogens`, `catalog`, `geometry`, `outward`, `postprocess`, `topology`,
+  `warnings`) plus six independently counted draft operations (`add`, `bond`,
+  `group`, `nextAtomId`, `operation`, `remove`). Function-valued parameters are
+  capabilities too; counting the draft as one input would hide the real seam.
+- `createEditApiBuildQueries`: seven injected inputs (`bondLength`, `catalog`,
+  `connection`, `elements`, `readSystem`, `resolve`, `sites`) plus seven direct
+  validation/result helpers (`editApiCall`, `editApiData`, `editApiElement`,
+  `editApiFault`, `editApiQuaternion`, `editApiShape`, `editApiTarget`). The
+  complete strict-request and context checks count alongside query execution.
+
+Both are at the present ceiling: the rule is strictly below 15, so neither has
+room for another input. Future forte2 or Build work must re-cut before adding a
+capability, for example separating query validation from execution, or atom
+attachment from fragment staging. No such expansion is included here.
+
 ## Calls and authority
 
 ```js
@@ -174,6 +192,20 @@ Other codes include `NO_SYSTEM`, `SYSTEM_NOT_FOUND`, `SYSTEM_INVALID`,
 `SOURCE_NOT_EDITABLE`, `ABORTED`, and `INVALID_REQUEST`. Whole-request failure
 precedes mutation; no coercion, invalid-member filtering, duplicate repair or
 fallback to a first atom/site is permitted.
+
+The read-only Testing `projectHaloGhostToClient` retains its legacy exception:
+an absent requested template direction resolves to the first available ghost.
+Occupied directions make the template index set sparse. This helper projects
+only; product selection and all mutation adapters keep exact validation.
+Smoke records each requested/available/resolved triple as `[halo-projection]`
+and emits a distinct `[halo-projection-substitution]` whenever requested and
+resolved differ, before its existing projection assertion. Every suite report
+includes calls, substitution count and the explicit events, including zeroes;
+the join independently checks these against the raw log. This is instrumentation
+of existing call sites, not an e2e conversion or authority to repair a click.
+Frequency is measured by the new complete gate; no disposition about caller
+correctness is inferred in advance. The original failed run 41334719445 remains
+failed and preserved separately.
 
 ## Harness boundary and verification
 

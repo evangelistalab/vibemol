@@ -98,6 +98,11 @@ def failure_details(log, suite=None, source=None):
                                 if len(sites) > 1 else None),
             'exceptionType': exceptions[-1].split('.')[-1] if exceptions else None,
             'failureWorkflow': failure_workflow(suite, log) if suite else None}
+    projections = [json.loads(x) for x in re.findall(r'^\[halo-projection\] (.+)$', log, re.M)]
+    substitutions = [json.loads(x) for x in re.findall(r'^\[halo-projection-substitution\] (.+)$', log, re.M)]
+    assert substitutions == [x for x in projections if x['requested'] != x['resolved']], 'Halo substitution event accounting differs from projection comparands'
+    details['haloProjection'] = {'calls': len(projections), 'substitutions': len(substitutions),
+                                'comparands': projections, 'substitutionEvents': substitutions}
     if suite and pathlib.Path(suite).name == 'smoke.py':
         details['videoExportCompletion'] = [json.loads(x) for x in re.findall(r'^\[video-export-completion\] (.+)$', log, re.M)]
     return details

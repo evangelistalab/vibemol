@@ -907,5 +907,26 @@
       "count": 0,
       "inputs": []
     }
-  ]
+  ],
+  "dependencyCeiling": {
+    "strictMaximumExclusive": 15,
+    "projectedMaximum": 12,
+    "actualMaximum": 14,
+    "atCeiling": [
+      "createEditApiAttachmentPlanner",
+      "createEditApiBuildQueries"
+    ],
+    "nextInputRequiresRecut": true,
+    "explanation": "Eight injected attachment capabilities plus six draft operations; seven Build-site query dependencies plus seven strict validation/result helpers. Function-valued parameters and bound helpers are counted, not hidden."
+  },
+  "readOnlyProjection": {
+    "helper": "VibeMolTesting.projectHaloGhostToClient",
+    "missingRequestedIndex": "first available template direction, legacy read-only contract",
+    "selectionWrites": "exact validated requests only; no fallback",
+    "comparandPrefix": "[halo-projection]",
+    "substitutionPrefix": "[halo-projection-substitution]",
+    "countedPerSuite": true,
+    "joinVerifiesRawEventComposition": true,
+    "originalFailedRun": 41334719445
+  }
 }

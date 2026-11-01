@@ -8,6 +8,17 @@ const block=text.split('// Validated Edit API: begin.')[1]?.split('// Validated 
 const factories=vm.runInNewContext(`(()=>{${block};return {reader:createEditApiSystemReader,resolver:createEditApiResolver,selection:createEditSelectionApi,fragments:editApiFragmentMembership,source:classifyEditApiSource,prepare:createEditApiBuildPreparation,build:createEditApiBuildService,validator:createEditApiBuildValidator,commit:createEditApiCommitter,copy:editApiCopy,capture:editApiCapture,difference:editApiDifference,candidate:createEditApiCandidateValidator,envelope:createEditApiEnvelopeValidator,drafts:createEditApiDraftFactory,realize:editApiRealizeIds}})()`,{console,structuredClone,AbortSignal});
 const plain=x=>JSON.parse(JSON.stringify(x));
 const elements={0:{symbol:'X'},1:{symbol:'H'},6:{symbol:'C'},8:{symbol:'O'}};
+test('read-only halo projection preserves sparse first-available resolution without weakening writes',()=>{
+ const body=text.split('    projectHaloGhostToClient: ').at(-1).split('    triggerHaloGhostByIndex:')[0].trim().replace(/,$/,'');
+ const state={visible:true,ghosts:[{index:1,world:{x:1,y:2,z:3}},{index:2,world:{x:4,y:5,z:6}}]};
+ const project=vm.runInNewContext(`(${body})`,{editHaloController:{getUiState:()=>state},editHaloUiState:null,
+  editApiFault:(...args)=>{throw new Error(JSON.stringify(args))},THREE:{Vector3:class{constructor(x,y,z){Object.assign(this,{x,y,z})}}},
+  projectWorldToClient:v=>({x:v.x,y:v.y,visible:true})});
+ assert.deepEqual(plain(project(0)),{index:1,x:1,y:2,visible:true});
+ assert.deepEqual(plain(project(2)),{index:2,x:4,y:5,visible:true});
+ assert.throws(()=>project('0'),/INDEX_OUT_OF_RANGE/);
+ state.visible=false;assert.equal(project(0),null);
+});
 function harness(){
  const context=loadGlobalModules(['assets/app/js/edit-utils.js','assets/app/js/calculations-model.js'],{globals:{ATOM_Z_TO_DATA:elements}});
  let record={vol:{kind:'xyz',units:'angstrom',atoms:[{id:'a',Z:6,x:0,y:0,z:0},{id:'b',Z:6,x:1,y:0,z:0},{id:'c',Z:1,x:0,y:1,z:0}],bonds:[],annotations:{builder:{byAtomId:{}}},fragmentOps:[]}},mode='edit',busy={};
