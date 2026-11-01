@@ -11,7 +11,8 @@
     "VibeMolCalculations",
     "VibeMolAppearanceLooks",
     "VibeMolFigure",
-    "VibeMolUFFLocal"
+    "VibeMolUFFLocal",
+    "VibeMolEdit"
   ],
   "consoleReasons": {
     "VibeMolStructure": "Explicit public structure transport/automation API; retain console and client operations.",
@@ -22,7 +23,8 @@
     "VibeMolCalculations": "Explicit public calculations automation and inspection surface.",
     "VibeMolAppearanceLooks": "Public Look application/inspection API used by external render clients.",
     "VibeMolFigure": "Public figure composition/inspection API.",
-    "VibeMolUFFLocal": "Explicit browser-console local UFF inspection/optimization surface."
+    "VibeMolUFFLocal": "Explicit browser-console local UFF inspection/optimization surface.",
+    "VibeMolEdit": "Reviewed validated selection and incremental static-structure Build automation API; resolver-backed selection, strict complete-request validation and requested/applied readback. The runtime regression matrix invokes all twelve supported methods; no native click recovery."
   },
   "limits": [
     "Direct executable references are not transitive reachability: code that calls a capability may itself be unreachable.",

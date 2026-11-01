@@ -1,0 +1,119 @@
+{
+  "scope": "Development observations; never ordinary gate acceptance",
+  "originalSmoke": {
+    "outcome": "failed",
+    "site": "methane sample-load scene-row readiness",
+    "deadlineMs": 30000,
+    "pageErrors": [],
+    "consoleErrors": [],
+    "retry": false,
+    "mainProbe": "Page.wait_for_function: Timeout 30000ms exceeded.",
+    "candidateProbeCompletedMs": 30124.729874980403,
+    "classification": "unclassified; unchanged main also timed out; no assertion or deadline changed"
+  },
+  "legacyCue": {
+    "sources": [
+      {
+        "button": {
+          "x": 1126,
+          "y": 27,
+          "width": 42,
+          "height": 42,
+          "pointerEvents": "auto"
+        },
+        "utilities": {
+          "x": 1008,
+          "y": 10,
+          "width": 260,
+          "height": 52,
+          "pointerEvents": "auto",
+          "zIndex": "36"
+        },
+        "point": {
+          "x": 1147,
+          "y": 48
+        },
+        "hit": {
+          "id": "topRightUtilities",
+          "tag": "DIV"
+        },
+        "eligible": false,
+        "afterNativeHover": {
+          "pointerEvents": "auto",
+          "hit": "topRightUtilities",
+          "eligible": false
+        },
+        "source": "tagged",
+        "pageErrors": []
+      },
+      {
+        "button": {
+          "x": 1126,
+          "y": 27,
+          "width": 42,
+          "height": 42,
+          "pointerEvents": "auto"
+        },
+        "utilities": {
+          "x": 1008,
+          "y": 10,
+          "width": 260,
+          "height": 52,
+          "pointerEvents": "auto",
+          "zIndex": "36"
+        },
+        "point": {
+          "x": 1147,
+          "y": 48
+        },
+        "hit": {
+          "id": "topRightUtilities",
+          "tag": "DIV"
+        },
+        "eligible": false,
+        "afterNativeHover": {
+          "pointerEvents": "auto",
+          "hit": "topRightUtilities",
+          "eligible": false
+        },
+        "source": "main",
+        "pageErrors": []
+      },
+      {
+        "button": {
+          "x": 1126,
+          "y": 27,
+          "width": 42,
+          "height": 42,
+          "pointerEvents": "auto"
+        },
+        "utilities": {
+          "x": 1008,
+          "y": 10,
+          "width": 260,
+          "height": 52,
+          "pointerEvents": "auto",
+          "zIndex": "36"
+        },
+        "point": {
+          "x": 1147,
+          "y": 48
+        },
+        "hit": {
+          "id": "topRightUtilities",
+          "tag": "DIV"
+        },
+        "eligible": false,
+        "afterNativeHover": {
+          "pointerEvents": "auto",
+          "hit": "topRightUtilities",
+          "eligible": false
+        },
+        "source": "candidate",
+        "pageErrors": []
+      }
+    ],
+    "disposition": "pre-existing utilities interception, identical on all three sources; use shipped Alt+Home/Alt+ArrowDown staging as existing Metal matrix; no product fix or latent baseline expansion",
+    "acceptedCiFailure": false
+  }
+}

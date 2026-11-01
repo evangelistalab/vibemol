@@ -1,6 +1,7 @@
 (function () {
   // Pure private storage precedes even function-reference guards below.
   const scientificBufferOwner = createScientificBufferOwner();
+  const editApiHolder = { current: null, testing: null };
   // --- Constants & helpers ---
   const BOHR_TO_ANG = 0.529177210903;
   const getElementSymbol = z => window.VibeMolElementUtils.getElementSymbol(z, ATOM_Z_TO_DATA);
@@ -611,6 +612,800 @@
     return Object.freeze({ adopt, copy, beginDraft, sealDraft, publishVolume, readVolume });
   }
   // Private scientific-buffer owner: end.
+
+  // Validated Edit API: begin.
+  // Private units; only the twelve-method facade is public.
+  function editApiCopy(value, freeze = false, stack = new WeakSet()) {
+    if (value === undefined) return null;
+    if (typeof value === 'number' && !Number.isFinite(value)) return String(value);
+    if (['function', 'symbol', 'bigint'].includes(typeof value)) return String(value);
+    if (value === null || typeof value !== 'object') return value;
+    if (stack.has(value)) return '[circular]';
+    stack.add(value);
+    const copy = Array.isArray(value) ? value.map(v => editApiCopy(v, freeze, stack))
+      : Object.fromEntries(Object.keys(value).map(key => [key, editApiCopy(Object.getOwnPropertyDescriptor(value, key)?.value, freeze, stack)]));
+    stack.delete(value);
+    return freeze ? Object.freeze(copy) : copy;
+  }
+  function editApiFault(code, path, actual, expected, message) {
+    const error = new Error(message || code);
+    error.editApi = { code, path, message: message || code, details: { actual: editApiCopy(actual), expected: editApiCopy(expected) } };
+    throw error;
+  }
+  function editApiCall(action) {
+    try { return editApiCopy({ ok: true, ...action() }, true); }
+    catch (error) {
+      return editApiCopy({ ok: false, error: error.editApi || { code: 'APPLY_FAILED', path: '', message: String(error.message || error), details: {} },
+        mutation: { state: error.mutationState || 'none' }, ...(error.actual ? { actual: error.actual } : {}) }, true);
+    }
+  }
+  function editApiShape(value, allowed, path, required = []) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)
+        || Object.values(Object.getOwnPropertyDescriptors(value)).some(d => d.get || d.set)
+        || Object.keys(value).some(key => !allowed.includes(key)) || required.some(key => !Object.hasOwn(value, key))) {
+      editApiFault('INVALID_REQUEST', path, value, { allowed, required }, 'Expected an exact, documented request shape.');
+    }
+  }
+  function editApiVector(value, path, length = 3) {
+    if (!Array.isArray(value) || value.length !== length || value.some(v => typeof v !== 'number' || !Number.isFinite(v))) {
+      editApiFault('INVALID_COORDINATES', path, value, { finiteNumbers: length });
+    }
+    return value.slice();
+  }
+  function classifyEditApiSource(vol) {
+    const source = { kind: String(vol?.kind || 'structure'), hasGrid: !!(vol?.data?.length || (vol?.nxyz || []).some(n => n > 0)),
+      trajectory: !!vol?.trajectory, vibration: !!vol?.vibration, molden: !!vol?.molden,
+      twoComponent: !!(vol?.alphaRe || vol?.alphaIm || vol?.betaRe || vol?.betaIm) };
+    source.staticStructure = !source.hasGrid && !source.trajectory && !source.vibration && !source.molden && !source.twoComponent
+      && ['structure', 'xyz', 'molecule'].includes(source.kind);
+    return source;
+  }
+  function createEditApiSystemReader(deps) {
+    const identities = new WeakMap(), sequence = { next: 0 };
+    return () => {
+      const record = deps.getRecord();
+      if (!record?.vol || !Array.isArray(record.vol.atoms)) editApiFault('NO_SYSTEM', 'system', null, 'active molecular system');
+      const vol = record.vol, snapshot = deps.capture(vol), source = classifyEditApiSource(vol);
+      if (!['angstrom', 'bohr'].includes(snapshot.units)) editApiFault('SYSTEM_INVALID', 'units', snapshot.units, ['angstrom', 'bohr']);
+      const seen = new Set();
+      for (const [index, atom] of snapshot.atoms.entries()) {
+        if (!atom || typeof atom.id !== 'string' || !atom.id || seen.has(atom.id)
+            || !Number.isInteger(atom.Z) || !deps.elements[atom.Z]
+            || ['x', 'y', 'z'].some(axis => typeof atom[axis] !== 'number' || !Number.isFinite(atom[axis]))) {
+          editApiFault('SYSTEM_INVALID', `atoms[${index}]`, atom, 'unique atom ID, supported identity and finite coordinates');
+        }
+        seen.add(atom.id);
+      }
+      const location = deps.location ? deps.location() : {};
+      const signature = JSON.stringify({ snapshot, source, location });
+      let identity = identities.get(record);
+      if (!identity) { identity = { id: `edit-system-${++sequence.next}`, version: 1, signature }; identities.set(record, identity); }
+      else if (identity.signature !== signature) { identity.signature = signature; identity.version += 1; }
+      const scale = snapshot.units === 'angstrom' ? 1 : deps.bohr;
+      const counts = {};
+      const atoms = snapshot.atoms.map((atom, index) => {
+        const element = deps.elements[atom.Z].symbol, ordinal = counts[element] = (counts[element] || 0) + 1;
+        return { id: atom.id, index, Z: atom.Z, element, ordinal, label: element + ordinal,
+          position: [atom.x * scale, atom.y * scale, atom.z * scale] };
+      });
+      return { record, snapshot, signature, context: { systemId: identity.id, fingerprint: `${identity.id}:${identity.version}`,
+        mode: deps.mode(), units: 'angstrom', location, source, atoms, bonds: editApiCopy(snapshot.bonds),
+        fragments: deps.fragments(snapshot), capabilities: { selection: true, structuralWrite: source.staticStructure },
+        interactions: deps.interlocks() } };
+    };
+  }
+  function createEditApiResolver(deps) {
+    function indices(snapshot, selector, path = 'selector', planes = [], ancestors = new Set()) {
+      if (ancestors.has(selector)) editApiFault('INVALID_REQUEST', path, '[circular selector]', 'acyclic predicate');
+      ancestors = new Set(ancestors); ancestors.add(selector);
+      editApiShape(selector, ['kind', 'ids', 'indices', 'element', 'labels', 'instanceId', 'role', 'members', 'seed', 'selectors', 'left', 'right'], path, ['kind']);
+      const fields = { all: ['kind'], ids: ['kind', 'ids'], element: ['kind', 'element'], labels: ['kind', 'labels'],
+        fragment: ['kind', 'instanceId', 'role', 'members'], component: ['kind', 'seed'],
+        union: ['kind', 'selectors'], intersection: ['kind', 'selectors'], difference: ['kind', 'left', 'right'], piPlane: ['kind', 'seed'] };
+      if (!Object.hasOwn(fields, selector.kind)) editApiFault('INVALID_REQUEST', path + '.kind', selector.kind, Object.keys(fields));
+      editApiShape(selector, fields[selector.kind], path, fields[selector.kind].filter(key => key !== 'members'));
+      const atoms = snapshot.context.atoms, byId = new Map(atoms.map(a => [a.id, a]));
+      const exact = (values, lookup, code) => {
+        if (!Array.isArray(values) || !values.length) editApiFault('EMPTY_SELECTION', path, values, 'nonempty list');
+        const found = values.map((value, index) => {
+          const atom = lookup(value);
+          if (!atom) editApiFault(code, `${path}[${index}]`, value, atoms.map(a => ({ id: a.id, index: a.index, label: a.label })));
+          return atom.index;
+        });
+        if (new Set(found).size !== found.length) editApiFault('DUPLICATE_REFERENCE', path, values, 'distinct atoms');
+        return found;
+      };
+      let result;
+      switch (selector.kind) {
+        case 'all': result = atoms.map(a => a.index); break;
+        case 'ids': result = exact(selector.ids, value => typeof value === 'string' ? byId.get(value) : null, 'ATOM_NOT_FOUND'); break;
+        case 'element': {
+          if (typeof selector.element !== 'string' || !Object.values(deps.elements).some(e => e.symbol === selector.element)) editApiFault('ELEMENT_UNKNOWN', path + '.element', selector.element, 'canonical supported symbol');
+          result = atoms.filter(a => a.element === selector.element).map(a => a.index);
+          if (!result.length) editApiFault('ELEMENT_ABSENT', path + '.element', selector.element, { available: [...new Set(atoms.map(a => a.element))] });
+          break;
+        }
+        case 'labels': result = exact(selector.labels, value => {
+          if (typeof value !== 'string' || !/^([A-Z][a-z]?)([1-9][0-9]*)$/.test(value)) editApiFault('INVALID_REQUEST', path + '.labels', value, 'canonical element and positive1-based ordinal');
+          const [, element, raw] = /^([A-Z][a-z]?)([1-9][0-9]*)$/.exec(value);
+          if (!Object.values(deps.elements).some(e => e.symbol === element)) editApiFault('ELEMENT_UNKNOWN', path, element, 'supported element');
+          const available = atoms.filter(a => a.element === element);
+          if (!available.length) editApiFault('ELEMENT_ABSENT', path, element, { availableCount: 0 });
+          const ordinal = Number(raw);
+          if (!Number.isSafeInteger(ordinal) || ordinal > available.length) editApiFault('ELEMENT_INDEX_OUT_OF_RANGE', path, { label: value, ordinal }, { availableCount: available.length });
+          return available[ordinal - 1];
+        }, 'ATOM_NOT_FOUND'); break;
+        case 'fragment': {
+          if (!['owned', 'footprint'].includes(selector.role)) editApiFault('INVALID_REQUEST', path + '.role', selector.role, ['owned', 'footprint']);
+          const fragment = snapshot.context.fragments.find(f => f.instanceId === selector.instanceId);
+          if (!fragment) editApiFault('FRAGMENT_NOT_FOUND', path, selector.instanceId, snapshot.context.fragments.map(f => f.instanceId));
+          if (selector.role === 'footprint' && !fragment.footprint) editApiFault('FRAGMENT_MEMBERSHIP_UNAVAILABLE', path, fragment, 'recorded host provenance');
+          const members = selector.role === 'owned' ? fragment.owned : fragment.footprint;
+          const requested = selector.members === undefined ? members : selector.members;
+          if (!Array.isArray(requested) || requested.some(id => !members.includes(id))) editApiFault('FRAGMENT_MEMBERSHIP', path, requested, { instanceId: fragment.instanceId, role: selector.role, members });
+          result = exact(requested, id => byId.get(id), 'ATOM_NOT_FOUND'); break;
+        }
+        case 'component': {
+          const seed = indices(snapshot, selector.seed, path + '.seed', planes, ancestors);
+          if (seed.length !== 1) editApiFault('ANCHOR_INVALID', path, seed, 'one seed');
+          const ids = new Set([atoms[seed[0]].id]);
+          for (let changed = true; changed;) {
+            changed = false;
+            for (const bond of snapshot.snapshot.bonds) if (bond.kind !== 'blocked') {
+              if (ids.has(bond.a) && !ids.has(bond.b)) { ids.add(bond.b); changed = true; }
+              if (ids.has(bond.b) && !ids.has(bond.a)) { ids.add(bond.a); changed = true; }
+            }
+          }
+          result = atoms.filter(a => ids.has(a.id)).map(a => a.index); break;
+        }
+        case 'union': case 'intersection': case 'difference': {
+          const children = selector.kind === 'difference' ? [selector.left, selector.right] : selector.selectors;
+          if (!Array.isArray(children) || children.length < 2) editApiFault('INVALID_REQUEST', path, children, 'at least two selectors');
+          const sets = children.map((s, i) => new Set(indices(snapshot, s, `${path}.selectors[${i}]`, planes, ancestors)));
+          result = selector.kind === 'union' ? [...new Set(sets.flatMap(s => [...s]))]
+            : [...sets[0]].filter(index => selector.kind === 'intersection' ? sets.every(s => s.has(index)) : !sets[1].has(index));
+          break;
+        }
+        case 'piPlane': {
+          result = indices(snapshot, selector.seed, path + '.seed', planes, ancestors);
+          const ids = result.map(i => atoms[i].id);
+          const plane = deps.fitPlane({ vol: { atoms: snapshot.snapshot.atoms, units: snapshot.snapshot.units } }, ids, { diagnostics: true });
+          if (plane.error) editApiFault(plane.code, path, { ids, rms: plane.rms, secondEigenvalue: plane.secondEigenvalue }, { minimumAtoms: 3, rmsMaximumAng: 0.1, secondEigenvalueMinimum: 1e-8 }, plane.error);
+          planes.push({ path, ids, ...plane }); break;
+        }
+        default: editApiFault('INVALID_REQUEST', path + '.kind', selector.kind, 'documented selector');
+      }
+      if (!result.length) editApiFault('EMPTY_SELECTION', path, selector, 'one or more selectable atoms');
+      return [...new Set(result)].sort((a, b) => a - b);
+    }
+    function resolve(snapshot, selector) {
+      const planes = [], selected = indices(snapshot, selector, 'selector', planes);
+      return { selector: editApiCopy(selector), indices: selected, atomIds: selected.map(i => snapshot.context.atoms[i].id), ...(planes.length ? { planes } : {}) };
+    }
+
+    return Object.freeze({ resolve });
+  }
+  function createEditSelectionApi(deps) {
+    const resolutions = new WeakMap();
+    function current() { return deps.readSystem(); }
+    function checkFresh(snapshot, saved) {
+      if (snapshot.record !== saved.record || snapshot.signature !== saved.signature || snapshot.context.systemId !== saved.context.systemId) {
+        editApiFault('STALE_CONTEXT', 'resolution', saved.context.fingerprint, snapshot.context.fingerprint);
+      }
+    }
+    function read(snapshot) {
+      const values = deps.readIndices();
+      if (!Array.isArray(values) || values.some(i => !Number.isSafeInteger(i) || !snapshot.context.atoms[i])) editApiFault('SYSTEM_INVALID', 'selection', values, 'current selectable indices');
+      return [...new Set(values)].sort((a, b) => a - b);
+    }
+    function requireIdle(snapshot) {
+      if (snapshot.context.mode !== 'edit') editApiFault('MODE_REQUIRED', 'mode', snapshot.context.mode, 'edit');
+      if (Object.values(snapshot.context.interactions).some(Boolean)) editApiFault('INTERACTION_BUSY', 'interactions', snapshot.context.interactions, 'idle');
+    }
+    function mint(snapshot, resolved) {
+      const value = editApiCopy({ ...resolved, context: snapshot.context }, true);
+      resolutions.set(value, { snapshot, resolved });
+      return value;
+    }
+    function resolveSelection(selector) {
+      // Do not clone this result: the identity itself is the provenance capability.
+      try { editApiData(selector, 'selector'); const snapshot = current(); return Object.freeze({ ok: true, value: mint(snapshot, deps.resolve(snapshot, selector)) }); }
+      catch (error) { return editApiCall(() => { throw error; }); }
+    }
+    function inspectResolution(value, snapshot = current()) {
+      const saved = value && resolutions.get(value);
+      if (!saved) editApiFault('RESOLUTION_REQUIRED', 'resolution', { authentic: false }, 'original resolveSelection().value');
+      checkFresh(snapshot, saved.snapshot);
+      const resolved = deps.resolve(snapshot, saved.resolved.selector);
+      if (JSON.stringify(resolved.atomIds) !== JSON.stringify(saved.resolved.atomIds)) editApiFault('STALE_CONTEXT', 'resolution.atomIds', resolved.atomIds, saved.resolved.atomIds);
+      return resolved;
+    }
+    function apply(snapshot, resolved, options = {}) {
+      editApiShape(options, ['mode'], 'options');
+      const mode = options.mode === undefined ? 'replace' : options.mode;
+      if (!['replace', 'add', 'remove', 'toggle'].includes(mode)) editApiFault('INVALID_REQUEST', 'options.mode', mode, ['replace', 'add', 'remove', 'toggle']);
+      requireIdle(snapshot);
+      const before = read(snapshot), set = new Set(mode === 'replace' ? [] : before);
+      for (const index of resolved.indices) {
+        if (mode === 'remove' || (mode === 'toggle' && set.has(index))) set.delete(index); else set.add(index);
+      }
+      const requested = [...set].sort((a, b) => a - b);
+      try { deps.writeIndices(requested); deps.syncPresentation(); }
+      catch (error) { error.mutationState = 'unknown'; throw error; }
+      let after, applied;
+      try { after = current(); checkFresh(after, snapshot); applied = read(after); } catch (error) { error.mutationState = 'applied'; throw error; }
+      if (JSON.stringify(applied) !== JSON.stringify(requested)) {
+        const error = new Error('Selection owner did not apply the complete request.');
+        error.editApi = { code: 'APPLIED_MISMATCH', path: 'selection', message: error.message, details: { actual: applied, expected: requested } };
+        error.mutationState = 'applied'; error.actual = { indices: applied }; throw error;
+      }
+      return { value: { atomIds: applied.map(i => after.context.atoms[i].id), indices: applied, count: applied.length }, context: after.context,
+        requested: { indices: requested }, applied: { indices: applied }, changed: JSON.stringify(before) !== JSON.stringify(applied), mutation: { state: 'applied' } };
+    }
+    return Object.freeze({
+      resolveSelection,
+      inspectResolution,
+      getSelection: () => editApiCall(() => { const snapshot = current(), selected = read(snapshot); return { value: { atomIds: selected.map(i => snapshot.context.atoms[i].id), indices: selected, count: selected.length }, context: snapshot.context }; }),
+      setSelection: (resolution, options) => editApiCall(() => { const snapshot = current(); return apply(snapshot, inspectResolution(resolution, snapshot), options); }),
+      clearSelection: () => editApiCall(() => { const snapshot = current(); return apply(snapshot, { indices: [] }); }),
+      copySelection: resolution => editApiCall(() => { const snapshot = current(), resolved = inspectResolution(resolution, snapshot); return { value: deps.copy(snapshot, resolved.indices), context: snapshot.context }; }),
+      setSelectionForTesting: values => editApiCall(() => {
+        const snapshot = current();
+        if (!Array.isArray(values)) editApiFault('INVALID_REQUEST', 'indices', values, 'array of finite integer indices');
+        if (values.some(index => !Number.isSafeInteger(index) || index < 0 || !snapshot.context.atoms[index])) editApiFault('INDEX_OUT_OF_RANGE', 'indices', values, { minimum: 0, maximum: snapshot.context.atoms.length - 1 });
+        if (new Set(values).size !== values.length) editApiFault('DUPLICATE_REFERENCE', 'indices', values, 'distinct indices');
+        const resolved = values.length ? deps.resolve(snapshot, { kind: 'ids', ids: values.map(index => snapshot.context.atoms[index].id) }) : { indices: [] };
+        return apply(snapshot, resolved);
+      }),
+    });
+  }
+  function editApiFragmentMembership(snapshot) {
+    const groups = new Map(), live = new Set(snapshot.atoms.map(atom => atom.id));
+    const annotations = snapshot.annotations?.builder?.byAtomId || {};
+    for (const atom of snapshot.atoms) {
+      const meta = annotations[atom.id] || { groupId: atom.builderGroupId, entryId: atom.builderEntryId, entryKind: atom.builderEntryKind };
+      if (!meta.groupId) continue;
+      if (typeof meta.groupId !== 'string' || (meta.entryId !== undefined && typeof meta.entryId !== 'string') || (meta.entryKind !== undefined && typeof meta.entryKind !== 'string')) editApiFault('SYSTEM_INVALID', 'annotations.builder', meta, 'string provenance');
+      let group = groups.get(meta.groupId);
+      if (!group) { group = { instanceId: meta.groupId, entryId: meta.entryId || '', entryKind: meta.entryKind || '', owned: [], footprint: null }; groups.set(meta.groupId, group); }
+      if (group.entryId !== (meta.entryId || '') || group.entryKind !== (meta.entryKind || '')) editApiFault('SYSTEM_INVALID', 'annotations.builder', meta, 'consistent instance provenance');
+      group.owned.push(atom.id);
+    }
+    for (const group of groups.values()) {
+      const ops = (snapshot.fragmentOps || []).filter(op => op.builderGroupId === group.instanceId);
+      if (ops.length !== 1) continue;
+      const op = ops[0], fusion = op.attachPolicy === 'fuse_ring' || Array.isArray(op.hostBondAtomIds), host = fusion ? op.hostBondAtomIds : (op.anchorAtomIdPost ? [op.anchorAtomIdPost] : []);
+      if (!Array.isArray(host) || (fusion && host.length !== 2) || host.some(id => !live.has(id))) continue;
+      if ((op.addedAtomIds || []).some(id => live.has(id) && !group.owned.includes(id))) editApiFault('SYSTEM_INVALID', 'fragmentOps.addedAtomIds', op.addedAtomIds, group.owned);
+      group.footprint = [...new Set([...group.owned, ...host])];
+    }
+    return [...groups.values()];
+  }
+  function createEditApiDraftFactory(deps) {
+    return snapshot => {
+      const vol = editApiCopy(snapshot.snapshot), serial = { atom: 0, group: 0, op: 0 };
+      const used = new Set(vol.atoms.map(a => a.id));
+      for (const op of vol.fragmentOps || []) { if (op.builderGroupId) used.add(op.builderGroupId); if (op.opId) used.add(op.opId); }
+      const next = kind => {
+        let id;
+        do { id = `@edit-api-${kind}:${++serial[kind]}`; } while (used.has(id));
+        used.add(id); return id;
+      };
+      const added = [], removed = [], groups = [];
+      function add(Z, position, metadata = null, coordination = '') {
+        const scale = vol.units === 'angstrom' ? 1 : deps.bohr;
+        const atom = { id: next('atom'), Z, x: position[0] / scale, y: position[1] / scale, z: position[2] / scale, formalCharge: 0 };
+        vol.atoms.push(atom); vol.natoms = vol.atoms.length; added.push(atom.id);
+        if (metadata) deps.builderMeta(vol, atom, metadata);
+        if (coordination) deps.coordinationMeta(vol, atom, { geometryId: coordination });
+        return atom;
+      }
+      function remove(ids) {
+        const remove = new Set(ids), live = new Set(vol.atoms.filter(a => !remove.has(a.id)).map(a => a.id));
+        for (const id of ids) if (!vol.atoms.some(a => a.id === id)) editApiFault('ATOM_NOT_FOUND', 'remove', id, 'existing atom');
+        vol.atoms = vol.atoms.filter(a => !remove.has(a.id)); vol.natoms = vol.atoms.length;
+        vol.bonds = vol.bonds.filter(b => live.has(b.a) && live.has(b.b));
+        for (const map of Object.values(vol.annotations || {})) if (map?.byAtomId) for (const id of Object.keys(map.byAtomId)) if (!live.has(id)) delete map.byAtomId[id];
+        vol.fragmentOps = (vol.fragmentOps || []).map(op => {
+          const copy = editApiCopy(op); copy.addedAtomIds = (copy.addedAtomIds || []).filter(id => live.has(id));
+          if (copy.hostBondAtomIds) { copy.hostBondAtomIds = copy.hostBondAtomIds.filter(id => live.has(id)); if (copy.hostBondAtomIds.length !== 2) delete copy.hostBondAtomIds; }
+          if (copy.anchorAtomIdPost && !live.has(copy.anchorAtomIdPost)) delete copy.anchorAtomIdPost;
+          return copy;
+        }).filter(op => op.addedAtomIds.length);
+        removed.push(...ids);
+      }
+      function bond(a, b, order, kind = 'normal', style = 'covalent', origin = 'explicit') {
+        const error = deps.hydrogenError(vol, a, b, order);
+        if (error) editApiFault('HYDROGEN_BOND_INVALID', 'bond', { a, b, order }, 'allowed hydrogen bonding', error);
+        deps.upsertBond(vol, a, b, order, kind, origin, style);
+      }
+      function group(entryId, entryKind) {
+        const groupId = next('group'); groups.push(groupId); return { groupId, entryId, entryKind };
+      }
+      function operation(entry) { vol.fragmentOps.push({ opId: next('op'), timestamp: '@commit', ...editApiCopy(entry) }); }
+      return { vol, added, removed, groups, add, remove, bond, group, operation, nextAtomId: () => next('atom') };
+    };
+  }
+  function createEditApiPlacementPlanner(deps) {
+    return (draft, request) => {
+      if (request.operation === 'placeAtom') {
+        const atom = draft.add(request.Z, request.position, null, request.coordination || '');
+        if (request.hydrogens === 'adjust') deps.adjustHydrogens(draft.vol, [draft.vol.atoms.indexOf(atom)], { enabled: true, allocateAtomId: draft.nextAtomId });
+        return { label: 'API add atom', warnings: deps.warnings(draft.vol, draft.vol.atoms.map((_,i)=>i).filter(i => i >= request.originalAtomCount), new Set(Array.from({ length: request.originalAtomCount }, (_, i) => i))) };
+      }
+      const entry = deps.catalog(request.entryId, request.entryKind), template = deps.template(entry, request.entryKind);
+      if (!template?.atoms?.length) editApiFault('CATALOG_NOT_FOUND', 'entryId', request.entryId, 'available catalog geometry');
+      const group = draft.group(entry.id, request.entryKind), quaternion = new deps.THREE.Quaternion(...request.quaternion);
+      const position = new deps.THREE.Vector3(...request.position), ids = [], worlds = [];
+      for (const atom of template.atoms) {
+        const world = atom.local.clone().applyQuaternion(quaternion).add(position); worlds.push(world);
+        ids.push(draft.add(atom.Z, [world.x, world.y, world.z], group).id);
+      }
+      deps.placedBonds(draft.vol, template, ids, worlds);
+      if (request.hydrogens === 'adjust') deps.adjustHydrogens(draft.vol, ids.map(id => draft.vol.atoms.findIndex(a => a.id === id)), { enabled: true, allocateAtomId: draft.nextAtomId });
+      const allAdded = draft.vol.atoms.filter(a => !request.originalIds.includes(a.id)).map(a => a.id);
+      draft.operation({ entryId: entry.id, entryKind: request.entryKind, attachPolicy: 'append', builderGroupId: group.groupId, addedAtomIds: allAdded,
+        transform: { centerWorld: request.position, quaternion: request.quaternion }, resultingBondOrder: 1 });
+      return { label: 'API place catalog', warnings: deps.warnings(draft.vol, allAdded.map(id => draft.vol.atoms.findIndex(a => a.id === id)), new Set(Array.from({ length: request.originalAtomCount }, (_,i)=>i))) };
+    };
+  }
+  function createEditApiAttachmentGeometry(deps) {
+    return (vol, request, fragment) => {
+      const anchorIndex = vol.atoms.findIndex(a => a.id === request.anchorId), anchor = vol.atoms[anchorIndex];
+      if (!anchor) editApiFault('ANCHOR_INVALID', 'anchor', request.anchorId, 'existing anchor');
+      const anchorWorld = deps.atomWorld(vol, anchor);
+      let direction = new deps.THREE.Vector3(...request.direction).normalize(), replacement = null;
+      if (request.hydrogenId) {
+        replacement = deps.terminalHydrogen(vol, anchorIndex, vol.atoms.findIndex(a => a.id === request.hydrogenId));
+        if (!replacement) editApiFault('NOT_TERMINAL_H', 'hydrogenId', request.hydrogenId, { anchorId: anchor.id, degree: 1, element: 'H' });
+      } else if (request.attachPolicy !== 'append') {
+        const candidate = deps.findHydrogen(vol, anchorIndex, direction);
+        replacement = candidate ? deps.terminalHydrogen(vol, anchorIndex, candidate.index) : null;
+      }
+      const supported = !fragment || (fragment.attachModes || []).includes('replace_h');
+      if (request.attachPolicy === 'replace_h' && (!supported || !replacement)) editApiFault(!supported ? 'ATTACH_POLICY_UNSUPPORTED' : 'NO_REPLACEABLE_H', 'attachPolicy', request.attachPolicy, { supported, replaceableHydrogen: !!replacement });
+      if (fragment && request.attachPolicy === 'append' && !(fragment.attachModes || []).includes('append')) editApiFault('ATTACH_POLICY_UNSUPPORTED', 'attachPolicy', request.attachPolicy, fragment.attachModes);
+      const replace = request.attachPolicy === 'replace_h' || (request.attachPolicy === 'smart' && supported && replacement);
+      if (replace && replacement?.direction) direction = replacement.direction.clone().normalize();
+      const connection = fragment ? deps.connection(fragment) : { Z: request.Z };
+      if (!connection) editApiFault('CATALOG_KIND', 'entryId', request.entryId, 'fragment with connection atom');
+      const order = anchor.Z === 1 || connection.Z === 1 ? 1 : request.bondOrder;
+      if (order !== request.bondOrder) editApiFault('HYDROGEN_BOND_INVALID', 'bondOrder', request.bondOrder, 1);
+      const length = deps.bondLength(anchor.Z, connection.Z, order), connectionWorld = anchorWorld.clone().addScaledVector(direction, length);
+      return { anchorId: anchor.id, anchorWorld, direction, connection, connectionWorld, bondLength: length, order,
+        removedId: replace && replacement ? String(replacement.targetAtom?.id || vol.atoms[replacement.index]?.id || '') : '', policy: replace ? 'replace_h' : 'append' };
+    };
+  }
+  function createEditApiAttachmentPlanner(deps) {
+    return (draft, request) => {
+      const fragment = request.entryId ? deps.catalog(request.entryId, 'fragment') : null;
+      const geometry = deps.geometry(draft.vol, request, fragment);
+      if (geometry.removedId) draft.remove([geometry.removedId]);
+      const anchorIndex = draft.vol.atoms.findIndex(a => a.id === geometry.anchorId), anchor = draft.vol.atoms[anchorIndex];
+      let added, group = null;
+      const oldSet = new Set(draft.vol.atoms.map((_,i)=>i));
+      if (!fragment) {
+        const world = request.operation === 'growAtom' && request.position ? new deps.THREE.Vector3(...request.position) : geometry.connectionWorld;
+        added = [draft.add(request.Z, [world.x, world.y, world.z], null, request.coordination || '')];
+        draft.bond(anchor.id, added[0].id, geometry.order);
+      } else {
+        group = draft.group(fragment.id, 'fragment');
+        const rotation = new deps.THREE.Quaternion().setFromUnitVectors(deps.outward(fragment), geometry.direction);
+        if (request.spinAngle) rotation.premultiply(new deps.THREE.Quaternion().setFromAxisAngle(geometry.direction, request.spinAngle));
+        const connection = new deps.THREE.Vector3(geometry.connection.x, geometry.connection.y, geometry.connection.z);
+        added = fragment.atoms.map(atom => {
+          const world = new deps.THREE.Vector3(atom.x, atom.y, atom.z).sub(connection).applyQuaternion(rotation).add(geometry.connectionWorld);
+          return draft.add(atom.Z, [world.x, world.y, world.z], group);
+        });
+        const indices = added.map(atom => draft.vol.atoms.indexOf(atom));
+        deps.postprocess(draft.vol, fragment, indices, geometry, oldSet);
+        deps.topology(draft.vol, fragment.atoms, fragment.bonds, new Map(indices.map((global,local)=>[local,global])));
+        draft.bond(anchor.id, added[geometry.connection.index].id, geometry.order);
+      }
+      const focus = [anchorIndex, ...added.map(atom => draft.vol.atoms.indexOf(atom))];
+      if (request.hydrogens === 'adjust') deps.adjustHydrogens(draft.vol, focus, { enabled: true, allocateAtomId: draft.nextAtomId });
+      if (group) draft.operation({ entryId: fragment.id, entryKind: 'fragment', attachPolicy: geometry.policy, builderGroupId: group.groupId,
+        anchorAtomIdPre: request.anchorId, anchorAtomIdPost: anchor.id, removedAtomIds: draft.removed,
+        addedAtomIds: draft.vol.atoms.filter(a => !request.originalIds.includes(a.id)).map(a => a.id),
+        transform: { connectionWorld: [geometry.connectionWorld.x,geometry.connectionWorld.y,geometry.connectionWorld.z], direction: [geometry.direction.x,geometry.direction.y,geometry.direction.z], bondLengthAngstrom: geometry.bondLength }, resultingBondOrder: geometry.order });
+      return { label: 'API ' + request.operation, policy: geometry.policy, warnings: deps.warnings(draft.vol, added.map(atom => draft.vol.atoms.indexOf(atom)).filter(i=>i>=0), oldSet, [draft.vol.atoms.indexOf(anchor)]) };
+    };
+  }
+  function createEditApiFusionPlanner(deps) {
+    return (draft, request) => {
+      const fragment = deps.catalog(request.entryId, 'fragment');
+      if (!(fragment.attachModes || []).includes('fuse_ring') || !Array.isArray(fragment.fuseBondLocalPair) || fragment.fuseBondLocalPair.length !== 2) editApiFault('ATTACH_POLICY_UNSUPPORTED', 'entryId', request.entryId, 'fusion-capable fragment');
+      const host = request.hostIds.map(id => draft.vol.atoms.findIndex(a => a.id === id));
+      const omitted = deps.omitted(fragment), geometry = deps.geometry({ vol: draft.vol, fragment, hostBond: { i: host[0], j: host[1] }, omittedLocalIndices: omitted, spinAngle: request.spinAngle });
+      if (!geometry) editApiFault('HOST_BOND_INVALID', 'host', request.hostIds, 'nondegenerate fusion bond');
+      const group = draft.group(fragment.id, 'fragment'), mapping = new Map([[fragment.fuseBondLocalPair[0],host[0]],[fragment.fuseBondLocalPair[1],host[1]]]);
+      const oldSet = new Set(draft.vol.atoms.map((_,i)=>i)), added = [];
+      for (const item of geometry.newAtoms) {
+        const atom = draft.add(item.Z,[item.world.x,item.world.y,item.world.z],group); added.push(atom.id); mapping.set(item.localIndex,draft.vol.atoms.indexOf(atom));
+      }
+      deps.topology(draft.vol,fragment.atoms,fragment.bonds,mapping);
+      if (request.hydrogens === 'adjust') deps.adjustHydrogens(draft.vol,[...host,...added.map(id=>draft.vol.atoms.findIndex(a=>a.id===id))],{enabled:true,allocateAtomId:draft.nextAtomId});
+      draft.operation({entryId:fragment.id,entryKind:'fragment',attachPolicy:'fuse_ring',builderGroupId:group.groupId,hostBondAtomIds:request.hostIds,
+        addedAtomIds:draft.vol.atoms.filter(a=>!request.originalIds.includes(a.id)).map(a=>a.id),omittedLocalAtomIndices:[...omitted].sort((a,b)=>a-b),transform:{spinAngle:request.spinAngle},resultingBondOrder:request.bondOrder});
+      return {label:'API fuse fragment',warnings:deps.warnings(draft.vol,added.map(id=>draft.vol.atoms.findIndex(a=>a.id===id)),oldSet,host)};
+    };
+  }
+  function editApiData(value, path = 'request', ancestors = new Set()) {
+    if (value === null || ['string', 'number', 'boolean'].includes(typeof value)) return;
+    if (!value || typeof value !== 'object' || ancestors.has(value)) editApiFault('INVALID_REQUEST', path, value, 'acyclic JSON-shaped data');
+    const prototype = Object.getPrototypeOf(value);
+    if (!Array.isArray(value) && prototype !== null && prototype?.constructor?.name !== 'Object') editApiFault('INVALID_REQUEST', path, String(value), 'plain data');
+    const next = new Set(ancestors); next.add(value);
+    for (const [key, descriptor] of Object.entries(Object.getOwnPropertyDescriptors(value))) {
+      if (Array.isArray(value) && key === 'length') continue;
+      if (descriptor.get || descriptor.set) editApiFault('INVALID_REQUEST', path + '.' + key, 'accessor', 'data property');
+      editApiData(descriptor.value, path + '.' + key, next);
+    }
+  }
+  function editApiTarget(snapshot, system) {
+    editApiShape(system, ['systemId', 'fingerprint'], 'system', ['systemId', 'fingerprint']);
+    if (system.systemId !== snapshot.context.systemId) editApiFault('SYSTEM_NOT_FOUND', 'system.systemId', system.systemId, snapshot.context.systemId);
+    if (system.fingerprint !== snapshot.context.fingerprint) editApiFault('STALE_CONTEXT', 'system.fingerprint', system.fingerprint, snapshot.context.fingerprint);
+  }
+  function editApiWritable(snapshot) {
+    if (!snapshot.context.source.staticStructure) editApiFault('SOURCE_NOT_EDITABLE', 'system.source', snapshot.context.source,
+      { staticStructureOnly: true, allowedWrites: 'static structure-only molecule', scientificSourceWrites: false }, 'Build cannot mutate a trajectory, vibration, Molden or volumetric source.');
+    if (snapshot.context.mode !== 'edit') editApiFault('MODE_REQUIRED', 'mode', snapshot.context.mode, 'edit');
+    if (Object.values(snapshot.context.interactions).some(Boolean)) editApiFault('INTERACTION_BUSY', 'interactions', snapshot.context.interactions, 'idle');
+  }
+  function editApiElement(value, elements) {
+    const entry = typeof value === 'string' ? Object.entries(elements).find(([,e]) => e.symbol === value) : Number.isSafeInteger(value) && elements[value] ? [value, elements[value]] : null;
+    if (!entry) editApiFault('ELEMENT_UNKNOWN', 'element', value, 'supported canonical element identity');
+    return Number(entry[0]);
+  }
+  function editApiQuaternion(value, path) {
+    const q = editApiVector(value, path, 4), norm = q.reduce((s,v)=>s+v*v,0);
+    if (Math.abs(norm-1)>1e-9) editApiFault('INVALID_ORIENTATION', path, { quaternion: q, normSquared: norm }, 'unit quaternion');
+    return q;
+  }
+  function createEditApiBuildValidator(deps) {
+    const common = ['operation','system','hydrogens','warnings'];
+    const fields = {
+      placeAtom: ['element','position','coordination'], placeCatalog: ['entryId','entryKind','position','quaternion'],
+      growAtom: ['element','anchor','direction','position','bondOrder','attachPolicy','coordination'],
+      attachFragment: ['entryId','anchor','direction','bondOrder','attachPolicy','spinAngle'],
+      replaceHydrogen: ['element','entryId','anchor','hydrogen','bondOrder','spinAngle','coordination'],
+      fuseFragment: ['entryId','host','bondOrder','spinAngle'], insertSelection: ['envelope','position','quaternion']
+    };
+    function catalog(id, kind) {
+      if (typeof id !== 'string' || !['fragment','molecule'].includes(kind)) editApiFault('CATALOG_KIND','entryKind',{id,kind},['fragment','molecule']);
+      const entry=deps.catalog(id,kind);
+      if (!entry || entry.id!==id) editApiFault('CATALOG_NOT_FOUND','entryId',{id,kind},'exact available catalog entry');
+      return entry;
+    }
+    function one(snapshot, selector, path) {
+      const resolved=deps.resolve(snapshot,selector);
+      if(resolved.atomIds.length!==1)editApiFault('ANCHOR_INVALID',path,resolved.atomIds,'one selectable atom');
+      return resolved.atomIds[0];
+    }
+    function validate(snapshot, input) {
+      editApiData(input);
+      if(!input || !Object.hasOwn(fields,input.operation))editApiFault('INVALID_REQUEST','operation',input?.operation,Object.keys(fields));
+      editApiShape(input,[...common,...fields[input.operation]],'request',common);
+      if(!['preserve','adjust'].includes(input.hydrogens))editApiFault('INVALID_REQUEST','hydrogens',input.hydrogens,['preserve','adjust']);
+      if(!['reject','allow'].includes(input.warnings))editApiFault('INVALID_REQUEST','warnings',input.warnings,['reject','allow']);
+      const request=editApiCopy(input);
+      if(['placeAtom','growAtom'].includes(request.operation) || (request.operation==='replaceHydrogen' && Object.hasOwn(input,'element')))request.Z=editApiElement(request.element,deps.elements);
+      if(request.operation==='replaceHydrogen' && (Object.hasOwn(input,'element')===Object.hasOwn(input,'entryId')))editApiFault('INVALID_REQUEST','replacement',input,'exactly one of element or entryId');
+      if(Object.hasOwn(input,'entryId'))catalog(input.entryId,input.operation==='placeCatalog'?input.entryKind:'fragment');
+      if(['placeAtom','placeCatalog','insertSelection'].includes(request.operation))request.position=editApiVector(input.position,'position');
+      if(['placeCatalog','insertSelection'].includes(request.operation))request.quaternion=editApiQuaternion(input.quaternion,'quaternion');
+      if(['growAtom','attachFragment','replaceHydrogen','fuseFragment'].includes(request.operation)){
+        if(!Number.isSafeInteger(input.bondOrder)||input.bondOrder<1||input.bondOrder>4)editApiFault('INVALID_BOND_ORDER','bondOrder',input.bondOrder,[1,2,3,4]);
+      }
+      if(Object.hasOwn(input,'anchor'))request.anchorId=one(snapshot,input.anchor,'anchor');
+      if(['growAtom','attachFragment','replaceHydrogen'].includes(request.operation)&&!request.anchorId)editApiFault('ANCHOR_INVALID','anchor',input.anchor,'explicit anchor predicate');
+      if(['growAtom','attachFragment'].includes(request.operation)){
+        request.direction=editApiVector(input.direction,'direction');
+        if(Math.hypot(...request.direction)<1e-12)editApiFault('INVALID_ORIENTATION','direction',request.direction,'nonzero direction');
+        if(!['smart','append','replace_h'].includes(input.attachPolicy))editApiFault('ATTACH_POLICY_UNSUPPORTED','attachPolicy',input.attachPolicy,['smart','append','replace_h']);
+        if(input.position!==undefined)request.position=editApiVector(input.position,'position');
+      }
+      if(request.operation==='replaceHydrogen'){
+        request.hydrogenId=one(snapshot,input.hydrogen,'hydrogen');request.attachPolicy='replace_h';request.direction=[1,0,0];
+        if(request.hydrogenId===request.anchorId)editApiFault('NOT_TERMINAL_H','hydrogen',request.hydrogenId,'distinct H bonded only to anchor');
+      }
+      if(['attachFragment','fuseFragment'].includes(request.operation)||(request.operation==='replaceHydrogen'&&request.entryId)){
+        if(typeof input.spinAngle!=='number'||!Number.isFinite(input.spinAngle))editApiFault('INVALID_ORIENTATION','spinAngle',input.spinAngle,'finite radians');
+      }
+      if(request.operation==='fuseFragment'){
+        const resolved=deps.resolve(snapshot,input.host);
+        if(resolved.atomIds.length!==2)editApiFault('HOST_BOND_INVALID','host',resolved.atomIds,'two bonded atoms');
+        request.hostIds=input.host.kind==='ids'?input.host.ids.slice():resolved.atomIds;
+        if(!snapshot.snapshot.bonds.some(b=>b.kind!=='blocked'&&request.hostIds.includes(b.a)&&request.hostIds.includes(b.b)))editApiFault('HOST_BOND_INVALID','host',request.hostIds,'existing normal host bond');
+      }
+      if(input.coordination!==undefined){
+        const profile=deps.coordination(request.Z);
+        if(typeof input.coordination!=='string'||(input.coordination&&!profile?.choices?.some(c=>c.geometryId===input.coordination)))editApiFault('COORDINATION_UNSUPPORTED','coordination',input.coordination,profile?.choices?.map(c=>c.geometryId)||[]);
+      }
+      request.originalIds=snapshot.snapshot.atoms.map(a=>a.id);request.originalAtomCount=request.originalIds.length;
+      return request;
+    }
+    return Object.freeze({validate,catalog});
+  }
+  function createEditApiInsertionPlanner(deps) {
+    return (draft,request)=>{
+      const envelope=request.envelope;
+      editApiShape(envelope,['kind','version','units','atoms','bonds'],'envelope',['kind','version','units','atoms','bonds']);
+      if(envelope.kind!=='vibemol.edit-selection'||envelope.version!==1||envelope.units!=='angstrom'||!Array.isArray(envelope.atoms)||!envelope.atoms.length||!Array.isArray(envelope.bonds))editApiFault('INVALID_SELECTION_ENVELOPE','envelope',envelope,'v1 Angstrom selection envelope');
+      const quaternion=new deps.THREE.Quaternion(...request.quaternion),offset=new deps.THREE.Vector3(...request.position),groups=new Map(),atoms=[];
+      for(const [index,entry]of envelope.atoms.entries()){
+        editApiShape(entry,['atom','builderMeta','coordinationMeta','metalBondingMeta'],`envelope.atoms[${index}]`,['atom']);
+        editApiShape(entry.atom,['id','Z','x','y','z','formalCharge'],`envelope.atoms[${index}].atom`,['Z','x','y','z','formalCharge']);
+        const Z=editApiElement(entry.atom.Z,deps.elements),position=editApiVector([entry.atom.x,entry.atom.y,entry.atom.z],`envelope.atoms[${index}].position`);
+        if(!Number.isSafeInteger(entry.atom.formalCharge))editApiFault('INVALID_SELECTION_ENVELOPE','formalCharge',entry.atom.formalCharge,'integer');
+        const meta=entry.builderMeta===undefined?{}:entry.builderMeta;editApiShape(meta,['groupId','entryId','entryKind'],'builderMeta');
+        if(Object.values(meta).some(v=>typeof v!=='string'))editApiFault('INVALID_SELECTION_ENVELOPE','builderMeta',meta,'string provenance');
+        if((meta.groupId&&meta.groupId!==meta.groupId.trim())||(meta.entryId&&meta.entryId!==meta.entryId.trim().toLowerCase())||(meta.entryKind&&!['fragment','molecule'].includes(meta.entryKind))||(!meta.groupId&&(meta.entryId||meta.entryKind)))editApiFault('INVALID_SELECTION_ENVELOPE','builderMeta',meta,'canonical provenance with a group for every named entry');
+        if(entry.atom.id!==undefined&&(typeof entry.atom.id!=='string'||!entry.atom.id))editApiFault('INVALID_SELECTION_ENVELOPE','atom.id',entry.atom.id,'nonempty source ID if supplied');
+        let group=null;
+        if(meta.groupId){if(!groups.has(meta.groupId))groups.set(meta.groupId,draft.group(meta.entryId||'',meta.entryKind||''));group=groups.get(meta.groupId);}
+        const world=new deps.THREE.Vector3(...position).applyQuaternion(quaternion).add(offset),atom=draft.add(Z,[world.x,world.y,world.z],group);atom.formalCharge=entry.atom.formalCharge;atoms.push(atom);
+        const coordination=entry.coordinationMeta===undefined?{}:entry.coordinationMeta,metal=entry.metalBondingMeta===undefined?{}:entry.metalBondingMeta;
+        editApiShape(coordination,['geometryId'],'coordinationMeta');editApiShape(metal,['mode'],'metalBondingMeta');
+        if(Object.hasOwn(coordination,'geometryId')){if(typeof coordination.geometryId!=='string'||(coordination.geometryId&&!deps.coordination(Z)?.choices?.some(c=>c.geometryId===coordination.geometryId)))editApiFault('INVALID_SELECTION_ENVELOPE','coordinationMeta',coordination,'supported geometry');deps.setCoordination(draft.vol,atom,coordination);}
+        if(Object.hasOwn(metal,'mode')){if(!['auto','force_covalent','force_dative','no_bonds'].includes(metal.mode))editApiFault('INVALID_SELECTION_ENVELOPE','metalBondingMeta',metal,'documented metal bonding mode');deps.setMetal(draft.vol,atom,metal);}
+      }
+      const pairs=new Set();
+      for(const [index,bond]of envelope.bonds.entries()){
+        editApiShape(bond,['a','b','order','kind','origin','style'],`envelope.bonds[${index}]`,['a','b','order','kind','origin','style']);
+        if(!Number.isSafeInteger(bond.a)||!Number.isSafeInteger(bond.b)||!atoms[bond.a]||!atoms[bond.b]||bond.a===bond.b||!Number.isSafeInteger(bond.order)||bond.order<1||bond.order>4||!['normal','blocked'].includes(bond.kind)||!['perceived','explicit'].includes(bond.origin)||!['covalent','metal-strong','metal-dative','metal-metal'].includes(bond.style))editApiFault('INVALID_SELECTION_ENVELOPE',`envelope.bonds[${index}]`,bond,'valid local endpoints, order, kind, origin and style');
+        const pair=[bond.a,bond.b].sort((a,b)=>a-b).join(':');if(pairs.has(pair))editApiFault('INVALID_SELECTION_ENVELOPE','bonds',pair,'unique pair');pairs.add(pair);
+        draft.bond(atoms[bond.a].id,atoms[bond.b].id,bond.order,bond.kind,bond.style,bond.origin);
+      }
+      for(const group of groups.values())draft.operation({entryId:group.entryId,entryKind:group.entryKind,attachPolicy:'append',builderGroupId:group.groupId,addedAtomIds:atoms.filter(a=>draft.vol.annotations?.builder?.byAtomId?.[a.id]?.groupId===group.groupId).map(a=>a.id),transform:{offset:request.position,quaternion:request.quaternion},resultingBondOrder:1});
+      if(request.hydrogens==='adjust')deps.adjustHydrogens(draft.vol,atoms.map(a=>draft.vol.atoms.indexOf(a)),{enabled:true,allocateAtomId:draft.nextAtomId});
+      return {label:'API insert selection',warnings:deps.warnings(draft.vol,atoms.map(a=>draft.vol.atoms.indexOf(a)),new Set(Array.from({length:request.originalAtomCount},(_,i)=>i)))};
+    };
+  }
+  function createEditApiBuildPreparation(deps) {
+    function snapshotFor(request){
+      if(request?.system==='new')return deps.newSnapshot();
+      const snapshot=deps.readSystem();editApiTarget(snapshot,request?.system);return snapshot;
+    }
+    function prepare(input){
+      editApiData(input);
+      const snapshot=snapshotFor(input);editApiWritable(snapshot);
+      const request=deps.validate(snapshot,input),draft=deps.makeDraft(snapshot);
+      const planner=['placeAtom','placeCatalog'].includes(request.operation)?deps.place:['growAtom','attachFragment','replaceHydrogen'].includes(request.operation)?deps.attach:request.operation==='fuseFragment'?deps.fuse:deps.insert;
+      const result=planner(draft,request);
+      draft.vol=deps.validateCandidate(draft.vol);
+      if(request.warnings==='reject'&&Object.values(result.warnings||{}).some(n=>typeof n==='number'&&n>0))editApiFault('WARNINGS_NOT_ACKNOWLEDGED','warnings',result.warnings,'explicit warning acceptance');
+      return {snapshot,request,draft,result};
+    }
+    return prepare;
+  }
+  function createEditApiBuildService(deps) {
+    function describe(plan){return {operation:plan.request.operation,created:plan.draft.vol.atoms.filter(a=>!plan.request.originalIds.includes(a.id)).map(a=>a.id),removed:plan.request.originalIds.filter(id=>!plan.draft.vol.atoms.some(a=>a.id===id)),warnings:plan.result.warnings||{},policy:plan.result.policy||null,predicted:plan.draft.vol};}
+    return Object.freeze({
+      validateBuild:request=>editApiCall(()=>{const plan=deps.prepare(request);return {value:describe(plan),context:plan.snapshot.context,mutation:{state:'none'}};}),
+      applyBuild:(request,options={})=>editApiCall(()=>{editApiShape(options,['signal'],'options');const signal=options.signal;if(signal!==undefined&&!(signal instanceof AbortSignal))editApiFault('INVALID_REQUEST','signal',typeof signal,'AbortSignal');if(signal?.aborted)editApiFault('ABORTED','signal',true,false);const plan=deps.prepare(request);if(signal?.aborted)editApiFault('ABORTED','signal',true,false);return deps.commit(plan);}),
+      translate:(resolution,delta)=>editApiCall(()=>{
+        const snapshot=deps.readSystem();editApiWritable(snapshot);const resolved=deps.inspectResolution(resolution,snapshot),vector=editApiVector(delta,'delta'),draft=deps.makeDraft(snapshot);
+        const scale=snapshot.snapshot.units==='angstrom'?1:0.529177210903,ids=new Set(resolved.atomIds);
+        for(const atom of draft.vol.atoms)if(ids.has(atom.id)){atom.x+=vector[0]/scale;atom.y+=vector[1]/scale;atom.z+=vector[2]/scale;}
+        draft.vol=deps.validateCandidate(draft.vol);
+        return deps.commit({snapshot,request:{operation:'translate',originalIds:snapshot.snapshot.atoms.map(a=>a.id),delta:vector},draft,result:{label:'API translate',warnings:{}}});
+      }),
+    });
+  }
+  function createEditApiBuildCatalog(deps) {
+    return ()=>editApiCall(()=>({value:['fragment','molecule'].flatMap(kind=>deps.entries(kind).map(entry=>({entryId:entry.id,entryKind:kind,name:entry.name,attachModes:editApiCopy(entry.attachModes||[]),fusion:Array.isArray(entry.fuseBondLocalPair)&&entry.fuseBondLocalPair.length===2})))}));
+  }
+  function createEditApiBuildQueries(deps){
+    return Object.freeze({
+      listBuildSites:request=>editApiCall(()=>{
+        editApiData(request);editApiShape(request,['system','anchor','element','entryId','bondOrder','geometryId','frameQuaternion'],'request',['system','anchor','bondOrder']);
+        const snapshot=deps.readSystem();editApiTarget(snapshot,request.system);const selected=deps.resolve(snapshot,request.anchor);
+        if(selected.indices.length!==1)editApiFault('ANCHOR_INVALID','anchor',selected.atomIds,'one anchor');
+        if(Object.hasOwn(request,'element')===Object.hasOwn(request,'entryId'))editApiFault('INVALID_REQUEST','payload',request,'exactly one of element or entryId');
+        if(!Number.isSafeInteger(request.bondOrder)||request.bondOrder<1||request.bondOrder>4)editApiFault('INVALID_BOND_ORDER','bondOrder',request.bondOrder,[1,2,3,4]);
+        const fragment=request.entryId?deps.catalog(request.entryId,'fragment'):null;
+        const Z=fragment?deps.connection(fragment)?.Z:editApiElement(request.element,deps.elements);
+        if(!Number.isInteger(Z))editApiFault('CATALOG_KIND','entryId',request.entryId,'fragment connection atom');
+        const anchor=snapshot.context.atoms[selected.indices[0]],frame=editApiQuaternion(request.frameQuaternion===undefined?[0,0,0,1]:request.frameQuaternion,'frameQuaternion');
+        if(request.geometryId!==undefined&&typeof request.geometryId!=='string')editApiFault('INVALID_REQUEST','geometryId',request.geometryId,'geometry ID');
+        const result=deps.sites(snapshot.snapshot,anchor.index,{geometryId:request.geometryId,frameQuaternion:frame,distance:deps.bondLength(anchor.Z,Z,request.bondOrder)});
+        if(result.error)editApiFault(result.error,'sites',result.actual,result.expected);
+        return {value:{...result,anchorId:anchor.id,sites:(result.sites||[]).map(site=>({...site,siteId:`${snapshot.context.fingerprint}:${anchor.id}:${result.geometryId}:${site.index}`,fingerprint:snapshot.context.fingerprint}))},context:snapshot.context};
+      }),
+    });
+  }
+  function editApiCapture(vol) {
+    // Scope is structural metadata only. Never copy a grid/frame/orbital here.
+    const copy = value => structuredClone(value);
+    return { units: vol.units || 'bohr', natoms: vol.atoms.length,
+      atoms: vol.atoms.map(atom => ({ id: atom.id, Z: atom.Z, x: atom.x, y: atom.y, z: atom.z, formalCharge: atom.formalCharge ?? 0 })),
+      bonds: copy(vol.bonds || []), fragmentOps: copy(vol.fragmentOps || []),
+      annotations: copy(vol.annotations || { builder: { byAtomId: {} }, coordination: { byAtomId: {} }, metalBonding: { byAtomId: {} } }) };
+  }
+  function editApiDifference(actual, expected, path = '') {
+    if (typeof actual !== typeof expected || actual === null || expected === null) return actual === expected ? null : { path, actual, expected };
+    if (typeof expected === 'number') {
+      const equal = Number.isFinite(actual) && Number.isFinite(expected) && (Number.isInteger(expected) ? actual === expected : Math.abs(actual - expected) <= Math.max(1e-12, 1e-9 * Math.max(Math.abs(actual), Math.abs(expected))));
+      return equal ? null : { path, actual, expected };
+    }
+    if (typeof expected !== 'object') return actual === expected ? null : { path, actual, expected };
+    if (Array.isArray(actual) !== Array.isArray(expected)) return { path, actual, expected };
+    const keys = Object.keys(expected).sort(), actualKeys = Object.keys(actual).sort();
+    if (JSON.stringify(actualKeys) !== JSON.stringify(keys)) return { path, actual: actualKeys, expected: keys };
+    for (const key of keys) { const diff = editApiDifference(actual[key], expected[key], path ? `${path}.${key}` : key); if (diff) return diff; }
+    return null;
+  }
+  function createEditApiCandidateValidator(deps) {
+    return vol => {
+      const ids = new Set(), pairs = new Set();
+      for (const [i, atom] of vol.atoms.entries()) {
+        if (!atom || typeof atom.id !== 'string' || !atom.id || ids.has(atom.id) || !Number.isSafeInteger(atom.Z) || !deps.elements[atom.Z]
+            || !Number.isSafeInteger(atom.formalCharge) || ['x','y','z'].some(k => typeof atom[k] !== 'number' || !Number.isFinite(atom[k]))) editApiFault('INVALID_CANDIDATE', `atoms[${i}]`, atom, 'unique ID, valid identity/charge, finite position');
+        ids.add(atom.id);
+      }
+      for (const [i,bond] of vol.bonds.entries()) {
+        const pair = [bond.a,bond.b].sort().join('\u0000');
+        if (!ids.has(bond.a) || !ids.has(bond.b) || bond.a === bond.b || pairs.has(pair) || !Number.isSafeInteger(bond.order) || bond.order < 1 || bond.order > 4
+            || !['normal','blocked'].includes(bond.kind) || !['explicit','perceived'].includes(bond.origin) || !['covalent','metal-strong','metal-dative','metal-metal'].includes(bond.style)) editApiFault('INVALID_CANDIDATE', `bonds[${i}]`, bond, 'unique valid bond with explicit semantics');
+        pairs.add(pair);
+        const error = bond.kind === 'blocked' ? '' : deps.hydrogenError(vol,bond.a,bond.b,bond.order);
+        if(error)editApiFault('HYDROGEN_BOND_INVALID',`bonds[${i}]`,bond,'allowed hydrogen bonding',error);
+      }
+      for(const [kind, container] of Object.entries(vol.annotations || {})) {
+        if (!container || typeof container !== 'object') editApiFault('INVALID_CANDIDATE','annotations',container,'annotation map');
+        for (const [id, meta] of Object.entries(container.byAtomId || {})) {
+          if (!ids.has(id)) editApiFault('INVALID_CANDIDATE',`annotations.${kind}.${id}`,id,'live atom');
+          if (kind === 'coordination' && (typeof meta.geometryId !== 'string' || (meta.geometryId && !deps.coordination(vol.atoms.find(a=>a.id===id).Z)?.choices?.some(c=>c.geometryId===meta.geometryId)))) editApiFault('COORDINATION_UNSUPPORTED',`annotations.${kind}.${id}`,meta,'supported geometry');
+          if (kind === 'metalBonding' && !['auto','force_covalent','force_dative','no_bonds'].includes(meta.mode)) editApiFault('INVALID_CANDIDATE',`annotations.${kind}.${id}`,meta,'documented metal-bonding mode');
+        }
+      }
+      for (const [i,op] of vol.fragmentOps.entries()) {
+        if (!op || typeof op.opId !== 'string' || !op.opId || typeof op.builderGroupId !== 'string' || !op.builderGroupId || !Array.isArray(op.addedAtomIds) || !op.addedAtomIds.length || op.addedAtomIds.some(id=>!ids.has(id))
+            || (op.hostBondAtomIds && (op.hostBondAtomIds.length!==2 || op.hostBondAtomIds.some(id=>!ids.has(id))))) editApiFault('INVALID_CANDIDATE',`fragmentOps[${i}]`,op,'valid operation provenance and live membership');
+      }
+      // Normalize only an owned candidate. Returning the canonical prediction
+      // makes every deliberate legacy representation visible before committing.
+      return deps.canonicalize(vol);
+    };
+  }
+  function editApiRealizeIds(vol, allocators, bondId) {
+    const ids = new Map();
+    const collect = value => {
+      if(typeof value === 'string' && /^@edit-api-(atom|group|op):[0-9]+$/.test(value) && !ids.has(value)) ids.set(value,allocators[/^@edit-api-(atom|group|op):/.exec(value)[1]]());
+      else if(value && typeof value === 'object') for(const [k,v] of Object.entries(value)){collect(k);collect(v);}
+    };
+    collect(vol);
+    const map = value => {
+      if(typeof value === 'string') return ids.get(value) || value;
+      if(!value || typeof value !== 'object') return value;
+      return Array.isArray(value) ? value.map(map) : Object.fromEntries(Object.entries(value).map(([k,v])=>[ids.get(k)||k,map(v)]));
+    };
+    const result = map(vol);
+    for(let i=0;i<result.bonds.length;i++)if(vol.bonds[i].id===bondId(vol.bonds[i].a,vol.bonds[i].b))result.bonds[i].id=bondId(result.bonds[i].a,result.bonds[i].b);
+    for(const op of result.fragmentOps)if(op.timestamp==='@commit')op.timestamp=new Date().toISOString();
+    return { result, ids: Object.fromEntries(ids) };
+  }
+  function createEditApiCommitter(deps) {
+    return plan => {
+      if(plan.snapshot.record) {
+        const now = deps.readSystem();
+        if(now.record !== plan.snapshot.record || now.signature !== plan.snapshot.signature) editApiFault('STALE_CONTEXT','system',plan.snapshot.context.fingerprint,now.context.fingerprint);
+        editApiWritable(now);
+      } else deps.checkNew();
+      // Everything that can reject a request has run before IDs, records or UI
+      // are changed. Once commit begins, even an unexpected throw is observable.
+      let record, expected, actual;
+      try {
+        const realized = editApiRealizeIds(plan.draft.vol,deps.allocators,deps.bondId);
+        expected = deps.canonicalize(realized.result);
+        record = plan.snapshot.record || deps.createRecord();
+        if(!record)throw new Error('Could not create editable system.');
+        deps.apply(record,expected);
+        actual=deps.capture(record.vol);
+        const diff=editApiDifference(actual,expected);
+        if(diff)editApiFault('APPLIED_MISMATCH',diff.path,diff.actual,diff.expected,'Structural owner did not apply the complete candidate.');
+        deps.history(record,plan.snapshot.snapshot,actual,plan.result.label);
+        const after=deps.readSystem();
+        return { value: { operation: plan.request.operation, created: actual.atoms.filter(a=>!plan.request.originalIds.includes(a.id)).map(a=>a.id), removed: plan.request.originalIds.filter(id=>!actual.atoms.some(a=>a.id===id)), warnings: plan.result.warnings||{}, policy:plan.result.policy||null, idMap:realized.ids },
+          context:after.context, requested:expected, applied:actual, mutation:{state:'applied'}, changed:!!editApiDifference(actual,plan.snapshot.snapshot) };
+      } catch(error) {
+        error.mutationState=record?'applied':'unknown';
+        try {error.actual=actual || (record ? deps.capture(record.vol) : null);}catch(readbackError){error.actual={unavailable:true,reason:String(readbackError.message||readbackError)};}
+        throw error;
+      }
+    };
+  }
+  function callEditApiTesting(name,args) {
+    if(!editApiHolder.testing)throw new Error(`Edit API not ready: ${name}`);
+    return editApiHolder.testing[name](...args);
+  }
+  function editApiTestingIndex(context,index,path='index') {
+    if(!Number.isSafeInteger(index)||index<0||!context.atoms[index])editApiFault('INDEX_OUT_OF_RANGE',path,index,{minimum:0,maximum:context.atoms.length-1});
+    return {kind:'ids',ids:[context.atoms[index].id]};
+  }
+  function editApiTestingPayload() {
+    return {element:editAddElementZ,entryId:editAddFragmentId,fragment:editAddMode===EDIT_ADD_MODE.FRAGMENT,bondOrder:editAddBondOrder,
+      attachPolicy:editAddFragmentAttachPolicy,hydrogens:editAddAdjustHydrogensEnabled?'adjust':'preserve',coordination:getEffectiveEditAddCoordinationGeometryId(editAddElementZ)};
+  }
+  function editApiTestingRequest(anchorIndex,payload,options={}) {
+    const context=editApiReadSystem().context;
+    return {system:{systemId:context.systemId,fingerprint:context.fingerprint},anchor:editApiTestingIndex(context,anchorIndex,'anchorIndex'),warnings:'allow',hydrogens:payload.hydrogens,
+      bondOrder:options.bondOrder??payload.bondOrder,context};
+  }
+  function editApiTestingApply(request,meta) {
+    const result=editApiBuild.applyBuild(request);
+    if(!result.ok)return {...result,attached:false,...meta};
+    const entry=request.entryId&&getCatalogEntryById(request.entryId,'fragment');
+    if(entry){const via=result.value.policy==='replace_h'?'Replace H':meta.kind==='ghost'?'Append (open site)':'Append';setHintMessage(`Attached ${entry.name} via ${via}`);}
+    const created=result.value.created.find(id=>result.applied.atoms.find(a=>a.id===id)?.Z!==1)||result.value.created[0];
+    return {...meta,attached:true,atomIndex:result.applied.atoms.findIndex(a=>a.id===created),removedAtomId:result.value.removed[0]||'',receipt:result};
+  }
+  function editApiTestingAttach(anchorIndex,offset=null,options={}) {
+    return editApiTestingResult(()=>{
+      editApiData(options);editApiShape(options,['bondOrder'],'options');
+      const payload=editApiTestingPayload(),base=editApiTestingRequest(anchorIndex,payload,options);delete base.context;
+      if(offset===null)offset={x:1.5,y:0,z:0};editApiData(offset);editApiShape(offset,['x','y','z'],'offset',['x','y','z']);
+      const direction=editApiVector([offset.x,offset.y,offset.z],'offset');
+      return editApiTestingApply({...base,operation:'attachFragment',entryId:payload.entryId,direction,attachPolicy:payload.attachPolicy,spinAngle:0,hydrogens:'preserve'},{anchorIndex});
+    });
+  }
+  function editApiTestingReplace(anchorIndex,hydrogenIndex,options={},fragment=false) {
+    return editApiTestingResult(()=>{
+      editApiData(options);editApiShape(options,['bondOrder','elementZ'],'options');
+      const payload=editApiTestingPayload(),base=editApiTestingRequest(anchorIndex,payload,options),hydrogen=editApiTestingIndex(base.context,hydrogenIndex,'hydrogenIndex');delete base.context;
+      const replacement=fragment?{entryId:payload.entryId,spinAngle:0,hydrogens:'preserve'}:{element:options.elementZ??payload.element,coordination:payload.coordination};
+      return editApiTestingApply({...base,operation:'replaceHydrogen',hydrogen,...replacement},{anchorIndex,hydrogenIndex});
+    });
+  }
+  function editApiTestingHaloState() {return editHaloController?editHaloController.getUiState():editHaloUiState;}
+  function editApiTestingGhost(index) {
+    return editApiTestingResult(()=>{
+      if(!Number.isSafeInteger(index))editApiFault('INDEX_OUT_OF_RANGE','ghostIndex',index,'integer UI site index');
+      const ui=editApiTestingHaloState(),ghost=ui?.ghosts?.find(g=>g.index===index);
+      if(!ghost)editApiFault('SITE_STALE','ghostIndex',index,ui?.ghosts?.map(g=>g.index)||[]);
+      const payload=editApiTestingPayload(),base=editApiTestingRequest(ui.atomIndex,payload),anchor=base.context.atoms[ui.atomIndex];delete base.context;
+      const position=[ghost.world.x,ghost.world.y,ghost.world.z],direction=position.map((v,i)=>v-anchor.position[i]);
+      const operation=payload.fragment?{operation:'attachFragment',entryId:payload.entryId,spinAngle:0,hydrogens:'preserve'}:{operation:'growAtom',element:payload.element,coordination:payload.coordination,position};
+      return editApiTestingApply({...base,...operation,direction,attachPolicy:'append'},{anchorIndex:ui.atomIndex,ghostIndex:index,kind:'ghost'});
+    });
+  }
+  function editApiTestingReplaceTarget(index) {
+    return editApiTestingResult(()=>{
+      const ui=editApiTestingHaloState();
+      if(!Number.isSafeInteger(index)||!ui?.replaceTargets?.some(t=>t.atomIndex===index))editApiFault('SITE_STALE','atomIndex',index,ui?.replaceTargets?.map(t=>t.atomIndex)||[]);
+      return editApiTestingReplace(ui.atomIndex,index,{},true);
+    });
+  }
+  function editApiTestingResult(action) {
+    try{return action();}catch(error){return editApiCall(()=>{throw error;});}
+  }
+  function editApiTestingSelect(indices) {
+    return editApiTestingResult(()=>{
+      const context=editApiReadSystem().context;
+      if(!Array.isArray(indices))editApiFault('INVALID_REQUEST','indices',indices,'array of integer indices');
+      for(const index of indices)editApiTestingIndex(context,index);
+      if(new Set(indices).size!==indices.length)editApiFault('DUPLICATE_REFERENCE','indices',indices,'distinct indices');
+      if(context.mode!=='edit')editApiFault('MODE_REQUIRED','mode',context.mode,'edit');
+      if(Object.entries(context.interactions).some(([key,value])=>key!=='pendingBuildOperator'&&value))editApiFault('INTERACTION_BUSY','interactions',context.interactions,'idle');
+      const ids=indices.map(index=>context.atoms[index].id);
+      let finalized=false;
+      try {
+        if(addAtomOperatorSession&&addAtomOperatorSession.source!=='selection'){finalized=true;finalizeAddAtomOperatorSession({announce:false});}
+        const latest=editApiReadSystem().context;
+        if(latest.systemId!==context.systemId)editApiFault('STALE_CONTEXT','system',context.systemId,latest.systemId);
+        const mapped=ids.map(id=>{const atom=latest.atoms.find(a=>a.id===id);if(!atom)editApiFault('STALE_CONTEXT','indices',ids,latest.atoms.map(a=>a.id));return atom.index;});
+        const result=editApiSelection.setSelectionForTesting(mapped);
+        if(!result.ok&&finalized&&result.mutation.state==='none')return {...result,mutation:{state:'applied'},actual:{context:latest}};
+        return result.ok?{...result,changed:result.changed,count:result.value.count}:result;
+      } catch(error){if(finalized)error.mutationState='unknown';throw error;}
+    });
+  }
+  function editApiTestingBuildPayloadState() {return {intent:String(getEditIntent()||''),addMode:String(editAddMode||''),elementZ:Number(editAddElementZ)|0,fragmentId:String(editAddFragmentId||''),moleculeId:String(editAddMoleculeId||''),payload:Object.assign({},getCurrentBuildPayload()),hint:String(hintEl&&hintEl.textContent||'')};}
+  function editApiTestingBuildPreviewState() {return {ghostKind:getActiveVoidPreviewStateKind()||(addGrowActive?String(addGrowKind||''):''),catalogVoidPreviewKind:String(catalogVoidPreview.getKind()||''),catalogVoidPreviewVisible:catalogVoidPreview.isVisible(),gestureVoidPreviewVisible:!!(gestureVoidPreviewMesh&&gestureVoidPreviewMesh.visible),addGrowActive:!!addGrowActive,addGrowKind:String(addGrowKind||''),moleculePlacementActive:!!moleculePlaceActive,moleculePlacementKind:String(moleculePlaceTemplateData&&moleculePlaceTemplateData.entryKind||'')};}
+  // Validated Edit API: end.
+
 
   // Bulk consumers receive disposable copies, not per-sample Proxy reads.
   function makeIsosurface(volume, ...args) { return makeIsosurfaceCore(scientificBufferOwner.readVolume(volume), ...args); }
@@ -12275,8 +13070,8 @@
    * @param {Array<object>|null=} bonds
    * @returns {boolean}
    */
-  function applyAtomsSnapshotToRecord(record, atoms, fragmentOps = undefined, bonds = undefined) {
-    return editState.applyAtomsSnapshotToRecord(record, atoms, fragmentOps, bonds);
+  function applyAtomsSnapshotToRecord(record, atoms, fragmentOps = undefined, bonds = undefined, annotations = undefined) {
+    return editState.applyAtomsSnapshotToRecord(record, atoms, fragmentOps, bonds, annotations);
   }
 
   /**
@@ -23192,11 +23987,11 @@
     return removed;
   }
 
-  function applyHydrogenPlanToVolume(vol, plan) {
+  function applyHydrogenPlanToVolume(vol, plan, allocateAtomId = null) {
     if (!vol || !Array.isArray(vol.atoms) || !plan || !Array.isArray(plan.hydrogens) || !plan.hydrogens.length) return 0;
     let added = 0;
     for (const hydrogen of plan.hydrogens) {
-      const atom = { Z: 1, x: 0, y: 0, z: 0, formalCharge: 0 };
+      const atom = { Z: 1, x: 0, y: 0, z: 0, formalCharge: 0, ...(allocateAtomId ? { id: allocateAtomId() } : {}) };
       const world = new THREE.Vector3(Number(hydrogen.x) || 0, Number(hydrogen.y) || 0, Number(hydrogen.z) || 0);
       const atomUnits = worldToAtomUnits(vol, world);
       atom.x = Number(atomUnits[0]) || 0;
@@ -23313,7 +24108,8 @@
   }
 
   function applyAutomaticHydrogenAdjustmentToVolume(vol, focusAtomIndices, options = {}) {
-    if (!editAddAdjustHydrogensEnabled || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return { added: 0, removed: 0 };
+    const enabled = typeof options.enabled === 'boolean' ? options.enabled : editAddAdjustHydrogensEnabled;
+    if (!enabled || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) return { added: 0, removed: 0 };
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     const focusIds = Array.from(new Set((Array.isArray(focusAtomIndices) ? focusAtomIndices : [])
       .map((value) => Number(value) | 0)
@@ -23366,7 +24162,7 @@
       focusAtomIndices: focusIndices,
       resolveGeometry: geometryResolver,
     });
-    const added = applyHydrogenPlanToVolume(vol, plan);
+    const added = applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId);
     const relaxedFocusIndices = focusIds
       .map((atomId) => vol.atoms.findIndex((atom) => atom && String(ensureAtomId(atom)) === atomId))
       .filter((index) => index >= 0);
@@ -27280,7 +28076,7 @@
   window.VibeMolTesting = Object.freeze({
     rebuildScene: () => rebuildScene({ preserveView: true }),
     getHintMessage: () => String(hintEl && hintEl.textContent || ''),
-    isFuseRingPreviewActive: () => !!addFusePreviewState,
+    isFuseRingPreviewActive: (...args) => callEditApiTesting('isFuseRingPreviewActive', args),
     listNonEditWindows: () => Object.values(NON_EDIT_WINDOW_ID),
     getOpenNonEditWindows: () => listOpenNonEditWindowIds(),
     getSimulationBoxSnapshot: () => [boxHelper, ...extraBoxHelpers].filter(Boolean).map(box => ({
@@ -27330,10 +28126,7 @@
         })),
       })),
     }),
-    getEditSelectionCount: () => {
-      const selection = getEditAtomSelection();
-      return Array.isArray(selection) ? selection.length : 0;
-    },
+    getEditSelectionCount: (...args) => callEditApiTesting('getEditSelectionCount', args),
     getMeasurementSnapshot: () => ({
       atomIndices: editSel.slice(),
       rows: measurements.rows(measurementRecord()),
@@ -27349,27 +28142,8 @@
       }),
       labelCount: editSelGroup.children.filter(child => child.userData?.measurementLabel).length,
     }),
-    getEditSelectionIndices: () => {
-      const selection = getEditAtomSelection();
-      return Array.isArray(selection) ? selection.slice() : [];
-    },
-    getEditBuildState: () => ({
-      intent: String(getEditIntent() || ''),
-      addMode: String(editAddMode || ''),
-      elementZ: Number(editAddElementZ) | 0,
-      fragmentId: String(editAddFragmentId || ''),
-      moleculeId: String(editAddMoleculeId || ''),
-      payload: Object.assign({}, getCurrentBuildPayload()),
-      hint: String(hintEl && hintEl.textContent || ''),
-      ghostKind: getActiveVoidPreviewStateKind() || (addGrowActive ? String(addGrowKind || '') : ''),
-      catalogVoidPreviewKind: String(catalogVoidPreview.getKind() || ''),
-      catalogVoidPreviewVisible: catalogVoidPreview.isVisible(),
-      gestureVoidPreviewVisible: !!(gestureVoidPreviewMesh && gestureVoidPreviewMesh.visible),
-      addGrowActive: !!addGrowActive,
-      addGrowKind: String(addGrowKind || ''),
-      moleculePlacementActive: !!moleculePlaceActive,
-      moleculePlacementKind: String(moleculePlaceTemplateData && moleculePlaceTemplateData.entryKind || ''),
-    }),
+    getEditSelectionIndices: (...args) => callEditApiTesting('getEditSelectionIndices', args),
+    getEditBuildState: (...args) => callEditApiTesting('getEditBuildState', args),
     getCameraSnapshot: () => ({
       mode: String(viewState && viewState.mode || ''),
       camera: {
@@ -27554,180 +28328,17 @@
       toneMapping:renderer.toneMapping, exposure:renderer.toneMappingExposure,
       shadows:renderer.shadowMap.enabled, environment:!!scene.environment,
     }),
-    getBondCarrierSnapshots: (options = {}) => {
-      if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
-      const out = [];
-      const atoms = options.capFit ? buildBondAtomRecords(volumes[currentIndex].vol, { includeRenderColor: false }) : null;
-      for (const child of bondGroup.children) {
-        const carrier = getBondCarrierObject(child) || child;
-        if (!carrier || !carrier.userData) continue;
-        const i = carrier.userData.i;
-        const j = carrier.userData.j;
-        if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
-        const meshes = [];
-        carrier.traverse(mesh => {
-          if (!mesh.isMesh || mesh.material?.userData?.vmAppearanceTarget !== 'bonds') return;
-          const colors = mesh.geometry.getAttribute('color');
-          meshes.push({ geometryId: mesh.geometry.uuid, vertexCount: mesh.geometry.getAttribute('position')?.count,
-            hasColors: !!colors, vertexColors: !!mesh.material.vertexColors, color: mesh.material.color.getHexString(),
-            firstColor: colors ? [colors.getX(0), colors.getY(0), colors.getZ(0)] : null });
-        });
-        let capDistances = null;
-        if (atoms && carrier.isMesh && carrier.userData.fit) {
-          const p = carrier.geometry.getAttribute('position');
-          let low = Infinity, high = -Infinity;
-          for (let v = 0; v < p.count; v++) { low = Math.min(low, p.getY(v)); high = Math.max(high, p.getY(v)); }
-          capDistances = [0, 0];
-          const point = new THREE.Vector3();
-          for (let v = 0; v < p.count; v++) {
-            const end = Math.abs(p.getY(v) - low) < 1e-7 ? 0 : Math.abs(p.getY(v) - high) < 1e-7 ? 1 : -1;
-            if (end < 0) continue;
-            point.fromBufferAttribute(p, v).multiply(carrier.scale).applyQuaternion(carrier.quaternion).add(carrier.position);
-            capDistances[end] = Math.max(capDistances[end], point.distanceTo(atoms[end === 0 ? i : j].pos));
-          }
-        }
-        out.push({
-          i: i | 0,
-          j: j | 0,
-          logicalKey: String(getBondCarrierLogicalKey(carrier) || ''),
-          connectorStyle: String(carrier.userData.connectorStyle || ''),
-          isMesh: !!carrier.isMesh,
-          meshes,
-          length: carrier.userData.baseGeomLen,
-          radius: carrier.userData.connectorCenterRadius,
-          offset: Math.hypot(carrier.userData.bondComponentOffsetU || 0, carrier.userData.bondComponentOffsetV || 0),
-          fit: carrier.userData.fit ? { ...carrier.userData.fit } : null,
-          capDistances,
-          trimA: carrier.userData.trimA,
-          trimB: carrier.userData.trimB,
-          x: Number(carrier.position && carrier.position.x) || 0,
-          y: Number(carrier.position && carrier.position.y) || 0,
-          z: Number(carrier.position && carrier.position.z) || 0,
-          qx: Number(carrier.quaternion && carrier.quaternion.x) || 0,
-          qy: Number(carrier.quaternion && carrier.quaternion.y) || 0,
-          qz: Number(carrier.quaternion && carrier.quaternion.z) || 0,
-          qw: Number(carrier.quaternion && carrier.quaternion.w) || 1,
-          sy: Number(carrier.scale && carrier.scale.y) || 1,
-        });
-      }
-      return out;
-    },
-    setEditSelectionIndices: (indices) => {
-      const next = Array.isArray(indices)
-        ? indices.map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)
-        : [];
-      if (addAtomOperatorSession && String(addAtomOperatorSession.source || '') !== 'selection') {
-        finalizeAddAtomOperatorSession({ announce: false });
-      }
-      const changed = setEditAtomSelection(next);
-      updateSelectedHalos();
-      updateEditSelectionVisuals();
-      updateEditAdaptiveMenuUi();
-      return {
-        changed: !!changed,
-        count: Array.isArray(getEditAtomSelection()) ? getEditAtomSelection().length : 0,
-      };
-    },
-    copyEditSelectionToClipboard: () => copyEditSelectionToClipboard(),
-    pasteEditClipboardSelection: () => pasteEditClipboardSelection(),
-    getHaloGhostPreviewKind: () => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return '';
-      return getEditHaloGhostPayloadDescriptor(uiState.atomZ | 0).kind;
-    },
-    getHaloGhostWorlds: () => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return [];
-      return uiState.ghosts.map((ghost) => ({
-        index: ghost.index | 0,
-        x: Number(ghost.world && ghost.world.x) || 0,
-        y: Number(ghost.world && ghost.world.y) || 0,
-        z: Number(ghost.world && ghost.world.z) || 0,
-      }));
-    },
-    getHaloReplaceTargetWorlds: () => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      if (!(uiState && uiState.visible && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return [];
-      return uiState.replaceTargets.map((target) => ({
-        atomIndex: target.atomIndex | 0,
-        x: Number(target.world && target.world.x) || 0,
-        y: Number(target.world && target.world.y) || 0,
-        z: Number(target.world && target.world.z) || 0,
-      }));
-    },
-    projectHaloGhostToClient: (ghostIndex = 0) => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
-      const target = uiState.ghosts.find((ghost) => (ghost.index | 0) === (Number(ghostIndex) | 0))
-        || uiState.ghosts[0]
-        || null;
-      if (!(target && target.world)) return null;
-      const projected = projectWorldToClient(new THREE.Vector3(
-        Number(target.world.x) || 0,
-        Number(target.world.y) || 0,
-        Number(target.world.z) || 0
-      ));
-      if (!projected) return null;
-      return {
-        index: target.index | 0,
-        x: Number(projected.x) || 0,
-        y: Number(projected.y) || 0,
-        visible: !!projected.visible,
-      };
-    },
-    projectHaloReplaceTargetToClient: (atomIndex = -1) => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      if (!(uiState && uiState.visible && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return null;
-      const target = uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (Number(atomIndex) | 0))
-        || uiState.replaceTargets[0]
-        || null;
-      if (!(target && target.world)) return null;
-      const projected = projectWorldToClient(new THREE.Vector3(
-        Number(target.world.x) || 0,
-        Number(target.world.y) || 0,
-        Number(target.world.z) || 0
-      ));
-      if (!projected) return null;
-      return {
-        atomIndex: target.atomIndex | 0,
-        x: Number(projected.x) || 0,
-        y: Number(projected.y) || 0,
-        visible: !!projected.visible,
-      };
-    },
-    getSelectionCoordinationChoices: () => {
-      const state = getSelectionCoordinationCueState();
-      if (!state) return [];
-      return state.choices.map((choice) => ({
-        geometryId: String(choice.geometryId || ''),
-        label: String(choice.label || ''),
-        cn: Number(choice.cn) || 0,
-        active: !!choice.active,
-      }));
-    },
-    probeSelectionMoveDragStart: (atomIndex, clientX, clientY) => {
-      const resolved = resolveGestureMoveScope(atomIndex | 0, { atomOnly: false, preview: false });
-      const result = {
-        resolvedCount: Array.isArray(resolved && resolved.indices) ? resolved.indices.length : 0,
-        hasAnchorWorld: !!(resolved && resolved.anchorWorld),
-        hasCamera: !!camera,
-        hasRaycaster: !!raycaster,
-        started: false,
-      };
-      if (!editTransformController || !resolved || !Array.isArray(resolved.indices) || !resolved.indices.length) return result;
-      result.started = !!editTransformController.startMoveDrag(
-        {
-          clientX: Number(clientX) || 0,
-          clientY: Number(clientY) || 0,
-          pointerId: 1,
-        },
-        resolved.indices,
-        resolved.anchorWorld || null,
-        { axis: 'none' }
-      );
-      if (result.started) editTransformController.cancelMoveDrag();
-      return result;
-    },
+    getBondCarrierSnapshots: (...args) => callEditApiTesting('getBondCarrierSnapshots', args),
+    setEditSelectionIndices: (...args) => callEditApiTesting('setEditSelectionIndices', args),
+
+
+    getHaloGhostPreviewKind: (...args) => callEditApiTesting('getHaloGhostPreviewKind', args),
+    getHaloGhostWorlds: (...args) => callEditApiTesting('getHaloGhostWorlds', args),
+
+    projectHaloGhostToClient: (...args) => callEditApiTesting('projectHaloGhostToClient', args),
+
+
+
     performSelectionMoveDrag: (atomIndex, startClientX, startClientY, endClientX, endClientY) => {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
@@ -27779,209 +28390,18 @@
       }
       return result;
     },
-    triggerHaloGhostByIndex: (ghostIndex) => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      const result = {
-        attached: false,
-        anchorIndex: -1,
-        ghostIndex: ghostIndex | 0,
-        kind: '',
-      };
-      if (!(uiState && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return result;
-      const ghost = uiState.ghosts.find((item) => (item.index | 0) === (ghostIndex | 0));
-      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
-      result.anchorIndex = anchorIndex;
-      if (!(ghost && ghost.world) || anchorIndex < 0) return result;
-      const world = new THREE.Vector3(
-        Number(ghost.world.x) || 0,
-        Number(ghost.world.y) || 0,
-        Number(ghost.world.z) || 0
-      );
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      if (isFragmentPayloadLoaded()) {
-        const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
-        if (!attachContext || attachContext.anchorIndex < 0) return result;
-        result.kind = 'fragment';
-        result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
-          attachPolicyOverride: { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, reason: 'open_site' },
-        });
-        return result;
-      }
-      result.kind = 'atom';
-      result.attached = !!appendGestureAtomFromAnchor(anchorIndex, world, {
-        elementZ: editAddElementZ,
-        bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
-        selectionAfter: [anchorIndex],
-      });
-      return result;
-    },
-    triggerHaloReplaceTargetByAtomIndex: (atomIndex) => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
-      const result = {
-        attached: false,
-        anchorIndex: uiState ? (uiState.atomIndex | 0) : -1,
-        atomIndex: Number(atomIndex) | 0,
-      };
-      if (!(uiState && Array.isArray(uiState.replaceTargets) && uiState.replaceTargets.length)) return result;
-      const target = uiState.replaceTargets.find((item) => (item.atomIndex | 0) === (Number(atomIndex) | 0))
-        || uiState.replaceTargets[0]
-        || null;
-      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
-      result.anchorIndex = anchorIndex;
-      if (!(target && target.world) || anchorIndex < 0) return result;
-      const world = new THREE.Vector3(
-        Number(target.world.x) || 0,
-        Number(target.world.y) || 0,
-        Number(target.world.z) || 0
-      );
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const attachContext = getActiveFragmentAttachContext(vol, anchorIndex);
-      if (!attachContext || attachContext.anchorIndex < 0) return result;
-      result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext);
-      return result;
-    },
-    replaceGestureTerminalHydrogen: (anchorIndex, hydrogenIndex, options = {}) => {
-      const result = {
-        attached: false,
-        anchorIndex: Number(anchorIndex) | 0,
-        hydrogenIndex: Number(hydrogenIndex) | 0,
-        removedAtomId: '',
-        atomIndex: -1,
-      };
-      const replacement = replaceGestureTerminalHydrogenFromAnchor(
-        result.anchorIndex,
-        result.hydrogenIndex,
-        options || {}
-      );
-      if (!replacement) return result;
-      result.attached = true;
-      result.removedAtomId = String(replacement.removedAtomId || '');
-      result.atomIndex = Number(replacement.atomIndex) | 0;
-      return result;
-    },
-    attachFragmentFromAnchorIndex: (anchorIndex, offset = null, options = {}) => {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const idx = Number(anchorIndex) | 0;
-      const result = {
-        attached: false,
-        anchorIndex: idx,
-      };
-      if (!vol || !Array.isArray(vol.atoms) || idx < 0 || idx >= vol.atoms.length || !vol.atoms[idx]) return result;
-      const attachContext = getActiveFragmentAttachContext(vol, idx);
-      if (!attachContext || attachContext.anchorIndex < 0) return result;
-      const anchorWorld = atomUnitsToAng(vol, vol.atoms[idx]);
-      const dx = Number(offset && offset.x);
-      const dy = Number(offset && offset.y);
-      const dz = Number(offset && offset.z);
-      const world = anchorWorld.clone().add(new THREE.Vector3(
-        Number.isFinite(dx) ? dx : 1.5,
-        Number.isFinite(dy) ? dy : 0,
-        Number.isFinite(dz) ? dz : 0
-      ));
-      result.attached = !!commitFragmentAttachAtWorld(idx, world, attachContext, options || {});
-      return result;
-    },
-    pickEditHitAtClient: (clientX, clientY) => {
-      const eventLike = {
-        clientX: Number(clientX) || 0,
-        clientY: Number(clientY) || 0,
-      };
-      const atomHit = pickAtomHit(eventLike);
-      if (atomHit && atomHit.object && atomHit.object.userData) {
-        return {
-          atomIndex: atomHit.object.userData.index | 0,
-          bondSection: '',
-        };
-      }
-      const bondHit = pickBondHit(eventLike);
-      return {
-        atomIndex: -1,
-        bondSection: bondHit && bondHit.section ? String(bondHit.section) : '',
-      };
-    },
-    projectActiveAtomToClient: (atomIndex) => {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const index = Number(atomIndex) | 0;
-      if (!vol || !Array.isArray(vol.atoms) || index < 0 || index >= vol.atoms.length) return null;
-      const mesh = atomGroup && atomGroup.children ? atomGroup.children[index] : null;
-      const pos = mesh && mesh.position ? mesh.position : atomUnitsToAng(vol, vol.atoms[index]);
-      const projected = projectWorldToClient(pos);
-      if (!projected) return null;
-      return {
-        x: Number(projected.x) || 0,
-        y: Number(projected.y) || 0,
-        visible: !!projected.visible,
-      };
-    },
-    getTransformAngleGuideClient: () => {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const context = getCurrentTransformSelectionContext();
-      if (!vol || !context || context.type !== 'bond') return null;
-      if (getEffectiveEditBondSideCueMode() !== 'axis') return null;
-      const guide = resolveTransformBondDihedralGuide(vol, context, getActiveTransformSelectionIndices());
-      if (!guide) return null;
-      const projected = projectWorldToClient(guide.labelPosition);
-      if (!projected) return null;
-      return {
-        x: Number(projected.x) || 0,
-        y: Number(projected.y) || 0,
-        visible: !!projected.visible,
-        angleDeg: Number((Math.abs(guide.phi) * 180 / Math.PI).toFixed(4)) || 0,
-        referenceKind: String([guide.xKind, guide.yKind].join('/')),
-      };
-    },
-    getTransformDistanceGuideClient: () => {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const context = getCurrentTransformSelectionContext();
-      if (!vol || !context || context.type !== 'bond') return null;
-      if (getEffectiveEditBondSideCueMode() !== 'distance') return null;
-      const guide = resolveTransformBondDistanceGuide(vol, context);
-      if (!guide) return null;
-      const projected = projectWorldToClient(guide.labelPosition);
-      if (!projected) return null;
-      return {
-        x: Number(projected.x) || 0,
-        y: Number(projected.y) || 0,
-        visible: !!projected.visible,
-        distanceAng: Number(guide.distanceAng.toFixed(6)) || 0,
-      };
-    },
-    getBondSideCueState: () => ({
-      mode: getEffectiveEditBondSideCueMode(),
-      rotateVisible: !!(els.editSelectionRotateCueButtonEl && !els.editSelectionRotateCueButtonEl.hidden),
-      orbitVisible: !!(els.editSelectionBondOrbitCueButtonEl && !els.editSelectionBondOrbitCueButtonEl.hidden),
-      distanceVisible: !!(els.editSelectionBondDistanceCueButtonEl && !els.editSelectionBondDistanceCueButtonEl.hidden),
-    }),
-    getBondCenterCueState: () => {
-      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
-      const vol = record && record.vol;
-      const resolved = getBondCenterSelectionResolved(vol);
-      return {
-        visible: !!(els.editSelectionBondOrderCueButtonEl && !els.editSelectionBondOrderCueButtonEl.hidden),
-        order: resolved ? (resolved.order | 0) : -1,
-        style: resolved ? String(resolved.style || '') : '',
-        metalPair: !!(resolved && resolved.metalPair),
-      };
-    },
-    pickTransformValueLabelAtClient: (clientX, clientY) => {
-      const hit = pickTransformValueLabelHit({
-        clientX: Number(clientX) || 0,
-        clientY: Number(clientY) || 0,
-      });
-      return !!(hit && hit.object);
-    },
-    getActiveTransformGesture: () => ({
-      transformActive: !!transformActive,
-      rotateGesture: String(transformRotateGesture || ''),
-      dragActive: !!(editTransformState && editTransformState.dragActive),
-      rotateDragActive: !!(editTransformState && editTransformState.rotateDragActive),
-    }),
+    triggerHaloGhostByIndex: (...args) => callEditApiTesting('triggerHaloGhostByIndex', args),
+    triggerHaloReplaceTargetByAtomIndex: (...args) => callEditApiTesting('triggerHaloReplaceTargetByAtomIndex', args),
+    replaceGestureTerminalHydrogen: (...args) => callEditApiTesting('replaceGestureTerminalHydrogen', args),
+    attachFragmentFromAnchorIndex: (...args) => callEditApiTesting('attachFragmentFromAnchorIndex', args),
+    pickEditHitAtClient: (...args) => callEditApiTesting('pickEditHitAtClient', args),
+    projectActiveAtomToClient: (...args) => callEditApiTesting('projectActiveAtomToClient', args),
+    getTransformAngleGuideClient: (...args) => callEditApiTesting('getTransformAngleGuideClient', args),
+    getTransformDistanceGuideClient: (...args) => callEditApiTesting('getTransformDistanceGuideClient', args),
+    getBondSideCueState: (...args) => callEditApiTesting('getBondSideCueState', args),
+    getBondCenterCueState: (...args) => callEditApiTesting('getBondCenterCueState', args),
+
+    getActiveTransformGesture: (...args) => callEditApiTesting('getActiveTransformGesture', args),
   });
 
   if (saveStructureBtn) saveStructureBtn.onclick = () => saveCurrentStructureToFile();
@@ -32100,6 +32520,292 @@
       }),
     });
   }
+
+  function editApiPointerInterlocks() {
+    return { move: !!editTransformState.dragActive, rotate: !!editTransformState.rotateDragActive,
+      transform: !!transformActive, marquee: !!editSelectionMarqueeActive, measurement: !!measurementLabelDragState,
+      grow: !!addGrowActive, placement: !!moleculePlaceActive, fusion: !!addFusePreviewState, pendingBuildOperator: !!(addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') };
+  }
+  function editApiInterlocks() {
+    return { ...editApiPointerInterlocks(), inlineEdit: !!coordsInlineEditState, session: !!applyingSession,
+      trajectoryExport: !!trajectoryVideoController?.isRecording(), vibrationExport: !!vibrationVideoController?.isRecording(),
+      trajectory: !!isAnyTrajectoryPlaybackActive(), vibration: !!vibrationRuntimeController.getPlaybackState().playing };
+  }
+  function editApiCanonicalize(vol) {
+    ensureVolumeSchema(vol, { inferMissingBonds: false });
+    presetController.pruneBuilderOperationsForVolume(vol);
+    return editApiCapture(vol);
+  }
+  function editApiCopySelection(snapshot, indices) {
+    const owned = structuredClone(snapshot.snapshot);
+    const scale = owned.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+    const payload = buildVolumeSelectionClipboard(owned, indices, { mapAtom: atom => ({...atom,x:atom.x*scale,y:atom.y*scale,z:atom.z*scale}) });
+    return {kind:'vibemol.edit-selection',version:1,units:'angstrom',...payload};
+  }
+  function editApiPostprocessAttachment(vol,fragment,indices,geometry,oldSet) {
+    const anchorIndex=vol.atoms.findIndex(a=>a.id===geometry.anchorId),connectionIndex=indices[geometry.connection.index];
+    applyMethylAttachmentGeometry(vol,fragment,indices,geometry.anchorWorld,geometry.connectionWorld,geometry.direction);
+    applyHydroxylAttachmentGeometry(vol,fragment,indices,geometry.anchorWorld,geometry.connectionWorld);
+    applyLocalFragmentCleanup(vol,anchorIndex,indices,connectionIndex,geometry.bondLength,oldSet,geometry.direction);
+  }
+  function editApiHistory(record,before,after,label) {
+    pushEditHistoryEntry(record,before.atoms,after.atoms,label,{beforeFragmentOps:before.fragmentOps,afterFragmentOps:after.fragmentOps,
+      beforeBonds:before.bonds,afterBonds:after.bonds,beforeAnnotations:before.annotations,afterAnnotations:after.annotations});
+  }
+  function editApiSyncSelection() {
+    updateSelectedHalos(); updateEditSelectionVisuals(); updateEditAdaptiveMenuUi();
+  }
+  // Construction occurs after every application binding, and before exposure.
+  // These are wiring expressions, not a broad controller hidden behind `deps`.
+  const editApiReadSystem = createEditApiSystemReader({ getRecord:()=>volumes[currentIndex]||null,capture:editApiCapture,elements:ATOM_Z_TO_DATA,bohr:BOHR_TO_ANG,
+    mode:()=>currentMode,location:()=>({sceneId:getFocusedScene()?.id||null,layerId:sceneGraphController.getActiveLayer()?.id||null,sourceId:sceneGraphController.getActiveLayer()?.sourceId||null}),fragments:editApiFragmentMembership,interlocks:editApiInterlocks });
+  const editApiResolver = createEditApiResolver({elements:ATOM_Z_TO_DATA,fitPlane:window.VibeMolCalculationsModel.fitPlane});
+  const editApiSelection = createEditSelectionApi({readSystem:editApiReadSystem,resolve:editApiResolver.resolve,readIndices:()=>editAtomSelectionIndices.slice(),writeIndices:setEditAtomSelection,
+    syncPresentation:editApiSyncSelection,copy:editApiCopySelection});
+  const editApiValidator = createEditApiBuildValidator({catalog:getCatalogEntryById,elements:ATOM_Z_TO_DATA,resolve:editApiResolver.resolve,coordination:getCoordinationProfile});
+  const editApiMakeDraft = createEditApiDraftFactory({bohr:BOHR_TO_ANG,builderMeta:setAtomBuilderMeta,coordinationMeta:setAtomCoordinationMeta,hydrogenError:getHydrogenBondError,upsertBond:upsertVolumeBond});
+  const editApiValidateCandidate = createEditApiCandidateValidator({elements:ATOM_Z_TO_DATA,coordination:getCoordinationProfile,hydrogenError:getHydrogenBondError,canonicalize:editApiCanonicalize});
+  const editApiPlace = createEditApiPlacementPlanner({THREE,catalog:editApiValidator.catalog,template:buildMoleculePlacementData,placedBonds:editPlacement.appendPlacedMoleculeBonds,
+    adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
+  const editApiAttachGeometry = createEditApiAttachmentGeometry({THREE,atomWorld:atomUnitsToAng,terminalHydrogen:resolveGestureTerminalHydrogenReplacement,findHydrogen:findAnchorReplaceableHydrogen,
+    connection:getFragmentConnectionAtom,bondLength:getEditAddBondLength});
+  const editApiAttach = createEditApiAttachmentPlanner({catalog:editApiValidator.catalog,geometry:editApiAttachGeometry,THREE,outward:getFragmentConnectionOutwardDirection,postprocess:editApiPostprocessAttachment,
+    topology:editPlacement.appendTemplateTopologyBonds,adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
+  const editApiFuse = createEditApiFusionPlanner({catalog:editApiValidator.catalog,omitted:editPlacement.getFuseRingOmittedLocalIndices,geometry:buildFuseRingPlacementGeometry,
+    topology:editPlacement.appendTemplateTopologyBonds,adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
+  const editApiInsert = createEditApiInsertionPlanner({THREE,elements:ATOM_Z_TO_DATA,coordination:getCoordinationProfile,setCoordination:setAtomCoordinationMeta,setMetal:setAtomMetalBondingMeta,
+    adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
+  const editApiNewSnapshot = () => ({record:null,snapshot:{units:'angstrom',natoms:0,atoms:[],bonds:[],fragmentOps:[],annotations:{builder:{byAtomId:{}},coordination:{byAtomId:{}},metalBonding:{byAtomId:{}}}},
+    context:{systemId:null,fingerprint:null,mode:currentMode,units:'angstrom',source:{kind:'structure',staticStructure:true},atoms:[],bonds:[],fragments:[],capabilities:{selection:true,structuralWrite:true},interactions:editApiInterlocks()}});
+  const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),allocators:{atom:allocateBuilderAtomId,group:allocateBuilderGroupId,op:allocateBuilderOpId},
+    bondId:buildVolumeBondId,canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
+    apply:(record,vol)=>editState.applyAtomsSnapshotToRecord(record,vol.atoms,vol.fragmentOps,vol.bonds,vol.annotations),capture:editApiCapture,history:editApiHistory});
+  const editApiPrepare = createEditApiBuildPreparation({readSystem:editApiReadSystem,newSnapshot:editApiNewSnapshot,validate:editApiValidator.validate,makeDraft:editApiMakeDraft,
+    place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});
+  const editApiBuild = createEditApiBuildService({prepare:editApiPrepare,readSystem:editApiReadSystem,makeDraft:editApiMakeDraft,validateCandidate:editApiValidateCandidate,commit:editApiCommit,inspectResolution:editApiSelection.inspectResolution});
+  const editApiCatalog = createEditApiBuildCatalog({entries:getCatalogEntries});
+  const editApiQueries = createEditApiBuildQueries({readSystem:editApiReadSystem,resolve:editApiResolver.resolve,catalog:editApiValidator.catalog,
+    connection:getFragmentConnectionAtom,elements:ATOM_Z_TO_DATA,sites:(...args)=>editHaloController.listBuildSites(...args),bondLength:getEditAddBondLength});
+  function enterEditApi(options={}) {
+    return editApiCall(()=>{
+      editApiData(options);editApiShape(options,['tool'],'options');
+      const tool=options.tool===undefined?'transform':options.tool;if(!['transform','build'].includes(tool))editApiFault('INVALID_REQUEST','tool',tool,['transform','build']);
+      if(Object.values(editApiInterlocks()).some(Boolean))editApiFault('INTERACTION_BUSY','interactions',editApiInterlocks(),'idle');
+      try {setMode(MODES.EDIT);chooseEditTool(tool);}catch(error){error.mutationState='unknown';throw error;}
+      const actual={mode:currentMode,tool:getEditToolState().build?'build':'transform'},expected={mode:MODES.EDIT,tool};
+      if(editApiDifference(actual,expected)){const error=new Error('Edit entry did not apply requested tool.');error.mutationState='applied';error.editApi={code:'APPLIED_MISMATCH',path:'enter',message:error.message,details:{actual,expected}};throw error;}
+      return {value:actual,requested:expected,applied:actual,mutation:{state:'applied'}};
+    });
+  }
+  const editProductApi=Object.freeze({enter:enterEditApi,context:()=>editApiCall(()=>({value:editApiReadSystem().context})),
+    resolveSelection:editApiSelection.resolveSelection,getSelection:editApiSelection.getSelection,setSelection:editApiSelection.setSelection,
+    clearSelection:editApiSelection.clearSelection,copySelection:editApiSelection.copySelection,listBuildCatalog:editApiCatalog,
+    listBuildSites:editApiQueries.listBuildSites,validateBuild:editApiBuild.validateBuild,applyBuild:editApiBuild.applyBuild,translate:editApiBuild.translate});
+  editApiHolder.testing=Object.freeze({
+    isFuseRingPreviewActive: () => !!addFusePreviewState,
+    getEditSelectionCount: () => {
+      const selection = getEditAtomSelection();
+      return Array.isArray(selection) ? selection.length : 0;
+    },
+    getEditSelectionIndices: () => {
+      const selection = getEditAtomSelection();
+      return Array.isArray(selection) ? selection.slice() : [];
+    },
+    getEditBuildState: () => ({...editApiTestingBuildPayloadState(),...editApiTestingBuildPreviewState()}),
+    getBondCarrierSnapshots: (options = {}) => {
+      if (!bondGroup || !Array.isArray(bondGroup.children)) return [];
+      const out = [];
+      const atoms = options.capFit ? buildBondAtomRecords(volumes[currentIndex].vol, { includeRenderColor: false }) : null;
+      for (const child of bondGroup.children) {
+        const carrier = getBondCarrierObject(child) || child;
+        if (!carrier || !carrier.userData) continue;
+        const i = carrier.userData.i;
+        const j = carrier.userData.j;
+        if (!Number.isInteger(i) || !Number.isInteger(j) || i === j) continue;
+        const meshes = [];
+        carrier.traverse(mesh => {
+          if (!mesh.isMesh || mesh.material?.userData?.vmAppearanceTarget !== 'bonds') return;
+          const colors = mesh.geometry.getAttribute('color');
+          meshes.push({ geometryId: mesh.geometry.uuid, vertexCount: mesh.geometry.getAttribute('position')?.count,
+            hasColors: !!colors, vertexColors: !!mesh.material.vertexColors, color: mesh.material.color.getHexString(),
+            firstColor: colors ? [colors.getX(0), colors.getY(0), colors.getZ(0)] : null });
+        });
+        let capDistances = null;
+        if (atoms && carrier.isMesh && carrier.userData.fit) {
+          const p = carrier.geometry.getAttribute('position');
+          let low = Infinity, high = -Infinity;
+          for (let v = 0; v < p.count; v++) { low = Math.min(low, p.getY(v)); high = Math.max(high, p.getY(v)); }
+          capDistances = [0, 0];
+          const point = new THREE.Vector3();
+          for (let v = 0; v < p.count; v++) {
+            const end = Math.abs(p.getY(v) - low) < 1e-7 ? 0 : Math.abs(p.getY(v) - high) < 1e-7 ? 1 : -1;
+            if (end < 0) continue;
+            point.fromBufferAttribute(p, v).multiply(carrier.scale).applyQuaternion(carrier.quaternion).add(carrier.position);
+            capDistances[end] = Math.max(capDistances[end], point.distanceTo(atoms[end === 0 ? i : j].pos));
+          }
+        }
+        out.push({
+          i: i | 0,
+          j: j | 0,
+          logicalKey: String(getBondCarrierLogicalKey(carrier) || ''),
+          connectorStyle: String(carrier.userData.connectorStyle || ''),
+          isMesh: !!carrier.isMesh,
+          meshes,
+          length: carrier.userData.baseGeomLen,
+          radius: carrier.userData.connectorCenterRadius,
+          offset: Math.hypot(carrier.userData.bondComponentOffsetU || 0, carrier.userData.bondComponentOffsetV || 0),
+          fit: carrier.userData.fit ? { ...carrier.userData.fit } : null,
+          capDistances,
+          trimA: carrier.userData.trimA,
+          trimB: carrier.userData.trimB,
+          x: Number(carrier.position && carrier.position.x) || 0,
+          y: Number(carrier.position && carrier.position.y) || 0,
+          z: Number(carrier.position && carrier.position.z) || 0,
+          qx: Number(carrier.quaternion && carrier.quaternion.x) || 0,
+          qy: Number(carrier.quaternion && carrier.quaternion.y) || 0,
+          qz: Number(carrier.quaternion && carrier.quaternion.z) || 0,
+          qw: Number(carrier.quaternion && carrier.quaternion.w) || 1,
+          sy: Number(carrier.scale && carrier.scale.y) || 1,
+        });
+      }
+      return out;
+    },
+    setEditSelectionIndices: editApiTestingSelect,
+    getHaloGhostPreviewKind: () => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return '';
+      return getEditHaloGhostPayloadDescriptor(uiState.atomZ | 0).kind;
+    },
+    getHaloGhostWorlds: () => {
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return [];
+      return uiState.ghosts.map((ghost) => ({
+        index: ghost.index | 0,
+        x: Number(ghost.world && ghost.world.x) || 0,
+        y: Number(ghost.world && ghost.world.y) || 0,
+        z: Number(ghost.world && ghost.world.z) || 0,
+      }));
+    },
+    projectHaloGhostToClient: (ghostIndex = 0) => {
+      if(!Number.isSafeInteger(ghostIndex))editApiFault('INDEX_OUT_OF_RANGE','ghostIndex',ghostIndex,'integer');
+      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
+      const target = uiState.ghosts.find((ghost) => (ghost.index | 0) === ghostIndex)
+        || null;
+      if (!(target && target.world)) return null;
+      const projected = projectWorldToClient(new THREE.Vector3(
+        Number(target.world.x) || 0,
+        Number(target.world.y) || 0,
+        Number(target.world.z) || 0
+      ));
+      if (!projected) return null;
+      return {
+        index: target.index | 0,
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+      };
+    },
+    triggerHaloGhostByIndex: editApiTestingGhost,
+    triggerHaloReplaceTargetByAtomIndex: editApiTestingReplaceTarget,
+    replaceGestureTerminalHydrogen: editApiTestingReplace,
+    attachFragmentFromAnchorIndex: editApiTestingAttach,
+    pickEditHitAtClient: (clientX, clientY) => {
+      editApiVector([clientX,clientY],'client',2);
+      const eventLike = {
+        clientX: Number(clientX) || 0,
+        clientY: Number(clientY) || 0,
+      };
+      const atomHit = pickAtomHit(eventLike);
+      if (atomHit && atomHit.object && atomHit.object.userData) {
+        return {
+          atomIndex: atomHit.object.userData.index | 0,
+          bondSection: '',
+        };
+      }
+      const bondHit = pickBondHit(eventLike);
+      return {
+        atomIndex: -1,
+        bondSection: bondHit && bondHit.section ? String(bondHit.section) : '',
+      };
+    },
+    projectActiveAtomToClient: (atomIndex) => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      editApiTestingIndex(editApiReadSystem().context,atomIndex);
+      const index = atomIndex;
+      if (!vol || !Array.isArray(vol.atoms) || index < 0 || index >= vol.atoms.length) return null;
+      const mesh = atomGroup && atomGroup.children ? atomGroup.children[index] : null;
+      const pos = mesh && mesh.position ? mesh.position : atomUnitsToAng(vol, vol.atoms[index]);
+      const projected = projectWorldToClient(pos);
+      if (!projected) return null;
+      return {
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+      };
+    },
+    getTransformAngleGuideClient: () => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const context = getCurrentTransformSelectionContext();
+      if (!vol || !context || context.type !== 'bond') return null;
+      if (getEffectiveEditBondSideCueMode() !== 'axis') return null;
+      const guide = resolveTransformBondDihedralGuide(vol, context, getActiveTransformSelectionIndices());
+      if (!guide) return null;
+      const projected = projectWorldToClient(guide.labelPosition);
+      if (!projected) return null;
+      return {
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+        angleDeg: Number((Math.abs(guide.phi) * 180 / Math.PI).toFixed(4)) || 0,
+        referenceKind: String([guide.xKind, guide.yKind].join('/')),
+      };
+    },
+    getTransformDistanceGuideClient: () => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const context = getCurrentTransformSelectionContext();
+      if (!vol || !context || context.type !== 'bond') return null;
+      if (getEffectiveEditBondSideCueMode() !== 'distance') return null;
+      const guide = resolveTransformBondDistanceGuide(vol, context);
+      if (!guide) return null;
+      const projected = projectWorldToClient(guide.labelPosition);
+      if (!projected) return null;
+      return {
+        x: Number(projected.x) || 0,
+        y: Number(projected.y) || 0,
+        visible: !!projected.visible,
+        distanceAng: Number(guide.distanceAng.toFixed(6)) || 0,
+      };
+    },
+    getBondSideCueState: () => ({
+      mode: getEffectiveEditBondSideCueMode(),
+      rotateVisible: !!(els.editSelectionRotateCueButtonEl && !els.editSelectionRotateCueButtonEl.hidden),
+      orbitVisible: !!(els.editSelectionBondOrbitCueButtonEl && !els.editSelectionBondOrbitCueButtonEl.hidden),
+      distanceVisible: !!(els.editSelectionBondDistanceCueButtonEl && !els.editSelectionBondDistanceCueButtonEl.hidden),
+    }),
+    getBondCenterCueState: () => {
+      const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
+      const vol = record && record.vol;
+      const resolved = getBondCenterSelectionResolved(vol);
+      return {
+        visible: !!(els.editSelectionBondOrderCueButtonEl && !els.editSelectionBondOrderCueButtonEl.hidden),
+        order: resolved ? (resolved.order | 0) : -1,
+        style: resolved ? String(resolved.style || '') : '',
+        metalPair: !!(resolved && resolved.metalPair),
+      };
+    },
+    getActiveTransformGesture: () => ({
+      transformActive: !!transformActive,
+      rotateGesture: String(transformRotateGesture || ''),
+      dragActive: !!(editTransformState && editTransformState.dragActive),
+      rotateDragActive: !!(editTransformState && editTransformState.rotateDragActive),
+    })
+  });
+  editApiHolder.current=editProductApi;
+  window.VibeMolEdit=editProductApi;
 
   // All application bindings exist before the Escape owner is exposed. Window
   // capture precedes target/document phases by DOM semantics, not registration.

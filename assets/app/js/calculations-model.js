@@ -176,9 +176,9 @@
   }
   const dot = (a,b) => a.reduce((s,v,i) => s+v*b[i],0);
   const sub = (a,b) => a.map((v,i) => v-b[i]);
-  function fitPlane(record, ids) {
+  function fitPlane(record, ids, options = {}) {
     const all = atoms(record), selected = ids.map(id => all.find(a => a.id === id)).filter(Boolean);
-    if (selected.length < 3) return { error: 'Select at least three atoms with whole p shells.' };
+    if (selected.length < 3) return { error: 'Select at least three atoms with whole p shells.', ...(options.diagnostics ? { code: 'PLANE_TOO_SMALL', rms: null, secondEigenvalue: null } : {}) };
     const mean = list => [0,1,2].map(k => list.reduce((s,a) => s+a.point[k],0)/list.length);
     const center = mean(selected), covariance = [[0,0,0],[0,0,0],[0,0,0]];
     for (const a of selected) {
@@ -187,11 +187,11 @@
     }
     // Eigenvectors of XᵀX are the right singular vectors used by forte2.
     const {values,vectors} = global.VibeMolEditUtils.eigenSymmetric3x3(covariance);
-    if (values[1] < 1e-8) return { error: 'The plane needs three non-collinear atoms.' };
+    if (values[1] < 1e-8) return { error: 'The plane needs three non-collinear atoms.', ...(options.diagnostics ? { code: 'PLANE_COLLINEAR', rms: Math.sqrt(Math.max(0,values[0])/selected.length), secondEigenvalue: values[1] } : {}) };
     let normal = vectors[0];
     if (dot(normal,sub(center,mean(all))) < 0) normal = normal.map(v => -v);
     const rms = Math.sqrt(Math.max(0,values[0])/selected.length);
-    if (rms > 0.1) return { error: `Atoms are not near-coplanar (RMS ${rms.toFixed(3)} Å; maximum 0.100 Å).` };
+    if (rms > 0.1) return { error: `Atoms are not near-coplanar (RMS ${rms.toFixed(3)} Å; maximum 0.100 Å).`, ...(options.diagnostics ? { code: 'PLANE_NONCOPLANAR', rms, secondEigenvalue: values[1] } : {}) };
     return { center, normal, rms, radius: Math.max(...selected.map(a => Math.hypot(...sub(a.point,center)))) + 0.5 };
   }
   function prune(record) {

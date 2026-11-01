@@ -953,7 +953,38 @@
     ],
     "surfaceCoverageComplete": false,
     "sharedPolicyStatus": "justified but not scheduled; evaluate with0.11 declarative controls",
-    "sourceRun": 40230711618
+    "sourceRun": 40230711618,
+    "validatedEditApiConfirmation": {
+      "issue": 64,
+      "pair": [
+        "editSelectionTranslateCue",
+        "toolbar"
+      ],
+      "specificTarget": "#editSelectionAddFragmentCueButton",
+      "sourceTags": [
+        "v0.9.5-pre-refactor",
+        "main c37bb07",
+        "validated Edit API working tree"
+      ],
+      "record": "tests/baselines/edit-api-local-observations.json",
+      "sameOnAllThree": true,
+      "blockedPoint": {
+        "x": 1147,
+        "y": 48
+      },
+      "buttonBounds": {
+        "x": 1126,
+        "y": 27,
+        "width": 42,
+        "height": 42
+      },
+      "covering": "#topRightUtilities",
+      "afterNativeHoverStillBlocked": true,
+      "precondition": "Shipped Alt+Home then ten Alt+ArrowDown moves before native hit eligibility/click, as existing Metal matrix stages its separate legacy utilities overlap.",
+      "acceptedCiFailure": false,
+      "baselineOrAuthorityExpanded": false,
+      "productionFixIncluded": false
+    }
   },
   "closedMaintenanceIssues": [
     {

@@ -893,3 +893,26 @@ mutation methods, and28 enumerated Edit-related testing functions of42.
 Calculations focus and MINAO assignment are separate from Edit selection. Pure
 catalog factories are not active app controllers. No AI interface, interchange
 feature, command bus or Undo implementation is released by that reconnaissance.
+
+
+## Validated Edit/Build API increment
+
+Direct human approval authorizes the 12-method `VibeMolEdit` surface, twenty
+Testing wrappers and seven unused retirements. Preserve `performSelectionMoveDrag`
+byte-identically until separate native replacement approval; convert no existing
+e2e suite. Public selection accepts only original resolver results, with current
+fingerprint and predicate revalidation. The distinct harness raw-index adapter
+validates all members before any explicit compatibility finalization. It must
+never repair a failed native click. Scientific-source writes return
+`SOURCE_NOT_EDITABLE` with source comparands and no mutation; selection resolution
+remains supported. Standalone rotation is outside this cut; placement orientation
+is explicit. No new Undo implementation or command bus is authorized.
+
+See docs/api/edit-build-api.md and tests/baselines/edit-api.json. Every private
+unit's genuine injected and bound-helper inputs must stay under15; the standing
+construction check covers every new binding and inverse reading call site.
+CI records only the declared +12-member namespace / -7 Testing members in all102
+captures, zero residual difference, two workers twice/exact serialization. All
+other golden values remain unchanged. The new additive Premerge API matrix leaves
+37 suites and the accepted set intentionally empty. Its own complete first
+ordinary 37/0/37 conjunction is required before review/merge.

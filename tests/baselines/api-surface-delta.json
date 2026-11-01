@@ -1,12 +1,62 @@
 {
-  "schemaVersion": 1,
-  "baseCommit": "6043d8e5632497edce0f179a45927b574c6ac0bb",
-  "baselineGzipSha256": "22cdb234a17e7d7002bb180ce3d088d3bfebb7de1170f61cdb6b18c3654f1ab5",
+  "schemaVersion": 2,
+  "baseCommit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+  "baselineGzipSha256": "94d13334a0f5cef41eac0925ad81993af0566ac6969f3481367eaa1e185a1903",
   "captures": 102,
-  "delta": {
-    "operation": "remove-api-member",
-    "namespace": "VibeMolElementUtils",
-    "member": "getElementSymbolByAtomicNumber"
-  },
-  "authority": "Direct human authorization 2026-10-30: retire the unused alias; record exactly 102 API-member removals and zero other capture changes, then require the complete 37/0/37 gate."
+  "delta": [
+    {
+      "operation": "add-api-namespace",
+      "namespace": "VibeMolEdit",
+      "members": [
+        "applyBuild",
+        "clearSelection",
+        "context",
+        "copySelection",
+        "enter",
+        "getSelection",
+        "listBuildCatalog",
+        "listBuildSites",
+        "resolveSelection",
+        "setSelection",
+        "translate",
+        "validateBuild"
+      ]
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "copyEditSelectionToClipboard"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "getHaloReplaceTargetWorlds"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "getSelectionCoordinationChoices"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "pasteEditClipboardSelection"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "pickTransformValueLabelAtClient"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "probeSelectionMoveDragStart"
+    },
+    {
+      "operation": "remove-api-member",
+      "namespace": "VibeMolTesting",
+      "member": "projectHaloReplaceTargetToClient"
+    }
+  ],
+  "authority": "Direct human approval: implement the reviewed 12-method validated Edit/Build API, 20 wrappers, seven unused retirements; retain performSelectionMoveDrag unchanged. CI-record only this declared API delta in all 102 captures; no other golden changes or comparison waiver."
 }

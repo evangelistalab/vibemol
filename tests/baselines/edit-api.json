@@ -1,0 +1,865 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+  "methods": [
+    "applyBuild",
+    "clearSelection",
+    "context",
+    "copySelection",
+    "enter",
+    "getSelection",
+    "listBuildCatalog",
+    "listBuildSites",
+    "resolveSelection",
+    "setSelection",
+    "translate",
+    "validateBuild"
+  ],
+  "units": [
+    {
+      "name": "editApiCopy",
+      "count": 0,
+      "deps": [],
+      "closure": []
+    },
+    {
+      "name": "editApiFault",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiCopy"
+      ]
+    },
+    {
+      "name": "editApiCall",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiCopy"
+      ],
+      "parameterCallbacks": [
+        "action"
+      ]
+    },
+    {
+      "name": "editApiShape",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiVector",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "classifyEditApiSource",
+      "count": 0,
+      "deps": [],
+      "closure": []
+    },
+    {
+      "name": "createEditApiSystemReader",
+      "count": 11,
+      "deps": [
+        "bohr",
+        "capture",
+        "elements",
+        "fragments",
+        "getRecord",
+        "interlocks",
+        "location",
+        "mode"
+      ],
+      "closure": [
+        "classifyEditApiSource",
+        "editApiCopy",
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "createEditApiResolver",
+      "count": 5,
+      "deps": [
+        "elements",
+        "fitPlane"
+      ],
+      "closure": [
+        "editApiCopy",
+        "editApiFault",
+        "editApiShape"
+      ]
+    },
+    {
+      "name": "createEditSelectionApi",
+      "count": 11,
+      "deps": [
+        "copy",
+        "readIndices",
+        "readSystem",
+        "resolve",
+        "syncPresentation",
+        "writeIndices"
+      ],
+      "closure": [
+        "editApiCall",
+        "editApiCopy",
+        "editApiData",
+        "editApiFault",
+        "editApiShape"
+      ]
+    },
+    {
+      "name": "editApiFragmentMembership",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "createEditApiDraftFactory",
+      "count": 7,
+      "deps": [
+        "bohr",
+        "builderMeta",
+        "coordinationMeta",
+        "hydrogenError",
+        "upsertBond"
+      ],
+      "closure": [
+        "editApiCopy",
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "createEditApiPlacementPlanner",
+      "count": 7,
+      "deps": [
+        "THREE",
+        "adjustHydrogens",
+        "catalog",
+        "placedBonds",
+        "template",
+        "warnings"
+      ],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "createEditApiAttachmentGeometry",
+      "count": 7,
+      "deps": [
+        "THREE",
+        "atomWorld",
+        "bondLength",
+        "connection",
+        "findHydrogen",
+        "terminalHydrogen"
+      ],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "createEditApiAttachmentPlanner",
+      "count": 8,
+      "deps": [
+        "THREE",
+        "adjustHydrogens",
+        "catalog",
+        "geometry",
+        "outward",
+        "postprocess",
+        "topology",
+        "warnings"
+      ],
+      "closure": []
+    },
+    {
+      "name": "createEditApiFusionPlanner",
+      "count": 7,
+      "deps": [
+        "adjustHydrogens",
+        "catalog",
+        "geometry",
+        "omitted",
+        "topology",
+        "warnings"
+      ],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiData",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiTarget",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiFault",
+        "editApiShape"
+      ]
+    },
+    {
+      "name": "editApiWritable",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiElement",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiQuaternion",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiFault",
+        "editApiVector"
+      ]
+    },
+    {
+      "name": "createEditApiBuildValidator",
+      "count": 11,
+      "deps": [
+        "catalog",
+        "coordination",
+        "elements",
+        "resolve"
+      ],
+      "closure": [
+        "editApiCopy",
+        "editApiData",
+        "editApiElement",
+        "editApiFault",
+        "editApiQuaternion",
+        "editApiShape",
+        "editApiVector"
+      ]
+    },
+    {
+      "name": "createEditApiInsertionPlanner",
+      "count": 11,
+      "deps": [
+        "THREE",
+        "adjustHydrogens",
+        "coordination",
+        "elements",
+        "setCoordination",
+        "setMetal",
+        "warnings"
+      ],
+      "closure": [
+        "editApiElement",
+        "editApiFault",
+        "editApiShape",
+        "editApiVector"
+      ]
+    },
+    {
+      "name": "createEditApiBuildPreparation",
+      "count": 13,
+      "deps": [
+        "attach",
+        "fuse",
+        "insert",
+        "makeDraft",
+        "newSnapshot",
+        "place",
+        "readSystem",
+        "validate",
+        "validateCandidate"
+      ],
+      "closure": [
+        "editApiData",
+        "editApiFault",
+        "editApiTarget",
+        "editApiWritable"
+      ]
+    },
+    {
+      "name": "createEditApiBuildService",
+      "count": 11,
+      "deps": [
+        "commit",
+        "inspectResolution",
+        "makeDraft",
+        "prepare",
+        "readSystem",
+        "validateCandidate"
+      ],
+      "closure": [
+        "editApiCall",
+        "editApiFault",
+        "editApiShape",
+        "editApiVector",
+        "editApiWritable"
+      ]
+    },
+    {
+      "name": "createEditApiBuildCatalog",
+      "count": 3,
+      "deps": [
+        "entries"
+      ],
+      "closure": [
+        "editApiCall",
+        "editApiCopy"
+      ]
+    },
+    {
+      "name": "createEditApiBuildQueries",
+      "count": 14,
+      "deps": [
+        "bondLength",
+        "catalog",
+        "connection",
+        "elements",
+        "readSystem",
+        "resolve",
+        "sites"
+      ],
+      "closure": [
+        "editApiCall",
+        "editApiData",
+        "editApiElement",
+        "editApiFault",
+        "editApiQuaternion",
+        "editApiShape",
+        "editApiTarget"
+      ]
+    },
+    {
+      "name": "editApiCapture",
+      "count": 0,
+      "deps": [],
+      "closure": []
+    },
+    {
+      "name": "editApiDifference",
+      "count": 0,
+      "deps": [],
+      "closure": []
+    },
+    {
+      "name": "createEditApiCandidateValidator",
+      "count": 5,
+      "deps": [
+        "canonicalize",
+        "coordination",
+        "elements",
+        "hydrogenError"
+      ],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiRealizeIds",
+      "count": 4,
+      "deps": [],
+      "closure": [],
+      "parameterCallbacks": [
+        "allocators.atom",
+        "allocators.group",
+        "allocators.op",
+        "bondId"
+      ]
+    },
+    {
+      "name": "createEditApiCommitter",
+      "count": 13,
+      "deps": [
+        "allocators",
+        "apply",
+        "bondId",
+        "canonicalize",
+        "capture",
+        "checkNew",
+        "createRecord",
+        "history",
+        "readSystem"
+      ],
+      "closure": [
+        "editApiDifference",
+        "editApiFault",
+        "editApiRealizeIds",
+        "editApiWritable"
+      ]
+    },
+    {
+      "name": "callEditApiTesting",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiHolder"
+      ]
+    },
+    {
+      "name": "editApiTestingIndex",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
+      "name": "editApiTestingPayload",
+      "count": 8,
+      "deps": [],
+      "closure": [
+        "EDIT_ADD_MODE",
+        "editAddAdjustHydrogensEnabled",
+        "editAddBondOrder",
+        "editAddElementZ",
+        "editAddFragmentAttachPolicy",
+        "editAddFragmentId",
+        "editAddMode",
+        "getEffectiveEditAddCoordinationGeometryId"
+      ]
+    },
+    {
+      "name": "editApiTestingRequest",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiReadSystem",
+        "editApiTestingIndex"
+      ]
+    },
+    {
+      "name": "editApiTestingApply",
+      "count": 3,
+      "deps": [],
+      "closure": [
+        "editApiBuild",
+        "getCatalogEntryById",
+        "setHintMessage"
+      ]
+    },
+    {
+      "name": "editApiTestingAttach",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "editApiData",
+        "editApiShape",
+        "editApiTestingApply",
+        "editApiTestingPayload",
+        "editApiTestingRequest",
+        "editApiTestingResult",
+        "editApiVector"
+      ]
+    },
+    {
+      "name": "editApiTestingReplace",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "editApiData",
+        "editApiShape",
+        "editApiTestingApply",
+        "editApiTestingIndex",
+        "editApiTestingPayload",
+        "editApiTestingRequest",
+        "editApiTestingResult"
+      ]
+    },
+    {
+      "name": "editApiTestingHaloState",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editHaloController",
+        "editHaloUiState"
+      ]
+    },
+    {
+      "name": "editApiTestingGhost",
+      "count": 6,
+      "deps": [],
+      "closure": [
+        "editApiFault",
+        "editApiTestingApply",
+        "editApiTestingHaloState",
+        "editApiTestingPayload",
+        "editApiTestingRequest",
+        "editApiTestingResult"
+      ]
+    },
+    {
+      "name": "editApiTestingReplaceTarget",
+      "count": 4,
+      "deps": [],
+      "closure": [
+        "editApiFault",
+        "editApiTestingHaloState",
+        "editApiTestingReplace",
+        "editApiTestingResult"
+      ]
+    },
+    {
+      "name": "editApiTestingResult",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiCall"
+      ],
+      "parameterCallbacks": [
+        "action"
+      ]
+    },
+    {
+      "name": "editApiTestingSelect",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "addAtomOperatorSession",
+        "editApiFault",
+        "editApiReadSystem",
+        "editApiSelection",
+        "editApiTestingIndex",
+        "editApiTestingResult",
+        "finalizeAddAtomOperatorSession"
+      ]
+    },
+    {
+      "name": "editApiTestingBuildPayloadState",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "editAddElementZ",
+        "editAddFragmentId",
+        "editAddMode",
+        "editAddMoleculeId",
+        "getCurrentBuildPayload",
+        "getEditIntent",
+        "hintEl"
+      ]
+    },
+    {
+      "name": "editApiTestingBuildPreviewState",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "addGrowActive",
+        "addGrowKind",
+        "catalogVoidPreview",
+        "gestureVoidPreviewMesh",
+        "getActiveVoidPreviewStateKind",
+        "moleculePlaceActive",
+        "moleculePlaceTemplateData"
+      ]
+    },
+    {
+      "name": "editApiPointerInterlocks",
+      "count": 8,
+      "deps": [],
+      "closure": [
+        "addAtomOperatorSession",
+        "addFusePreviewState",
+        "addGrowActive",
+        "editSelectionMarqueeActive",
+        "editTransformState",
+        "measurementLabelDragState",
+        "moleculePlaceActive",
+        "transformActive"
+      ]
+    },
+    {
+      "name": "editApiInterlocks",
+      "count": 7,
+      "deps": [],
+      "closure": [
+        "applyingSession",
+        "coordsInlineEditState",
+        "editApiPointerInterlocks",
+        "isAnyTrajectoryPlaybackActive",
+        "trajectoryVideoController",
+        "vibrationRuntimeController",
+        "vibrationVideoController"
+      ]
+    },
+    {
+      "name": "editApiCanonicalize",
+      "count": 3,
+      "deps": [],
+      "closure": [
+        "editApiCapture",
+        "ensureVolumeSchema",
+        "presetController"
+      ]
+    },
+    {
+      "name": "editApiCopySelection",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "BOHR_TO_ANG",
+        "buildVolumeSelectionClipboard"
+      ]
+    },
+    {
+      "name": "editApiPostprocessAttachment",
+      "count": 3,
+      "deps": [],
+      "closure": [
+        "applyHydroxylAttachmentGeometry",
+        "applyLocalFragmentCleanup",
+        "applyMethylAttachmentGeometry"
+      ]
+    },
+    {
+      "name": "editApiHistory",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "pushEditHistoryEntry"
+      ]
+    },
+    {
+      "name": "editApiSyncSelection",
+      "count": 3,
+      "deps": [],
+      "closure": [
+        "updateEditAdaptiveMenuUi",
+        "updateEditSelectionVisuals",
+        "updateSelectedHalos"
+      ]
+    },
+    {
+      "name": "enterEditApi",
+      "count": 11,
+      "deps": [],
+      "closure": [
+        "MODES",
+        "chooseEditTool",
+        "currentMode",
+        "editApiCall",
+        "editApiData",
+        "editApiDifference",
+        "editApiFault",
+        "editApiInterlocks",
+        "editApiShape",
+        "getEditToolState",
+        "setMode"
+      ]
+    }
+  ],
+  "selectionAuthority": "original resolver result identity plus current fingerprint and re-resolved predicate; raw ids cannot set product selection",
+  "unsupportedWrite": "SOURCE_NOT_EDITABLE",
+  "standaloneRotation": "outside initial cut; placement quaternion and attachment/fusion spin supported",
+  "testing": {
+    "wrappers": [
+      "attachFragmentFromAnchorIndex",
+      "getActiveTransformGesture",
+      "getBondCarrierSnapshots",
+      "getBondCenterCueState",
+      "getBondSideCueState",
+      "getEditBuildState",
+      "getEditSelectionCount",
+      "getEditSelectionIndices",
+      "getHaloGhostPreviewKind",
+      "getHaloGhostWorlds",
+      "getTransformAngleGuideClient",
+      "getTransformDistanceGuideClient",
+      "isFuseRingPreviewActive",
+      "pickEditHitAtClient",
+      "projectActiveAtomToClient",
+      "projectHaloGhostToClient",
+      "replaceGestureTerminalHydrogen",
+      "setEditSelectionIndices",
+      "triggerHaloGhostByIndex",
+      "triggerHaloReplaceTargetByAtomIndex"
+    ],
+    "retired": [
+      "copyEditSelectionToClipboard",
+      "getHaloReplaceTargetWorlds",
+      "getSelectionCoordinationChoices",
+      "pasteEditClipboardSelection",
+      "pickTransformValueLabelAtClient",
+      "probeSelectionMoveDragStart",
+      "projectHaloReplaceTargetToClient"
+    ],
+    "retainedNativeDrag": {
+      "name": "performSelectionMoveDrag",
+      "sha256": "9f942977ee731d05677f45af4285f8ee49e0af3dd0d880bc842486a04fb8dcb9",
+      "reason": "One native Smoke invocation; replacement requires separate approval."
+    }
+  },
+  "ordinaryGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "accepted": []
+  },
+  "existingE2eConverted": 0,
+  "undo": "design-only",
+  "ci": {
+    "requiresOwnFirstCompleteConjunction": true,
+    "expected": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "recordingDelta": {
+      "newNamespaceMembers": 12,
+      "retiredTestingMembers": 7,
+      "captures": 102,
+      "otherLeafChanges": 0
+    },
+    "diagnosticsSupplyAcceptance": false
+  },
+  "kernelInputs": [
+    {
+      "file": "app.js",
+      "name": "applyLocalFragmentCleanup",
+      "count": 3,
+      "inputs": [
+        "DEFAULT_LOCAL_CLEANUP_STRENGTH",
+        "cleanupInsertedFragmentBondLength",
+        "cleanupInsertedFragmentOverlapRelief"
+      ]
+    },
+    {
+      "file": "app.js",
+      "name": "evaluateBuilderPlacementWarnings",
+      "count": 5,
+      "inputs": [
+        "buildBondAtomRecords",
+        "chooseTargetValence",
+        "detectSevereFragmentOverlaps",
+        "getVolumeBondEdges",
+        "normalizeEditAddBondOrder"
+      ]
+    },
+    {
+      "file": "app.js",
+      "name": "buildMoleculePlacementData",
+      "count": 7,
+      "inputs": [
+        "CATALOG_KIND",
+        "THREE",
+        "computeInertiaTensorFromAtoms",
+        "computeMassPropertiesFromAtoms",
+        "eigenSymmetric3x3Jacobi",
+        "getAtomicMass",
+        "normalizeFragmentId"
+      ]
+    },
+    {
+      "file": "app.js",
+      "name": "buildFuseRingPlacementGeometry",
+      "count": 3,
+      "inputs": [
+        "THREE",
+        "atomUnitsToAng",
+        "normalizeEditAddBondOrder"
+      ]
+    },
+    {
+      "file": "app.js",
+      "name": "applyHydrogenPlanToVolume",
+      "count": 7,
+      "inputs": [
+        "THREE",
+        "ensureAtomId",
+        "ensureVolumeSchema",
+        "getAtomBuilderMeta",
+        "setAtomBuilderMeta",
+        "upsertVolumeBond",
+        "worldToAtomUnits"
+      ]
+    },
+    {
+      "file": "app.js",
+      "name": "applyAutomaticHydrogenAdjustmentToVolume",
+      "count": 13,
+      "inputs": [
+        "applyHydrogenPlanToVolume",
+        "atomUnitsToAng",
+        "buildAutoHydrogenPlan",
+        "cloneBondSnapshot",
+        "collectHydrogenAdjustmentEnvironment",
+        "collectHydrogenRemovalIdsForAtom",
+        "computeDesiredHydrogenCountForAtom",
+        "createAutoHydrogenGeometryResolver",
+        "editAddAdjustHydrogensEnabled",
+        "ensureAtomId",
+        "ensureVolumeSchema",
+        "relaxHydrogensLocallyInVolume",
+        "removeAtomsById"
+      ]
+    },
+    {
+      "file": "edit-halo.js",
+      "name": "listBuildSites",
+      "count": 13,
+      "inputs": [
+        "alignTemplateToOccupied",
+        "applyQuatToVec",
+        "computeLocalEnvironment",
+        "getAtomCoordinationGeometryId",
+        "getAtomWorld",
+        "getCoordinationGeometry",
+        "getCoordinationProfile",
+        "inferAtomGeometry",
+        "normalizeTemplate",
+        "partitionAlignedVertices",
+        "vecAdd",
+        "vecNormalize",
+        "vecScale"
+      ]
+    },
+    {
+      "file": "edit-placement.js",
+      "name": "appendPlacedMoleculeBonds",
+      "count": 4,
+      "inputs": [
+        "ensureVolumeSchema",
+        "normalizeEditAddBondOrder",
+        "perceiveBondConnectivity",
+        "upsertVolumeBond"
+      ]
+    },
+    {
+      "file": "edit-placement.js",
+      "name": "appendTemplateTopologyBonds",
+      "count": 5,
+      "inputs": [
+        "buildTemplateLocalEdges",
+        "ensureAtomId",
+        "ensureVolumeSchema",
+        "normalizeEditAddBondOrder",
+        "upsertVolumeBond"
+      ]
+    },
+    {
+      "file": "edit-placement.js",
+      "name": "getFuseRingOmittedLocalIndices",
+      "count": 0,
+      "inputs": []
+    }
+  ]
+}
