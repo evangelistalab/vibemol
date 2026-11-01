@@ -139,7 +139,7 @@
     },
     {
       "name": "createEditApiPlacementPlanner",
-      "count": 7,
+      "count": 11,
       "deps": [
         "THREE",
         "adjustHydrogens",
@@ -150,6 +150,12 @@
       ],
       "closure": [
         "editApiFault"
+      ],
+      "parameterCallbacks": [
+        "draft.add",
+        "draft.group",
+        "draft.nextAtomId",
+        "draft.operation"
       ]
     },
     {
@@ -169,7 +175,7 @@
     },
     {
       "name": "createEditApiAttachmentPlanner",
-      "count": 8,
+      "count": 14,
       "deps": [
         "THREE",
         "adjustHydrogens",
@@ -180,11 +186,19 @@
         "topology",
         "warnings"
       ],
-      "closure": []
+      "closure": [],
+      "parameterCallbacks": [
+        "draft.add",
+        "draft.bond",
+        "draft.group",
+        "draft.nextAtomId",
+        "draft.operation",
+        "draft.remove"
+      ]
     },
     {
       "name": "createEditApiFusionPlanner",
-      "count": 7,
+      "count": 11,
       "deps": [
         "adjustHydrogens",
         "catalog",
@@ -195,6 +209,12 @@
       ],
       "closure": [
         "editApiFault"
+      ],
+      "parameterCallbacks": [
+        "draft.add",
+        "draft.group",
+        "draft.nextAtomId",
+        "draft.operation"
       ]
     },
     {
@@ -259,22 +279,37 @@
       ]
     },
     {
-      "name": "createEditApiInsertionPlanner",
-      "count": 11,
+      "name": "createEditApiEnvelopeValidator",
+      "count": 6,
       "deps": [
-        "THREE",
-        "adjustHydrogens",
         "coordination",
-        "elements",
-        "setCoordination",
-        "setMetal",
-        "warnings"
+        "elements"
       ],
       "closure": [
         "editApiElement",
         "editApiFault",
         "editApiShape",
         "editApiVector"
+      ]
+    },
+    {
+      "name": "createEditApiInsertionPlanner",
+      "count": 11,
+      "deps": [
+        "THREE",
+        "adjustHydrogens",
+        "setCoordination",
+        "setMetal",
+        "validateEnvelope",
+        "warnings"
+      ],
+      "closure": [],
+      "parameterCallbacks": [
+        "draft.add",
+        "draft.bond",
+        "draft.group",
+        "draft.nextAtomId",
+        "draft.operation"
       ]
     },
     {
@@ -388,23 +423,34 @@
       ]
     },
     {
-      "name": "createEditApiCommitter",
-      "count": 13,
+      "name": "createEditApiIdRealizer",
+      "count": 5,
       "deps": [
-        "allocators",
-        "apply",
+        "atom",
         "bondId",
+        "group",
+        "operation"
+      ],
+      "closure": [
+        "editApiRealizeIds"
+      ]
+    },
+    {
+      "name": "createEditApiCommitter",
+      "count": 11,
+      "deps": [
+        "apply",
         "canonicalize",
         "capture",
         "checkNew",
         "createRecord",
         "history",
-        "readSystem"
+        "readSystem",
+        "realize"
       ],
       "closure": [
         "editApiDifference",
         "editApiFault",
-        "editApiRealizeIds",
         "editApiWritable"
       ]
     },

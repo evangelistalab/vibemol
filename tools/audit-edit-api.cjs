@@ -8,14 +8,19 @@ function inventory(source){
  const ast=parser.parse(source),rows=[];
  traverse(ast,{FunctionDeclaration(fn){
   const name=fn.node.id?.name;if(!/^(createEditApi|createEditSelectionApi|classifyEditApiSource|editApi|enterEditApi|callEditApiTesting)/.test(name))return;
-  const deps=new Set(),free=new Set();
+  const deps=new Set(),free=new Set(),draftCallbacks=new Set();
   fn.traverse({ReferencedIdentifier(p){
+   if(p.node.name==='draft'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node){
+    const key=p.parent.computed?p.parent.property.value:p.parent.property.name;
+    assert(['vol','minted','added','removed','groups','add','remove','bond','group','operation','nextAtomId'].includes(key),'Unreviewed draft member: '+key);
+    if(['add','remove','bond','group','operation','nextAtomId'].includes(key))draftCallbacks.add('draft.'+key);
+   }
    const binding=p.scope.getBinding(p.node.name);
    if(binding&&binding.scope!==fn.scope&&!binding.path.findParent(x=>x===fn))free.add(p.node.name);
    if(p.node.name==='deps'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node&&p.parent.property.type==='Identifier')deps.add(p.parent.property.name);
   }});
   free.delete('deps');free.delete(name);
-  const callbacks=name==='editApiRealizeIds'?['allocators.atom','allocators.group','allocators.op','bondId']:['editApiCall','editApiTestingResult'].includes(name)?['action']:[];
+  const callbacks=[...draftCallbacks].sort().concat(name==='editApiRealizeIds'?['allocators.atom','allocators.group','allocators.op','bondId']:['editApiCall','editApiTestingResult'].includes(name)?['action']:[]);
   rows.push({name,count:deps.size+free.size+callbacks.length,deps:[...deps].sort(),closure:[...free].sort(),...(callbacks.length?{parameterCallbacks:callbacks}:{})});
  }});
  return rows;

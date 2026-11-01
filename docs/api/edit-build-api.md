@@ -200,7 +200,7 @@ canvas choreography in non-input checks such as `edit_picking` and Fusion phenyl
 Native picking/gesture assertions must continue testing native input. Undo stays
 design-only; the command-bus/declarative-controls program remains stopped.
 
-Final input inventory: 53 private units, maximum 14 inputs; shared halo sites 13, hydrogen adjustment 13. Callback parameters and nonstandard global THREE reads are included; browser built-ins are not domain dependencies. Exact names are enumerated in the contract.
+Final input inventory: 55 private units, maximum 14 inputs; shared halo sites 13, hydrogen adjustment 13. Callback parameters and nonstandard global THREE reads are included; browser built-ins are not domain dependencies. Exact names are enumerated in the contract.
 
 The separate local observations record preserves the failed development Smoke
 sample-load deadline and its main/candidate probes, plus the three-source native
@@ -209,3 +209,30 @@ rectangle. The compatibility matrix stages the legacy card with the existing
 keyboard move controls before clicking, following the Metal matrix precedent;
 it still requires native hit eligibility. No placement rule or latent allowance
 is added. The full ordinary gate remains required and those probes supply none.
+
+## Allocator forwarding recut
+
+The first committed wiring forwarded an object containing three allocator
+callbacks through the commit adapter. Treating that field as one input would
+understate genuine inputs (15 when flattened). Before ordinary CI, replace it
+with the already-planned identity-realization owner: atom allocator, group
+allocator, operation allocator and bond-ID helper, plus the realization kernel
+(five inputs). The commit adapter then receives that narrow realization operation
+and has eleven inputs. The owner only realizes prepared IDs; it performs no
+source lookup, validation, UI write or history recording. This is a transaction
+stage, not an opaque host bundle. The first recording stays separate evidence
+for its own source and will not be promoted for the revised commit.
+
+The same final audit counts the private draft's method arguments as real
+callbacks: placement has four, attachment six, fusion four and insertion five.
+That put the combined envelope-validation/insertion unit at16. Re-cut before
+ordinary CI: a pure envelope validator (six inputs) checks all atom, metadata and
+bond fields; the insertion planner (six injected inputs plus five draft methods,
+eleven total) only transforms and stages the validated data. Attachment is14,
+placement/fusion11. No function-valued argument is treated as free data.
+
+Identity provenance is also explicit: the private draft records every minted ID
+and its kind. Realization remaps only known identity fields, never arbitrary
+strings matching a prefix. Existing source IDs and opaque metadata are preserved,
+even when they contain the draft prefix or the timestamp marker. Only new
+operation timestamps are realized. A predicted candidate is data, not authority.

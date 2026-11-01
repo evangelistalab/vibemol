@@ -884,12 +884,14 @@
   function createEditApiDraftFactory(deps) {
     return snapshot => {
       const vol = editApiCopy(snapshot.snapshot), serial = { atom: 0, group: 0, op: 0 };
-      const used = new Set(vol.atoms.map(a => a.id));
+      const used = new Set(), minted = new Map();
+      function reserve(value){if(typeof value==='string')used.add(value);else if(value&&typeof value==='object')for(const [key,item]of Object.entries(value)){used.add(key);reserve(item);}}
+      reserve(vol);
       for (const op of vol.fragmentOps || []) { if (op.builderGroupId) used.add(op.builderGroupId); if (op.opId) used.add(op.opId); }
       const next = kind => {
         let id;
         do { id = `@edit-api-${kind}:${++serial[kind]}`; } while (used.has(id));
-        used.add(id); return id;
+        used.add(id); minted.set(id,kind); return id;
       };
       const added = [], removed = [], groups = [];
       function add(Z, position, metadata = null, coordination = '') {
@@ -915,7 +917,7 @@
         removed.push(...ids);
       }
       function bond(a, b, order, kind = 'normal', style = 'covalent', origin = 'explicit') {
-        const error = deps.hydrogenError(vol, a, b, order);
+        const error = kind==='blocked'?'':deps.hydrogenError(vol, a, b, order);
         if (error) editApiFault('HYDROGEN_BOND_INVALID', 'bond', { a, b, order }, 'allowed hydrogen bonding', error);
         deps.upsertBond(vol, a, b, order, kind, origin, style);
       }
@@ -923,7 +925,7 @@
         const groupId = next('group'); groups.push(groupId); return { groupId, entryId, entryKind };
       }
       function operation(entry) { vol.fragmentOps.push({ opId: next('op'), timestamp: '@commit', ...editApiCopy(entry) }); }
-      return { vol, added, removed, groups, add, remove, bond, group, operation, nextAtomId: () => next('atom') };
+      return { vol, minted, added, removed, groups, add, remove, bond, group, operation, nextAtomId: () => next('atom') };
     };
   }
   function createEditApiPlacementPlanner(deps) {
@@ -1128,36 +1130,49 @@
     }
     return Object.freeze({validate,catalog});
   }
-  function createEditApiInsertionPlanner(deps) {
-    return (draft,request)=>{
-      const envelope=request.envelope;
+  function createEditApiEnvelopeValidator(deps) {
+    return envelope => {
       editApiShape(envelope,['kind','version','units','atoms','bonds'],'envelope',['kind','version','units','atoms','bonds']);
       if(envelope.kind!=='vibemol.edit-selection'||envelope.version!==1||envelope.units!=='angstrom'||!Array.isArray(envelope.atoms)||!envelope.atoms.length||!Array.isArray(envelope.bonds))editApiFault('INVALID_SELECTION_ENVELOPE','envelope',envelope,'v1 Angstrom selection envelope');
-      const quaternion=new deps.THREE.Quaternion(...request.quaternion),offset=new deps.THREE.Vector3(...request.position),groups=new Map(),atoms=[];
+      const ids=new Set();
       for(const [index,entry]of envelope.atoms.entries()){
         editApiShape(entry,['atom','builderMeta','coordinationMeta','metalBondingMeta'],`envelope.atoms[${index}]`,['atom']);
         editApiShape(entry.atom,['id','Z','x','y','z','formalCharge'],`envelope.atoms[${index}].atom`,['Z','x','y','z','formalCharge']);
-        const Z=editApiElement(entry.atom.Z,deps.elements),position=editApiVector([entry.atom.x,entry.atom.y,entry.atom.z],`envelope.atoms[${index}].position`);
+        if(!Number.isSafeInteger(entry.atom.Z))editApiFault('ELEMENT_UNKNOWN',`envelope.atoms[${index}].Z`,entry.atom.Z,'supported integer atomic number');
+        const Z=editApiElement(entry.atom.Z,deps.elements);editApiVector([entry.atom.x,entry.atom.y,entry.atom.z],`envelope.atoms[${index}].position`);
         if(!Number.isSafeInteger(entry.atom.formalCharge))editApiFault('INVALID_SELECTION_ENVELOPE','formalCharge',entry.atom.formalCharge,'integer');
+        if(entry.atom.id!==undefined){if(typeof entry.atom.id!=='string'||!entry.atom.id||ids.has(entry.atom.id))editApiFault('INVALID_SELECTION_ENVELOPE','atom.id',entry.atom.id,'distinct nonempty source ID if supplied');ids.add(entry.atom.id);}
         const meta=entry.builderMeta===undefined?{}:entry.builderMeta;editApiShape(meta,['groupId','entryId','entryKind'],'builderMeta');
-        if(Object.values(meta).some(v=>typeof v!=='string'))editApiFault('INVALID_SELECTION_ENVELOPE','builderMeta',meta,'string provenance');
-        if((meta.groupId&&meta.groupId!==meta.groupId.trim())||(meta.entryId&&meta.entryId!==meta.entryId.trim().toLowerCase())||(meta.entryKind&&!['fragment','molecule'].includes(meta.entryKind))||(!meta.groupId&&(meta.entryId||meta.entryKind)))editApiFault('INVALID_SELECTION_ENVELOPE','builderMeta',meta,'canonical provenance with a group for every named entry');
-        if(entry.atom.id!==undefined&&(typeof entry.atom.id!=='string'||!entry.atom.id))editApiFault('INVALID_SELECTION_ENVELOPE','atom.id',entry.atom.id,'nonempty source ID if supplied');
-        let group=null;
-        if(meta.groupId){if(!groups.has(meta.groupId))groups.set(meta.groupId,draft.group(meta.entryId||'',meta.entryKind||''));group=groups.get(meta.groupId);}
-        const world=new deps.THREE.Vector3(...position).applyQuaternion(quaternion).add(offset),atom=draft.add(Z,[world.x,world.y,world.z],group);atom.formalCharge=entry.atom.formalCharge;atoms.push(atom);
+        if(Object.values(meta).some(v=>typeof v!=='string')||(meta.groupId&&meta.groupId!==meta.groupId.trim())||(meta.entryId&&meta.entryId!==meta.entryId.trim().toLowerCase())||(meta.entryKind&&!['fragment','molecule'].includes(meta.entryKind))||(!meta.groupId&&(meta.entryId||meta.entryKind)))editApiFault('INVALID_SELECTION_ENVELOPE','builderMeta',meta,'canonical provenance with a group for every named entry');
         const coordination=entry.coordinationMeta===undefined?{}:entry.coordinationMeta,metal=entry.metalBondingMeta===undefined?{}:entry.metalBondingMeta;
         editApiShape(coordination,['geometryId'],'coordinationMeta');editApiShape(metal,['mode'],'metalBondingMeta');
-        if(Object.hasOwn(coordination,'geometryId')){if(typeof coordination.geometryId!=='string'||(coordination.geometryId&&!deps.coordination(Z)?.choices?.some(c=>c.geometryId===coordination.geometryId)))editApiFault('INVALID_SELECTION_ENVELOPE','coordinationMeta',coordination,'supported geometry');deps.setCoordination(draft.vol,atom,coordination);}
-        if(Object.hasOwn(metal,'mode')){if(!['auto','force_covalent','force_dative','no_bonds'].includes(metal.mode))editApiFault('INVALID_SELECTION_ENVELOPE','metalBondingMeta',metal,'documented metal bonding mode');deps.setMetal(draft.vol,atom,metal);}
+        if(Object.hasOwn(coordination,'geometryId')&&(typeof coordination.geometryId!=='string'||(coordination.geometryId&&!deps.coordination(Z)?.choices?.some(c=>c.geometryId===coordination.geometryId))))editApiFault('INVALID_SELECTION_ENVELOPE','coordinationMeta',coordination,'supported geometry');
+        if(Object.hasOwn(metal,'mode')&&!['auto','force_covalent','force_dative','no_bonds'].includes(metal.mode))editApiFault('INVALID_SELECTION_ENVELOPE','metalBondingMeta',metal,'documented metal bonding mode');
       }
-      const pairs=new Set();
+      const pairs=new Set(),hydrogenBonds=new Map();
       for(const [index,bond]of envelope.bonds.entries()){
         editApiShape(bond,['a','b','order','kind','origin','style'],`envelope.bonds[${index}]`,['a','b','order','kind','origin','style']);
-        if(!Number.isSafeInteger(bond.a)||!Number.isSafeInteger(bond.b)||!atoms[bond.a]||!atoms[bond.b]||bond.a===bond.b||!Number.isSafeInteger(bond.order)||bond.order<1||bond.order>4||!['normal','blocked'].includes(bond.kind)||!['perceived','explicit'].includes(bond.origin)||!['covalent','metal-strong','metal-dative','metal-metal'].includes(bond.style))editApiFault('INVALID_SELECTION_ENVELOPE',`envelope.bonds[${index}]`,bond,'valid local endpoints, order, kind, origin and style');
+        if(!Number.isSafeInteger(bond.a)||!Number.isSafeInteger(bond.b)||!envelope.atoms[bond.a]||!envelope.atoms[bond.b]||bond.a===bond.b||!Number.isSafeInteger(bond.order)||bond.order<1||bond.order>4||!['normal','blocked'].includes(bond.kind)||!['perceived','explicit'].includes(bond.origin)||!['covalent','metal-strong','metal-dative','metal-metal'].includes(bond.style))editApiFault('INVALID_SELECTION_ENVELOPE',`envelope.bonds[${index}]`,bond,'valid local endpoints, order, kind, origin and style');
         const pair=[bond.a,bond.b].sort((a,b)=>a-b).join(':');if(pairs.has(pair))editApiFault('INVALID_SELECTION_ENVELOPE','bonds',pair,'unique pair');pairs.add(pair);
-        draft.bond(atoms[bond.a].id,atoms[bond.b].id,bond.order,bond.kind,bond.style,bond.origin);
+        for(const atomIndex of [bond.a,bond.b])if(envelope.atoms[atomIndex].atom.Z===1){
+          const count=(hydrogenBonds.get(atomIndex)||0)+(bond.kind==='normal'?1:0);hydrogenBonds.set(atomIndex,count);
+          if(bond.order!==1||count>1)editApiFault('HYDROGEN_BOND_INVALID',`envelope.bonds[${index}]`,{bond,hydrogenNormalBonds:count},{order:1,maximumNormalBonds:1});
+        }
       }
+      return envelope;
+    };
+  }
+  function createEditApiInsertionPlanner(deps) {
+    return (draft,request)=>{
+      const envelope=deps.validateEnvelope(request.envelope),quaternion=new deps.THREE.Quaternion(...request.quaternion),offset=new deps.THREE.Vector3(...request.position),groups=new Map(),atoms=[];
+      for(const entry of envelope.atoms){
+        const meta=entry.builderMeta||{};let group=null;
+        if(meta.groupId){if(!groups.has(meta.groupId))groups.set(meta.groupId,draft.group(meta.entryId||'',meta.entryKind||''));group=groups.get(meta.groupId);}
+        const world=new deps.THREE.Vector3(entry.atom.x,entry.atom.y,entry.atom.z).applyQuaternion(quaternion).add(offset),atom=draft.add(entry.atom.Z,[world.x,world.y,world.z],group);atom.formalCharge=entry.atom.formalCharge;atoms.push(atom);
+        if(entry.coordinationMeta?.geometryId)deps.setCoordination(draft.vol,atom,entry.coordinationMeta);
+        if(entry.metalBondingMeta?.mode)deps.setMetal(draft.vol,atom,entry.metalBondingMeta);
+      }
+      for(const bond of envelope.bonds)draft.bond(atoms[bond.a].id,atoms[bond.b].id,bond.order,bond.kind,bond.style,bond.origin);
       for(const group of groups.values())draft.operation({entryId:group.entryId,entryKind:group.entryKind,attachPolicy:'append',builderGroupId:group.groupId,addedAtomIds:atoms.filter(a=>draft.vol.annotations?.builder?.byAtomId?.[a.id]?.groupId===group.groupId).map(a=>a.id),transform:{offset:request.position,quaternion:request.quaternion},resultingBondOrder:1});
       if(request.hydrogens==='adjust')deps.adjustHydrogens(draft.vol,atoms.map(a=>draft.vol.atoms.indexOf(a)),{enabled:true,allocateAtomId:draft.nextAtomId});
       return {label:'API insert selection',warnings:deps.warnings(draft.vol,atoms.map(a=>draft.vol.atoms.indexOf(a)),new Set(Array.from({length:request.originalAtomCount},(_,i)=>i)))};
@@ -1270,22 +1285,33 @@
       return deps.canonicalize(vol);
     };
   }
-  function editApiRealizeIds(vol, allocators, bondId) {
-    const ids = new Map();
-    const collect = value => {
-      if(typeof value === 'string' && /^@edit-api-(atom|group|op):[0-9]+$/.test(value) && !ids.has(value)) ids.set(value,allocators[/^@edit-api-(atom|group|op):/.exec(value)[1]]());
-      else if(value && typeof value === 'object') for(const [k,v] of Object.entries(value)){collect(k);collect(v);}
-    };
-    collect(vol);
-    const map = value => {
-      if(typeof value === 'string') return ids.get(value) || value;
-      if(!value || typeof value !== 'object') return value;
-      return Array.isArray(value) ? value.map(map) : Object.fromEntries(Object.entries(value).map(([k,v])=>[ids.get(k)||k,map(v)]));
-    };
-    const result = map(vol);
-    for(let i=0;i<result.bonds.length;i++)if(vol.bonds[i].id===bondId(vol.bonds[i].a,vol.bonds[i].b))result.bonds[i].id=bondId(result.bonds[i].a,result.bonds[i].b);
-    for(const op of result.fragmentOps)if(op.timestamp==='@commit')op.timestamp=new Date().toISOString();
-    return { result, ids: Object.fromEntries(ids) };
+  function editApiRealizeIds(vol, minted, allocators, bondId) {
+    const ids=new Map();
+    function identity(value,kind){
+      if(minted.get(value)!==kind)return value;
+      if(!ids.has(value))ids.set(value,allocators[kind]());
+      return ids.get(value);
+    }
+    const result=structuredClone(vol);
+    result.atoms.forEach(atom=>{atom.id=identity(atom.id,'atom');});
+    for(let i=0;i<result.bonds.length;i++){
+      const bond=result.bonds[i],original=vol.bonds[i];bond.a=identity(bond.a,'atom');bond.b=identity(bond.b,'atom');
+      if(original.id===bondId(original.a,original.b))bond.id=bondId(bond.a,bond.b);
+    }
+    for(const [kind,map]of Object.entries(result.annotations||{}))if(map?.byAtomId){
+      map.byAtomId=Object.fromEntries(Object.entries(map.byAtomId).map(([id,meta])=>[identity(id,'atom'),kind==='builder'?{...meta,...(meta.groupId?{groupId:identity(meta.groupId,'group')}:{})}:meta]));
+    }
+    for(let i=0;i<result.fragmentOps.length;i++){
+      const op=result.fragmentOps[i],original=vol.fragmentOps[i];
+      op.opId=identity(op.opId,'op');op.builderGroupId=identity(op.builderGroupId,'group');
+      for(const key of ['anchorAtomIdPre','anchorAtomIdPost'])if(op[key])op[key]=identity(op[key],'atom');
+      for(const key of ['addedAtomIds','removedAtomIds','hostBondAtomIds'])if(op[key])op[key]=op[key].map(id=>identity(id,'atom'));
+      if(minted.get(original.opId)==='op'&&op.timestamp==='@commit')op.timestamp=new Date().toISOString();
+    }
+    return {result,ids:Object.fromEntries(ids)};
+  }
+  function createEditApiIdRealizer(deps) {
+    return (vol,minted)=>editApiRealizeIds(vol,minted,{atom:deps.atom,group:deps.group,op:deps.operation},deps.bondId);
   }
   function createEditApiCommitter(deps) {
     return plan => {
@@ -1298,7 +1324,7 @@
       // are changed. Once commit begins, even an unexpected throw is observable.
       let record, expected, actual;
       try {
-        const realized = editApiRealizeIds(plan.draft.vol,deps.allocators,deps.bondId);
+        const realized = deps.realize(plan.draft.vol,plan.draft.minted);
         expected = deps.canonicalize(realized.result);
         record = plan.snapshot.record || deps.createRecord();
         if(!record)throw new Error('Could not create editable system.');
@@ -32573,12 +32599,14 @@
     topology:editPlacement.appendTemplateTopologyBonds,adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
   const editApiFuse = createEditApiFusionPlanner({catalog:editApiValidator.catalog,omitted:editPlacement.getFuseRingOmittedLocalIndices,geometry:buildFuseRingPlacementGeometry,
     topology:editPlacement.appendTemplateTopologyBonds,adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
-  const editApiInsert = createEditApiInsertionPlanner({THREE,elements:ATOM_Z_TO_DATA,coordination:getCoordinationProfile,setCoordination:setAtomCoordinationMeta,setMetal:setAtomMetalBondingMeta,
+  const editApiValidateEnvelope=createEditApiEnvelopeValidator({elements:ATOM_Z_TO_DATA,coordination:getCoordinationProfile});
+  const editApiInsert = createEditApiInsertionPlanner({THREE,validateEnvelope:editApiValidateEnvelope,setCoordination:setAtomCoordinationMeta,setMetal:setAtomMetalBondingMeta,
     adjustHydrogens:applyAutomaticHydrogenAdjustmentToVolume,warnings:evaluateBuilderPlacementWarnings});
   const editApiNewSnapshot = () => ({record:null,snapshot:{units:'angstrom',natoms:0,atoms:[],bonds:[],fragmentOps:[],annotations:{builder:{byAtomId:{}},coordination:{byAtomId:{}},metalBonding:{byAtomId:{}}}},
     context:{systemId:null,fingerprint:null,mode:currentMode,units:'angstrom',source:{kind:'structure',staticStructure:true},atoms:[],bonds:[],fragments:[],capabilities:{selection:true,structuralWrite:true},interactions:editApiInterlocks()}});
-  const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),allocators:{atom:allocateBuilderAtomId,group:allocateBuilderGroupId,op:allocateBuilderOpId},
-    bondId:buildVolumeBondId,canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
+  const editApiRealizer=createEditApiIdRealizer({atom:allocateBuilderAtomId,group:allocateBuilderGroupId,operation:allocateBuilderOpId,bondId:buildVolumeBondId});
+  const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),realize:editApiRealizer,
+    canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
     apply:(record,vol)=>editState.applyAtomsSnapshotToRecord(record,vol.atoms,vol.fragmentOps,vol.bonds,vol.annotations),capture:editApiCapture,history:editApiHistory});
   const editApiPrepare = createEditApiBuildPreparation({readSystem:editApiReadSystem,newSnapshot:editApiNewSnapshot,validate:editApiValidator.validate,makeDraft:editApiMakeDraft,
     place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});

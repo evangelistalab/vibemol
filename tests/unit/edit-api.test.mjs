@@ -5,7 +5,7 @@ import vm from 'node:vm';
 import {loadGlobalModules} from './load-global-module.mjs';
 const text=fs.readFileSync(new URL('../../assets/app/js/app.js',import.meta.url),'utf8');
 const block=text.split('// Validated Edit API: begin.')[1]?.split('// Validated Edit API: end.')[0];assert.ok(block);
-const factories=vm.runInNewContext(`(()=>{${block};return {reader:createEditApiSystemReader,resolver:createEditApiResolver,selection:createEditSelectionApi,fragments:editApiFragmentMembership,source:classifyEditApiSource,prepare:createEditApiBuildPreparation,build:createEditApiBuildService,validator:createEditApiBuildValidator,commit:createEditApiCommitter,copy:editApiCopy,capture:editApiCapture,difference:editApiDifference,candidate:createEditApiCandidateValidator,realize:editApiRealizeIds}})()`,{console,structuredClone,AbortSignal});
+const factories=vm.runInNewContext(`(()=>{${block};return {reader:createEditApiSystemReader,resolver:createEditApiResolver,selection:createEditSelectionApi,fragments:editApiFragmentMembership,source:classifyEditApiSource,prepare:createEditApiBuildPreparation,build:createEditApiBuildService,validator:createEditApiBuildValidator,commit:createEditApiCommitter,copy:editApiCopy,capture:editApiCapture,difference:editApiDifference,candidate:createEditApiCandidateValidator,envelope:createEditApiEnvelopeValidator,drafts:createEditApiDraftFactory,realize:editApiRealizeIds}})()`,{console,structuredClone,AbortSignal});
 const plain=x=>JSON.parse(JSON.stringify(x));
 const elements={0:{symbol:'X'},1:{symbol:'H'},6:{symbol:'C'},8:{symbol:'O'}};
 function harness(){
@@ -94,19 +94,40 @@ test('commit verifies actual application, ignoring a false changed flag rather t
  const h=harness(),before=plain(h.record.vol);before.natoms=3;
  const snapshot=h.read(),candidate=plain(snapshot.snapshot);candidate.natoms=3;candidate.atoms[0].x=2;
  let histories=0;
- const commit=factories.commit({readSystem:h.read,checkNew:()=>{},allocators:{},bondId:(a,b)=>a+b,canonicalize:x=>x,createRecord:()=>null,
+ const commit=factories.commit({readSystem:h.read,checkNew:()=>{},realize:v=>({result:v,ids:{}}),canonicalize:x=>x,createRecord:()=>null,
   apply:(record,value)=>{record.vol=plain(value);return false},capture:v=>plain(v),history:()=>{histories++}});
  const r=commit({snapshot,request:{operation:'translate',originalIds:['a','b','c']},draft:{vol:candidate},result:{label:'test'}});
  assert.equal(r.applied.atoms[0].x,2);assert.equal(r.mutation.state,'applied');assert.equal(histories,1);
 });
 test('partial commit returns a mismatch and actual state; later calls cannot reinterpret it as success',()=>{
  const h=harness(),snapshot=h.read(),candidate=plain(snapshot.snapshot);candidate.atoms[0].x=2;
- const commit=factories.commit({readSystem:h.read,checkNew:()=>{},allocators:{},bondId:(a,b)=>a+b,canonicalize:x=>x,createRecord:()=>null,
+ const commit=factories.commit({readSystem:h.read,checkNew:()=>{},realize:v=>({result:v,ids:{}}),canonicalize:x=>x,createRecord:()=>null,
   apply:record=>{record.vol.atoms[1].x=9},capture:v=>plain(v),history:()=>{throw Error('must not record an unverified edit')}});
  assert.throws(()=>commit({snapshot,request:{operation:'translate',originalIds:['a','b','c']},draft:{vol:candidate},result:{}}),e=>e.editApi.code==='APPLIED_MISMATCH'&&e.mutationState==='applied'&&e.actual.atoms[1].x===9);
 });
 test('draft realization remaps references and annotation keys exactly once, preserving old IDs',()=>{
  let n=0;const vol={atoms:[{id:'old'},{id:'@edit-api-atom:1'}],bonds:[{id:'bond:old:@edit-api-atom:1',a:'old',b:'@edit-api-atom:1'}],fragmentOps:[{opId:'@edit-api-op:1',builderGroupId:'@edit-api-group:1',addedAtomIds:['@edit-api-atom:1'],timestamp:'@commit'}],annotations:{builder:{byAtomId:{'@edit-api-atom:1':{groupId:'@edit-api-group:1'}}}}};
- const r=factories.realize(vol,{atom:()=>`atom-${++n}`,op:()=>`op-${++n}`,group:()=>`group-${++n}`},(a,b)=>`bond:${a}:${b}`);
+ const r=factories.realize(vol,new Map([['@edit-api-atom:1','atom'],['@edit-api-op:1','op'],['@edit-api-group:1','group']]),{atom:()=>`atom-${++n}`,op:()=>`op-${++n}`,group:()=>`group-${++n}`},(a,b)=>`bond:${a}:${b}`);
  assert.equal(n,3);assert.equal(r.result.atoms[0].id,'old');assert.equal(r.result.bonds[0].b,r.result.atoms[1].id);assert.ok(r.result.annotations.builder.byAtomId[r.result.atoms[1].id]);assert.equal(vol.atoms[1].id,'@edit-api-atom:1');
+});
+
+test('identity realization preserves existing draft-looking IDs and opaque metadata',()=>{
+ const vol={atoms:[{id:'@edit-api-atom:1'},{id:'@edit-api-atom:2'}],bonds:[],annotations:{builder:{byAtomId:{'@edit-api-atom:1':{groupId:'@edit-api-group:1',entryId:'@edit-api-atom:2'},'@edit-api-atom:2':{groupId:'@edit-api-group:2',entryId:'@edit-api-atom:2'}}}},fragmentOps:[{opId:'@edit-api-op:1',builderGroupId:'@edit-api-group:1',addedAtomIds:['@edit-api-atom:1'],timestamp:'@commit',transform:{note:'@edit-api-atom:2'}},{opId:'@edit-api-op:2',builderGroupId:'@edit-api-group:2',addedAtomIds:['@edit-api-atom:2'],timestamp:'@commit'}]};
+ const minted=new Map([['@edit-api-atom:2','atom'],['@edit-api-group:2','group'],['@edit-api-op:2','op']]);let n=0;
+ const r=factories.realize(vol,minted,{atom:()=>`atom-${++n}`,group:()=>`group-${++n}`,op:()=>`op-${++n}`},(a,b)=>a+b).result;
+ assert.equal(r.atoms[0].id,'@edit-api-atom:1');assert.equal(r.fragmentOps[0].opId,'@edit-api-op:1');assert.equal(r.fragmentOps[0].timestamp,'@commit');assert.equal(r.fragmentOps[0].transform.note,'@edit-api-atom:2');
+ assert.equal(r.annotations.builder.byAtomId[r.atoms[1].id].entryId,'@edit-api-atom:2');assert.equal(r.annotations.builder.byAtomId['@edit-api-atom:1'].groupId,'@edit-api-group:1');assert.notEqual(r.fragmentOps[1].timestamp,'@commit');assert.equal(n,3);
+});
+test('draft allocation reserves annotation-only groups and old ID-like strings',()=>{
+ const h=harness(),snapshot=h.read();snapshot.snapshot.annotations.builder.byAtomId.a={groupId:'@edit-api-group:1',entryId:'@edit-api-atom:1'};
+ const draft=factories.drafts({bohr:1,builderMeta:()=>{},coordinationMeta:()=>{},hydrogenError:()=>'',upsertBond:()=>{}})(snapshot);
+ assert.equal(draft.group('methyl','fragment').groupId,'@edit-api-group:2');const atom=draft.add(6,[0,0,0]);assert.equal(atom.id,'@edit-api-atom:2');assert.equal(draft.minted.get(atom.id),'atom');assert.equal(draft.minted.has('a'),false);
+});
+test('whole envelope validation rejects malformed late fields, type coercion and duplicate source IDs',()=>{
+ const validate=factories.envelope({elements,coordination:()=>({choices:[]})});
+ const base={kind:'vibemol.edit-selection',version:1,units:'angstrom',atoms:[{atom:{id:'a',Z:6,x:0,y:0,z:0,formalCharge:0}},{atom:{id:'b',Z:1,x:1,y:0,z:0,formalCharge:0}}],bonds:[{a:0,b:1,order:1,kind:'normal',origin:'explicit',style:'covalent'}]};
+ assert.deepEqual(plain(validate(base)),base);
+ for(const mutate of [v=>v.atoms[1].builderMeta=0,v=>v.atoms[1].atom.Z='H',v=>v.atoms[1].atom.id='a',v=>v.bonds[0].b=99,v=>v.atoms[1].metalBondingMeta={mode:'guess'}]){
+  const input=plain(base);mutate(input);const before=plain(input);assert.throws(()=>validate(input),e=>!!e.editApi);assert.deepEqual(input,before);
+ }
 });
