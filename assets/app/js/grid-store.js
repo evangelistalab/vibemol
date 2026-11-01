@@ -3,7 +3,7 @@
 
   // Grid buffers belong to this cache and are read-only to consumers. Changing
   // an orbital or grid setting selects a new entry instead of replacing data.
-  function createGridStore({ maxEntriesPerSource = 16, maxBytesPerSource = 128 * 1024 * 1024 } = {}) {
+  function createGridStore({ maxEntriesPerSource = 16, maxBytesPerSource = 128 * 1024 * 1024, publishGrid = grid => grid } = {}) {
     const sources = new WeakMap();
     const maxEntries = Math.max(1, Number(maxEntriesPerSource) || 16);
     const maxBytes = Math.max(1, Number(maxBytesPerSource) || 128 * 1024 * 1024);
@@ -16,7 +16,8 @@
         entries.set(key, grid);
         return grid;
       }
-      const grid = evaluate();
+      const evaluated = evaluate();
+      const grid = evaluated && publishGrid(evaluated);
       if (!grid) return null;
       Object.freeze(grid.origin);
       grid.axes.forEach(Object.freeze);

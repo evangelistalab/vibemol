@@ -18,7 +18,7 @@ def settings(page,values):
  r=page.evaluate('values=>{const result=VibeMolPreset.import({kind:"vibemol.preset",presetVersion:1,settings:values},{mode:"strict"});const settings=VibeMolPreset.export().settings;return {result,actual:Object.fromEntries(Object.keys(values).map(k=>[k,settings[k]])),expected:values}}',values);print('[settings] '+json.dumps(r),flush=True);assert r['actual']==r['expected'],r;settle(page)
 
 def run(page,url,case):
- page.add_init_script(INIT);page.goto(url+'?appearanceStudy=1&qa=1'+('&aliasWorker=1' if case=='worker' else ''));page.wait_for_function('()=>window.VibeMolSession&&window.VibeMolFigure&&window.VibeMolEmbed');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(INIT);page.goto(url+'?appearanceStudy=1&qa=1'+('&aliasWorker=1' if case=='worker' else ''));page.wait_for_function('()=>window.VibeMolSession&&window.VibeMolFigure&&window.VibeMolEmbed')
  assert p.load(page,[{'name':'a.cube','text':p.cube(-.4)},{'name':'b.cube','text':p.cube(.4)}])['ok'];settings(page,{'surface.autoIsoEnabled':True});settle(page);checkpoint(page,case,'cube-surface-autoiso')
  # Exercise the worker branch deliberately on a real >1000-sample source; the
  # diagnostic factory option lowers only its routing threshold, not any gate.
@@ -42,7 +42,7 @@ def run(page,url,case):
 
 
 def coordinate_owners(page,url):
- case='coordinate-owners';page.add_init_script(INIT);page.goto(url+'?workspaceLab=0&appearanceStudy=1&qa=1');page.wait_for_function('()=>window.VibeMolSession&&window.VibeMolEmbed');errors=[];page.on('pageerror',lambda e:errors.append(str(e)))
+ case='coordinate-owners';errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.add_init_script(INIT);page.goto(url+'?workspaceLab=0&appearanceStudy=1&qa=1');page.wait_for_function('()=>window.VibeMolSession&&window.VibeMolEmbed')
  def mode_edit():
   page.locator('#modeEditBtn').evaluate('el=>el.click()');settle(page)
   if page.locator('#editAdaptiveAddAtomPopover').get_attribute('aria-hidden')=='false':

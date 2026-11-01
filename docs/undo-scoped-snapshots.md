@@ -92,13 +92,14 @@ individual annotation-map paths, and individual frame buffers (or bounded numeri
 blocks for larger buffers). It is a starting point to benchmark, not a claimed
 measured optimum.
 
-**This is not enforced by the current app.** Its mutable `vol.*` arrays cannot be
-shared safely with history as they stand. A structural ownership boundary is the
-first implementation prerequisite, before adding history or enabling any sharing;
-there is no interim stage that relies on callers promising not to mutate arrays.
+**Scientific buffers now have a structural ownership boundary; mutable structure
+metadata does not.** The app-private owner copies ingress/egress, seals drafts by
+transfer/detachment and rejects shared buffers. The proposed atom/bond/annotation
+history remains design-only; it cannot rely on callers promising not to mutate
+that metadata. See `docs/maintenance/private-scientific-buffers.md`.
 
 Private version storage owns backing buffers behind opaque handles. Public
-handles expose neither storage objects nor `.buffer`/mutable `subarray`/setters.
+handles expose neither storage objects nor a backing `.buffer`/mutable `subarray`/setters; independent exported copies are allowed.
 On adoption, copy caller-owned buffers; on sealing a draft, transfer its owned
 ArrayBuffers into the private store (detaching every draft view), and drop the
 draft capability. Reject SharedArrayBuffer, whose aliases cannot be detached.

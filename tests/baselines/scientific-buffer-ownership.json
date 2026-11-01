@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "scope": "App-published scientific numeric storage; pure parsers and caller-owned helper inputs remain caller-owned. No undo implementation.",
+  "dependencies": {
+    "factory": "createScientificBufferOwner",
+    "domainClosureReads": [],
+    "optionalInputs": [
+      "reportViolation"
+    ],
+    "count": 1,
+    "bulkWrappers": [
+      "scientificBufferOwner",
+      "original bulk reader"
+    ],
+    "bulkWrapperCount": 2
+  },
+  "ownedFields": [
+    "data",
+    "alphaRe",
+    "alphaIm",
+    "betaRe",
+    "betaIm",
+    "trajectory.frames[]",
+    "vibration.equilibrium",
+    "vibration.modes[].displacements",
+    "molden.mos[].coefficients",
+    "molden.basis.atomBlocks[].shells[].primitives[].coefficients"
+  ],
+  "publicationBoundaries": [
+    "app.ensureVolumeSchema",
+    "orbitalGridStore.publishGrid",
+    "app.cloneScalarVolumeForArithmetic",
+    "published volume whole-buffer/trajectory/vibration/molden assignment setters"
+  ],
+  "mutableDerived": [
+    "vibration.frameBuffer"
+  ],
+  "mutableMetadata": [
+    "atoms",
+    "bonds",
+    "annotations",
+    "Molden basis atomIndex",
+    "playback positions/options"
+  ],
+  "rules": [
+    "copy caller input before adoption",
+    "seal by transfer-and-detach; reject repeated/foreign/detached drafts",
+    "reject shared buffers",
+    "backing buffers stay private; buffer/slice/subarray export independent copies",
+    "callbacks receive only the readonly facade",
+    "whole-array replacement creates a new immutable version",
+    "one disposable native copy per bulk reader operation; never per sample",
+    "session capture owns buffers and metadata before return, independently of encoding order"
+  ],
+  "retainedSessionCapture": {
+    "name": "retained-session-capture-independent",
+    "before": [
+      {
+        "ref": "v0.9.5-pre-refactor",
+        "before": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "after": {
+          "frame": 9,
+          "atom": 8,
+          "basis": 7
+        },
+        "expectedRetained": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "sameFrame": true
+      },
+      {
+        "ref": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+        "before": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "after": {
+          "frame": 9,
+          "atom": 8,
+          "basis": 7
+        },
+        "expectedRetained": {
+          "frame": 1,
+          "atom": 1,
+          "basis": 0
+        },
+        "sameFrame": true
+      }
+    ],
+    "interpretation": "Latent retention hazard on tagged and main. Existing supported export immediately encoded it; no current user-data corruption established. Capture is now explicitly independent."
+  },
+  "surfaceChange": {
+    "newNamespaces": [],
+    "newExportMembers": [],
+    "goldenDelta": null
+  },
+  "constructionAudit": "Private scientific-buffer ownership and retained session capture",
+  "gate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true
+  },
+  "appState": [
+    {
+      "ref": "v0.9.5-pre-refactor",
+      "variableLetBindings": 324,
+      "declarationLines": 313
+    },
+    {
+      "ref": "d281e8ff4d9ad0ef41d987f07f4fa255d023ac33",
+      "variableLetBindings": 261,
+      "declarationLines": 250
+    },
+    {
+      "ref": "working-tree",
+      "variableLetBindings": 261,
+      "declarationLines": 250
+    }
+  ],
+  "localVerification": {
+    "jsUnitTests": 504,
+    "pythonUnitTests": 192,
+    "constructionAppBindings": 195,
+    "constructionConsumerBindings": 9,
+    "sourceByteChanges": 0,
+    "writeTrapViolations": 0,
+    "sourceTransfers": 0,
+    "residualContexts": 0,
+    "fullOrdinaryGateRequiredBeforeMerge": true
+  }
+}

@@ -5,7 +5,7 @@ import { loadGlobalModules, evaluateInContext } from './load-global-module.mjs';
 function setup() {
   const ctx = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js',
     'assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
-    'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/calculations-model.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
+    'assets/app/js/structure.js', 'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/calculations-model.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
   const fixture = evaluateInContext(ctx, `(() => {
     const graph = VibeMolSceneGraph.createSceneGraphController();
     const sources = VibeMolSceneSources.createSceneSources({ graph, hasGrid: v => !!v.data.length,
@@ -136,6 +136,21 @@ test('buffers are deduplicated and copied before asynchronous encoding yields', 
   assert.equal(saved.data[0], 0.125);
   assert.equal(saved.data, saved.alphaRe);
   assert.equal(saved.alphaIm, saved.betaRe);
+});
+
+test('retained session capture owns graph, record, preset and view metadata before encoding starts',async()=>{
+  const {fixture,capture,format}=setup();
+  fixture.records[0].pubchemMeta={cid:123};
+  const snapshot=capture(),first=snapshot.graph.scenes[0],source=snapshot.sources[0];
+  const before={name:first.name,target:snapshot.view.target[0],style:snapshot.preset.settings['molecule.style']};
+  await Promise.resolve();
+  fixture.graph.getScenes()[0].name='Changed live';fixture.view.target[0]=9;
+  fixture.preset.settings['molecule.style']='other';fixture.records[0].pubchemMeta.cid=456;
+  assert.deepEqual({name:first.name,target:snapshot.view.target[0],style:snapshot.preset.settings['molecule.style']},before);
+  assert.equal(source.recordState.pubchemMeta.cid,123);
+  source.volume.atoms[0].x=7;assert.equal(fixture.records[0].vol.atoms[0].x,0);
+  const restored=await format.decode(await format.encode(snapshot));
+  assert.equal(restored.sources[0].volume.atoms[0].x,7);assert.equal(restored.sources[0].recordState.pubchemMeta.cid,123);
 });
 
 test('AVAS session state survives hydration and rejects oversized or malformed selections', async () => {

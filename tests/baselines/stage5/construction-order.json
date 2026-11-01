@@ -158,6 +158,25 @@
         "positionAdaptiveMenuUi"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Private scientific-buffer ownership and retained session capture",
+      "before": "04a4a9c5c0680fc4318924d9f509b4d2ed6c0fcc",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/grid-store.js",
+        "assets/app/js/structure.js",
+        "assets/app/js/session.js",
+        "assets/app/js/autoiso.js",
+        "assets/app/js/arithmetic-grid.js",
+        "assets/app/js/arithmetic-runner.js"
+      ],
+      "recheck": [
+        "ensureVolumeSchema",
+        "cloneScalarVolumeForArithmetic",
+        "syncVolumeAuxStateAfterCoordsEdit"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -37,6 +37,12 @@
    */
   function cloneJsonStructuredData(value) {
     if (value == null || typeof value !== 'object') return value;
+    // A private-owner facade preserves instanceof but deliberately is not a
+    // native ArrayBuffer view. slice is its independent-copy boundary.
+    if (!ArrayBuffer.isView(value) && Number.isInteger(value.BYTES_PER_ELEMENT) && typeof value.slice === 'function') {
+      const copy = value.slice();
+      if (ArrayBuffer.isView(copy)) return Array.from(copy);
+    }
     if (ArrayBuffer.isView(value)) return Array.from(value);
     if (value instanceof ArrayBuffer) return Array.from(new Uint8Array(value));
     if (Array.isArray(value)) return value.map((item) => cloneJsonStructuredData(item));
@@ -66,15 +72,20 @@
    * @param {*} value
    * @returns {*}
    */
-  function cloneStructuredData(value) {
+  function cloneStructuredData(value, seen = new WeakMap()) {
     if (value == null || typeof value !== 'object') return value;
-    if (ArrayBuffer.isView(value)) return new value.constructor(value);
-    if (value instanceof ArrayBuffer) return value.slice(0);
-    if (Array.isArray(value)) return value.map((item) => cloneStructuredData(item));
-    const out = {};
+    if (seen.has(value)) return seen.get(value);
+    if (!ArrayBuffer.isView(value) && Number.isInteger(value.BYTES_PER_ELEMENT) && typeof value.slice === 'function') {
+      const copy = value.slice();
+      if (ArrayBuffer.isView(copy)) { seen.set(value, copy); return copy; }
+    }
+    if (ArrayBuffer.isView(value)) { const copy = new value.constructor(value); seen.set(value, copy); return copy; }
+    if (value instanceof ArrayBuffer) { const copy = value.slice(0); seen.set(value, copy); return copy; }
+    const out = Array.isArray(value) ? [] : {};
+    seen.set(value, out);
     for (const [key, next] of Object.entries(value)) {
       if (typeof next === 'function') continue;
-      out[key] = cloneStructuredData(next);
+      out[key] = cloneStructuredData(next, seen);
     }
     return out;
   }

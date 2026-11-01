@@ -13,10 +13,16 @@
     guardedViews = new WeakMap(),
     violations = [],
     bufferAccesses = [];
+  const numericView = value => nativeIsView(value) || (!!value && /^(?:\[object (?:Float(?:32|64)|(?:Uint|Int)(?:8|16|32)|Uint8Clamped)Array\])$/.test(Object.prototype.toString.call(value)) && Number.isInteger(value.BYTES_PER_ELEMENT));
+  const originalError = console.error;
+  console.error = function (...args) {
+    if (String(args[0]).startsWith('[scientific-buffer-write]')) violations.push({label:'private-owner',operation:String(args[0])});
+    return Reflect.apply(originalError,this,args);
+  };
   let guardedCalls = 0;
   const mutationMethods = new Set(['set', 'fill', 'sort', 'reverse', 'copyWithin']);
   function readonly(array, label) {
-    if (!nativeIsView(array) || array instanceof DataView) return array;
+    if (!numericView(array) || array instanceof DataView) return array;
     if (guardedViews.has(array)) return guardedViews.get(array);
     const fail = operation => {
       const row = {
@@ -39,15 +45,14 @@
       },
       get(target, key) {
         if (key === 'buffer') {
-          bufferAccesses.push({
-            label,
-            bytes: target.byteLength
-          });
+          if (nativeIsView(target)) bufferAccesses.push({label,bytes:target.byteLength});
           return target.buffer;
         }
+        if (key === 'valueOf') return () => view;
         if (key === 'constructor') return target.constructor;
         if (mutationMethods.has(key)) return () => fail(String(key));
-        if (key === 'subarray') return (...args) => readonly(target.subarray(...args), label + '.subarray');
+        if (key === 'subarray') return (...args) => nativeIsView(target)
+          ? readonly(target.subarray(...args), label + '.subarray') : target.subarray(...args);
         const value = Reflect.get(target, key, target);
         if (['forEach', 'map', 'filter', 'every', 'some', 'find', 'findIndex', 'findLast', 'findLastIndex'].includes(key)) return (fn, receiver) => target[key]((v, i) => fn.call(receiver, v, i, view));
         if (['reduce', 'reduceRight'].includes(key)) return (fn, ...initial) => target[key]((acc, v, i) => fn(acc, v, i, view), ...initial);
@@ -61,7 +66,7 @@
   function guarded(value, label, seen = new WeakMap()) {
     if (!value || typeof value !== 'object') return value;
     if (proxyTargets.has(value)) return value;
-    if (nativeIsView(value)) return readonly(value, label);
+    if (numericView(value)) return readonly(value, label);
     if (seen.has(value)) return seen.get(value);
     if (Array.isArray(value)) {
       const result = [];
@@ -95,7 +100,7 @@
   const sourceFields = ['data', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm'];
   function track(value, label, kind = 'source') {
     if (proxyTargets.has(value)) value = proxyTargets.get(value);
-    if (!(nativeIsView(value) && !(value instanceof DataView)) && !(Array.isArray(value) && value.every(x => typeof x === 'number'))) return;
+    if (!(numericView(value) && !(value instanceof DataView)) && !(Array.isArray(value) && value.every(x => typeof x === 'number'))) return;
     let item = byArray.get(value);
     if (!item) {
       item = {
@@ -141,7 +146,7 @@
   function observe(value, label, depth = 0, seen = new Set()) {
     if (!value || typeof value !== 'object' || seen.has(value) || depth > 5) return;
     seen.add(value);
-    if (ArrayBuffer.isView(value)) return;
+    if (numericView(value)) return;
     if (Array.isArray(value)) {
       value.forEach((v, i) => observe(v, label + '[' + i + ']', depth + 1, seen));
       return;

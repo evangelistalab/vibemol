@@ -74,10 +74,10 @@
       const step = Math.max(1, stride | 0);
 
       if (vol.isTwoComponent && isPhaseLikeComponent(compMode)) {
-        const reA = vol.alphaRe;
-        const imA = vol.alphaIm;
-        const reB = vol.betaRe;
-        const imB = vol.betaIm;
+        const reA = vol.alphaRe.slice();
+        const imA = vol.alphaIm.slice();
+        const reB = vol.betaRe.slice();
+        const imB = vol.betaIm.slice();
         if (!reA || !imA || !reB || !imB) return;
         for (let i = 0; i < nx; i += step) {
           for (let j = 0; j < ny; j += step) {
@@ -111,7 +111,7 @@
         return;
       }
 
-      const data = vol.data;
+      const data = vol.data.slice();
       if (!data || !data.length) return;
       for (let i = 0; i < nx; i += step) {
         for (let j = 0; j < ny; j += step) {
