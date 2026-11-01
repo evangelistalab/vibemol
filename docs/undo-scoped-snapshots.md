@@ -114,10 +114,16 @@ owned copies or scalar values. Bulk renderer/worker adapters may cache disposabl
 read copies keyed by version, never hand out history's backing buffers. Mutating
 those copies must not change a version, another reader, or a later restore.
 
-This requires adapting the existing raw `vol.*` readers/writers; it is not a
-wrapper that can coexist with arbitrary legacy writes. Every affected writer
-must cross the draft/commit boundary, and a static writer census plus negative
-alias tests must prove that before a class ships. Those tests retain original
+The scientific-buffer audit on main `d281e8f` found raw borrows but no current
+consumer modifying published source numeric arrays. Coordinate edits/permutations
+replace those arrays; the mutable vibration frame buffer is derived output.
+There is no measured scientific-source writer migration to perform. Enforcing
+publication/read boundaries still requires structural protection, negative alias
+tests and measured bulk-reader cost; this is not proof that raw `vol.*` objects
+are immutable. Atoms, bonds, frame containers and Molden basis-index metadata
+remain mutable and must cross the appropriate history draft/commit boundary.
+See `docs/maintenance/scientific-buffer-alias-audit.md`. Before any class ships,
+the writer census and negative alias tests must still prove its contract. Those tests retain original
 input views, draft views/subarrays and exported copies, attempt writes before and
 after sealing, and compare independent bytes/digests of every retained version.
 They also assert detached draft buffers, rejected shared buffers, inaccessible
