@@ -12,6 +12,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "casPartition",
       "count": 0,
+      "factoryInputs": [],
       "services": [],
       "closure": [],
       "deps": [],
@@ -21,6 +22,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "buildAvasArguments",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "casPartition"
@@ -32,6 +34,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Copy",
       "count": 0,
+      "factoryInputs": [],
       "services": [],
       "closure": [],
       "deps": [],
@@ -41,6 +44,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Freeze",
       "count": 0,
+      "factoryInputs": [],
       "services": [],
       "closure": [],
       "deps": [],
@@ -50,6 +54,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Fault",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Copy"
@@ -61,6 +66,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Shape",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Fault"
@@ -72,6 +78,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Data",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Fault"
@@ -83,6 +90,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "prepareRequest",
       "count": 3,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Data",
@@ -96,6 +104,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Value",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Fault"
@@ -107,6 +116,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "assertContext",
       "count": 1,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Fault"
@@ -118,6 +128,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "resolveSelections",
       "count": 4,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "assertContext",
@@ -133,6 +144,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "atomRanges",
       "count": 0,
+      "factoryInputs": [],
       "services": [],
       "closure": [],
       "deps": [],
@@ -141,7 +153,10 @@
     {
       "file": "assets/app/js/forte2-format.js",
       "name": "createGeometryEncoder",
-      "count": 1,
+      "count": 2,
+      "factoryInputs": [
+        "elements"
+      ],
       "services": [],
       "closure": [
         "forte2Fault"
@@ -153,6 +168,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "assembleExport",
       "count": 4,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "atomRanges",
@@ -168,6 +184,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Result",
       "count": 2,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "forte2Freeze"
@@ -181,6 +198,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "createForte2Controller",
       "count": 12,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "assembleExport",
@@ -204,6 +222,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "normalize",
       "count": 2,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "componentsFor",
@@ -216,6 +235,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "setOptions",
       "count": 2,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "defaults",
@@ -228,6 +248,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "validation",
       "count": 9,
+      "factoryInputs": [],
       "services": [
         "global.VibeMolForte2Format"
       ],
@@ -248,6 +269,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "generate",
       "count": 6,
+      "factoryInputs": [],
       "services": [
         "global.VibeMolForte2Format"
       ],
@@ -265,6 +287,7 @@
       "file": "assets/app/js/calculations-panel.js",
       "name": "create",
       "count": 10,
+      "factoryInputs": [],
       "services": [
         "global.VibeMolCalculationsModel",
         "global.VibeMolFloatingPanels",
@@ -286,6 +309,7 @@
       "file": "assets/app/js/app.js",
       "name": "readForte2MinaoSnapshot",
       "count": 4,
+      "factoryInputs": [],
       "services": [],
       "closure": [
         "calculationsModel",
@@ -336,6 +360,10 @@
     {
       "evidence": "out/test-artifacts/forte2-export-cas/native-cas-session.log",
       "cause": "Harness incorrectly required a legacy Subspace UI. Native UI belongs to Workbench; legacy checks now exercise the product API."
+    },
+    {
+      "evidence": "out/test-artifacts/forte2-export-cas/native-comparands/workbench-dark-cas390.png",
+      "cause": "Visual review showed browser color_scheme did not set the app theme. Superseded theme coverage; set vibemol.uiTheme before navigation and assert html data-theme before/after session import. Production bytes unchanged."
     }
   ],
   "localNative": {
@@ -359,14 +387,16 @@
       "tests/e2e/calculations.py": "41b523651700cc2aa145e80c794e96051381f1539a248005db3c354b791e30ad"
     },
     "rawLogSha256": "6a3913e12c3a89a727fd9312adbc42301f9e588715c3d236ba10fe9fb8d8ebbb",
-    "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log"
+    "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log",
+    "themeCoverageSuperseded": true
   },
   "status": "local verification complete; exact declared-delta recording and own complete ordinary gate required",
   "comparandLogging": {
     "rawLog": "out/test-artifacts/forte2-export-cas/native-comparands.log",
     "checkpoints": 68,
     "sessionImportAndNativeWriteBothOutcomesLogged": true,
-    "rawLogSha256": "1f8809432841df3422d74e3dd77a0884878e80915e66400b634ba4b05a61b918"
+    "rawLogSha256": "1f8809432841df3422d74e3dd77a0884878e80915e66400b634ba4b05a61b918",
+    "themeCoverageSuperseded": true
   },
   "appStateMetric": {
     "scope": "app IIFE variable-let bindings; class declarations excluded",
@@ -385,5 +415,20 @@
       "assets/app/js/session-format.js"
     ],
     "earlyReads": 0
+  },
+  "explicitThemeNative": {
+    "status": "passed",
+    "checkpoints": 68,
+    "actualThemesVerified": {
+      "workbench-light": "light",
+      "workbench-dark": "dark",
+      "legacy-light": "light",
+      "legacy-dark": "dark"
+    },
+    "beforeAndAfterSessionImport": true,
+    "residualContexts": 0,
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-explicit-themes.log",
+    "rawLogSha256": "a7c009a9e4e9211a327e37c2edaace24fe3379269e897b0f95ee1fd6b0b023c6",
+    "harnessSha256": "e1e13a372dc283ab22c7669f3d86412308382d4c6ef10ae68a36945dd6ae5abb"
   }
 }

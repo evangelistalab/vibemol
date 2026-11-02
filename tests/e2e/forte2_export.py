@@ -26,6 +26,7 @@ def run_matrix(output):
                 for dark in (False,True):
                     name=('legacy' if legacy else 'workbench')+('-dark' if dark else '-light')
                     context=browser.new_context(viewport={'width':1512,'height':1000},color_scheme='dark' if dark else 'light')
+                    context.add_init_script("localStorage.setItem('vibemol.uiTheme',"+json.dumps('dark' if dark else 'light')+")")
                     page=context.new_page();errors=[];seen=[]
                     page.on('pageerror',lambda error:errors.append(str(error)))
                     def check(case,actual,expected):
@@ -46,7 +47,7 @@ def run_matrix(output):
                     try:
                         page.goto(url+'?appearanceStudy=1&qa=1'+('&workspaceLab=0' if legacy else ''))
                         ready(page,'()=>!!window.VibeMolForte2',site='forte2-startup')
-                        check('surface',page.evaluate('()=>Object.keys(VibeMolForte2)'),['export'])
+                        check('surface',dict(members=page.evaluate('()=>Object.keys(VibeMolForte2)'),theme=page.locator('html').get_attribute('data-theme')),dict(members=['export'],theme='dark' if dark else 'light'))
                         check('lazy-fields',page.locator('#avas-casElectrons').count(),0)
                         check('load',p.load(page,[dict(name='forte2.xyz',text=XYZ)])['ok'],True)
                         page.evaluate('()=>VibeMolCalculations.enter()');ready(page,'()=>!!document.querySelector("#subspacePanel.open")',site='forte2-panel')
@@ -97,7 +98,7 @@ def run_matrix(output):
                         field=page.locator('#avas-casElectrons');field.scroll_into_view_if_needed()
                         hit=field.evaluate('e=>{const b=e.getBoundingClientRect(),x=b.x+b.width/2,y=b.y+b.height/2,t=document.elementFromPoint(x,y);return {eligible:t===e||e.contains(t),width:innerWidth,right:b.right};}')
                         field.fill('6');field.press('Tab');settle(page)
-                        check('native-hit',dict(eligible=hit['eligible'],inViewport=hit['right']<=390,applied=page.evaluate('()=>VibeMolCalculations.state().options.cas')),dict(eligible=True,inViewport=True,applied=[6,3]))
+                        check('native-hit',dict(eligible=hit['eligible'],inViewport=hit['right']<=390,theme=page.locator('html').get_attribute('data-theme'),applied=page.evaluate('()=>VibeMolCalculations.state().options.cas')),dict(eligible=True,inViewport=True,theme='dark' if dark else 'light',applied=[6,3]))
                         page.screenshot(path=str(output/(name+'-cas390.png')))
                         check('page-errors',errors,[])
                         assert seen==CASES,dict(actual=seen,expected=CASES)
@@ -108,6 +109,7 @@ def run_matrix(output):
             for dark in (False,True):
                 name='legacy-'+('dark' if dark else 'light')
                 context=browser.new_context(viewport={'width':1512,'height':1000},color_scheme='dark' if dark else 'light')
+                context.add_init_script("localStorage.setItem('vibemol.uiTheme',"+json.dumps('dark' if dark else 'light')+")")
                 page=context.new_page();errors=[];seen=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 try:
@@ -120,7 +122,7 @@ def run_matrix(output):
                     for index in range(3):page.evaluate('i=>VibeMolCalculations.selectShell(i,"2p")',index)
                     page.evaluate('()=>VibeMolCalculations.configure({method:"cas",cas:[4,3]})')
                     check('rhf-cas',export({'avas':{}})['value']['avas']['arguments']['cas'],[4,3])
-                    check('page-errors',errors,[])
+                    check('page-errors',dict(errors=errors,theme=page.locator('html').get_attribute('data-theme')),dict(errors=[],theme='dark' if dark else 'light'))
                     assert seen==['load','aset-labels','rhf-cas','page-errors'],seen
                 except Exception:
                     p.write_failure_artifacts(page,output,name+'-forte2',errors,[]);raise

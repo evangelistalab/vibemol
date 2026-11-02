@@ -15,15 +15,16 @@ function inventory(root){
   const source=fs.readFileSync(path.join(root,file),'utf8');
   traverse(parser.parse(source),{FunctionDeclaration(fn){
    const name=fn.node.id.name;if(selected[file]&&!selected[file].includes(name))return;
-   const free=new Set(),deps=new Set(),callbacks=new Set(),services=new Set();
+   const free=new Set(),deps=new Set(),callbacks=new Set(),services=new Set(),factoryInputs=new Set();
    fn.traverse({ReferencedIdentifier(p){
     const binding=p.scope.getBinding(p.node.name);
     if(p.node.name==='global'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node&&p.parent.property.type==='Identifier')services.add('global.'+p.parent.property.name);
     if(binding&&binding.scope!==fn.scope&&!binding.path.findParent(x=>x===fn))free.add(p.node.name);
     if(p.node.name==='deps'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node)deps.add(p.parent.property.name);
+    if(binding?.kind==='param'&&binding.scope===fn.scope&&p.node.name!=='deps'&&name.startsWith('create')&&p.getFunctionParent()!==fn)factoryInputs.add(p.node.name);
     if(binding?.kind==='param'&&binding.scope===fn.scope&&p.parentPath.isCallExpression()&&p.parent.callee===p.node)callbacks.add(p.node.name);
    }});free.delete(name);free.delete('deps');if(services.size)free.delete('global');
-   rows.push({file,name,count:free.size+deps.size+callbacks.size+services.size,services:[...services].sort(),closure:[...free].sort(),deps:[...deps].sort(),callbacks:[...callbacks].sort()});
+   rows.push({file,name,count:free.size+deps.size+new Set([...callbacks,...factoryInputs]).size+services.size,factoryInputs:[...factoryInputs].sort(),services:[...services].sort(),closure:[...free].sort(),deps:[...deps].sort(),callbacks:[...callbacks].sort()});
   }});
  }
  return rows;
