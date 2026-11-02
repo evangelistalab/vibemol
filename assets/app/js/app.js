@@ -32960,21 +32960,28 @@
   window.VibeMolEdit=editProductApi;
 
   function readForte2MinaoSnapshot(context, planeResolutions) {
+    // This is an identity boundary, not a derived numeric comparison.
+    // Preserve array order and JSON types; object key order is immaterial.
+    function same(actual, expected) {
+      const ordered=value=>value&&typeof value==='object'?(Array.isArray(value)?value.map(ordered):
+        Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])]))):value;
+      return JSON.stringify(ordered(actual))===JSON.stringify(ordered(expected));
+    }
     const record=measurementRecord();
     if(!record)editApiFault('NO_SYSTEM','avas',null,'Calculations target');
     const actual=calculationsModel.atoms(record).map(a=>({id:a.id,Z:a.Z,position:a.point}));
     const expected=context.atoms.map(a=>({id:a.id,Z:a.Z,position:a.position}));
-    if(editApiDifference(actual,expected))editApiFault('GEOMETRY_TARGET_MISMATCH','avas.geometry',actual,expected,'Calculations and Edit must refer to exactly the same ordered geometry.');
+    if(!same(actual,expected))editApiFault('GEOMETRY_TARGET_MISMATCH','avas.geometry',actual,expected,'Calculations and Edit must refer to exactly the same ordered geometry.');
     // Own the small scientific selection state before any normalize/prune operation.
     // Source grids/frames/orbitals never cross this boundary.
     const original=JSON.parse(JSON.stringify(record.calculations||calculationsModel.normalize()));
     const copy={vol:{units:record.vol.units,atoms:record.vol.atoms.map(a=>({...a}))},calculations:calculationsModel.normalize(original)};
-    for(const [key,value]of Object.entries(original.options||{}))if(!Object.hasOwn(copy.calculations.options,key)||editApiDifference(copy.calculations.options[key],value))
+    for(const [key,value]of Object.entries(original.options||{}))if(!Object.hasOwn(copy.calculations.options,key)||!same(copy.calculations.options[key],value))
       editApiFault('AVAS_SETTINGS_SHORTFALL','avas.options.'+key,copy.calculations.options[key],value,'No requested setting may be silently dropped or replaced.');
     const requested={selections:original.selections,planes:original.planes};
     calculationsModel.prune(copy);
     const applied={selections:copy.calculations.selections,planes:copy.calculations.planes};
-    if(editApiDifference(applied,requested))editApiFault('AVAS_SELECTION_SHORTFALL','avas',applied,requested,'No MINAO assignment or plane may be silently dropped.');
+    if(!same(applied,requested))editApiFault('AVAS_SELECTION_SHORTFALL','avas',applied,requested,'No MINAO assignment or plane may be silently dropped.');
     if(planeResolutions!==undefined){
       copy.calculations.planes=[];
       for(const [index,resolution]of planeResolutions.entries()){
@@ -32984,6 +32991,9 @@
       }
     }
     const validation=calculationsModel.validation(copy);
+    const requestedFinal={selections:requested.selections,planes:planeResolutions===undefined?requested.planes:planeResolutions.map(r=>r.atomIds)};
+    const appliedFinal={selections:copy.calculations.selections,planes:copy.calculations.planes};
+    if(!same(appliedFinal,requestedFinal))editApiFault('AVAS_SELECTION_SHORTFALL','avas',appliedFinal,requestedFinal,'Validation must retain every requested assignment and plane.');
     if(validation.errors.length)editApiFault('AVAS_INVALID','avas',validation.errors,'valid MINAO assignment and reference');
     const options=calculationsModel.optionsFor(copy);
     return {options,subspace:calculationsModel.specs(copy),planes:calculationsModel.planeSpecs(copy),

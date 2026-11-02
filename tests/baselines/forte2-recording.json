@@ -80,5 +80,13 @@
     "assets/app/js/session-format.js": "849800777fec8fcfbdbcb61a62cc746c16e42c8fba137e08625c39b913dd58db",
     "index.html": "82dd840975523ce09f1b56a3b4361b60752ff498f3044b12f87b0ded398bac19"
   },
-  "method": "Exact declared-delta CI recording; no mapping, tolerance or ordinary-comparison waiver."
+  "method": "Exact declared-delta CI recording; no mapping, tolerance or ordinary-comparison waiver.",
+  "postRecordingSourceChange": {
+    "file": "assets/app/js/app.js",
+    "onlyFunction": "readForte2MinaoSnapshot",
+    "beforeFunctionSha256": "baa070ecb2acfe5d500031eb97170c4b13dcb73d0f27cf0bcbed3acf8da6e43a",
+    "afterFunctionSha256": "73d4e9389838b0a1495504cde630f41f958b11a45569d9b03cf427482a1ca8c5",
+    "allOtherAppBytesIdentical": true,
+    "reason": "Exact canonical identity/settings comparison and final requested/applied plane readback; the shared Edit numeric helper is unchanged."
+  }
 }

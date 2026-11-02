@@ -29,7 +29,7 @@ Calculations and Edit may hold different record objects. Export compares their c
 
 ## Verification and scope
 
-The shared formatter/controller has 12 inputs (five host inputs and seven named helpers), under the limit of 15. The MINAO snapshot bridge has four closure inputs: `measurementRecord`, `calculationsModel`, `editApiDifference`, `editApiFault`. It uses one existing owner rather than duplicating its scientific logic. The input inventory is checked by `tools/audit-forte2.cjs`, and construction order by the standing inverse audit.
+The shared formatter/controller has 12 inputs (five host inputs and seven named helpers), under the limit of 15. The MINAO snapshot bridge has three closure inputs: `measurementRecord`, `calculationsModel`, `editApiFault`. It uses one existing owner rather than duplicating its scientific logic. The input inventory is checked by `tools/audit-forte2.cjs`, and construction order by the standing inverse audit.
 
 `tools/diagnostics/forte2_cas_oracle.py` regenerates the committed oracle from an exact pinned, source-hash-checked local forte2 checkout. It refuses another revision. The CAS arithmetic is compared to 1,428 executions of the exact upstream parameter checker (453 accepted) with synthetic SCF metadata, not a calculation. Existing non-CAS scripts are checked byte-for-byte, with only the two compatibility changes above declared. The native phase declares 68 checkpoints before CI: 30 in each Workbench theme and four export/API checks in each legacy theme. The native Subspace panel belongs to Workbench; the legacy API checks do not pretend that a legacy Subspace launcher exists. The suite, worker and join independently assert this composition. Each fresh context is retired; zero residual contexts is required.
 
@@ -38,3 +38,9 @@ Authoring failures remain in ignored artifacts: the initial CAS session save exp
 The default capture DOM and options remain unchanged until CAS is selected. Two new namespaces are declared for CI recording: `VibeMolForte2Format` with two members and `VibeMolForte2` with one. The recorder must prove exactly 204 namespace additions / 306 member strings across 102 captures, with zero other changed values. No tolerance, version mapping or comparison exception is added.
 
 Undo remains design-only. Remaining Testing wrapper conversions remain held, including the isolated fragment-cue behavior review. No existing native-click suite is converted to the new selection API; reduced canvas choreography is downstream work.
+
+## Exact target and applied-state boundary
+
+Target identity and requested/applied scientific selections use exact canonical JSON comparison, preserving types and array order while ignoring object-key order. They do not use Edit's intentionally tolerant comparison for derived floating-point geometry. A pre-acceptance probe on the first candidate accepted a 1e-10 Å target mismatch; the corrected permanent unit calibrates the real numeric helper and verifies that the export bridge rejects that mismatch. It also injects successful validation that silently drops a plane and requires a shortfall error. No mock substitutes stricter equality for the actual helper. The old candidate/run remains rejected evidence, even if its ordinary arithmetic is green.
+
+The recorded baseline remains the actual CI dataset from b5ebb0d. Only the new bridge changes afterward; a function-scoped source fingerprint proves that every other recorded production byte remains unchanged. No captured API or default-state value is re-written for this correction. The corrected candidate must pass its own first complete ordinary gate against the same exact goldens.

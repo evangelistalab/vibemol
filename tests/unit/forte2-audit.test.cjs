@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'../..');
 test('Forte2 inventory is explicit, controller has twelve genuine inputs and all units stay below fifteen',()=>{
  const result=audit(root);assert.equal(result.maxInputs,12);const controller=result.units.find(r=>r.name==='createForte2Controller');
  assert.deepEqual(result.units.find(r=>r.name==='createGeometryEncoder').factoryInputs,['elements']);assert.equal(result.units.find(r=>r.name==='createGeometryEncoder').count,2);
- assert.equal(controller.deps.length,5);assert.equal(controller.closure.length,7);assert.equal(result.units.find(r=>r.name==='readForte2MinaoSnapshot').count,4);
+ assert.equal(controller.deps.length,5);assert.equal(controller.closure.length,7);assert.equal(result.units.find(r=>r.name==='readForte2MinaoSnapshot').count,3);
 });
 test('new free services and lost units cannot silently pass the input inventory',()=>{
  const scratch=fs.mkdtempSync(path.join(os.tmpdir(),'forte2-inputs-'));

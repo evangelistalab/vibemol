@@ -79,7 +79,7 @@ test('real MINAO snapshot bridge rejects target mismatch and every silent normal
  const source=fs.readFileSync(new URL('../../assets/app/js/app.js',import.meta.url),'utf8');
  const code=source.slice(source.indexOf('  function readForte2MinaoSnapshot('),source.indexOf('  const forte2ProductApi='));
  const read=vm.runInNewContext('('+code+')',{measurementRecord:()=>record,calculationsModel:M,
-  editApiDifference:(a,b)=>JSON.stringify(a)!==JSON.stringify(b),editApiFault:(code,path,actual,expected)=>{throw Object.assign(new Error(code),{code,path,actual,expected});}});
+  editApiFault:(code,path,actual,expected)=>{throw Object.assign(new Error(code),{code,path,actual,expected});}});
  const snapshot=read(target,[{atomIds:['a','b','c']}]);assert.deepEqual(plain(snapshot.planes),[['C1-3']]);assert.deepEqual(plain(record.calculations),original);
  for(const [change,expected]of [
   [()=>record.calculations.options.extra='unknown','AVAS_SETTINGS_SHORTFALL'],
@@ -90,4 +90,24 @@ test('real MINAO snapshot bridge rejects target mismatch and every silent normal
   assert.throws(()=>read(target),error=>error.code===expected);assert.deepEqual(plain(record.calculations),before);
  }
  record.calculations=plain(original);assert.throws(()=>read({atoms:target.atoms.map(a=>({...a,id:'wrong'+a.id}))}),error=>error.code==='GEOMETRY_TARGET_MISMATCH');
+});
+
+test('export target identity is exact and post-validation readback rejects a silently dropped plane',()=>{
+ const ctx=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js']);
+ const M=ctx.VibeMolCalculationsModel;M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url))));
+ const record={vol:{units:'angstrom',atoms:[{id:'a',Z:6,x:0,y:0,z:0},{id:'b',Z:6,x:1.5,y:0,z:0},{id:'c',Z:6,x:0,y:1.5,z:0}]}};
+ for(const atom of record.vol.atoms)M.selectShell(record,atom.id,'2p');
+ const source=fs.readFileSync(new URL('../../assets/app/js/app.js',import.meta.url),'utf8');
+ const slice=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)));
+ const numeric=vm.runInNewContext('('+slice('  function editApiDifference(','  function createEditApiCandidateValidator(')+')');
+ // Calibrate the real shared helper; a JSON-equality mock hid this mismatch.
+ assert.equal(numeric(1.5,1.5+1e-10),null);
+ const makeRead=model=>vm.runInNewContext('('+slice('  function readForte2MinaoSnapshot(','  const forte2ProductApi=')+')',{measurementRecord:()=>record,calculationsModel:model,
+  editApiFault:(code,path,actual,expected)=>{throw Object.assign(new Error(code),{code,path,actual,expected});}});
+ const read=makeRead(M),target=()=>({atoms:M.atoms(record).map(a=>({...a,position:a.point.slice()}))}),before=plain(record.calculations);
+ assert(read(target()));
+ for(const delta of [1e-10,-1e-10,1e-7]){const c=target();c.atoms[1].position[0]+=delta;assert.throws(()=>read(c),error=>error.code==='GEOMETRY_TARGET_MISMATCH');}
+ const defective={...M,validation:copy=>{const result=M.validation(copy);copy.calculations.planes=[];return result;}};
+ assert.throws(()=>makeRead(defective)(target(),[{atomIds:['a','b','c']}]),error=>error.code==='AVAS_SELECTION_SHORTFALL'&&error.actual.planes.length===0&&error.expected.planes.length===1);
+ assert.deepEqual(plain(record.calculations),before);
 });
