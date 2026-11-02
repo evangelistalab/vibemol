@@ -390,7 +390,7 @@
     "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log",
     "themeCoverageSuperseded": true
   },
-  "status": "local verification complete; exact declared-delta recording and own complete ordinary gate required",
+  "status": "Contract and local verification established; exact CI API recording verified. Every candidate requires its own complete first-pass ordinary37/0/37 gate.",
   "comparandLogging": {
     "rawLog": "out/test-artifacts/forte2-export-cas/native-comparands.log",
     "checkpoints": 68,
@@ -430,5 +430,16 @@
     "rawLog": "out/test-artifacts/forte2-export-cas/native-explicit-themes.log",
     "rawLogSha256": "a7c009a9e4e9211a327e37c2edaace24fe3379269e897b0f95ee1fd6b0b023c6",
     "harnessSha256": "e1e13a372dc283ab22c7669f3d86412308382d4c6ef10ae68a36945dd6ae5abb"
+  },
+  "recording": {
+    "runId": 41528980857,
+    "sourceCommit": "b5ebb0d570184b1d185ba35dd4aa8f106fb4bd61",
+    "namespaceAdditionsPerRun": 204,
+    "memberStringsPerRun": 306,
+    "capturesPerRun": 102,
+    "independentWorkers": 2,
+    "runsPerWorker": 2,
+    "fourSerializationsExactlyIdentical": true,
+    "residualDifference": 0
   }
 }

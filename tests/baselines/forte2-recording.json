@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "runId": 41528980857,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41528980857",
+  "attempt": 1,
+  "sourceCommit": "b5ebb0d570184b1d185ba35dd4aa8f106fb4bd61",
+  "sourceTree": "b7183507de081d1664c22fde06bede2ce493af29",
+  "comparison": {
+    "status": "passed",
+    "sourceCommit": "b5ebb0d570184b1d185ba35dd4aa8f106fb4bd61",
+    "declaration": {
+      "schemaVersion": 2,
+      "baseCommit": "b1de909288d8ba85da017f18654771eca54547d0",
+      "baselineGzipSha256": "2387e1bee5b4ed7f0037d6ff5a3ed841942c9df1eb4afee31db7fa459f1ba397",
+      "captures": 102,
+      "delta": [
+        {
+          "operation": "add-api-namespace",
+          "namespace": "VibeMolForte2Format",
+          "members": [
+            "buildAvasArguments",
+            "createForte2Controller"
+          ]
+        },
+        {
+          "operation": "add-api-namespace",
+          "namespace": "VibeMolForte2",
+          "members": [
+            "export"
+          ]
+        }
+      ],
+      "authority": "Direct human export-only forte2 interchange and PR283 CAS selector authorization. Exactly two namespace additions in each of 102 captures (204 additions / 306 member strings); no other capture changes. The existing declared-delta recording mode enforces zero residual difference."
+    },
+    "independentCiJobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "memberRemovalsPerRun": 0,
+    "namespaceAdditionsPerRun": 204,
+    "residualDifferences": 0,
+    "fourSerializationsExactlyIdentical": true,
+    "records": [
+      {
+        "job": 1,
+        "run": 1,
+        "sha256": "77dcd94bd112551de4a65f51cc572192726f94a9df9b0e7ff36d2a46448dc5f4",
+        "deltaVerified": true
+      },
+      {
+        "job": 1,
+        "run": 2,
+        "sha256": "77dcd94bd112551de4a65f51cc572192726f94a9df9b0e7ff36d2a46448dc5f4",
+        "deltaVerified": true
+      },
+      {
+        "job": 2,
+        "run": 1,
+        "sha256": "77dcd94bd112551de4a65f51cc572192726f94a9df9b0e7ff36d2a46448dc5f4",
+        "deltaVerified": true
+      },
+      {
+        "job": 2,
+        "run": 2,
+        "sha256": "77dcd94bd112551de4a65f51cc572192726f94a9df9b0e7ff36d2a46448dc5f4",
+        "deltaVerified": true
+      }
+    ]
+  },
+  "expectedMemberStringsPerRun": 306,
+  "allNonApiCaptureValuesUnchanged": true,
+  "promotedFiles": {
+    "tests/baselines/characterize.json.gz": "2b22cd7dd75cf2d64f54cfd7e57370af43ed1327efb1428b27da2e74b721e427",
+    "tests/baselines/characterize-summary.json": "b0c463ece9a54b4a5d3c06a7b136cb1e1154f9c1b7ffa15357a41b0ccf5f8389"
+  },
+  "productionBytesRemainIdenticalToRecordingSource": {
+    "assets/app/js/app.js": "fc7bf4c134a7f1087f7470e17a84aac5d79b03ee4f6df098ce03b71fe4fbaefc",
+    "assets/app/js/forte2-format.js": "ae6279060ad0589f7605080f3de549f011f4724e5eabeb1ee183174ae1f40fdb",
+    "assets/app/js/calculations-model.js": "27ab65c4f7756d5e1d88dfad10aafc549c02fc6bb5f20141b7be36ebb1727e7a",
+    "assets/app/js/calculations-panel.js": "30cbeb90bf22573053df32d90c62186af9091652d30826fc0f357566b13c041a",
+    "assets/app/js/session-format.js": "849800777fec8fcfbdbcb61a62cc746c16e42c8fba137e08625c39b913dd58db",
+    "index.html": "82dd840975523ce09f1b56a3b4361b60752ff498f3044b12f87b0ded398bac19"
+  },
+  "method": "Exact declared-delta CI recording; no mapping, tolerance or ordinary-comparison waiver."
+}

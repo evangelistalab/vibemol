@@ -1,8 +1,8 @@
 {
   "baseline": {
-    "commit": "c9d8283692f47993ecda7f899cdd82a6e57e1c08",
+    "commit": "b5ebb0d570184b1d185ba35dd4aa8f106fb4bd61",
     "tag": "declared-api-delta",
-    "appSha256": "00ec2d86cd85443d75c1564a7d46cb588608164d55d33c6c4419f8c7718511b4",
+    "appSha256": "fc7bf4c134a7f1087f7470e17a84aac5d79b03ee4f6df098ce03b71fe4fbaefc",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -18,10 +18,10 @@
       0
     ],
     "metrics": {
-      "lines": 32919,
-      "functionDeclarations": 1229,
+      "lines": 33002,
+      "functionDeclarations": 1235,
       "letDeclarations": 250,
-      "constDeclarations": 591
+      "constDeclarations": 592
     },
     "captureProvenance": {
       "os": "Linux",
@@ -31,7 +31,7 @@
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41382051475",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41528980857",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -60,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "34e5a3b73197c3354595bcd02a2c85b29853ff20dedda9d2a1fb685a63de8479",
-      "34e5a3b73197c3354595bcd02a2c85b29853ff20dedda9d2a1fb685a63de8479"
+      "87bbeaedac498050bf1390fdfdfe7819d0f2ecff9bab7c0df530da64dfd4b8c5",
+      "87bbeaedac498050bf1390fdfdfe7819d0f2ecff9bab7c0df530da64dfd4b8c5"
     ]
   },
   "api": {
@@ -363,6 +363,13 @@
       "get",
       "list",
       "register"
+    ],
+    "VibeMolForte2": [
+      "export"
+    ],
+    "VibeMolForte2Format": [
+      "buildAvasArguments",
+      "createForte2Controller"
     ],
     "VibeMolFragments": [
       "FRAGMENT_LIBRARY",
@@ -834,7 +841,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "78e36ecd49c3f66c7c9366a15e56e3f8a0ee05384853d03ab40302ede0885e5a",
+  "goldenSha256": "be5ee9e4f979b1a03bcf17079403d6d389b284bb907950031928c1d0f907e427",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
