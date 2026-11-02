@@ -2,6 +2,7 @@
 import json,os
 from pathlib import Path
 import premerge as p
+from checkpoint_contract import require_phase_counts
 
 
 def run(browser, url):
@@ -76,7 +77,10 @@ def run(browser, url):
                 p.write_failure_artifacts(page,p.ARTIFACTS,'retired-cache-failure',errors,[]);raise
             finally:
                 context.close();assert not browser.contexts,'Native cache case left a background context'
-    result=dict(passed=True,cases=results,allContextsRetired=True)
+            print('[retired-cache-case] '+json.dumps(dict(legacy=legacy,dark=dark,actual=len(browser.contexts),expected=0,passed=True)),flush=True)
+    counts={'retired-cache-case':len(results)}
+    require_phase_counts(counts,'tests/e2e/build_panel.py','retired-cache-case')
+    result=dict(passed=True,cases=results,allContextsRetired=True,checkpointCounts=counts)
     (p.ARTIFACTS/'retired-edit-cache.json').write_text(json.dumps(result,indent=2)+'\n')
     return result
 

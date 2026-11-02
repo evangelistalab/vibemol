@@ -14,6 +14,7 @@ from pathlib import Path
 
 from appearance_autosave import LEGACY, log_assert
 from helpers import run_appearance_scenarios
+from checkpoint_contract import require_phase_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 RETIRED = ['molecule.glossyBondRadius', 'render.cloudAlpha', 'render.cloudStride',
@@ -75,6 +76,7 @@ def registry_symmetry(page, context, url):
         # All current recipes plus a genuinely edited/custom state exercise the
         # live setters, after-import reconciliation and exporter, without mocks.
         states = other.evaluate('VibeMolLooks.builtins.map(x=>x.id)') + ['custom']
+        completed_readbacks = 0
         for state in states:
             observed = other.evaluate('''state => {
               VibeMolAppearanceLooks.apply(state==='custom'?'basic':state,{includeColors:true});
@@ -89,6 +91,8 @@ def registry_symmetry(page, context, url):
             log_assert(sorted(observed['after']) == expected, sorted(observed['after']), expected, state+' export composition')
             for key in expected:
                 log_assert(exact(observed['before'][key], observed['after'][key]), observed['after'][key], observed['before'][key], state+' round trip '+key)
+                print('[registry-readback] '+json.dumps(dict(state=state,key=key,actual=observed['after'][key],expected=observed['before'][key])),flush=True)
+                completed_readbacks += 1
         # The only non-exported scoped key is intentionally one-way. Assert its
         # canonical destination rather than weakening equality for all settings.
         legacy = other.evaluate('''() => {
@@ -127,8 +131,10 @@ def registry_symmetry(page, context, url):
                          'future':'Unsupported autosaved appearance schema version.'}[row['kind']]
                 log_assert(not row['ok'] and row['error']==error, row.get('error'), error, row['kind']+' rejection')
         log_assert(not report['pageerrors'], report['pageerrors'], [], 'registry page errors')
+        report['checkpointCounts'] = {'registry-readback': completed_readbacks}
+        require_phase_counts(report['checkpointCounts'],'tests/e2e/look_references.py','registry-readback')
         report['passed'] = True
-        print('[appearance registry] '+json.dumps(dict(scoped=len(inventory['scoped']),exported=len(expected),states=len(states),exactReadbacks=len(states)*len(expected),passed=True)), flush=True)
+        print('[appearance registry] '+json.dumps(dict(scoped=len(inventory['scoped']),exported=len(expected),states=len(states),exactReadbacks=completed_readbacks,passed=True)), flush=True)
     finally:
         report['sourceUnchanged'] = (ROOT/'assets/app/js/app.js').read_bytes()==original
         (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')

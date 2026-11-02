@@ -5,7 +5,7 @@ from pathlib import Path
 import premerge as p
 from surface_shadows import settle
 from assertion_contract import deadline_diagnostics, wait_for_budget
-from checkpoint_contract import MANIFEST, require_counts
+from checkpoint_contract import require_phase_counts
 
 COVERAGE = Counter()
 
@@ -157,8 +157,7 @@ def run_matrix(output):
     finally:context.close()
     compare('residual-contexts-'+name,len(browser.contexts),0)
   finally:browser.close()
- expected=json.loads(MANIFEST.read_text())['checkpointCounts']['tests/e2e/premerge.py']
- require_counts(dict(COVERAGE),expected,suite='tests/e2e/premerge.py')
+ require_phase_counts(dict(COVERAGE),'tests/e2e/premerge.py','edit-api','edit-api-rejection')
  (output/'summary.json').write_text(json.dumps(dict(passed=True,residualContexts=0,checkpointCounts=dict(COVERAGE))))
 
 if __name__=='__main__':

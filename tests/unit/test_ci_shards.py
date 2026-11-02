@@ -179,6 +179,19 @@ class BrowserJoinTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, 'Recorded checkpoint counts differ'):
             self.join()
 
+    def test_each_new_cardinality_is_recomputed_by_join(self):
+        for shard,suite,marker in [('balanced-3','look_references','registry-readback'),
+                                   ('balanced-3','axis_gizmo','escape-native-case'),
+                                   ('balanced-2','edit_tool','metal-native-case'),
+                                   ('balanced-2','premerge','atomic-identity-rejection'),
+                                   ('balanced-2','build_panel','retired-cache-case')]:
+            raw=self.paths[shard].parent/suite/'run.log'
+            original=raw.read_text()
+            raw.write_text('\n'.join(line for line in original.splitlines()if not line.startswith('['+marker+'] '))+'\n')
+            try:
+                with self.subTest(suite=suite), self.assertRaisesRegex(AssertionError,marker):self.join()
+            finally:raw.write_text(original)
+
 
 class CharacterizationJoinTests(unittest.TestCase):
     def setUp(self):

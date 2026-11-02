@@ -38,3 +38,11 @@ def require_checkpoint_counts(log, suite, expectations, *, required=True):
     expected = expectations.get(suite, {})
     counts, errors = checkpoint_counts(log, expected)
     return require_counts(counts, expected, suite=suite, errors=errors, required=required)
+
+
+def require_phase_counts(actual, suite, *markers):
+    """A supplemental matrix checks only its own declared markers."""
+    assert markers and len(markers)==len(set(markers)), {'actual': markers, 'expected': 'nonempty distinct phase checkpoint inventory'}
+    declared = json.loads(MANIFEST.read_text())['checkpointCounts'][suite]
+    expected = {marker: declared[marker] for marker in markers}
+    return require_counts(actual, expected, suite=suite)
