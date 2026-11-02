@@ -38,3 +38,14 @@ test('the projection query rejects an occupied identity and never coerces a requ
  for(const request of [0,'1',1.5,-1,NaN])assert.equal(query(request),null);
  assert.deepEqual(JSON.parse(JSON.stringify(query(1))),{index:1,x:10,y:20,visible:true});
 });
+test('native-suite error collectors receive rejection comparands and serialization cannot swallow the original error',()=>{
+ const parser=require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser')),vm=require('node:vm');
+ const node=parser.parse(source).program.body[0].expression.callee.body.body.find(n=>n.type==='FunctionDeclaration'&&n.id.name==='callEditApiTesting');
+ const records=[],error=Object.assign(new Error('ATOM_NOT_FOUND'),{editApi:{code:'ATOM_NOT_FOUND',details:{actual:999,expected:[0,1]}}});
+ const run=vm.runInNewContext('('+source.slice(node.start,node.end)+')',{editApiTestingSetSelection:()=>{throw error;},console:{error:line=>records.push(line)}});
+ assert.throws(()=>run('selection',[0,999]),caught=>caught===error);
+ const receipt=JSON.parse(records.pop().slice('[edit-testing-rejection] '.length));
+ assert.deepEqual(receipt,{operation:'selection',requested:[[0,999]],error:error.editApi});
+ const cyclic=[];cyclic.push(cyclic);assert.throws(()=>run('selection',cyclic),caught=>caught===error);
+ assert.equal(JSON.parse(records.pop().slice('[edit-testing-rejection] '.length)).requested,'non-JSON request');
+});

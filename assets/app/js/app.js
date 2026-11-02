@@ -32868,7 +32868,11 @@
       if (operation === 'hydrogen') return editApiTestingReplaceHydrogen(...args);
       throw new Error('Unknown Testing adapter: ' + operation);
     } catch (error) {
-      console.log('[edit-testing-rejection] ' + JSON.stringify({ operation, requested: args, error: error.editApi || { message: error.message } }));
+      try {
+        console.error('[edit-testing-rejection] ' + JSON.stringify({ operation, requested: args, error: error.editApi || { message: error.message } }));
+      } catch {
+        console.error('[edit-testing-rejection] ' + JSON.stringify({ operation, requested: 'non-JSON request', error: error.message }));
+      }
       throw error;
     }
   }

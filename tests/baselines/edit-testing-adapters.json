@@ -149,5 +149,15 @@
     "Terminal-H replacement retains native pending-operator and hydrogen-adjustment behavior; its caller-free selectionAfter escape hatch is rejected.",
     "Other legacy helpers retain their documented mode/coercion limits and are not claimed to be validated product adapters.",
     "Undo remains design-only; remaining wrapper work stops after this batch."
-  ]
+  ],
+  "rejectionComparands": {
+    "channel": "console.error",
+    "reason": "Existing native suites retain only error console records. Passing matrix observations are collected by its dedicated console handler.",
+    "supersededCandidate": {
+      "head": "7d4a35c9f0ec06b8449269a22950f10a7f2d0ef5",
+      "runId": 41515845441,
+      "acceptance": false,
+      "reason": "Rejected before acceptance for uncollected console.log rejection receipts; source changed before its own new gate."
+    }
+  }
 }
