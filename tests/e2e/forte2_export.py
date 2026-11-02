@@ -39,6 +39,7 @@ def run_matrix(output):
                           const state=()=>JSON.stringify({volume:VibeMolStructure.exportActive().volume,calculations:VibeMolCalculations.state(),selection:VibeMolEdit.getSelection()});
                           const before=state(),result=VibeMolForte2.export(request);return {result,unchanged:before===state()};
                         }''',request)
+                        row['expectedUnchanged']=True
                         print('[forte2-export] '+json.dumps(row),flush=True)
                         assert row['unchanged'],row
                         return row['result']
@@ -89,15 +90,14 @@ def run_matrix(output):
                         for case,pair in [('cas-odd',[3,4]),('cas-capacity',[8,3]),('cas-negative',[-2,4]),('cas-noninteger',[2.5,4])]:
                             configure(reference='RHF',cas=pair)
                             r=export({'avas':{}});check(case,dict(ok=r['ok'],code=r['error']['code'],program=page.evaluate('()=>VibeMolCalculations.export().code')),dict(ok=False,code='AVAS_INVALID',program=''))
-                        configure(reference='RHF',cas=[4,3]);saved=page.evaluate('()=>VibeMolSession.export()');assert page.evaluate('s=>VibeMolSession.import(s)',saved)['ok']
+                        configure(reference='RHF',cas=[4,3]);saved=page.evaluate('()=>VibeMolSession.export()');imported=page.evaluate('s=>VibeMolSession.import(s)',saved)
                         page.evaluate('()=>VibeMolCalculations.enter()');settle(page)
-                        check('cas-session',page.evaluate('()=>VibeMolCalculations.state().options.cas'),[4,3])
+                        check('cas-session',dict(importOk=imported['ok'],cas=page.evaluate('()=>VibeMolCalculations.state().options.cas')),dict(importOk=True,cas=[4,3]))
                         page.set_viewport_size(dict(width=390,height=850));settle(page)
                         field=page.locator('#avas-casElectrons');field.scroll_into_view_if_needed()
                         hit=field.evaluate('e=>{const b=e.getBoundingClientRect(),x=b.x+b.width/2,y=b.y+b.height/2,t=document.elementFromPoint(x,y);return {eligible:t===e||e.contains(t),width:innerWidth,right:b.right};}')
-                        check('native-hit',dict(eligible=hit['eligible'],inViewport=hit['right']<=390),dict(eligible=True,inViewport=True))
                         field.fill('6');field.press('Tab');settle(page)
-                        assert page.evaluate('()=>VibeMolCalculations.state().options.cas')==[6,3]
+                        check('native-hit',dict(eligible=hit['eligible'],inViewport=hit['right']<=390,applied=page.evaluate('()=>VibeMolCalculations.state().options.cas')),dict(eligible=True,inViewport=True,applied=[6,3]))
                         page.screenshot(path=str(output/(name+'-cas390.png')))
                         check('page-errors',errors,[])
                         assert seen==CASES,dict(actual=seen,expected=CASES)
@@ -128,4 +128,4 @@ def run_matrix(output):
                 assert len(browser.contexts)==0,dict(actual=len(browser.contexts),expected=0)
         finally:browser.close()
     require_phase_counts({'forte2-case':len(rows)},'tests/e2e/calculations.py','forte2-case')
-    (output/'matrix.json').write_text(json.dumps(dict(cases=CASES,contexts=4,workbenchCases=30,legacyCases=4,checkpoints=rows,residualContexts=0),indent=2)+'\n')
+    (output/'matrix.json').write_text(json.dumps(dict(cases=CASES,contexts=4,workbenchCases=30,legacyCases=4,checkpointCounts={'forte2-case':len(rows)},checkpoints=rows,residualContexts=0),indent=2)+'\n')
