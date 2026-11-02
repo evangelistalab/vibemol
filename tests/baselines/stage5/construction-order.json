@@ -207,6 +207,24 @@
         "callEditApiTesting"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Export-only forte2 interchange and PR283 CAS selector",
+      "before": "b1de909288d8ba85da017f18654771eca54547d0",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/forte2-format.js"
+      ],
+      "consumers": [
+        "assets/app/js/calculations-model.js",
+        "assets/app/js/calculations-panel.js",
+        "assets/app/js/session-format.js"
+      ],
+      "recheck": [
+        "readForte2MinaoSnapshot",
+        "forte2ProductApi"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -325,7 +325,11 @@ def rohf(page,url):
         page.locator('#avas-'+key).fill('0');page.locator('#avas-'+key).dispatch_event('change')
     assert not page.evaluate('()=>VibeMolCalculations.export().validation.errors')
     assert 'num_active_docc=0,' in page.evaluate('()=>VibeMolCalculations.export().code')
-    spin(-.5);assert 'For negative ms, forte2 AVAS' in page.locator('[data-validation]').inner_text()
+    spin(-.5)
+    compatibility=page.evaluate('()=>VibeMolCalculations.export()')
+    print('[forte2-compatibility] '+json.dumps(dict(reference='ROHF',ms=-.5,actual=compatibility['validation']['errors'],expected=[])),flush=True)
+    assert compatibility['validation']['errors']==[],compatibility
+    assert 'num_active_docc=0,' in compatibility['code'],compatibility
     page.locator('#avas-method').select_option('total')
     assert 'multiplicity=2, ms=-0.5' in page.evaluate('()=>VibeMolCalculations.export().code')
     print('[calculations] ROHF ms control, spin validation, input preparation, reference switching and session restoration: passed',flush=True)
@@ -386,5 +390,7 @@ def main():
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'calculations',errors,console);raise
         finally:browser.close()
+    from forte2_export import run_matrix
+    run_matrix(p.ARTIFACTS/'forte2-export')
 
 if __name__=='__main__':main()

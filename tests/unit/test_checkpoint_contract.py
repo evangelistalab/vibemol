@@ -49,6 +49,7 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},
             'tests/e2e/edit_tool.py': {'metal-native-case':28},
             'tests/e2e/build_panel.py': {'retired-cache-case':4},
+            'tests/e2e/calculations.py': {'forte2-case':68},
         })
 
     def test_all_five_phase_guards_reject_zero_short_and_extra_counts(self):

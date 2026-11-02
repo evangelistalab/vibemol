@@ -32959,6 +32959,40 @@
     listBuildSites:editApiQueries.listBuildSites,validateBuild:editApiBuild.validateBuild,applyBuild:editApiBuild.applyBuild,translate:editApiBuild.translate});
   window.VibeMolEdit=editProductApi;
 
+  function readForte2MinaoSnapshot(context, planeResolutions) {
+    const record=measurementRecord();
+    if(!record)editApiFault('NO_SYSTEM','avas',null,'Calculations target');
+    const actual=calculationsModel.atoms(record).map(a=>({id:a.id,Z:a.Z,position:a.point}));
+    const expected=context.atoms.map(a=>({id:a.id,Z:a.Z,position:a.position}));
+    if(editApiDifference(actual,expected))editApiFault('GEOMETRY_TARGET_MISMATCH','avas.geometry',actual,expected,'Calculations and Edit must refer to exactly the same ordered geometry.');
+    // Own the small scientific selection state before any normalize/prune operation.
+    // Source grids/frames/orbitals never cross this boundary.
+    const original=JSON.parse(JSON.stringify(record.calculations||calculationsModel.normalize()));
+    const copy={vol:{units:record.vol.units,atoms:record.vol.atoms.map(a=>({...a}))},calculations:calculationsModel.normalize(original)};
+    for(const [key,value]of Object.entries(original.options||{}))if(!Object.hasOwn(copy.calculations.options,key)||editApiDifference(copy.calculations.options[key],value))
+      editApiFault('AVAS_SETTINGS_SHORTFALL','avas.options.'+key,copy.calculations.options[key],value,'No requested setting may be silently dropped or replaced.');
+    const requested={selections:original.selections,planes:original.planes};
+    calculationsModel.prune(copy);
+    const applied={selections:copy.calculations.selections,planes:copy.calculations.planes};
+    if(editApiDifference(applied,requested))editApiFault('AVAS_SELECTION_SHORTFALL','avas',applied,requested,'No MINAO assignment or plane may be silently dropped.');
+    if(planeResolutions!==undefined){
+      copy.calculations.planes=[];
+      for(const [index,resolution]of planeResolutions.entries()){
+        const ids=resolution.atomIds,result=calculationsModel.addPlane(copy,ids);
+        if(result.error)editApiFault('AVAS_PLANE_INVALID','avas.planes['+index+']',result,'whole p shells on every plane atom');
+        if(copy.calculations.planes.length!==index+1)editApiFault('DUPLICATE_PLANE','avas.planes['+index+']',ids,'distinct plane');
+      }
+    }
+    const validation=calculationsModel.validation(copy);
+    if(validation.errors.length)editApiFault('AVAS_INVALID','avas',validation.errors,'valid MINAO assignment and reference');
+    const options=calculationsModel.optionsFor(copy);
+    return {options,subspace:calculationsModel.specs(copy),planes:calculationsModel.planeSpecs(copy),
+      electrons:actual.reduce((sum,a)=>sum+a.Z,0)-options.charge};
+  }
+  const forte2ProductApi=window.VibeMolForte2Format.createForte2Controller({readContext:editProductApi.context,
+    resolveSelection:editProductApi.resolveSelection,readMinaoSnapshot:readForte2MinaoSnapshot,elements:ATOM_Z_TO_DATA,appVersion:APP_VERSION});
+  window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});
+
   // All application bindings exist before the Escape owner is exposed. Window
   // capture precedes target/document phases by DOM semantics, not registration.
   window.addEventListener('keydown', handleApplicationEscape, true);

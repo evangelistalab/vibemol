@@ -177,3 +177,7 @@ create AVAS assignments. `state().selectedAtomIds` returns that transient focus;
 `configure({total: n})` sets a manual total; `configure({totalFollowsSelection:
 true})` resumes selection-based counts. `state().options.total` returns the
 effective count, in spatial orbitals for RHF/ROHF and spatial pairs for GHF.
+
+## Explicit CAS (forte2 PR283)
+
+Choose **Complete active space (CAS)** in Selection method, then enter total electrons and spatial orbitals (RHF/ROHF) or spinors (GHF). ROHF totals include the singly occupied sector. GHF CAS counts are not doubled. Invalid pairs leave the form visible and disable generated input; virtual availability is checked by forte2 after SCF. CAS survives session save/open. See [forte2 export and CAS](forte2-interchange.md) for count rules, upstream provenance, the export-only `VibeMolForte2.export` API and its validation/error contract.

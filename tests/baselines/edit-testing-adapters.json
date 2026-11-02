@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "status": "candidate; own complete gate pending",
+  "status": "merged; own complete first-pass gate verified",
   "base": "03f174130dc9570978fd214c1a4b6d36714c45e1",
   "changedTestingMembers": [
     "setEditSelectionIndices",
@@ -159,5 +159,60 @@
       "acceptance": false,
       "reason": "Rejected before acceptance for uncollected console.log rejection receipts; source changed before its own new gate."
     }
+  },
+  "ci": {
+    "pr": 89,
+    "runId": 41516532849,
+    "attempt": 1,
+    "head": "a0b57ed08a56aeb3f77af80fd76cd136d2c6407f",
+    "merge": "b1de909288d8ba85da017f18654771eca54547d0",
+    "tree": "6d97156ec1f2389bd9a2fcb95f244f09053c2fc6",
+    "entireMergeTreeMatchesTestedCandidate": true,
+    "independentChecks": 191,
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37,
+      "allExecutedOnce": true
+    },
+    "projection": {
+      "calls": 3,
+      "substitutions": 0
+    },
+    "identity": {
+      "slots": 48,
+      "contexts": 8,
+      "compositionAndAllMinimaVerified": true
+    },
+    "goldens": {
+      "captures": 102,
+      "runs": 2,
+      "exactRepeat": true
+    },
+    "exporters": {
+      "trajectory": true,
+      "vibration": true,
+      "activationReadbacks": 58
+    },
+    "spinor": {
+      "readbacks": 8,
+      "eligibleClicks": 4
+    },
+    "looks": {
+      "seconds": 1903.46,
+      "studioMaterialFamilies": true,
+      "propertiesMaterialFamilies": true,
+      "appearanceMaterialPresetTimeoutInCoveredRun": false,
+      "intermittentRiskRemainsOpen": true
+    },
+    "wholeWallMinutes": 46.05,
+    "units": {
+      "javascript": 522,
+      "python": 213,
+      "cjs": 27
+    },
+    "webkit": true,
+    "construction": true,
+    "immutableArchiveSha256": "242ccc3c81e5ed9fc4ea75cdb38fffa646fa9b48fb0e842565c981503bb8be31"
   }
 }

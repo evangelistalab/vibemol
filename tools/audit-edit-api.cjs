@@ -61,14 +61,15 @@ function additiveApp(source, baseline, testingChanges={}) {
  const preserved=[];let exposed=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
  for(const n of statements(source)) {
-  if(n.type==='FunctionDeclaration'&&fresh.test(n.id.name))continue;
-  if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi')) {
+  if(n.type==='FunctionDeclaration'&&(fresh.test(n.id.name)||n.id.name==='readForte2MinaoSnapshot'))continue;
+  if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi'||d.id.name==='forte2ProductApi')) {
    assert.equal(n.kind,'const','New API state must not add a module let');continue;
   }
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'
     &&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolEdit') {
    assert.equal(n.expression.right.name,'editProductApi');exposed++;continue;
   }
+  if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
   const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }
@@ -84,6 +85,14 @@ function additiveHelpers(root, readBase) {
  for(const name of files) {
   const file='assets/app/js/'+name;let code=fs.readFileSync(path.join(root,file),'utf8');
   if(name==='calculations-model.js') {
+   const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/forte2-export.json')));
+   const previous=require('node:child_process').execFileSync('git',['show',contract.baseCommit+':'+file],{cwd:root,encoding:'utf8'});
+   const functions=s=>parser.parse(s).program.body[0].expression.callee.body.body.filter(n=>n.type==='FunctionDeclaration');
+   for(const current of functions(code).filter(n=>contract.changedModelFunctions.includes(n.id.name)).sort((a,b)=>b.start-a.start)){
+    const old=functions(previous).find(n=>n.id.name===current.id.name);assert(old);
+    code=code.slice(0,current.start)+previous.slice(old.start,old.end)+code.slice(current.end);
+   }
+
    code=code.replace('function fitPlane(record, ids, options = {})','function fitPlane(record, ids)');
    for(const text of [", ...(options.diagnostics ? { code: 'PLANE_TOO_SMALL', rms: null, secondEigenvalue: null } : {})",
     ", ...(options.diagnostics ? { code: 'PLANE_COLLINEAR', rms: Math.sqrt(Math.max(0,values[0])/selected.length), secondEigenvalue: values[1] } : {})",

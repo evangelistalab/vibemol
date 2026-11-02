@@ -5,7 +5,7 @@ import { loadGlobalModules, evaluateInContext } from './load-global-module.mjs';
 function setup() {
   const ctx = loadGlobalModules(['assets/app/js/appearance-model.js', 'assets/app/js/appearance-looks.js',
     'assets/app/js/scene-graph.js', 'assets/app/js/scene-sources.js',
-    'assets/app/js/structure.js', 'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/calculations-model.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
+    'assets/app/js/structure.js', 'assets/app/js/session-format.js', 'assets/app/js/measurements.js', 'assets/app/js/forte2-format.js','assets/app/js/calculations-model.js', 'assets/app/js/session.js'], { globals: { btoa, atob } });
   const fixture = evaluateInContext(ctx, `(() => {
     const graph = VibeMolSceneGraph.createSceneGraphController();
     const sources = VibeMolSceneSources.createSceneSources({ graph, hasGrid: v => !!v.data.length,
@@ -266,4 +266,15 @@ test('recovery reconciles a stale hidden selection with the visible focused mole
   assert.equal(restored.activeRecord.measurements.units,'bohr');
   decoded.sources[1].recordState.measurements.decimals=99;
   assert.throws(()=>format.validate(decoded),/measurement/);
+});
+
+// A CAS pair is the sole array-valued calculation option; arbitrary arrays stay invalid.
+test('CAS session pair round-trips while malformed pairs and unrelated arrays fail', async()=>{
+ const {ctx,fixture,capture,format}=setup();
+ fixture.records[0].calculations=ctx.VibeMolCalculationsModel.normalize({options:{method:'cas',cas:[8,6]}});
+ const decoded=await format.decode(await format.encode(capture()));
+ assert.deepEqual(JSON.parse(JSON.stringify(decoded.sources[0].recordState.calculations.options.cas)),[8,6]);
+ const options=decoded.sources[0].recordState.calculations.options;
+ for(const value of [[8], [8,6,2], ['8',6], [Infinity,6], null]){options.cas=value;assert.throws(()=>format.validate(decoded),/calculation parameter/);}
+ options.cas=[8,6];options.other=[8,6];assert.throws(()=>format.validate(decoded),/calculation parameter/);
 });
