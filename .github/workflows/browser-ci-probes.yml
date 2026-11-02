@@ -14,7 +14,7 @@ on:
       scope:
         description: Explicit diagnostic; neither supplies ordinary acceptance
         type: choice
-        options: [legacy-unbounded, runner-characterization]
+        options: [legacy-unbounded, runner-characterization, figure-main-control]
         default: legacy-unbounded
 
 jobs:
@@ -71,3 +71,46 @@ jobs:
         with:
           name: runner-characterization
           path: out/test-artifacts/runner-characterization/
+
+  figure-main-control:
+    if: github.event_name == 'workflow_dispatch' && inputs.scope == 'figure-main-control'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: c37bb07e30c711025da325a14bbbb4a8345d06d7
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Ordinary locked browser toolchain
+        run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
+      - name: Unchanged merged-main native Figure matrix once
+        env:
+          PYTHONUNBUFFERED: '1'
+        run: |
+          mkdir -p out/test-artifacts/figure-main-control
+          git rev-parse HEAD HEAD^{tree} > out/test-artifacts/figure-main-control/source.txt
+          test "$(git rev-parse HEAD)" = c37bb07e30c711025da325a14bbbb4a8345d06d7
+          python - <<'PY' > out/test-artifacts/figure-main-control/run.log 2>&1
+          import json, pathlib, sys
+          import playwright
+          from playwright.sync_api import sync_playwright
+          sys.path.insert(0, 'tests/e2e')
+          from pinned_figure_browser import resolve_pinned_headless_browser
+          from figure_runner import run
+          metadata = pathlib.Path(playwright.__file__).parent/'driver/package/browsers.json'
+          pinned = next(r['browserVersion'] for r in json.loads(metadata.read_text())['browsers'] if r['name']=='chromium-headless-shell')
+          with sync_playwright() as pw:
+              executable = resolve_pinned_headless_browser(pw.chromium.executable_path, pinned, metadata)
+          run(executable, pathlib.Path('out/test-artifacts/figure-main-control/native').resolve())
+          PY
+      - name: Preserve main control and every original comparand
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: figure-main-control
+          path: out/test-artifacts/figure-main-control/
