@@ -483,7 +483,7 @@ def main():
     parser.add_argument('--record-release-tag', choices=('v0.10.0', 'v0.10.1'),
                         help='Explicit CI release recording from a verified source; never a version exemption.')
     parser.add_argument('--record-source-commit', help='Full immutable SHA for an explicitly declared CI recording candidate.')
-    parser.add_argument('--record-api-delta', help='Tracked declaration of one API-member removal; CI records only the exact declared delta.')
+    parser.add_argument('--record-api-delta', help='Tracked exact API delta; CI refuses every undeclared capture difference.')
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
                         help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')

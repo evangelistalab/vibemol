@@ -1007,6 +1007,8 @@ def main():
                     context.close()
         finally:
             browser.close()
+    from edit_api import run_matrix as edit_api_matrix
+    edit_api_matrix(ARTIFACTS/'validated-edit-api')
     return 0
 
 

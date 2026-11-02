@@ -136,4 +136,58 @@ class DeclaredApiDelta(unittest.TestCase):
                 compare(folder,folder,spec,commit)
 
 
+
+class DeclaredApiDeltaV2(unittest.TestCase):
+    def setUp(self):
+        self.old={str(i):dict(api={'VibeMolTesting':['keep','retireA','retireB']},session={'appVersion':'0.10.1'},number=1.0) for i in range(102)}
+        self.spec=dict(schemaVersion=2,baseCommit='a'*40,baselineGzipSha256='b'*64,captures=102,authority='Reviewed synthetic surface',delta=[
+            dict(operation='add-api-namespace',namespace='VibeMolEdit',members=['applyBuild','resolveSelection']),
+            dict(operation='remove-api-member',namespace='VibeMolTesting',member='retireA'),
+            dict(operation='remove-api-member',namespace='VibeMolTesting',member='retireB')])
+        self.new,_=expected_removal(self.old,self.spec)
+
+    def verify(self,value):
+        with contextlib.redirect_stdout(io.StringIO()):return verify_captures(self.old,value,self.spec)
+
+    def test_exact_enumeration_and_counts(self):
+        r=self.verify(self.new)
+        self.assertEqual((r['actualRemovals'],r['actualNamespaceAdditions']),(204,102))
+        self.assertEqual(self.old['0']['api']['VibeMolTesting'],['keep','retireA','retireB'])
+
+    def test_wrong_new_namespace_member_missing_capture_and_other_leaf_all_fail(self):
+        for field in ('extra-member','missing-member','wrong-member','one-capture','old-retirement','other-leaf'):
+            value=copy.deepcopy(self.new)
+            if field=='extra-member':value['0']['api']['VibeMolEdit'].append('uncheckedSet')
+            if field=='missing-member':value['0']['api']['VibeMolEdit'].pop()
+            if field=='wrong-member':value['0']['api']['VibeMolEdit'][0]='other'
+            if field=='one-capture':del value['0']['api']['VibeMolEdit']
+            if field=='old-retirement':value['0']['api']['VibeMolTesting'].append('retireA')
+            if field=='other-leaf':value['0']['number']=1.000000000001
+            with self.subTest(field=field),self.assertRaises(AssertionError):self.verify(value)
+
+    def test_scope_cannot_express_non_api_changes_or_ambiguous_members(self):
+        cases=[{'operation':'set-leaf','path':['session','appVersion'],'value':'0.11'},
+               {'operation':'add-api-namespace','namespace':'VibeMolEdit','members':['same','same']},
+               {'operation':'add-api-namespace','namespace':'VibeMolEdit','members':['z','a']},
+               {'operation':'remove-api-member','namespace':'VibeMolTesting','member':'retireA'},
+               {'operation':'remove-api-member','namespace':'VibeMolEdit','member':'applyBuild'}]
+        for delta in cases:
+            spec=copy.deepcopy(self.spec);spec['delta'].append(delta)
+            with self.subTest(delta=delta),self.assertRaises(AssertionError):declaration(spec)
+
+    def test_v2_member_addition_is_enumerated_and_refuses_other_changes(self):
+        spec=copy.deepcopy(self.spec);spec['delta']=[dict(operation='add-api-member',namespace='VibeMolTesting',member='zNew')]
+        old=copy.deepcopy(self.old)
+        for c in old.values():c['api']['VibeMolTesting'].sort()
+        new,changes=expected_removal(old,spec)
+        self.assertEqual(len(changes),102)
+        with contextlib.redirect_stdout(io.StringIO()):r=verify_captures(old,new,spec)
+        self.assertEqual(r['actualMemberAdditions'],102)
+        new['0']['session']['appVersion']='other'
+        with contextlib.redirect_stdout(io.StringIO()),self.assertRaises(AssertionError):verify_captures(old,new,spec)
+
+    def test_namespace_must_be_absent_in_every_previous_capture(self):
+        self.old['0']['api']['VibeMolEdit']=[]
+        with self.assertRaises(AssertionError):expected_removal(self.old,self.spec)
+
 if __name__=='__main__':unittest.main()

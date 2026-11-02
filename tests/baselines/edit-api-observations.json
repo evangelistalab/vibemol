@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 1,
+  "scope": "Failed mixed PR86 candidates remain historical, unmerged evidence; no accepted failure is introduced.",
+  "mainControls": [
+    {
+      "runId": 41314331930,
+      "commit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+      "nativeMatrix": "passed",
+      "listingReached": true,
+      "listingTargets": [
+        "cube-1",
+        "molecule-2"
+      ],
+      "standingBuffersReached": true
+    },
+    {
+      "runId": 41379282576,
+      "runtimeCommit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+      "workflowCommit": "0941652",
+      "nativeMatrix": "passed",
+      "listingReached": true,
+      "listingTargets": [
+        "cube-1",
+        "molecule-2"
+      ],
+      "sourceChanges": 0
+    }
+  ],
+  "heldFailure": {
+    "runId": 41357980765,
+    "head": "041b842d7cedcb4c752ecf8f46d5dceddb3ab3b0",
+    "gate": {
+      "passed": 35,
+      "failed": 2,
+      "total": 37
+    },
+    "smoke": "Cue-replacement wrapper omits legacy anchor-selection restoration; code absent from additive cut.",
+    "figure": {
+      "stage": "browser",
+      "operation": "--list-targets",
+      "error": "Session with given id not found.",
+      "classification": "unclassified; main controls passed, so no reproduced pre-existence and no causal proof",
+      "carried": false,
+      "acceptedCiFailure": false,
+      "noRetry": true,
+      "notHistoricalIssue42": true
+    }
+  },
+  "projectionCaller": {
+    "case": "second hydroxyl attachment",
+    "requested": 0,
+    "available": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "resolved": 1,
+    "meaning": "A second attachment should use an available template identity, not assume index0 remains free.",
+    "changeDeferredTo": "projection wrapper batch; keep fallback until caller correction is verified."
+  },
+  "undo": "design-only",
+  "e2eConversions": 0,
+  "apiOnlyCoverageOmission": {
+    "runId": 41384810185,
+    "head": "2e85651447b2328e3a880cebe8c84c8d838d2bef",
+    "ordinary": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "completeAcceptance": false,
+    "cause": "new matrix call after premerge return0",
+    "actualApiComparands": 0,
+    "expectedApiComparands": 115,
+    "actualAtomicRejections": 0,
+    "expectedAtomicRejections": 26,
+    "archiveSha256": "01690ba03ba04fdd9d2541b18aef7e414f05766d7ae5398dd39a57a7333f1a43",
+    "disposition": "direct human authorizes corrected harness candidate with real count gates and unreachable lint; no production/capture change"
+  }
+}

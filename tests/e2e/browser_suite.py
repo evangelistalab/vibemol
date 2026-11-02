@@ -13,6 +13,7 @@ import sys
 import time
 
 from ci_evidence import artifact_identity, digest
+from checkpoint_contract import require_checkpoint_counts
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 MANIFEST = ROOT / 'tests/baselines/browser-suite.json'
@@ -181,10 +182,14 @@ def main():
                 env={**os.environ, 'VIBEMOL_TEST_ARTIFACT_DIR': str(folder), 'PYTHONUNBUFFERED': '1'},
                 stdout=log_file, stderr=subprocess.STDOUT)
         log = (folder / 'run.log').read_text()
+        checkpoint_result = require_checkpoint_counts(log, suite, manifest.get('checkpointCounts', {}), required=False)
         elapsed = round(time.monotonic() - started, 2)
-        entry = {'test': suite, 'exitCode': result.returncode,
+        entry = {'test': suite, 'exitCode': result.returncode or (0 if checkpoint_result['passed'] else 1),
+                 'processExitCode': result.returncode,
+                 'checkpointEvidence': checkpoint_result,
                  'seconds': elapsed, 'wallTimeSeconds': elapsed,
                  'testSha256': hashlib.sha256((ROOT / suite).read_bytes()).hexdigest(),
+                 'checkpointCounts': checkpoint_result['actual'],
                  'rawLog': str((folder / 'run.log').relative_to(ROOT)),
                  **failure_details(log, suite, (ROOT / suite).read_text())}
         entry['knownDefect'] = suite in known and matches_known_defect(entry, known[suite])

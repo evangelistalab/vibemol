@@ -35,5 +35,24 @@ test('the actual corpus containing bare returns inventories all three stores', (
   const result = collect();
   assert.deepEqual(result.assessments.map(x => x.store), ['builder', 'coordination', 'metalBonding']);
   assert.deepEqual(result.missingPurposes, []);
-  assert.equal(result.edges.length, 112);
+  const apiOwners = new Set(['editApiFragmentMembership', 'createEditApiInsertionPlanner',
+    'editApiCapture', 'createEditApiCandidateValidator', 'editApiRealizeIds', 'editApiHistory']);
+  const api = result.edges.filter(e => apiOwners.has(e.owner)
+    || (e.owner === 'remove' && e.purpose.startsWith('Prune deleted atom annotation'))
+    || (e.owner === 'apply' && e.purpose.startsWith('Commit the validated complete annotation')));
+  assert.deepEqual(api.map(e => [e.owner, e.route]).sort(), [
+    ['editApiFragmentMembership', 'snapshot.annotations'], ['remove', 'vol.annotations'],
+    ['createEditApiInsertionPlanner', 'draft.vol.annotations'], ['editApiCapture', 'vol.annotations'],
+    ['createEditApiCandidateValidator', 'vol.annotations'], ['editApiRealizeIds', 'result.annotations'],
+    ['editApiHistory', 'before.annotations'], ['editApiHistory', 'after.annotations'],
+    ['apply', 'vol.annotations'],
+  ].sort());
+  assert.equal(result.edges.length - api.length, 112, 'The original annotation routes remain enumerated.');
+});
+test('generic remove/apply callbacks do not inherit API-specific annotation purposes', () => {
+  const code = `function unrelated() { function remove(vol) { return vol.annotations; }
+    const other = {apply: (vol) => vol.annotations}; }`;
+  const result = scan(code);
+  assert.equal(result.edges.length, 2);
+  assert.deepEqual(result.edges.map(e => e[4]), [null, null]);
 });

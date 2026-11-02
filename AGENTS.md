@@ -1,5 +1,24 @@
 # AGENTS.md
 
+## API matrix completion and unreachable-code checks
+
+PR87's API-only scope remains twelve methods,42 Testing members unchanged,
+zero wrappers and zero retirements. The rejected first run41384810185 had37/0/37
+but omitted the new matrix after an early return; it is not complete acceptance.
+Premerge must run the matrix after original browser retirement and before return.
+The manifest/worker/join require exactly115 API comparisons and26 atomic-rejection
+records, plus the existing58 exporter activation/two completion/eight Spinor
+readbacks. Missing, zero, extra or malformed evidence blocks even on exit0.
+Preserve process exit separately; collect every other assigned suite once.
+
+`make check` includes ESLint `no-unreachable:error` and Python Pylint `W0101`;
+the Python rule is not supplied by Ruff/Pyflakes. Historical evidence and vendors
+are excluded. The exact rejected premerge source is a negative linter control.
+The count audit and its five remaining ordinary cardinality gaps are recorded in
+`tests/baselines/checkpoint-count-audit.json`; they are not accepted failures.
+The37/0/37 expectation, intentionally empty accepted set, runtime/capture bytes,
+construction gate and all existing native-input contracts remain unchanged.
+
 ## Refactor and 0.10.0 release status
 
 **Current post-release gate — #52/#53 repaired:** exactly **37 passing /0 failing /37**. The accepted set is **intentionally empty**; matcher/join machinery stays. Remove only Coordinates after accepted52; no additional workflow is accepted. Any failure, omission, repetition or other arithmetic stops. Smoke must complete BOTH exporters and all activation paths. Require102 goldens twice/exact repeat,48 slots/eight contexts/all minima, units/WebKit/construction. Diagnostics never supply acceptance. #42 stays open/unclassified/not carried/not accepted; #43 responsive budget is directly human-authorized, including heartbeat gaps; own complete gate remains required. Latent surface-pair allowances are a separate category, never accepted ordinary failures. Historical observations below retain their actual values.

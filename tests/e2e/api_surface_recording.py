@@ -1,4 +1,4 @@
-"""CI recording of a declared API-member removal; never an ordinary comparison waiver."""
+"""CI recording of an exact enumerated API delta; never an ordinary comparison waiver."""
 import argparse
 import copy
 import gzip
@@ -14,16 +14,36 @@ GOLDEN = 'tests/baselines/characterize.json.gz'
 
 def declaration(value):
     assert set(value) == {'schemaVersion', 'baseCommit', 'baselineGzipSha256', 'captures', 'delta', 'authority'}, value
-    assert type(value['schemaVersion']) is int and value['schemaVersion'] == 1 and type(value['captures']) is int and value['captures'] == 102, value
+    assert type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2) and type(value['captures']) is int and value['captures'] == 102, value
     assert re.fullmatch(r'[0-9a-f]{40}', value['baseCommit']), value
     assert re.fullmatch(r'[0-9a-f]{64}', value['baselineGzipSha256']), value
-    delta = value['delta']
-    assert set(delta) == {'operation', 'namespace', 'member'}, delta
-    assert delta['operation'] == 'remove-api-member', delta
-    assert re.fullmatch(r'VibeMol[A-Za-z0-9_]+', delta['namespace']), delta
-    assert re.fullmatch(r'[A-Za-z_$][A-Za-z0-9_$]*', delta['member']), delta
+    deltas = [value['delta']] if value['schemaVersion'] == 1 else value['delta']
+    assert isinstance(deltas,list) and deltas, value
+    identities=set()
+    for delta in deltas:
+        assert type(delta) is dict, delta
+        assert re.fullmatch(r'VibeMol[A-Za-z0-9_]+', delta.get('namespace','')), delta
+        operation=delta.get('operation')
+        if operation == 'remove-api-member' or (value['schemaVersion']==2 and operation=='add-api-member'):
+            assert set(delta)=={'operation','namespace','member'},delta
+            assert re.fullmatch(r'[A-Za-z_$][A-Za-z0-9_$]*',delta['member']),delta
+            identity=(delta['namespace'],delta['member'])
+        else:
+            assert value['schemaVersion']==2 and operation=='add-api-namespace',delta
+            assert set(delta)=={'operation','namespace','members'},delta
+            members=delta['members']
+            assert type(members) is list and members and all(type(m) is str and re.fullmatch(r'[A-Za-z_$][A-Za-z0-9_$]*',m) for m in members),delta
+            assert members==sorted(set(members)),delta
+            identity=(delta['namespace'],None)
+        assert identity not in identities,('Repeated delta',identity)
+        assert not any(ns==identity[0] and (member is None or identity[1] is None) for ns,member in identities),('Conflicting namespace deltas',identity)
+        identities.add(identity)
     assert isinstance(value['authority'], str) and value['authority'].strip(), value
     return value
+
+
+def recording_mode(spec):
+    return 'declared-api-removal' if spec['schemaVersion']==1 else 'declared-api-delta'
 
 
 def exact_difference(expected, actual, path=()):
@@ -48,26 +68,44 @@ def exact_difference(expected, actual, path=()):
 
 
 def expected_removal(previous, spec):
-    spec = declaration(spec)
-    assert type(previous) is dict and len(previous) == spec['captures'], (len(previous), spec['captures'])
-    expected, removals = copy.deepcopy(previous), []
-    namespace, member = spec['delta']['namespace'], spec['delta']['member']
-    for name, capture in expected.items():
-        members = capture['api'][namespace]
-        assert type(members) is list and members.count(member) == 1, (name, namespace, member, members)
-        members.remove(member)
-        removals.append(dict(capture=name, path=['api', namespace], removedMember=member))
-    assert len(removals) == 102, removals
-    return expected, removals
+    """Legacy function name retained; schema2 is an exact declared API delta."""
+    spec=declaration(spec)
+    assert type(previous) is dict and len(previous)==spec['captures'],(len(previous),spec['captures'])
+    expected,changes=copy.deepcopy(previous),[]
+    deltas=[spec['delta']] if spec['schemaVersion']==1 else spec['delta']
+    for name,capture in expected.items():
+        for delta in deltas:
+            namespace=delta['namespace']
+            if delta['operation']=='remove-api-member':
+                member=delta['member'];members=capture['api'][namespace]
+                assert type(members) is list and members.count(member)==1,(name,namespace,member,members)
+                members.remove(member)
+                changes.append(dict(capture=name,path=['api',namespace],removedMember=member))
+            elif delta['operation']=='add-api-member':
+                member=delta['member'];members=capture['api'][namespace]
+                assert type(members) is list and member not in members and members==sorted(set(members)),(name,namespace,member,members)
+                members.append(member);members.sort()
+                changes.append(dict(capture=name,path=['api',namespace],addedMember=member))
+            else:
+                assert namespace not in capture['api'],('Namespace already exists',name,namespace)
+                capture['api'][namespace]=list(delta['members'])
+                changes.append(dict(capture=name,path=['api',namespace],addedMembers=list(delta['members'])))
+    assert len(changes)==102*len(deltas),changes
+    return expected,changes
 
 
 def verify_captures(previous, actual, spec):
-    expected, removals = expected_removal(previous, spec)
-    diff = exact_difference(expected, actual)
-    report = dict(delta=spec['delta'], expectedRemovals=102, actualRemovals=len(removals),
-                  removals=removals, residualDifference=diff, zeroOtherChanges=diff is None)
-    print('[declared-api-delta] '+json.dumps(report, sort_keys=True), flush=True)
-    assert diff is None, ('Undeclared capture change; refuse baseline recording', diff)
+    expected,changes=expected_removal(previous,spec)
+    diff=exact_difference(expected,actual)
+    deltas=[spec['delta']] if spec['schemaVersion']==1 else spec['delta']
+    removal_count=102*sum(d['operation']=='remove-api-member' for d in deltas)
+    namespace_count=102*sum(d['operation']=='add-api-namespace' for d in deltas)
+    member_additions=102*sum(d['operation']=='add-api-member' for d in deltas)
+    report=dict(delta=spec['delta'],expectedRemovals=removal_count,actualRemovals=sum('removedMember' in c for c in changes),
+                expectedMemberAdditions=member_additions,actualMemberAdditions=sum('addedMember' in c for c in changes),expectedNamespaceAdditions=namespace_count,actualNamespaceAdditions=sum('addedMembers' in c for c in changes),
+                changes=changes,residualDifference=diff,zeroOtherChanges=diff is None)
+    print('[declared-api-delta] '+json.dumps(report,sort_keys=True),flush=True)
+    assert diff is None,('Undeclared capture change; refuse baseline recording',diff)
     return report
 
 
@@ -110,12 +148,12 @@ def require_source(root, source_root, args, report_path):
     committed = subprocess.check_output(['git','show',commit+':'+str(spec_path)],cwd=root)
     assert committed == (root/spec_path).read_bytes() == (source_root/spec_path).read_bytes(), 'Declaration differs from tested source'
     previous = read_previous(root,spec)
-    proof = dict(status='passed',recordingMode='declared-api-removal',commit=commit,baseCommit=spec['baseCommit'],
+    proof = dict(status='passed',recordingMode=recording_mode(spec),commit=commit,baseCommit=spec['baseCommit'],
         tree=git('rev-parse',commit+'^{tree}'),declaration=spec,declarationSha256=hashlib.sha256(committed).hexdigest(),
         archivedFiles=archived,allArchivedBlobsMatchCommit=True,sourceRefAtCapture=os.environ.get('GITHUB_REF'),
         ciRunId=os.environ.get('GITHUB_RUN_ID'),ciRunAttempt=os.environ.get('GITHUB_RUN_ATTEMPT'))
     Path(report_path).write_text(json.dumps(proof,indent=2)+'\n')
-    return dict(commit=commit,tag='declared-api-removal'), previous, spec
+    return dict(commit=commit,tag=recording_mode(spec)), previous, spec
 
 
 def compare(folder, root, declaration_path, commit):
@@ -125,10 +163,10 @@ def compare(folder, root, declaration_path, commit):
     for index in (1,2):
         artifact = Path(folder)/('characterization-baseline-'+str(index))
         proof = json.loads((artifact/'api-baseline-source.json').read_text())
-        assert proof['status']=='passed' and proof['recordingMode']=='declared-api-removal',proof
+        assert proof['status']=='passed' and proof['recordingMode']==recording_mode(spec),proof
         assert proof['commit']==commit and proof['declaration']==spec and proof['allArchivedBlobsMatchCommit'],proof
         golden = json.loads(gzip.decompress((artifact/'characterize.json.gz').read_bytes()))
-        assert golden['baseline']['commit']==commit and golden['baseline']['tag']=='declared-api-removal',golden['baseline']
+        assert golden['baseline']['commit']==commit and golden['baseline']['tag']==recording_mode(spec),golden['baseline']
         provenance = golden['baseline']['captureProvenance']
         assert provenance['os']=='Linux' and provenance['ci']['provider']=='GitHub Actions',provenance
         summary=json.loads((artifact/'characterize-summary.json').read_text())
@@ -144,7 +182,7 @@ def compare(folder, root, declaration_path, commit):
     assert all(exact_difference(captures[0],c) is None for c in captures), 'Independent CI recordings differ'
     assert len(set(digests))==1, 'The four raw serializations must repeat exactly'
     report=dict(status='passed',sourceCommit=commit,declaration=spec,independentCiJobs=2,runsPerJob=2,
-        capturesPerRun=102,memberRemovalsPerRun=102,residualDifferences=0,fourSerializationsExactlyIdentical=True,records=jobs)
+        capturesPerRun=102,memberRemovalsPerRun=result['actualRemovals'],namespaceAdditionsPerRun=result['actualNamespaceAdditions'],residualDifferences=0,fourSerializationsExactlyIdentical=True,records=jobs)
     (Path(folder)/'ci-comparison.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 

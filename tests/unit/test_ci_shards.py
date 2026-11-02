@@ -37,10 +37,14 @@ class BrowserJoinTests(unittest.TestCase):
             for test in shard['suites']:
                 failed = test in self.manifest['knownDefects']
                 log = marked_log(pathlib.Path(test).name) if failed else 'Suite passed\n'
+                for marker, count in self.manifest.get('checkpointCounts', {}).get(test, {}).items():
+                    log += ''.join('['+marker+'] '+json.dumps(dict(actual=i, expected=i))+'\n' for i in range(count))
                 raw = folder / pathlib.Path(test).stem / 'run.log'
                 raw.parent.mkdir()
                 raw.write_text(log)
+                counts = browser_suite.require_checkpoint_counts(log, test, self.manifest.get('checkpointCounts', {}))
                 report['suites'].append({'test': test, 'exitCode': 1 if failed else 0,
+                    'processExitCode': 1 if failed else 0, 'checkpointCounts': counts['actual'], 'checkpointEvidence': counts,
                     'testSha256': digest(ROOT / test), 'wallTimeSeconds': 1.0, 'knownDefect': failed,
                     **browser_suite.failure_details(log, test, (ROOT / test).read_text())})
             browser_suite.finish_report(report, self.manifest, aggregate=False)
@@ -70,6 +74,7 @@ class BrowserJoinTests(unittest.TestCase):
         def fail(report):
             entry = next(e for e in report['suites'] if e['test'].endswith('/accessibility.py'))
             entry['exitCode'] = 1
+            entry['processExitCode'] = 1
         self.change_report('balanced-2', fail)
         report = self.join()
         self.assertEqual((report['passed'], report['failed'], report['total']), (36, 1, 37))
@@ -86,12 +91,13 @@ class BrowserJoinTests(unittest.TestCase):
 
     def test_other_smoke_workflow_rejects_additional_failing_suite(self):
         raw = self.paths['smoke'].parent / 'smoke/run.log'
-        raw.write_text('Traceback (most recent call last):\n  File "/repo/tests/e2e/smoke.py", line 123, in main\n    assert False\nAssertionError\n')
+        raw.write_text(raw.read_text()+'Traceback (most recent call last):\n  File "/repo/tests/e2e/smoke.py", line 123, in main\n    assert False\nAssertionError\n')
         def update(report):
             entry = report['suites'][0]
             entry.update(browser_suite.failure_details(raw.read_text(), entry['test'], (ROOT / entry['test']).read_text()))
             entry['knownDefect'] = False
             entry['exitCode'] = 1
+            entry['processExitCode'] = 1
         self.change_report('smoke', update)
         report = self.join()
         self.assertEqual(report['failed'], 1)
@@ -103,7 +109,7 @@ class BrowserJoinTests(unittest.TestCase):
         raw.write_text(marked_log('mode_consistency.py'))
         def fail(report):
             entry=next(e for e in report['suites'] if e['test']=='tests/e2e/mode_consistency.py')
-            entry.update(exitCode=1,knownDefect=False,
+            entry.update(exitCode=1,processExitCode=1,knownDefect=False,
                 **browser_suite.failure_details(raw.read_text(),entry['test'],(ROOT/entry['test']).read_text()))
         self.change_report('balanced-2',fail)
         report=self.join()
@@ -158,6 +164,20 @@ class BrowserJoinTests(unittest.TestCase):
             self.assertIsNone(report['matchesAcceptedBaseline'])
             self.assertTrue(report['executionComplete'])
             self.assertGreaterEqual(report['suites'][0]['wallTimeSeconds'], 0)
+
+    def test_green_process_without_declared_api_checkpoints_cannot_pass_join(self):
+        raw = self.paths['balanced-2'].parent/'premerge/run.log'
+        raw.write_text('Suite passed\n')
+        with self.assertRaisesRegex(AssertionError, "'edit-api': 0"):
+            self.join()
+
+    def test_count_in_report_cannot_replace_missing_raw_evidence(self):
+        def forge(report):
+            entry = next(e for e in report['suites'] if e['test']=='tests/e2e/premerge.py')
+            entry['checkpointCounts']['edit-api'] = 116
+        self.change_report('balanced-2', forge)
+        with self.assertRaisesRegex(AssertionError, 'Recorded checkpoint counts differ'):
+            self.join()
 
 
 class CharacterizationJoinTests(unittest.TestCase):

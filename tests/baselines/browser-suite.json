@@ -85,5 +85,16 @@
     ],
     "evidence": "tests/baselines/video-export-activation.json"
   },
-  "acceptedSetIntentionallyEmpty": true
+  "acceptedSetIntentionallyEmpty": true,
+  "checkpointCounts": {
+    "tests/e2e/premerge.py": {
+      "edit-api": 115,
+      "edit-api-rejection": 26
+    },
+    "tests/e2e/smoke.py": {
+      "video-activation": 58,
+      "video-export-completion": 2,
+      "smoke-spinor-launcher": 8
+    }
+  }
 }

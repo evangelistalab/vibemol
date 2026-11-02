@@ -8,6 +8,7 @@ import shutil
 
 import browser_suite as suite
 from ci_evidence import artifact_identity, digest, require_same_artifact
+from checkpoint_contract import require_checkpoint_counts
 
 
 def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
@@ -28,9 +29,14 @@ def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
             test = entry['test']
             assert test not in entries, 'Duplicate suite: ' + test
             assert type(entry['exitCode']) is int
+            assert type(entry['processExitCode']) is int
             assert math.isfinite(entry['wallTimeSeconds']) and entry['wallTimeSeconds'] >= 0
             assert entry['testSha256'] == digest(root / test), 'Different test source: ' + test
             raw = path.parent / pathlib.Path(test).stem / 'run.log'
+            counts = require_checkpoint_counts(raw.read_text(), test, manifest.get('checkpointCounts', {}))
+            assert entry['checkpointCounts'] == counts['actual'], 'Recorded checkpoint counts differ from raw log: ' + test
+            assert entry['checkpointEvidence'] == counts, 'Recorded checkpoint evidence differs from raw log: ' + test
+            assert entry['exitCode'] == (entry['processExitCode'] or (0 if counts['passed'] else 1)), 'Incorrect suite outcome: ' + test
             details = suite.failure_details(raw.read_text(), test, (root / test).read_text())
             for key, value in details.items():
                 assert entry[key] == value, 'Raw failure details differ: ' + test + '/' + key

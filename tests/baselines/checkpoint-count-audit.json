@@ -1,0 +1,233 @@
+{
+  "scope": "all37 ordinary browser entrypoints,64 local-import closure files, plus reviewed dynamic/subprocess phases; numeric report fields and result-case arrays",
+  "sourceAtAudit": "2e85651447b2328e3a880cebe8c84c8d838d2bef",
+  "observedRunId": 41384810185,
+  "ordinarySuites": [
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/accessibility.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/looks.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_bar.py"
+  ],
+  "importClosureFiles": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/accessibility_contract.py",
+    "tests/e2e/api_surface_recording.py",
+    "tests/e2e/appearance_autosave.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_registry.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/assertion_contract.py",
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/atomic_identity.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/browser_lifetime.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/characterize.py",
+    "tests/e2e/ci_evidence.py",
+    "tests/e2e/ci_gate_diagnostics.py",
+    "tests/e2e/edit_api.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/escape_contract.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/figure_preview_diagnostics.py",
+    "tests/e2e/figure_runner.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/helpers.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/metal_popover.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/navigation_budget.py",
+    "tests/e2e/navigation_diagnostics.py",
+    "tests/e2e/paired_controls.py",
+    "tests/e2e/paired_controls_contract.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/pinned_figure_browser.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/release_baseline_recording.py",
+    "tests/e2e/retired_edit_cache.py",
+    "tests/e2e/scientific_buffers.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/video_export_activation.py",
+    "tests/e2e/wall_times.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/workflow_contract.py"
+  ],
+  "reportedCardinalities": [
+    {
+      "phase": "API matrix",
+      "source": "tests/e2e/edit_api.py",
+      "observed": {
+        "comparands": 115,
+        "atomicRejections": 26
+      },
+      "before": "reported only; call unreachable in2e85651",
+      "now": "self-asserted from actual counters and independently counted by worker/join",
+      "disposition": "repaired inPR87"
+    },
+    {
+      "phase": "Smoke exporter activation and Spinor",
+      "source": "tests/e2e/video_export_activation.py",
+      "observed": {
+        "videoActivationReadbacks": 58,
+        "exporterCompletions": 2,
+        "spinorReadbacks": 8,
+        "eligibleSpinorClicks": 4
+      },
+      "before": "each readback asserted; no shipped cardinality guard for58 or8 (two completions already guarded by run policy)",
+      "now": "raw marker counts asserted by worker/join",
+      "disposition": "count-only guard added inPR87; native actions unchanged"
+    },
+    {
+      "phase": "appearance registry",
+      "source": "tests/e2e/appearance_registry.py",
+      "observed": {
+        "scoped": 51,
+        "exported": 50,
+        "states": 10,
+        "exactReadbacks": 500
+      },
+      "status": "cardinality not asserted",
+      "mechanism": "exactReadbacks is len(states)*len(exported), not a counter of executed comparisons; individual state/key comparisons remain asserted",
+      "disposition": "reported for a separate harness change; no relaxation or instrumentation here"
+    },
+    {
+      "phase": "native Escape",
+      "source": "tests/e2e/escape_contract.py",
+      "observed": {
+        "cases": 62
+      },
+      "status": "cardinality not asserted",
+      "mechanism": "native report.cases records completed presses without an exact case-count assertion; the separate Node table gate DOES assert224+1024=1248",
+      "disposition": "reported for a separate harness change"
+    },
+    {
+      "phase": "Metal popover",
+      "source": "tests/e2e/metal_popover.py",
+      "observed": {
+        "cases": 28
+      },
+      "status": "cardinality not asserted",
+      "mechanism": "result.cases contains each2layouts*2themes*7viewports case, but has no exact completed-case guard",
+      "disposition": "reported for a separate harness change"
+    },
+    {
+      "phase": "atomic identity",
+      "source": "tests/e2e/atomic_identity.py",
+      "observed": {
+        "rejectedCases": 24
+      },
+      "status": "cardinality not asserted",
+      "mechanism": "reject-case array has individual exact comparisons but no3atomicInputs*4formats*2clearPolicies completion guard",
+      "disposition": "reported for a separate harness change"
+    },
+    {
+      "phase": "retired-cache UI",
+      "source": "tests/e2e/retired_edit_cache.py",
+      "observed": {
+        "cases": 4
+      },
+      "status": "cardinality not asserted",
+      "mechanism": "four layout/theme results are collected without an exact completed-case guard",
+      "disposition": "reported for a separate harness change"
+    },
+    {
+      "phase": "characterization and identity",
+      "source": "tests/e2e/join_characterize.py",
+      "status": "asserted",
+      "contract": "102captures, two exact repeats, eight identity contexts, all48slots with exact composition and all minima"
+    },
+    {
+      "phase": "paired controls",
+      "source": "tests/e2e/paired_controls_contract.py",
+      "status": "asserted by composition",
+      "contract": "actual pair/write/scope census compared with exact named baseline; zero applicable WB pairs is intentional, not missing coverage"
+    },
+    {
+      "phase": "scientific buffers",
+      "source": "tests/e2e/scientific_buffers.py",
+      "status": "asserted",
+      "contract": "exactly3case results; group/source/checkpoint/write/ownership conditions validated; array/worker-message counts are data-size observations, not assertion counts"
+    },
+    {
+      "phase": "surface overlap",
+      "source": "tests/e2e/surface_collisions.py",
+      "status": "asserted by composition",
+      "contract": "all18named contexts exactly once and named strict signatures; collision/signature observations can shrink under authorization and are not required failure counts"
+    },
+    {
+      "phase": "scene/pixel/grid/download measurements",
+      "status": "not coverage counts",
+      "contract": "geometry/pixel/array/cardinality values used as test comparands or diagnostics; not claims about executed assertion totals"
+    }
+  ],
+  "remainingOrdinaryGaps": 5,
+  "diagnosticOnly": [
+    {
+      "source": "tests/e2e/appearance_autosave.py",
+      "finding": "caseCount=len(rows) is reported without an exact requested-campaign cardinality check; not part of ordinary37; campaigns vary by requested faults/payloads",
+      "disposition": "reported, unchanged"
+    }
+  ],
+  "limits": [
+    "A count guard verifies cardinality, not that every possible behavioral branch is reached.",
+    "A case-array gap is a missing future omission guard; it does not mean the observed cases failed or were absent.",
+    "Suites emitting only qualitative success labels have no declared numeric assertion total; this is not a claim that all37now have checkpoint counters.",
+    "Unit-runner totals are reported by Node/unittest, not fixed cardinality contracts; unit totals can grow.",
+    "No native-input suite was converted, no budget changed and no accepted failure added."
+  ]
+}
