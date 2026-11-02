@@ -79,6 +79,15 @@ def run_matrix(output):
                         check(name + ' mode validation', actual, 'MODE_REQUIRED')
                         actual = page.evaluate('''()=>{const result=VibeMolTesting.setEditSelectionIndices([]);return {count:result.count,selection:VibeMolEdit.getSelection().value.indices};}''')
                         check(name + ' cross-mode empty cleanup', actual, dict(count=0, selection=[]))
+                        assert p.load(page, [dict(name='trajectory.xyz', text=METHANE + METHANE)])['ok']
+                        assert page.evaluate('()=>VibeMolEdit.enter()')['ok']
+                        actual = page.evaluate('''()=>{
+                          const snapshot=()=>JSON.stringify({volume:VibeMolStructure.exportActive().volume,selection:VibeMolEdit.getSelection(),context:VibeMolEdit.context()});
+                          const before=snapshot();let code=null;
+                          try{VibeMolTesting.replaceGestureTerminalHydrogen(0,1,{elementZ:6});}catch(error){code=error.editApi?.code||error.message;}
+                          return {source:VibeMolEdit.context().value.source,code,unchanged:before===snapshot()};
+                        }''')
+                        check(name + ' scientific source cannot enter native replacement', actual, dict(source=dict(kind='xyz', hasGrid=False, trajectory=True, vibration=False, molden=False, twoComponent=False, staticStructure=False), code='SOURCE_NOT_EDITABLE', unchanged=True))
                         check(name + ' page errors', errors, [])
                     except Exception:
                         p.write_failure_artifacts(page, output, name, errors, [])

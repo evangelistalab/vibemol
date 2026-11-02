@@ -49,11 +49,21 @@
       "legacy-dark"
     ],
     "checkpointCounts": {
-      "edit-testing-case": 80
+      "edit-testing-case": 84
     },
     "localPassed": true,
     "residualContexts": 0,
-    "completeGateRequired": true
+    "completeGateRequired": true,
+    "previousLocal80Passed": true,
+    "authoringFailure": {
+      "file": "tests/e2e/edit_testing_adapters.py",
+      "expectedSourceKind": "trajectory",
+      "actualSourceKind": "xyz",
+      "productGuard": "SOURCE_NOT_EDITABLE with unchanged state",
+      "correction": "Assert the full declared kind:xyz/trajectory:true/staticStructure:false source object.",
+      "raw": "out/test-artifacts/edit-testing-risk/local-matrix-84.log",
+      "gateRun": false
+    }
   },
   "construction": {
     "status": "passed",

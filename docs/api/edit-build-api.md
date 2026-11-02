@@ -266,7 +266,7 @@ mismatch, and fails. Smoke prints its counts on either outcome and requires
 three calls/zero substitutions. Historical mixed-run41357980765 observed one
 substitution in three calls; it supplies no acceptance.
 
-The additive adapter matrix requires80 completed cases across both layouts and
+The additive adapter matrix requires84 completed cases across both layouts and
 themes, independently recounted by worker and join. It verifies whole-request
 rejection with geometry/selection/operator state intact, native replacement
 lifetime, rejection before pending cleanup, cleanup/re-resolution and mode
