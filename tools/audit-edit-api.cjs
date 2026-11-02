@@ -8,20 +8,22 @@ function inventory(source){
  const ast=parser.parse(source),rows=[];
  traverse(ast,{FunctionDeclaration(fn){
   const name=fn.node.id?.name;if(!/^(createEditApi|createEditSelectionApi|classifyEditApiSource|editApi|enterEditApi|callEditApiTesting)/.test(name))return;
-  const deps=new Set(),free=new Set(),draftCallbacks=new Set();
+  const deps=new Set(),free=new Set(),draftCallbacks=new Set(),externalServices=new Set();
   fn.traverse({ReferencedIdentifier(p){
+   if(p.node.name==='window'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node&&p.parent.property.name==='VibeMolEdit')externalServices.add('window.VibeMolEdit');
    if(p.node.name==='draft'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node){
     const key=p.parent.computed?p.parent.property.value:p.parent.property.name;
     assert(['vol','minted','added','removed','groups','add','remove','bond','group','operation','nextAtomId'].includes(key),'Unreviewed draft member: '+key);
     if(['add','remove','bond','group','operation','nextAtomId'].includes(key))draftCallbacks.add('draft.'+key);
    }
    const binding=p.scope.getBinding(p.node.name);
+   if(!binding&&p.node.name==='ATOM_Z_TO_DATA')externalServices.add('ATOM_Z_TO_DATA');
    if(binding&&binding.scope!==fn.scope&&!binding.path.findParent(x=>x===fn))free.add(p.node.name);
    if(p.node.name==='deps'&&p.parentPath.isMemberExpression()&&p.parent.object===p.node&&p.parent.property.type==='Identifier')deps.add(p.parent.property.name);
   }});
   free.delete('deps');free.delete(name);
   const callbacks=[...draftCallbacks].sort().concat(name==='editApiRealizeIds'?['allocators.atom','allocators.group','allocators.op','bondId']:['editApiCall','editApiTestingResult'].includes(name)?['action']:[]);
-  rows.push({name,count:deps.size+free.size+callbacks.length,deps:[...deps].sort(),closure:[...free].sort(),...(callbacks.length?{parameterCallbacks:callbacks}:{})});
+  rows.push({name,count:deps.size+free.size+callbacks.length+externalServices.size,deps:[...deps].sort(),closure:[...free].sort(),...(callbacks.length?{parameterCallbacks:callbacks}:{}),...(externalServices.size?{externalServices:[...externalServices].sort()}:{})});
  }});
  return rows;
 }
@@ -34,7 +36,8 @@ function surface(source,{requireProduct=true}={}){
   if(prop.value.type==='ArrowFunctionExpression'&&prop.value.body.type==='CallExpression'&&prop.value.body.callee.name==='callEditApiTesting')wrappers.push(prop.key.name);
   if(prop.key.name==='performSelectionMoveDrag')retained=source.slice(prop.value.start,prop.value.end);
  }
- return {methods,wrappers:wrappers.sort(),testing:testing.properties.map(p=>p.key.name).sort(),retained,testingCode:source.slice(testing.start,testing.end)};
+ return {methods,wrappers:wrappers.sort(),testing:testing.properties.map(p=>p.key.name).sort(),retained,testingCode:source.slice(testing.start,testing.end),
+  testingMembers:Object.fromEntries(testing.properties.map(p=>[p.key.name,source.slice(p.start,p.end)]))};
 }
 function normalizeHydrogenDefaults(code) {
  return code.replace('vol, plan, allocateAtomId = null','vol, plan')
@@ -43,13 +46,20 @@ function normalizeHydrogenDefaults(code) {
   .replace('if (!enabled ||','if (!editAddAdjustHydrogensEnabled ||')
   .replace('applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId)','applyHydrogenPlanToVolume(vol, plan)');
 }
-function additiveApp(source, baseline) {
+function additiveApp(source, baseline, testingChanges={}) {
  const api=surface(source),old=surface(baseline,{requireProduct:false});
- assert.equal(api.testingCode,old.testingCode,'Existing Testing object changed');
+ const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
+ assert.deepEqual(api.testing,old.testing,'Testing members changed');
+ assert.deepEqual(Object.keys(testingChanges).sort(),['projectHaloGhostToClient','replaceGestureTerminalHydrogen','setEditSelectionIndices'],'Exactly the three authorized Testing changes');
+ for(const name of api.testing){
+  const change=testingChanges[name];
+  if(change){assert.equal(hash(old.testingMembers[name]),change.before,name+' original fingerprint');assert.equal(hash(api.testingMembers[name]),change.after,name+' changed fingerprint');}
+  else assert.equal(api.testingMembers[name],old.testingMembers[name],'Existing Testing object changed: '+name);
+ }
  const statements=s=>parser.parse(s).program.body[0].expression.callee.body.body;
  const legacy=statements(baseline).map(n=>baseline.slice(n.start,n.end));
  const preserved=[];let exposed=0;
- const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi)/;
+ const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
  for(const n of statements(source)) {
   if(n.type==='FunctionDeclaration'&&fresh.test(n.id.name))continue;
   if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi')) {
@@ -59,12 +69,12 @@ function additiveApp(source, baseline) {
     &&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolEdit') {
    assert.equal(n.expression.right.name,'editProductApi');exposed++;continue;
   }
-  const code=source.slice(n.start,n.end);
+  const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }
  assert.equal(exposed,1,'Exactly one additive product API exposure');
  assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
- return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:0,retirements:0};
+ return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges)};
 }
 function semantic(source) {
  return JSON.stringify(parser.parse(source),(key,value)=>['start','end','loc','extra','comments','leadingComments','trailingComments','innerComments','tokens'].includes(key)?undefined:value);
@@ -109,9 +119,9 @@ function audit(root=path.resolve(__dirname,'..')) {
  const rows=inventory(source),api=surface(source);
  assert.deepEqual(rows,contract.units,'Input inventory changed; re-cut before expanding');assert(rows.every(r=>r.count<15));
  const kernels=kernelInventory(root,contract.kernelInputs);assert.deepEqual(kernels,contract.kernelInputs,'Reused-kernel inputs changed');assert(kernels.every(r=>r.count<15),'Reused kernels include allocator callbacks in the input count');
- assert.deepEqual(api.methods,contract.methods);assert.deepEqual(api.wrappers,[]);assert.deepEqual(contract.testing.wrappers,[]);assert.deepEqual(contract.testing.retired,[]);
+ assert.deepEqual(api.methods,contract.methods);assert.deepEqual(api.wrappers,contract.testing.wrappers.slice().sort());assert.deepEqual(contract.testing.retired,[]);
  assert.equal(crypto.createHash('sha256').update(api.retained).digest('hex'),contract.testing.retainedNativeDrag.sha256);
- const additive=additiveApp(source,readBase('assets/app/js/app.js')),helperExtensions=additiveHelpers(root,readBase);
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes),helperExtensions=additiveHelpers(root,readBase);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {

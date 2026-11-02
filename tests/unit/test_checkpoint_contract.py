@@ -43,7 +43,7 @@ class CheckpointContractTests(unittest.TestCase):
     def test_current_manifest_declares_new_api_and_existing_exporter_coverage(self):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
         self.assertEqual(manifest['checkpointCounts'], {
-            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'atomic-identity-rejection':24},
+            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'atomic-identity-rejection':24, 'edit-testing-case':80},
             'tests/e2e/smoke.py': {'video-activation':58, 'video-export-completion':2, 'smoke-spinor-launcher':8},
             'tests/e2e/look_references.py': {'registry-readback':500},
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},

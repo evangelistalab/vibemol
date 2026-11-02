@@ -7,7 +7,7 @@ Public `setSelection` accepts only the original `resolveSelection(...).value`.
 Its private identity brand, current source fingerprint and re-resolved predicate
 must all agree. JSON round-trips are deliberately not authority. Native hit
 eligibility is separate: selecting a logically selectable atom through this API
-never proves a click landed. The existing Testing surface is retained byte-for-byte; wrapper conversion is
+never proves a click landed. The additive PR87 retained the Testing surface byte-for-byte; wrapper conversion is
 a separate increment. No native click can be repaired by the product API.
 
 Build and translation are limited to static, structure-only molecules. Resolving
@@ -198,18 +198,21 @@ fallback to a first atom/site is permitted.
 ## Additive boundary and verification
 
 `tools/audit-edit-api.cjs` compares all 2,502 original app statements against
-main c37bb07 and the complete 42-member Testing object byte-for-byte. Zero
-wrappers and zero retirements are permitted. `performSelectionMoveDrag` is
-included in that invariant. Four controls include negative cases rejecting a changed Testing
-getter, an unrelated legacy statement change, and new mutable API state.
+main c37bb07, allowing exactly three fingerprinted Testing member changes:
+`setEditSelectionIndices`, `replaceGestureTerminalHydrogen`, and
+`projectHaloGhostToClient`. The other39 members remain byte-identical. There
+are two validated adapters, no retirements and still42 members.
+`performSelectionMoveDrag` is unchanged. Negative controls reject changed
+unrelated getters/statements, mutable API state, altered declared members and
+missing declarations.
 
 The opt-in helper additions are explicit: plane diagnostics add detailed
 rejection comparands; draft hydrogen allocation avoids consuming permanent IDs;
 explicit hydrogen adjustment avoids inheriting a UI preference. The audit erases
 only these declared opt-in clauses and requires the original default bodies to
 match exactly. Placement exposes existing pure helpers to the new owner, and
-halo sites add a read-only query using the existing mathematics. Existing paths
-never call the product API. No existing suite is converted.
+halo sites add a read-only query using the existing mathematics. The risk-first selection adapter now calls the product API after whole-request
+validation and original native operator cleanup. No existing suite is converted.
 
 The new product-only matrix runs additively after Premerge's original browser
 retires, in one serial fresh context. It validates all twelve methods, all seven
@@ -232,11 +235,22 @@ zero residual differences. `tests/baselines/edit-api-recording.json` records the
 immutable source, artifact hashes and independent comparison; this recording
 does not supply the ordinary merge gate.
 
-## Deferred wrapper batches
+## Risk-first batch and held wrapper remainder
 
 `tests/baselines/edit-api-wrapper-plan.json` enumerates the proposed batches,
 each with at most five changed Testing members including retirements. This is
-an inventory for separate review, not code included in split86a. The
+an inventory for separate review. Batch1 validates the two caller-supplied
+selection arrays first. `setEditSelectionIndices` rejects coercions, duplicate
+and partial requests before cleanup, preserves identities through cleanup, then
+resolves and applies an authentic product selection token. Empty clearing
+remains the existing cross-mode native cleanup, including an empty workspace,
+with its result verified. The terminal-H adapter rejects the unchecked, caller-free
+`selectionAfter` option, validates indices/topology/mode/source before mutation,
+and retains the native replacement and pending-operator lifetime. It is not a
+completed structural API commit.
+
+The remaining batches retain their relative order and stop after batch1 while
+forte2 interchange scope is reviewed. The
 fragment-cue replacement wrapper is isolated: the held version clears selection
 during structural commit and omits legacy anchor restoration. Its existing
 postcondition expects selection[0]; accepting a different contract needs review
@@ -245,10 +259,21 @@ before running that batch, not after a timeout.
 
 The second hydroxyl Smoke request means the first remaining open site for a
 second attachment, not a second ghost ordinal. Template direction0 is already
-occupied and the remaining identities are[1,2,3,4,5]. The projection batch will
-request an available identity explicitly, retain countable substitution events,
-and remove the fallback only after the caller has no substitutions. The helper
-and caller remain unchanged in split86a.
+occupied and the remaining identities are[1,2,3,4,5]. Batch1 explicitly requests
+an available identity and removes the fallback. Each projection logs
+requested/available/resolved values, emits a distinct substitution event on
+mismatch, and fails. Smoke prints its counts on either outcome and requires
+three calls/zero substitutions. Historical mixed-run41357980765 observed one
+substitution in three calls; it supplies no acceptance.
+
+The additive adapter matrix requires80 completed cases across both layouts and
+themes, independently recounted by worker and join. It verifies whole-request
+rejection with geometry/selection/operator state intact, native replacement
+lifetime, rejection before pending cleanup, cleanup/re-resolution and mode
+checks. The earlier Testing publication resolves the product API lazily, with
+an explicit API_NOT_READY error before mutation; no late controller is read
+at publication. All new helper inputs are counted, including the global product
+facade and atomic metadata.
 
 ## Figure causation control
 
@@ -278,9 +303,10 @@ The already-required Smoke coverage also has explicit58 activation, two
 completion and eight Spinor-readback expectations. No native action changed.
 
 The reported-count audit covers all37 ordinary entry points and their support
-phases. Five additional cardinality gaps remain documented, with individual
-assertions intact, in `tests/baselines/checkpoint-count-audit.json`. They are
-coverage-maintenance findings, not accepted ordinary failures or gate waivers.
+phases. The five supplemental gaps now require500 registry readbacks,62 native
+Escape cases,28 Metal cases,24 atomic-identity rejections and four retired-cache
+cases in their matrices, worker and join. Individual assertions remain intact;
+these guards create no accepted ordinary failure or gate waiver.
 See `docs/maintenance/checkpoint-counts.md` for the exact scope and limitations.
 
 `make check` runs ESLint10.14.0 `no-unreachable` and Pylint4.1.3 `W0101` on owned

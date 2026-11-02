@@ -455,6 +455,77 @@
       ]
     },
     {
+      "name": "editApiTestingSnapshot",
+      "count": 4,
+      "deps": [],
+      "closure": [
+        "currentIndex",
+        "editApiFault",
+        "volumes"
+      ],
+      "externalServices": [
+        "window.VibeMolEdit"
+      ]
+    },
+    {
+      "name": "editApiTestingSelectionRequest",
+      "count": 3,
+      "deps": [],
+      "closure": [
+        "editApiData",
+        "editApiFault",
+        "editApiTestingSnapshot"
+      ]
+    },
+    {
+      "name": "editApiTestingSetSelection",
+      "count": 9,
+      "deps": [],
+      "closure": [
+        "editApiDifference",
+        "editApiFault",
+        "editApiSyncSelection",
+        "editApiTestingSelectionRequest",
+        "editApiTestingSnapshot",
+        "finalizePendingNewAtomOperatorSession",
+        "getEditAtomSelection",
+        "setEditAtomSelection"
+      ],
+      "externalServices": [
+        "window.VibeMolEdit"
+      ]
+    },
+    {
+      "name": "editApiTestingReplaceHydrogen",
+      "count": 12,
+      "deps": [],
+      "closure": [
+        "editApiData",
+        "editApiElement",
+        "editApiFault",
+        "editApiShape",
+        "editApiTestingSelectionRequest",
+        "editApiTestingSnapshot",
+        "editApiWritable",
+        "finalizePendingNewAtomOperatorSession",
+        "getEditAtomSelection",
+        "replaceGestureTerminalHydrogenFromAnchor",
+        "resolveGestureTerminalHydrogenReplacement"
+      ],
+      "externalServices": [
+        "ATOM_Z_TO_DATA"
+      ]
+    },
+    {
+      "name": "callEditApiTesting",
+      "count": 2,
+      "deps": [],
+      "closure": [
+        "editApiTestingReplaceHydrogen",
+        "editApiTestingSetSelection"
+      ]
+    },
+    {
       "name": "editApiPointerInterlocks",
       "count": 8,
       "deps": [],
@@ -553,15 +624,39 @@
   "unsupportedWrite": "SOURCE_NOT_EDITABLE",
   "standaloneRotation": "outside initial cut; placement quaternion and attachment/fusion spin supported",
   "testing": {
-    "wrappers": [],
+    "wrappers": [
+      "replaceGestureTerminalHydrogen",
+      "setEditSelectionIndices"
+    ],
     "retired": [],
     "retainedNativeDrag": {
       "name": "performSelectionMoveDrag",
       "sha256": "9f942977ee731d05677f45af4285f8ee49e0af3dd0d880bc842486a04fb8dcb9",
       "reason": "One native Smoke invocation; replacement requires separate approval."
     },
-    "additiveOnly": true,
-    "sourceMustMatchBaseExactly": true
+    "additiveOnly": false,
+    "sourceMustMatchBaseExactly": false,
+    "changes": {
+      "setEditSelectionIndices": {
+        "before": "c733ee534262039e55b48668319393e755732236beb9df9453a9dc5f2de7af09",
+        "after": "2fbdad13e8b10cdeb5bd7686421503f6de8ae8e68f31f74e7c2c82f635fb6e99"
+      },
+      "replaceGestureTerminalHydrogen": {
+        "before": "8fc7040a7e57a98c33061f5a5f543dca3b33e598a945658790c0288efdab6cd5",
+        "after": "0508ccae99f1869aeb5c1080644613dbd32d41623844790552e652606d8ad8e4"
+      },
+      "projectHaloGhostToClient": {
+        "before": "4238cfd3de0eb1f90f072b07102b030eadbbdb5cbb31e016366a6ff582ec7428",
+        "after": "359ec25efcd26353b89e930a14001604c5499fb1ca0a1e79f025cb49109cd4c2"
+      }
+    },
+    "unchangedExcept": [
+      "setEditSelectionIndices",
+      "replaceGestureTerminalHydrogen",
+      "projectHaloGhostToClient"
+    ],
+    "batch": 1,
+    "remainingBatches": "held after risk batch; fragment cue remains isolated; native drag unchanged"
   },
   "ordinaryGate": {
     "passed": 37,
@@ -749,10 +844,12 @@
   "split": {
     "part": "86a additive API only",
     "heldOriginalHead": "041b842d7cedcb4c752ecf8f46d5dceddb3ab3b0",
-    "wrapperSourceUnmodified": true,
+    "wrapperSourceUnmodified": false,
     "retirementsDeferred": 7,
-    "projectionCallerFixDeferred": true,
+    "projectionCallerFixDeferred": false,
     "figureControlRun": 41379282576,
-    "figureControlResult": "unchanged main native matrix passed, including --list-targets; original41314331930 also covered/passed; causation of candidate session error unclassified"
+    "figureControlResult": "unchanged main native matrix passed, including --list-targets; original41314331930 also covered/passed; causation of candidate session error unclassified",
+    "currentPart": "Risk-first batch1 after additive PR87",
+    "riskBatchChangedTestingMembers": 3
   }
 }

@@ -757,14 +757,25 @@ def project_active_atom(page, atom_index: int) -> tuple[float, float]:
     return float(result['x']), float(result['y'])
 
 
+HALO_PROJECTION_COUNTS = {'calls': 0, 'substitutions': 0}
+
+
 def project_halo_ghost(page, ghost_index: int = 0) -> tuple[float, float]:
-    result = page.evaluate(
+    receipt = page.evaluate(
         """(index) => {
-            if (!window.VibeMolTesting || typeof window.VibeMolTesting.projectHaloGhostToClient !== 'function') return null;
-            return window.VibeMolTesting.projectHaloGhostToClient(index);
+            const available = window.VibeMolTesting.getHaloGhostWorlds().map(ghost => ghost.index);
+            const projection = window.VibeMolTesting.projectHaloGhostToClient(index);
+            return {requested: index, available, resolved: projection?.index ?? null, projection};
         }""",
         ghost_index,
     )
+    HALO_PROJECTION_COUNTS['calls'] += 1
+    print('[halo-projection] ' + json.dumps(receipt), flush=True)
+    if receipt['requested'] != receipt['resolved']:
+        HALO_PROJECTION_COUNTS['substitutions'] += 1
+        print('[halo-projection-substitution] ' + json.dumps(receipt), flush=True)
+    assert receipt['requested'] == receipt['resolved'], receipt
+    result = receipt['projection']
     if not isinstance(result, dict) or not result.get('visible'):
         raise AssertionError(f'Could not project halo ghost {ghost_index}: {result!r}')
     return float(result['x']), float(result['y'])
@@ -4745,7 +4756,10 @@ def main() -> int:
                     return Array.isArray(exported.volume?.atoms) ? exported.volume.atoms.length : 0;
                 }"""
             )
-            second_fragment_x, second_fragment_y = project_halo_ghost(page, 0)
+            remaining_ghosts = page.evaluate('() => VibeMolTesting.getHaloGhostWorlds().map(ghost => ghost.index)')
+            print('[halo-remaining-sites] ' + json.dumps(dict(actual=remaining_ghosts, expected='nonempty free direction identities excluding occupied0')), flush=True)
+            assert remaining_ghosts and 0 not in remaining_ghosts, remaining_ghosts
+            second_fragment_x, second_fragment_y = project_halo_ghost(page, remaining_ghosts[0])
             page.mouse.click(second_fragment_x, second_fragment_y)
             page.wait_for_function(
                 """(beforeCount) => {
@@ -5528,12 +5542,15 @@ def main() -> int:
 
             log_step('final runtime error check')
             assert_no_runtime_errors(page_errors, console_errors)
+            assert HALO_PROJECTION_COUNTS == {'calls': 3, 'substitutions': 0}, dict(actual=HALO_PROJECTION_COUNTS, expected={'calls': 3, 'substitutions': 0})
             browser.close()
             return 0
         except Exception:
             write_failure_artifacts(page, ARTIFACT_DIR, 'smoke-failure', page_errors, console_errors)
             browser.close()
             raise
+        finally:
+            print('[halo-projection-summary] ' + json.dumps(dict(actual=HALO_PROJECTION_COUNTS, expected={'calls': 3, 'substitutions': 0})), flush=True)
 
 
 if __name__ == '__main__':

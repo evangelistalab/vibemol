@@ -1,0 +1,143 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate; own complete gate pending",
+  "base": "6795c7a7688b5f03571e74a86fef5593785f021e",
+  "changedTestingMembers": [
+    "setEditSelectionIndices",
+    "replaceGestureTerminalHydrogen",
+    "projectHaloGhostToClient"
+  ],
+  "wrappers": 2,
+  "retirements": 0,
+  "testingMembers": 42,
+  "productMethods": 12,
+  "nativeDragUnchanged": true,
+  "existingE2eConversions": 0,
+  "authorizedCallerCorrection": "Second hydroxyl Smoke attachment explicitly enumerates the first remaining open template identity; native mouse click retained.",
+  "taggedControl": {
+    "ref": "v0.9.5-pre-refactor",
+    "requested": [
+      0,
+      999
+    ],
+    "available": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "resolved": [
+      0
+    ],
+    "result": {
+      "changed": true,
+      "count": 1
+    },
+    "error": null,
+    "geometryUnchanged": true,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "pageErrors": [],
+    "browser": "156.0.8078.4",
+    "disposition": "Historical unchecked request silently resolves to a partial selection; stricter harness validation is intentional, not a newly diagnosed chemistry defect."
+  },
+  "matrix": {
+    "contexts": [
+      "workbench-light",
+      "workbench-dark",
+      "legacy-light",
+      "legacy-dark"
+    ],
+    "checkpointCounts": {
+      "edit-testing-case": 80
+    },
+    "localPassed": true,
+    "residualContexts": 0,
+    "completeGateRequired": true
+  },
+  "construction": {
+    "status": "passed",
+    "stages": 19,
+    "ownBindings": 36,
+    "ownConsumers": 0,
+    "inputs": [
+      {
+        "name": "editApiTestingSnapshot",
+        "count": 4,
+        "deps": [],
+        "closure": [
+          "currentIndex",
+          "editApiFault",
+          "volumes"
+        ],
+        "externalServices": [
+          "window.VibeMolEdit"
+        ]
+      },
+      {
+        "name": "editApiTestingSelectionRequest",
+        "count": 3,
+        "deps": [],
+        "closure": [
+          "editApiData",
+          "editApiFault",
+          "editApiTestingSnapshot"
+        ]
+      },
+      {
+        "name": "editApiTestingSetSelection",
+        "count": 9,
+        "deps": [],
+        "closure": [
+          "editApiDifference",
+          "editApiFault",
+          "editApiSyncSelection",
+          "editApiTestingSelectionRequest",
+          "editApiTestingSnapshot",
+          "finalizePendingNewAtomOperatorSession",
+          "getEditAtomSelection",
+          "setEditAtomSelection"
+        ],
+        "externalServices": [
+          "window.VibeMolEdit"
+        ]
+      },
+      {
+        "name": "editApiTestingReplaceHydrogen",
+        "count": 12,
+        "deps": [],
+        "closure": [
+          "editApiData",
+          "editApiElement",
+          "editApiFault",
+          "editApiShape",
+          "editApiTestingSelectionRequest",
+          "editApiTestingSnapshot",
+          "editApiWritable",
+          "finalizePendingNewAtomOperatorSession",
+          "getEditAtomSelection",
+          "replaceGestureTerminalHydrogenFromAnchor",
+          "resolveGestureTerminalHydrogenReplacement"
+        ],
+        "externalServices": [
+          "ATOM_Z_TO_DATA"
+        ]
+      },
+      {
+        "name": "callEditApiTesting",
+        "count": 2,
+        "deps": [],
+        "closure": [
+          "editApiTestingReplaceHydrogen",
+          "editApiTestingSetSelection"
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Empty clearing is explicit native cross-mode cleanup, including no active structure. Nonempty writes require Edit mode and current selectable IDs.",
+    "Terminal-H replacement retains native pending-operator and hydrogen-adjustment behavior; its caller-free selectionAfter escape hatch is rejected.",
+    "Other legacy helpers retain their documented mode/coercion limits and are not claimed to be validated product adapters.",
+    "Undo remains design-only; remaining wrapper work stops after this batch."
+  ]
+}

@@ -28339,22 +28339,7 @@
       }
       return out;
     },
-    setEditSelectionIndices: (indices) => {
-      const next = Array.isArray(indices)
-        ? indices.map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)
-        : [];
-      if (addAtomOperatorSession && String(addAtomOperatorSession.source || '') !== 'selection') {
-        finalizeAddAtomOperatorSession({ announce: false });
-      }
-      const changed = setEditAtomSelection(next);
-      updateSelectedHalos();
-      updateEditSelectionVisuals();
-      updateEditAdaptiveMenuUi();
-      return {
-        changed: !!changed,
-        count: Array.isArray(getEditAtomSelection()) ? getEditAtomSelection().length : 0,
-      };
-    },
+    setEditSelectionIndices: (indices) => callEditApiTesting('selection', indices),
     copyEditSelectionToClipboard: () => copyEditSelectionToClipboard(),
     pasteEditClipboardSelection: () => pasteEditClipboardSelection(),
     getHaloGhostPreviewKind: () => {
@@ -28385,9 +28370,8 @@
     projectHaloGhostToClient: (ghostIndex = 0) => {
       const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
       if (!(uiState && uiState.visible && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return null;
-      const target = uiState.ghosts.find((ghost) => (ghost.index | 0) === (Number(ghostIndex) | 0))
-        || uiState.ghosts[0]
-        || null;
+      if (!Number.isSafeInteger(ghostIndex)) return null;
+      const target = uiState.ghosts.find((ghost) => ghost.index === ghostIndex) || null;
       if (!(target && target.world)) return null;
       const projected = projectWorldToClient(new THREE.Vector3(
         Number(target.world.x) || 0,
@@ -28569,25 +28553,7 @@
       result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext);
       return result;
     },
-    replaceGestureTerminalHydrogen: (anchorIndex, hydrogenIndex, options = {}) => {
-      const result = {
-        attached: false,
-        anchorIndex: Number(anchorIndex) | 0,
-        hydrogenIndex: Number(hydrogenIndex) | 0,
-        removedAtomId: '',
-        atomIndex: -1,
-      };
-      const replacement = replaceGestureTerminalHydrogenFromAnchor(
-        result.anchorIndex,
-        result.hydrogenIndex,
-        options || {}
-      );
-      if (!replacement) return result;
-      result.attached = true;
-      result.removedAtomId = String(replacement.removedAtomId || '');
-      result.atomIndex = Number(replacement.atomIndex) | 0;
-      return result;
-    },
+    replaceGestureTerminalHydrogen: (anchorIndex, hydrogenIndex, options = {}) => callEditApiTesting('hydrogen', anchorIndex, hydrogenIndex, options),
     attachFragmentFromAnchorIndex: (anchorIndex, offset = null, options = {}) => {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
@@ -32826,6 +32792,85 @@
         editSymmetryAutoBtnEl: els.editSymmetryAutoBtnEl,
       }),
     });
+  }
+
+  function editApiTestingSnapshot() {
+    // Testing is exposed earlier than the product API. Resolve at use and fail
+    // loudly before mutation if a startup callback tries to call the adapter.
+    const api = window.VibeMolEdit;
+    if (!api) editApiFault('API_NOT_READY', 'VibeMolEdit', null, 'constructed product API');
+    const result = api.context();
+    if (!result.ok) throw Object.assign(new Error(result.error.message), { editApi: result.error });
+    return { record: volumes[currentIndex], context: result.value };
+  }
+  function editApiTestingSelectionRequest(indices) {
+    editApiData(indices, 'indices');
+    if (!Array.isArray(indices) || indices.some(i => !Number.isSafeInteger(i) || i < 0)) editApiFault('INVALID_REQUEST', 'indices', indices, 'array of nonnegative integer indices');
+    if (new Set(indices).size !== indices.length) editApiFault('DUPLICATE_REFERENCE', 'indices', indices, 'distinct indices');
+    // Empty clearing is the existing cross-mode cleanup operation, including
+    // empty workspaces. Nonempty writes require the product selection contract.
+    if (!indices.length) return [];
+    const snapshot = editApiTestingSnapshot();
+    if (snapshot.context.mode !== 'edit') editApiFault('MODE_REQUIRED', 'mode', snapshot.context.mode, 'edit');
+    const busy = Object.entries(snapshot.context.interactions).filter(([key, value]) => value && key !== 'pendingBuildOperator');
+    if (busy.length) editApiFault('INTERACTION_BUSY', 'interactions', Object.fromEntries(busy), 'idle apart from the native operator being finalized');
+    return indices.map(index => {
+      const atom = snapshot.context.atoms[index];
+      if (!atom) editApiFault('ATOM_NOT_FOUND', 'indices', index, { availableIndices: snapshot.context.atoms.map(a => a.index) });
+      return atom.id;
+    });
+  }
+  function editApiTestingSetSelection(indices) {
+    const ids = editApiTestingSelectionRequest(indices); // Validate before cleanup can mutate geometry.
+    finalizePendingNewAtomOperatorSession();
+    const before = getEditAtomSelection().slice();
+    if (!ids.length) {
+      setEditAtomSelection([]); editApiSyncSelection();
+    } else {
+      const resolution = window.VibeMolEdit.resolveSelection({ kind: 'ids', ids });
+      if (!resolution.ok) throw Object.assign(new Error(resolution.error.message), { editApi: resolution.error });
+      const applied = window.VibeMolEdit.setSelection(resolution.value);
+      if (!applied.ok) throw Object.assign(new Error(applied.error.message), { editApi: applied.error });
+    }
+    const applied = getEditAtomSelection().slice();
+    const expected = ids.length ? editApiTestingSnapshot().context.atoms.filter(a => ids.includes(a.id)).map(a => a.index) : [];
+    console.log('[edit-testing-selection] ' + JSON.stringify({ requested: indices, requestedIds: ids, expected, applied }));
+    if (editApiDifference(applied, expected)) editApiFault('APPLIED_MISMATCH', 'selection', applied, expected);
+    return { changed: !!editApiDifference(before, applied), count: applied.length };
+  }
+  function editApiTestingReplaceHydrogen(anchorIndex, hydrogenIndex, options = {}) {
+    editApiData(options, 'options');
+    // This Testing-only escape hatch had no caller. A raw selectionAfter can
+    // assert arbitrary post-commit state; native replacement always clears it.
+    editApiShape(options, ['elementZ', 'bondOrder'], 'options');
+    const ids = editApiTestingSelectionRequest([anchorIndex, hydrogenIndex]);
+    const snapshot = editApiTestingSnapshot();
+    editApiWritable({ ...snapshot, context: { ...snapshot.context, interactions: { ...snapshot.context.interactions, pendingBuildOperator: false } } });
+    if (options.elementZ !== undefined) {
+      if (!Number.isSafeInteger(options.elementZ)) editApiFault('ELEMENT_UNKNOWN', 'options.elementZ', options.elementZ, 'integer atomic number');
+      editApiElement(options.elementZ, ATOM_Z_TO_DATA);
+    }
+    if (options.bondOrder !== undefined && ![1, 2, 3].includes(options.bondOrder)) editApiFault('INVALID_REQUEST', 'options.bondOrder', options.bondOrder, [1, 2, 3]);
+    if (!resolveGestureTerminalHydrogenReplacement(snapshot.record.vol, anchorIndex, hydrogenIndex)) editApiFault('NOT_TERMINAL_H', 'hydrogenIndex', hydrogenIndex, { anchorIndex, element: 'H', degree: 1 });
+    finalizePendingNewAtomOperatorSession();
+    const current = editApiTestingSnapshot();
+    const mapped = ids.map(id => current.context.atoms.findIndex(a => a.id === id));
+    editApiTestingSelectionRequest(mapped);
+    const replacement = replaceGestureTerminalHydrogenFromAnchor(mapped[0], mapped[1], options);
+    const applied = getEditAtomSelection().slice();
+    console.log('[edit-testing-hydrogen] ' + JSON.stringify({ requested: { anchorIndex, hydrogenIndex, options }, expectedSelection: [], appliedSelection: applied, replacement }));
+    if (!replacement || applied.length) editApiFault('APPLIED_MISMATCH', 'replacement', { replacement, selection: applied }, { replaced: true, selection: [] });
+    return { attached: true, anchorIndex, hydrogenIndex, removedAtomId: String(replacement.removedAtomId || ''), atomIndex: replacement.atomIndex };
+  }
+  function callEditApiTesting(operation, ...args) {
+    try {
+      if (operation === 'selection') return editApiTestingSetSelection(...args);
+      if (operation === 'hydrogen') return editApiTestingReplaceHydrogen(...args);
+      throw new Error('Unknown Testing adapter: ' + operation);
+    } catch (error) {
+      console.log('[edit-testing-rejection] ' + JSON.stringify({ operation, requested: args, error: error.editApi || { message: error.message } }));
+      throw error;
+    }
   }
 
   function editApiPointerInterlocks() {

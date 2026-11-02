@@ -7,63 +7,17 @@
   "batches": [
     {
       "batch": 1,
-      "name": "selection",
+      "name": "validation-bypass-risk",
       "wrappers": [
-        "getEditSelectionCount",
-        "getEditSelectionIndices",
-        "setEditSelectionIndices"
+        "setEditSelectionIndices",
+        "replaceGestureTerminalHydrogen"
       ],
-      "retirements": [
-        "copyEditSelectionToClipboard",
-        "pasteEditClipboardSelection"
+      "strictReadbacks": [
+        "projectHaloGhostToClient"
       ],
-      "changedTestingMembers": 5,
-      "status": "deferred; independent PR and own complete37/0/37 required",
-      "beforeFirstRun": [
-        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
-        "exercise real cleanup callback side effects rather than mocks omitting them",
-        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
-      ]
-    },
-    {
-      "batch": 2,
-      "name": "build-readback",
-      "wrappers": [
-        "isFuseRingPreviewActive",
-        "getEditBuildState",
-        "getHaloGhostPreviewKind",
-        "getHaloGhostWorlds"
-      ],
-      "retirements": [
-        "getSelectionCoordinationChoices"
-      ],
-      "changedTestingMembers": 5,
-      "status": "deferred; independent PR and own complete37/0/37 required",
-      "beforeFirstRun": [
-        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
-        "exercise real cleanup callback side effects rather than mocks omitting them",
-        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
-      ]
-    },
-    {
-      "batch": 3,
-      "name": "projection",
-      "wrappers": [
-        "projectActiveAtomToClient",
-        "projectHaloGhostToClient",
-        "pickEditHitAtClient"
-      ],
-      "retirements": [
-        "getHaloReplaceTargetWorlds",
-        "projectHaloReplaceTargetToClient"
-      ],
-      "changedTestingMembers": 5,
-      "status": "deferred; independent PR and own complete37/0/37 required",
-      "beforeFirstRun": [
-        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
-        "exercise real cleanup callback side effects rather than mocks omitting them",
-        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
-      ],
+      "retirements": [],
+      "changedTestingMembers": 3,
+      "status": "candidate; own complete37/0/37 required",
       "callerCorrection": {
         "file": "tests/e2e/smoke.py",
         "case": "second hydroxyl attachment",
@@ -78,10 +32,78 @@
         "meaning": "choose a remaining site for a second attachment, not ghost ordinal2",
         "fix": "request an explicitly enumerated available template identity; keep countable mismatch events",
         "fallbackRetirement": "only after the corrected caller has no substitutions and no other executable caller depends on fallback"
-      }
+      },
+      "selectionAuthority": "Raw harness indices validate the whole request then resolve real atom IDs through the product predicate/token path; empty cross-mode cleanup remains native and verified.",
+      "hydrogenAuthority": "Native replacement lifecycle retained; caller-supplied selectionAfter rejected before mutation, with no executable caller lost.",
+      "substitutionExpectation": {
+        "calls": 3,
+        "substitutions": 0
+      },
+      "remainingWork": "Stop wrapper work after this batch; begin forte2 interchange scope report."
+    },
+    {
+      "batch": 2,
+      "name": "selection",
+      "wrappers": [
+        "getEditSelectionCount",
+        "getEditSelectionIndices"
+      ],
+      "retirements": [
+        "copyEditSelectionToClipboard",
+        "pasteEditClipboardSelection"
+      ],
+      "changedTestingMembers": 4,
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "originalBatch": 1
+    },
+    {
+      "batch": 3,
+      "name": "build-readback",
+      "wrappers": [
+        "isFuseRingPreviewActive",
+        "getEditBuildState",
+        "getHaloGhostPreviewKind",
+        "getHaloGhostWorlds"
+      ],
+      "retirements": [
+        "getSelectionCoordinationChoices"
+      ],
+      "changedTestingMembers": 5,
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "originalBatch": 2
     },
     {
       "batch": 4,
+      "name": "projection",
+      "wrappers": [
+        "projectActiveAtomToClient",
+        "pickEditHitAtClient"
+      ],
+      "retirements": [
+        "getHaloReplaceTargetWorlds",
+        "projectHaloReplaceTargetToClient"
+      ],
+      "changedTestingMembers": 4,
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "originalBatch": 3
+    },
+    {
+      "batch": 5,
       "name": "transform-readback",
       "wrappers": [
         "getActiveTransformGesture",
@@ -93,57 +115,59 @@
         "probeSelectionMoveDragStart"
       ],
       "changedTestingMembers": 5,
-      "status": "deferred; independent PR and own complete37/0/37 required",
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
       "beforeFirstRun": [
         "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
         "exercise real cleanup callback side effects rather than mocks omitting them",
         "compare old/new contract and declare every intentional behavior difference before changing an expectation"
-      ]
+      ],
+      "originalBatch": 4
     },
     {
-      "batch": 5,
+      "batch": 6,
       "name": "bond-and-attachment",
       "wrappers": [
         "getBondCarrierSnapshots",
         "getBondSideCueState",
         "getBondCenterCueState",
-        "attachFragmentFromAnchorIndex",
-        "replaceGestureTerminalHydrogen"
+        "attachFragmentFromAnchorIndex"
       ],
       "retirements": [],
-      "changedTestingMembers": 5,
-      "status": "deferred; independent PR and own complete37/0/37 required",
+      "changedTestingMembers": 4,
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
       "beforeFirstRun": [
         "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
         "exercise real cleanup callback side effects rather than mocks omitting them",
         "compare old/new contract and declare every intentional behavior difference before changing an expectation"
-      ]
+      ],
+      "originalBatch": 5
     },
     {
-      "batch": 6,
+      "batch": 7,
       "name": "ghost-activation",
       "wrappers": [
         "triggerHaloGhostByIndex"
       ],
       "retirements": [],
       "changedTestingMembers": 1,
-      "status": "deferred; independent PR and own complete37/0/37 required",
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
       "beforeFirstRun": [
         "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
         "exercise real cleanup callback side effects rather than mocks omitting them",
         "compare old/new contract and declare every intentional behavior difference before changing an expectation"
       ],
-      "risk": "Held implementation also uses structural commit. Audit cue/anchor retention before declaring it equivalent; no unreviewed postcondition change."
+      "risk": "Held implementation also uses structural commit. Audit cue/anchor retention before declaring it equivalent; no unreviewed postcondition change.",
+      "originalBatch": 6
     },
     {
-      "batch": 7,
+      "batch": 8,
       "name": "fragment-cue-replacement",
       "wrappers": [
         "triggerHaloReplaceTargetByAtomIndex"
       ],
       "retirements": [],
       "changedTestingMembers": 1,
-      "status": "deferred; independent PR and own complete37/0/37 required",
+      "status": "held after risk-first batch; no further wrapper work before forte2 interchange scope review",
       "beforeFirstRun": [
         "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
         "exercise real cleanup callback side effects rather than mocks omitting them",
@@ -160,7 +184,8 @@
           ]
         },
         "disposition": "must be reviewed explicitly; no expectation or gate change authorized by this plan"
-      }
+      },
+      "originalBatch": 7
     }
   ],
   "retirementCensus": {
@@ -184,5 +209,36 @@
     "failed": 0,
     "total": 37,
     "accepted": []
+  },
+  "riskInventory": {
+    "uncheckedCallerSelectionArrays": [
+      {
+        "member": "setEditSelectionIndices",
+        "behavior": "coerces/filter requests and owner silently drops invalid indices; not a claim that out-of-range atoms persist"
+      },
+      {
+        "member": "replaceGestureTerminalHydrogen",
+        "behavior": "options.selectionAfter bypasses complete selection-request validation; no executable caller supplies it"
+      }
+    ],
+    "otherLegacyMutators": [
+      {
+        "members": [
+          "pasteEditClipboardSelection",
+          "attachFragmentFromAnchorIndex",
+          "triggerHaloGhostByIndex",
+          "triggerHaloReplaceTargetByAtomIndex"
+        ],
+        "limits": "native topology/anchor/site checks generate their selections; mode guards and coercion are legacy limits, not a declaration that these are validated API adapters"
+      },
+      {
+        "members": [
+          "probeSelectionMoveDragStart",
+          "performSelectionMoveDrag"
+        ],
+        "limits": "native scope resolution and drag controller; direct test entry has implicit mode preconditions; performSelectionMoveDrag expressly unchanged"
+      }
+    ],
+    "scope": "Risk batch closes the two arbitrary selection-array paths; the native legacy helpers are not all promoted or declared validated."
   }
 }
