@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "pr": 88,
+  "runId": 41507894572,
+  "attempt": 1,
+  "head": "cd3fe1369bd78a3c6b23ed397d24121f7dd66771",
+  "base": "6795c7a7688b5f03571e74a86fef5593785f021e",
+  "tree": "f266070d31083ccea93b6823eae09b0f92162834",
+  "merge": "03f174130dc9570978fd214c1a4b6d36714c45e1",
+  "completeConjunctionVerified": true,
+  "independentChecks": 183,
+  "browser": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "allExecutedOnce": true,
+    "actualFailingWorkflows": []
+  },
+  "checkpointCounts": {
+    "tests/e2e/premerge.py": {
+      "edit-api": 115,
+      "edit-api-rejection": 26,
+      "atomic-identity-rejection": 24
+    },
+    "tests/e2e/smoke.py": {
+      "video-activation": 58,
+      "video-export-completion": 2,
+      "smoke-spinor-launcher": 8
+    },
+    "tests/e2e/look_references.py": {
+      "registry-readback": 500
+    },
+    "tests/e2e/axis_gizmo.py": {
+      "escape-native-case": 62
+    },
+    "tests/e2e/edit_tool.py": {
+      "metal-native-case": 28
+    },
+    "tests/e2e/build_panel.py": {
+      "retired-cache-case": 4
+    }
+  },
+  "goldens": {
+    "captures": 102,
+    "runs": 2,
+    "exactRepeat": true,
+    "unchanged": true
+  },
+  "identity": {
+    "slots": 48,
+    "contexts": 8,
+    "workbench": {
+      "live": 47,
+      "knownAbsent": 1
+    },
+    "legacy": {
+      "live": 48,
+      "knownAbsent": 0
+    },
+    "allMinima": true
+  },
+  "exporters": [
+    {
+      "prefix": "trajectory",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    },
+    {
+      "prefix": "vibration",
+      "downloads": 6,
+      "naturalCompletion": true,
+      "earlyStop": true,
+      "pointerCompletion": true,
+      "spaceCompletion": true,
+      "enterActivation": true,
+      "clickOnlyActivation": true,
+      "freshSaveAssertions": 4
+    }
+  ],
+  "Spinor": {
+    "readbacks": 8,
+    "eligibleNativeClicks": 4
+  },
+  "units": {
+    "javascript": 522,
+    "python": 213,
+    "sourceControls": 22
+  },
+  "WebKit": true,
+  "construction": {
+    "stages": 18,
+    "app": 553,
+    "consumers": 24
+  },
+  "Looks": {
+    "seconds": 1931.02,
+    "minutes": 32.18366666666667,
+    "materialFamilyPaths": {
+      "Studio": true,
+      "Properties": true
+    },
+    "riskRemainsOpen": true
+  },
+  "wallMinutes": 45.28333333333333,
+  "archive": {
+    "archive": "out/test-artifacts/checkpoint-cardinalities/ci-41507894572-immutable-evidence.tar.gz",
+    "bytes": 54273725,
+    "sha256": "d6ee468c239494b85f34f3e9b32d570a66ef08766a488abe6f66cef24d9abe7f"
+  },
+  "ciRerunPerformed": false,
+  "productionChanged": false,
+  "diagnosticsSupplyAcceptance": false
+}
