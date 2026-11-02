@@ -1,9 +1,13 @@
 """Validated product Edit API matrix; no existing native-click test is converted."""
 import json
+from collections import Counter
 from pathlib import Path
 import premerge as p
 from surface_shadows import settle
 from assertion_contract import deadline_diagnostics, wait_for_budget
+from checkpoint_contract import MANIFEST, require_counts
+
+COVERAGE = Counter()
 
 def ready(page,predicate,*,arg=None,site='state',readback=None,expected=True):
  # Reuse the existing 30s readiness policy/180s ceiling and shared stall/wall
@@ -23,6 +27,7 @@ METHANE='5\nAPI\nC 0 0 0\nH 1 0 0\nH -1 0 0\nH 0 1 0\nH 0 0 1\n'
 
 def compare(label,actual,expected):
  print('[edit-api] '+json.dumps(dict(case=label,actual=actual,expected=expected)),flush=True)
+ COVERAGE['edit-api'] += 1
  assert actual==expected,dict(case=label,actual=actual,expected=expected)
 
 def result(page,expression):
@@ -76,6 +81,7 @@ def run(page,url):
  }''')
  for row in negative:
   print('[edit-api-rejection] '+json.dumps(row),flush=True)
+  COVERAGE['edit-api-rejection'] += 1
   compare('atomic-'+row['operation'],dict(code=row['actual']['error']['code'],mutation=row['actual']['mutation']['state'],unchanged=row['unchanged']),dict(code=row['expected'],mutation='none',unchanged=True))
  compare('public-methods',sorted(page.evaluate('()=>Object.keys(VibeMolEdit)')),sorted(['enter','context','resolveSelection','getSelection','setSelection','clearSelection','copySelection','listBuildCatalog','listBuildSites','validateBuild','applyBuild','translate']))
  for selector,code in [({'kind':'labels','labels':['C3']},'ELEMENT_INDEX_OUT_OF_RANGE'),({'kind':'element','element':'O'},'ELEMENT_ABSENT'),({'kind':'ids','ids':['missing']},'ATOM_NOT_FOUND')]:
@@ -137,6 +143,7 @@ def run(page,url):
 
 
 def run_matrix(output):
+ COVERAGE.clear()
  output=Path(output);output.mkdir(parents=True,exist_ok=False)
  with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
   browser=pw.chromium.launch(headless=True)
@@ -150,7 +157,9 @@ def run_matrix(output):
     finally:context.close()
     compare('residual-contexts-'+name,len(browser.contexts),0)
   finally:browser.close()
- (output/'summary.json').write_text(json.dumps(dict(passed=True,residualContexts=0)))
+ expected=json.loads(MANIFEST.read_text())['checkpointCounts']['tests/e2e/premerge.py']
+ require_counts(dict(COVERAGE),expected,suite='tests/e2e/premerge.py')
+ (output/'summary.json').write_text(json.dumps(dict(passed=True,residualContexts=0,checkpointCounts=dict(COVERAGE))))
 
 if __name__=='__main__':
  import argparse

@@ -22,7 +22,13 @@ jobs:
       - name: Install Python dependencies
         run: python -m pip install --upgrade pip && pip install -r api/requirements-ci.lock
       - name: Fast checks
-        run: make check
+        env:
+          ESLINT: ${{ runner.temp }}/unreachable-lint/node_modules/.bin/eslint
+        run: |
+          pip install -r tools/requirements-lint.lock
+          npm install --prefix "$RUNNER_TEMP/unreachable-lint" --no-save --ignore-scripts eslint@10.14.0
+          echo "ESLINT=$RUNNER_TEMP/unreachable-lint/node_modules/.bin/eslint" >> "$GITHUB_ENV"
+          make check
       - name: Unit tests
         run: make test-unit
       - name: Install pinned construction-audit tooling

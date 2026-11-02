@@ -61,5 +61,22 @@
     "changeDeferredTo": "projection wrapper batch; keep fallback until caller correction is verified."
   },
   "undo": "design-only",
-  "e2eConversions": 0
+  "e2eConversions": 0,
+  "apiOnlyCoverageOmission": {
+    "runId": 41384810185,
+    "head": "2e85651447b2328e3a880cebe8c84c8d838d2bef",
+    "ordinary": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "completeAcceptance": false,
+    "cause": "new matrix call after premerge return0",
+    "actualApiComparands": 0,
+    "expectedApiComparands": 115,
+    "actualAtomicRejections": 0,
+    "expectedAtomicRejections": 26,
+    "archiveSha256": "01690ba03ba04fdd9d2541b18aef7e414f05766d7ae5398dd39a57a7333f1a43",
+    "disposition": "direct human authorizes corrected harness candidate with real count gates and unreachable lint; no production/capture change"
+  }
 }

@@ -30,7 +30,7 @@
     "tests/baselines/api-surface-delta.json",
     ".github/workflows/record-release-baseline.yml"
   ],
-  "finalSourceRelationship": "The API-only source is frozen at c9d8283. Only promoted goldens, summary and recording provenance follow this source; every runtime and capture path remains byte-identical. The first ordinary gate runs on the complete final commit.",
+  "finalSourceRelationship": "Runtime and capture paths remain byte-identical to c9d8283. Post-recording changes promote baselines and add harness invocation/count/lint guards, negative controls and their documentation. The corrected candidate requires its own complete first automatic ordinary run.",
   "ordinaryAcceptance": false,
   "legacyTestingMembersUnmodified": 42,
   "wrappers": 0,

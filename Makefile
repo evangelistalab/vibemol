@@ -84,6 +84,7 @@ version-assets:
 	python3 tools/sync_asset_versions.py
 
 check:
+	python3 tools/check_unreachable.py
 	node --check tools/audit-edit-api.cjs
 	node --check tests/unit/edit-api-audit.test.cjs
 	python3 -m py_compile tests/e2e/edit_api.py

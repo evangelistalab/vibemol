@@ -260,6 +260,36 @@ Neither control reproduces the session error seen on held041b842; causation
 remains unclassified. No Figure code or deadline was changed. These diagnostics
 supply no ordinary merge acceptance.
 
+## Checkpoint and reachability gates
+
+The first API-only run41384810185 reported37/0/37 but is rejected: the new
+matrix invocation followed `return 0`, so none of its115 checkpoints ran.
+The corrected entry point invokes it after retiring the original browser and
+before returning. A unit test executes that entry point with mock browser
+ownership and requires one matrix invocation after retirement.
+
+`browser-suite.json` now declares115 `[edit-api]` records and26
+`[edit-api-rejection]` records. The matrix counts its actual comparisons before
+writing success. The worker and join independently count raw JSON records;
+zero, missing, extra or malformed evidence fails, even when the subprocess
+returns0. The report preserves `processExitCode` separately from the count-based
+suite outcome, and workers continue collecting the rest of their assigned suites.
+The already-required Smoke coverage also has explicit58 activation, two
+completion and eight Spinor-readback expectations. No native action changed.
+
+The reported-count audit covers all37 ordinary entry points and their support
+phases. Five additional cardinality gaps remain documented, with individual
+assertions intact, in `tests/baselines/checkpoint-count-audit.json`. They are
+coverage-maintenance findings, not accepted ordinary failures or gate waivers.
+See `docs/maintenance/checkpoint-counts.md` for the exact scope and limitations.
+
+`make check` runs ESLint10.14.0 `no-unreachable` and Pylint4.1.3 `W0101` on owned
+JavaScript files and live Python harness/tool files. Ruff/Pyflakes does not
+provide this rule. Negative controls require both linters to reject statements
+after return/throw/raise/break/continue, and Pylint must reject the exact original
+premerge omission. Historical evidence and vendored/generated files are excluded;
+embedded JavaScript strings and inline HTML scripts are outside this file lint.
+
 Expected downstream work, not this increment: a validated API can reduce canvas
 choreography in non-input setup. Native picking and gesture checks still test
 native input. Undo remains design-only, and the command-bus program stays held.
