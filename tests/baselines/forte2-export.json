@@ -12,6 +12,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "casPartition",
       "count": 0,
+      "services": [],
       "closure": [],
       "deps": [],
       "callbacks": []
@@ -20,6 +21,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "buildAvasArguments",
       "count": 1,
+      "services": [],
       "closure": [
         "casPartition"
       ],
@@ -30,6 +32,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Copy",
       "count": 0,
+      "services": [],
       "closure": [],
       "deps": [],
       "callbacks": []
@@ -38,6 +41,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Freeze",
       "count": 0,
+      "services": [],
       "closure": [],
       "deps": [],
       "callbacks": []
@@ -46,6 +50,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Fault",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Copy"
       ],
@@ -56,6 +61,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Shape",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Fault"
       ],
@@ -66,6 +72,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Data",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Fault"
       ],
@@ -76,6 +83,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "prepareRequest",
       "count": 3,
+      "services": [],
       "closure": [
         "forte2Data",
         "forte2Fault",
@@ -88,6 +96,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Value",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Fault"
       ],
@@ -98,6 +107,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "assertContext",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Fault"
       ],
@@ -108,6 +118,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "resolveSelections",
       "count": 4,
+      "services": [],
       "closure": [
         "assertContext",
         "forte2Fault",
@@ -122,6 +133,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "atomRanges",
       "count": 0,
+      "services": [],
       "closure": [],
       "deps": [],
       "callbacks": []
@@ -130,6 +142,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "createGeometryEncoder",
       "count": 1,
+      "services": [],
       "closure": [
         "forte2Fault"
       ],
@@ -140,6 +153,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "assembleExport",
       "count": 4,
+      "services": [],
       "closure": [
         "atomRanges",
         "buildAvasArguments",
@@ -154,6 +168,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "forte2Result",
       "count": 2,
+      "services": [],
       "closure": [
         "forte2Freeze"
       ],
@@ -166,6 +181,7 @@
       "file": "assets/app/js/forte2-format.js",
       "name": "createForte2Controller",
       "count": 12,
+      "services": [],
       "closure": [
         "assembleExport",
         "assertContext",
@@ -188,6 +204,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "normalize",
       "count": 2,
+      "services": [],
       "closure": [
         "componentsFor",
         "defaults"
@@ -199,6 +216,7 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "setOptions",
       "count": 2,
+      "services": [],
       "closure": [
         "defaults",
         "state"
@@ -210,9 +228,11 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "validation",
       "count": 9,
+      "services": [
+        "global.VibeMolForte2Format"
+      ],
       "closure": [
         "atoms",
-        "global",
         "optionsFor",
         "previewBasis",
         "projection",
@@ -228,9 +248,11 @@
       "file": "assets/app/js/calculations-model.js",
       "name": "generate",
       "count": 6,
+      "services": [
+        "global.VibeMolForte2Format"
+      ],
       "closure": [
         "atoms",
-        "global",
         "optionsFor",
         "planeSpecs",
         "specs",
@@ -242,10 +264,13 @@
     {
       "file": "assets/app/js/calculations-panel.js",
       "name": "create",
-      "count": 8,
-      "closure": [
-        "global"
+      "count": 10,
+      "services": [
+        "global.VibeMolCalculationsModel",
+        "global.VibeMolFloatingPanels",
+        "global.VibeMolUI"
       ],
+      "closure": [],
       "deps": [
         "getContour",
         "getRecord",
@@ -261,6 +286,7 @@
       "file": "assets/app/js/app.js",
       "name": "readForte2MinaoSnapshot",
       "count": 4,
+      "services": [],
       "closure": [
         "calculationsModel",
         "editApiDifference",
@@ -341,5 +367,23 @@
     "checkpoints": 68,
     "sessionImportAndNativeWriteBothOutcomesLogged": true,
     "rawLogSha256": "1f8809432841df3422d74e3dd77a0884878e80915e66400b634ba4b05a61b918"
+  },
+  "appStateMetric": {
+    "scope": "app IIFE variable-let bindings; class declarations excluded",
+    "variableLetBindings": 261,
+    "declarationLines": 250,
+    "change": 0
+  },
+  "construction": {
+    "status": "passed",
+    "stages": 20,
+    "newAppBindings": 18,
+    "newModuleBindings": 115,
+    "consumers": [
+      "assets/app/js/calculations-model.js",
+      "assets/app/js/calculations-panel.js",
+      "assets/app/js/session-format.js"
+    ],
+    "earlyReads": 0
   }
 }

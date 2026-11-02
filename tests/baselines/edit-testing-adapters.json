@@ -214,5 +214,32 @@
     "webkit": true,
     "construction": true,
     "immutableArchiveSha256": "242ccc3c81e5ed9fc4ea75cdb38fffa646fa9b48fb0e842565c981503bb8be31"
+  },
+  "postMergeMain": {
+    "runId": 41524815734,
+    "head": "b1de909288d8ba85da017f18654771eca54547d0",
+    "completeConjunctionVerified": true,
+    "independentChecks": 191,
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37,
+      "allExecutedOnce": true,
+      "actualFailingWorkflows": []
+    },
+    "looks": {
+      "seconds": 1962.3,
+      "minutes": 32.705,
+      "materialFamilyPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "riskRemainsOpen": true
+    },
+    "wallMinutes": 45.06666666666667,
+    "bothExporters": true,
+    "projectionCalls": 3,
+    "projectionSubstitutions": 0,
+    "noCiRerun": true
   }
 }
