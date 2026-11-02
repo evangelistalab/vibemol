@@ -32,6 +32,8 @@ jobs:
           VIBEMOL_BABEL_ROOT: ${{ runner.temp }}/construction-audit/node_modules/@babel
         run: |
           mkdir -p out/test-artifacts/construction-order
+          node --test tests/unit/edit-api-audit.test.cjs
+          node tools/audit-edit-api.cjs --out out/test-artifacts/construction-order/edit-api.json
           node tools/audit-construction-order.cjs --self-test
           node --test tests/unit/capability-audit.test.cjs tests/unit/annotation-store-audit.test.cjs
           node tools/audit-capabilities.cjs --out out/test-artifacts/construction-order/capabilities.json

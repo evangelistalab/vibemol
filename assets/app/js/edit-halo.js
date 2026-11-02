@@ -590,6 +590,30 @@
       };
     }
 
+    // Semantic sites reuse the halo mathematics without projection, hover state,
+    // cached UI orientation, or mutation of the per-record frame cache.
+    function listBuildSites(vol, atomIndex, request) {
+      const atom = vol?.atoms?.[atomIndex], env = computeLocalEnvironment(vol, atomIndex);
+      if (!atom || !env) return { error: 'ANCHOR_INVALID', actual: atomIndex };
+      const inference = inferAtomGeometry(vol, atomIndex, { getAtomWorld, preferredGeometryId: request.geometryId || getAtomCoordinationGeometryId(vol, atomIndex) });
+      const profile = getCoordinationProfile(atom.Z), geometry = inference && getCoordinationGeometry(inference.geometryId);
+      if (!profile || !geometry) return { sites: [], replacements: [], choices: [], reason: 'no coordination geometry' };
+      if (request.geometryId && inference.geometryId !== request.geometryId) return { error: 'COORDINATION_UNSUPPORTED', actual: request.geometryId, expected: inference.compatibleGeometryIds };
+      const template = normalizeTemplate(geometry.vertices.map(v => applyQuatToVec(v, request.frameQuaternion)));
+      const aligned = alignTemplateToOccupied(template, env.occupiedDirs) || { rotatedTemplate: template, assignment: [] };
+      const partition = partitionAlignedVertices(aligned.rotatedTemplate, aligned.assignment, inference.currentBonds, inference.fullBondCount, inference.lonePairs, geometry.id);
+      const origin = getAtomWorld(vol, atomIndex);
+      const sites = partition.ghostIndices.map(index => {
+        const direction = vecNormalize(aligned.rotatedTemplate[index]);
+        return { index, direction, position: vecAdd(origin, vecScale(direction, request.distance)) };
+      });
+      const replacements = env.neighborIndices.filter(index => vol.atoms[index]?.Z === 1 && env.visibleBonds.filter(b => b.a === index || b.b === index).length === 1)
+        .map(index => ({ atomId: vol.atoms[index].id, position: getAtomWorld(vol, index) }));
+      return { geometryId: geometry.id, sites, replacements,
+        choices: profile.choices.filter(c => (inference.compatibleGeometryIds || []).includes(c.geometryId)).map(c => ({ geometryId: c.geometryId, label: c.label, cn: c.cn })),
+        reason: sites.length ? '' : 'no open site' };
+    }
+
     function buildDescriptor(atomIndex) {
       const record = getActiveRecord();
       const vol = record && record.vol;
@@ -973,6 +997,7 @@
 
     return Object.freeze({
       refresh,
+      listBuildSites,
       clear,
       handlePointerMove,
       handlePointerDown,

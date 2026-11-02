@@ -1247,6 +1247,9 @@
     }
 
     return {
+      appendPlacedMoleculeBonds,
+      appendTemplateTopologyBonds,
+      getFuseRingOmittedLocalIndices,
       recordFragmentOperation,
       clearMoleculePlacementPreview,
       startMoleculePlacementAtWorld,

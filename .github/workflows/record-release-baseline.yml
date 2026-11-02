@@ -11,14 +11,14 @@ on:
         description: Recording contract
         type: choice
         default: release-0.10.1
-        options: [release-0.10.1, declared-api-removal]
+        options: [release-0.10.1, declared-api-removal, declared-api-delta]
 
 permissions:
   contents: read
 
 jobs:
   record:
-    if: inputs.mode == 'declared-api-removal' || github.ref == 'refs/heads/codex/release-0-10-1-ci'
+    if: (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta') || github.ref == 'refs/heads/codex/release-0-10-1-ci'
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
@@ -35,7 +35,7 @@ jobs:
       - name: Install ordinary CI's pinned dependencies
         run: pip install -r api/requirements-ci.lock
       - name: Declared-delta negative controls
-        if: inputs.mode == 'declared-api-removal'
+        if: (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta')
         run: python -m unittest discover -s tests/unit -p 'test_api_surface_recording.py'
       - name: Resolve Playwright version
         id: playwright
@@ -57,7 +57,7 @@ jobs:
           source_root="$RUNNER_TEMP/release-source"
           mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
           git archive "$VIBEMOL_EXPECTED_SOURCE_COMMIT" | tar -x -C "$source_root"
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/characterize.py --source-root "$source_root" --record-api-delta tests/baselines/api-surface-delta.json --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
           else
             python tests/e2e/characterize.py --source-root "$source_root" --record-release-tag v0.10.1 --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
@@ -89,7 +89,7 @@ jobs:
           VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
           VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
         run: |
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/api_surface_recording.py out/test-artifacts/release-baselines --declaration tests/baselines/api-surface-delta.json --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
           else
             python tests/e2e/compare_ci_baselines.py out/test-artifacts/release-baselines --baseline-ref v0.10.1 --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"

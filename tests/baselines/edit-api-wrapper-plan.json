@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+  "sourceBranch": "codex/validated-edit-build-api",
+  "sourceHead": "041b842d7cedcb4c752ecf8f46d5dceddb3ab3b0",
+  "apiOnlyPart": "zero conversions/retirements; all42 Testing members retained byte-identically",
+  "batches": [
+    {
+      "batch": 1,
+      "name": "selection",
+      "wrappers": [
+        "getEditSelectionCount",
+        "getEditSelectionIndices",
+        "setEditSelectionIndices"
+      ],
+      "retirements": [
+        "copyEditSelectionToClipboard",
+        "pasteEditClipboardSelection"
+      ],
+      "changedTestingMembers": 5,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ]
+    },
+    {
+      "batch": 2,
+      "name": "build-readback",
+      "wrappers": [
+        "isFuseRingPreviewActive",
+        "getEditBuildState",
+        "getHaloGhostPreviewKind",
+        "getHaloGhostWorlds"
+      ],
+      "retirements": [
+        "getSelectionCoordinationChoices"
+      ],
+      "changedTestingMembers": 5,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ]
+    },
+    {
+      "batch": 3,
+      "name": "projection",
+      "wrappers": [
+        "projectActiveAtomToClient",
+        "projectHaloGhostToClient",
+        "pickEditHitAtClient"
+      ],
+      "retirements": [
+        "getHaloReplaceTargetWorlds",
+        "projectHaloReplaceTargetToClient"
+      ],
+      "changedTestingMembers": 5,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "callerCorrection": {
+        "file": "tests/e2e/smoke.py",
+        "case": "second hydroxyl attachment",
+        "currentRequested": 0,
+        "actualAvailable": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "meaning": "choose a remaining site for a second attachment, not ghost ordinal2",
+        "fix": "request an explicitly enumerated available template identity; keep countable mismatch events",
+        "fallbackRetirement": "only after the corrected caller has no substitutions and no other executable caller depends on fallback"
+      }
+    },
+    {
+      "batch": 4,
+      "name": "transform-readback",
+      "wrappers": [
+        "getActiveTransformGesture",
+        "getTransformDistanceGuideClient",
+        "getTransformAngleGuideClient"
+      ],
+      "retirements": [
+        "pickTransformValueLabelAtClient",
+        "probeSelectionMoveDragStart"
+      ],
+      "changedTestingMembers": 5,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ]
+    },
+    {
+      "batch": 5,
+      "name": "bond-and-attachment",
+      "wrappers": [
+        "getBondCarrierSnapshots",
+        "getBondSideCueState",
+        "getBondCenterCueState",
+        "attachFragmentFromAnchorIndex",
+        "replaceGestureTerminalHydrogen"
+      ],
+      "retirements": [],
+      "changedTestingMembers": 5,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ]
+    },
+    {
+      "batch": 6,
+      "name": "ghost-activation",
+      "wrappers": [
+        "triggerHaloGhostByIndex"
+      ],
+      "retirements": [],
+      "changedTestingMembers": 1,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "risk": "Held implementation also uses structural commit. Audit cue/anchor retention before declaring it equivalent; no unreviewed postcondition change."
+    },
+    {
+      "batch": 7,
+      "name": "fragment-cue-replacement",
+      "wrappers": [
+        "triggerHaloReplaceTargetByAtomIndex"
+      ],
+      "retirements": [],
+      "changedTestingMembers": 1,
+      "status": "deferred; independent PR and own complete37/0/37 required",
+      "beforeFirstRun": [
+        "log requested and actual/expected independently for structure, selection IDs/indices/count, tool/mode, cue armed state and pinned anchor, hints and mutation outcome",
+        "exercise real cleanup callback side effects rather than mocks omitting them",
+        "compare old/new contract and declare every intentional behavior difference before changing an expectation"
+      ],
+      "knownBehaviorChange": {
+        "legacy": "commitFragmentAttachAtWorld retains/reselects the pinned anchor",
+        "heldCandidate": "applyBuild clears transient selection and the wrapper omits anchor restoration",
+        "existingExpectedPostconditions": {
+          "atomCount": 8,
+          "cuePressed": true,
+          "selection": [
+            0
+          ]
+        },
+        "disposition": "must be reviewed explicitly; no expectation or gate change authorized by this plan"
+      }
+    }
+  ],
+  "retirementCensus": {
+    "executableExternalCallers": {
+      "copyEditSelectionToClipboard": 0,
+      "pasteEditClipboardSelection": 0,
+      "getSelectionCoordinationChoices": 0,
+      "getHaloReplaceTargetWorlds": 0,
+      "projectHaloReplaceTargetToClient": 0,
+      "pickTransformValueLabelAtClient": 0,
+      "probeSelectionMoveDragStart": 0
+    },
+    "scope": "product, api, tests/e2e and tests/unit executable sources; comments and baseline inventories are not callers",
+    "rule": "All seven are already caller-free at main; pair with their owning batch and recheck zero actual callers before retirement."
+  },
+  "retainedNativeMethod": "performSelectionMoveDrag; unchanged until separately approved native replacement",
+  "undo": "design-only",
+  "e2eConversions": 0,
+  "ordinaryGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "accepted": []
+  }
+}

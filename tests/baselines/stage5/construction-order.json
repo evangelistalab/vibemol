@@ -179,6 +179,21 @@
         "applyAtomCoordinateFrame"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Additive validated Edit API; legacy Testing surface unchanged",
+      "before": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/calculations-model.js",
+        "assets/app/js/edit-placement.js",
+        "assets/app/js/edit-halo.js"
+      ],
+      "recheck": [
+        "applyAutomaticHydrogenAdjustmentToVolume",
+        "applyHydrogenPlanToVolume"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

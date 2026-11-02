@@ -84,6 +84,9 @@ version-assets:
 	python3 tools/sync_asset_versions.py
 
 check:
+	node --check tools/audit-edit-api.cjs
+	node --check tests/unit/edit-api-audit.test.cjs
+	python3 -m py_compile tests/e2e/edit_api.py
 	node --check tests/e2e/scientific_buffers.js
 	python3 -m py_compile tests/e2e/scientific_buffers.py
 	node --check api/figure-runner.mjs

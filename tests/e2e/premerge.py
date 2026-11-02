@@ -1009,6 +1009,9 @@ def main():
             browser.close()
     return 0
 
+    from edit_api import run_matrix as edit_api_matrix
+    edit_api_matrix(ARTIFACTS/'validated-edit-api')
+
 
 if __name__ == '__main__':
     raise SystemExit(main())
