@@ -121,8 +121,9 @@
         for (const plane of calculations.planes) requireValue(Array.isArray(plane) && plane.length >= 3 && plane.length <= 2000
           && plane.every(atomId => id(atomId) && atomId.length <= 128), 'invalid calculation plane.');
         requireValue(Object.entries(calculations.options).every(([key, value]) => key.length <= 40
-          && (typeof value === 'boolean' || (typeof value === 'string' && value.length <= 200)
-            || (finite(value) && Math.abs(value) <= 1000000))), 'invalid calculation parameter.');
+          && (key === 'cas' ? Array.isArray(value) && value.length === 2 && value.every(n => finite(n) && Math.abs(n) <= 1000000)
+            : typeof value === 'boolean' || (typeof value === 'string' && value.length <= 200)
+              || (finite(value) && Math.abs(value) <= 1000000))), 'invalid calculation parameter.');
       }
       const measurements = source.recordState.measurements;
       if (measurements !== undefined) {

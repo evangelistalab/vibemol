@@ -61,6 +61,7 @@
     // Older sessions did not record whether a count was edited. Preserve their
     // explicit value rather than silently replacing a possible user choice.
     if (typeof value.options?.total === 'number' && typeof value.options?.totalFollowsSelection !== 'boolean') options.totalFollowsSelection = false;
+    if (Object.hasOwn(value.options || {}, 'cas')) options.cas = Array.isArray(value.options.cas) ? value.options.cas.slice() : value.options.cas;
     const selections = [];
     for (const row of Array.isArray(value.selections) ? value.selections.slice(0, 2000) : []) {
       if (typeof row?.id !== 'string' || row.id.length > 128 || selections.some(r => r.id === row.id)) continue;
@@ -87,6 +88,7 @@
   function setOptions(record, patch) {
     const options = state(record).options;
     for (const key of Object.keys(defaults)) if (typeof patch[key] === typeof defaults[key]) options[key] = patch[key];
+    if (Object.hasOwn(patch, 'cas')) options.cas = Array.isArray(patch.cas) ? patch.cas.slice() : patch.cas;
     if (Object.prototype.hasOwnProperty.call(patch, 'total') && patch.totalFollowsSelection !== true) options.totalFollowsSelection = false;
   }
   function optionsFor(record, projected) {
@@ -291,30 +293,26 @@
     else if(o.method==='separate'){
       if(!(Number.isInteger(o.docc)&&o.docc>=0&&Number.isInteger(o.uocc)&&o.uocc>=0))errors.push('Occupied and virtual counts must be nonnegative integers.');
       else if(o.docc+o.uocc+(rohf?Math.abs(twiceMs):0)<=0)errors.push('Select at least one active orbital, including any ROHF singly occupied orbitals.');
-      // forte2 AVAS._check_parameters currently uses signed 2*ms here.
-      else if(rohf&&twiceMs<0&&o.docc+o.uocc+twiceMs<=0)errors.push('For negative ms, forte2 AVAS requires occupied + virtual + 2 ms > 0. Use Total selection or positive ms.');
     }
-    else if(!['cumulative','cutoff','total','separate'].includes(o.method))errors.push('Choose an AVAS selection method.');
+    else if(o.method==='cas'){
+      const result=global.VibeMolForte2Format.buildAvasArguments({options:o,subspace:[],electrons});
+      errors.push(...result.errors);warnings.push(...result.warnings,...result.deferredChecks||[]);
+    }
+    else if(!['cumulative','cutoff','total','separate','cas'].includes(o.method))errors.push('Choose an AVAS selection method.');
     if(projected.error)errors.push(projected.error);
     return {errors,warnings};
   }
   function generate(record) {
     const {errors}=validation(record);if(errors.length)return '';
-    const o=optionsFor(record), ghf=o.reference==='GHF', rohf=o.reference==='ROHF', mf=ghf?'mf':o.reference.toLowerCase(), multiplier=ghf?2:1;
+    const o=optionsFor(record), ghf=o.reference==='GHF', rohf=o.reference==='ROHF', mf=ghf?'mf':o.reference.toLowerCase();
     const xyz=atoms(record).map(a=>`${a.element} ${a.point.map(v=>v.toFixed(10)).join(' ')}`).join('\n');
     const quote=JSON.stringify;
-    const parameters=[`    subspace=${quote(specs(record))},`];
-    if(state(record).planes.length)parameters.push(`    subspace_pi_planes=${quote(planeSpecs(record))},`);
-    parameters.push(`    selection_method=${quote(o.method)},`);
-    if(o.method==='cumulative')parameters.push(`    sigma=${o.sigma},`);
-    if(o.method==='cutoff')parameters.push(`    cutoff=${o.cutoff},`);
-    if(o.method==='total')parameters.push(`    num_active=${o.total*multiplier},`);
-    if(o.method==='separate')parameters.push(`    num_active_docc=${o.docc*multiplier},`,`    num_active_uocc=${o.uocc*multiplier},`);
-    parameters.push(`    diagonalize=${o.diagonalize?'True':'False'},`);
-    const imports=ghf?'AVAS, CI, GHF, RelCISolver, System':`AVAS, CISolver, MCOptimizer, ${o.reference}, State, System`;
+    const parameters=global.VibeMolForte2Format.buildAvasArguments({options:o,subspace:specs(record),planes:planeSpecs(record),
+      electrons:atoms(record).reduce((sum,a)=>sum+a.Z,0)-o.charge}).lines;
+    const imports=ghf?'AVAS, CI, GHF, RelCISolver, System, X2CParams':`AVAS, CISolver, MCOptimizer, ${o.reference}, State, System`;
     const downstream=ghf?'ci = CI(RelCISolver(nel=mf.nel))(avas)\nci.run()':
       `ci_solver = CISolver(State(nel=${mf}.nel, multiplicity=${rohf?2*Math.abs(o.ms)+1:1}, ms=${rohf?o.ms:'0.0'}))\nmc = MCOptimizer(ci_solver)(avas)\nmc.run()`;
-    return `from forte2 import ${imports}\n\nxyz = """\n${xyz}\n"""\n\nsystem = System(\n    xyz=xyz,\n    basis_set=${quote(o.basis)},\n    auxiliary_basis_set=${quote(o.auxiliary)},\n    minao_basis_set=${quote(o.minao)},${ghf?'\n    x2c_type="so",':''}\n)\n\n${mf} = ${o.reference}(charge=${o.charge}${rohf?`, ms=${o.ms}`:''})(system)\n\navas = AVAS(\n${parameters.join('\n')}\n)(${mf})\n\n${downstream}\n`;
+    return `from forte2 import ${imports}\n\nxyz = """\n${xyz}\n"""\n\nsystem = System(\n    xyz=xyz,\n    basis_set=${quote(o.basis)},\n    auxiliary_basis_set=${quote(o.auxiliary)},\n    minao_basis_set=${quote(o.minao)},${ghf?'\n    x2c=X2CParams(x2c_type="so"),':''}\n)\n\n${mf} = ${o.reference}(charge=${o.charge}${rohf?`, ms=${o.ms}`:''})(system)\n\navas = AVAS(\n${parameters.join('\n')}\n)(${mf})\n\n${downstream}\n`;
   }
   global.VibeMolCalculationsModel=Object.freeze({defaults,loadBasis,setBasis,shellsFor,previewBasis,componentsFor,state,normalize,setOptions,optionsFor,atoms,defaultShell,periodFor,selectedIds,setSelectedAtoms,selectionContext,toggleAtom,choiceFor,selectShell,selectComponent,selectShells,selectComponents,removeOrbitals,planeEligible,fitPlane,addPlane,prune,specs,planeSpecs,projection,validation,generate});
 })(window);

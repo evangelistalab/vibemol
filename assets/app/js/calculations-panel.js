@@ -46,7 +46,20 @@
       if(choices)for(const [value,name]of choices){const o=document.createElement('option');o.value=value;o.textContent=name;input.append(o);}
       else input.type=type;
       if(type==='number'){input.step=key==='ms'?'0.5':['sigma','cutoff'].includes(key)?'0.01':'1';if(key!=='ms')input.min=key==='charge'?'-200':'0';}
-      input.onchange=()=>{const record=deps.getRecord();if(!record)return;model.setOptions(record,{[key]:type==='checkbox'?input.checked:type==='number'?Number(input.value):input.value.trim()});changed(false);};
+      input.onchange=()=>{
+        const record=deps.getRecord();if(!record)return;
+        if(key==='casElectrons'||key==='casOrbitals'){
+          const pair=Array.isArray(model.state(record).options.cas)?model.state(record).options.cas.slice():[0,0];
+          pair[key==='casElectrons'?0:1]=input.value===''?null:Number(input.value);model.setOptions(record,{cas:pair});
+        }else{
+          if(key==='method'&&input.value==='cas'&&!Object.hasOwn(model.state(record).options,'cas')){
+            const old=model.optionsFor(record),socc=old.reference==='ROHF'?Math.abs(2*old.ms):0,multiplier=old.reference==='GHF'?2:1;
+            model.setOptions(record,{cas:[2*old.docc+socc,(old.docc+old.uocc)*multiplier+socc]});
+          }
+          model.setOptions(record,{[key]:type==='checkbox'?input.checked:type==='number'?Number(input.value):input.value.trim()});
+        }
+        changed(false);
+      };
       if(type==='checkbox'){
         const toggle=document.createElement('label');toggle.className='vm-toggle';input.setAttribute('role','switch');
         const thumb=document.createElement('span');thumb.className='vm-toggle__thumb';thumb.setAttribute('aria-hidden','true');
@@ -59,7 +72,7 @@
     field('ms','Spin projection (ms)','number');
     fields.get('ms').setAttribute('aria-describedby','avas-reference-note');
     $('[data-reference-note]').id='avas-reference-note';
-    field('method','Selection method','select',[['cumulative','Cumulative'],['cutoff','Cutoff'],['separate','Separate occupied / virtual'],['total','Total']]);
+    field('method','Selection method','select',[['cumulative','Cumulative'],['cutoff','Cutoff'],['separate','Separate occupied / virtual'],['total','Total'],['cas','Complete active space (CAS)']]);
     for(const [key,title]of [['sigma','Sigma'],['cutoff','Cutoff'],['docc','Occupied'],['uocc','Virtual'],['total','Total active']])field(key,title,'number');
     const totalHelp=document.createElement('div'),totalNote=document.createElement('p');
     totalNote.id='avas-total-note';totalNote.className='vm-helper-text';
@@ -78,15 +91,20 @@
       const record=deps.getRecord(),s=model.state(record),all=model.atoms(record),projection=model.projection(record),options=model.optionsFor(record,projection);
       if(lastRecord!==record){lastRecord=record;signature='';planeChecked.clear();}
       $('[data-active]').textContent=record?`Active: ${record.name}`:'Load a structure to choose atomic functions.';
-      const rohf=options.reference==='ROHF';
-      for(const [key,input]of fields){input.disabled=!record||(key==='ms'&&!rohf);if(document.activeElement!==input){if(input.type==='checkbox')input.checked=options[key];else input.value=options[key];}}
+      const rohf=options.reference==='ROHF',cas=options.method==='cas';
+      // Absent until explicitly selected: old sessions/default capture DOM stay unchanged.
+      if(cas&&!fields.has('casElectrons')){field('casElectrons','CAS electrons','number');field('casOrbitals','CAS orbitals','number');}
+
+      for(const [key,input]of fields){input.disabled=!record||(key==='ms'&&!rohf);if(document.activeElement!==input){if(input.type==='checkbox')input.checked=options[key];else input.value=key==='casElectrons'?options.cas?.[0]??'':key==='casOrbitals'?options.cas?.[1]??'':options[key];}}
       fields.get('total').closest('.vm-field-row').querySelector('label').textContent=rohf?'Additional active':'Total active';
       fields.get('docc').closest('.vm-field-row').querySelector('label').textContent=rohf?'Doubly occupied':'Occupied';
-      const applicable={sigma:'cumulative',cutoff:'cutoff',docc:'separate',uocc:'separate',total:'total'};
-      for(const [key,method]of Object.entries(applicable))fields.get(key).closest('.vm-field-row').hidden=s.options.method!==method;
+      const applicable={sigma:'cumulative',cutoff:'cutoff',docc:'separate',uocc:'separate',total:'total',casElectrons:'cas',casOrbitals:'cas'};
+      for(const [key,method]of Object.entries(applicable))if(fields.has(key))fields.get(key).closest('.vm-field-row').hidden=s.options.method!==method;
       totalHelp.hidden=options.method!=='total';resetTotal.hidden=options.totalFollowsSelection;resetTotal.disabled=!record;
       totalNote.textContent=options.totalFollowsSelection?'Follows the selected subspace, including π planes, until edited.':`Custom count. The selected subspace suggests ${projection.functions.length}.`;
-      $('[data-reference-note]').textContent=s.options.reference==='GHF'?'Active counts are entered as spatial pairs and doubled in the generated spinor input.':rohf?
+      if(fields.has('casOrbitals'))fields.get('casOrbitals').closest('.vm-field-row').querySelector('label').textContent=options.reference==='GHF'?'CAS spinors':'CAS orbitals';
+      $('[data-reference-note]').textContent=cas?
+        (options.reference==='GHF'?'CAS specifies total electrons and spinors directly; these counts are not doubled.':rohf?'CAS specifies total electrons and spatial orbitals, including every singly occupied orbital for either sign of ms.':'CAS specifies total electrons and spatial orbitals; occupied orbitals are doubly occupied.')+' SCF virtual-orbital availability is checked by forte2.':s.options.reference==='GHF'?'Active counts are entered as spatial pairs and doubled in the generated spinor input.':rohf?
         'ms = (Nα − Nβ)/2, in steps of 0.5. The generated CI state uses S = |ms| (multiplicity 2|ms| + 1). Counts are spatial orbitals, additional to all singly occupied orbitals, which AVAS always includes.':
         'RHF uses a singlet reference. Counts are spatial orbitals.';
       const context=model.selectionContext(record);

@@ -10,7 +10,7 @@ const plain=x=>JSON.parse(JSON.stringify(x));
 const elements={0:{symbol:'X'},1:{symbol:'H'},6:{symbol:'C'},8:{symbol:'O'}};
 
 function harness(){
- const context=loadGlobalModules(['assets/app/js/edit-utils.js','assets/app/js/calculations-model.js'],{globals:{ATOM_Z_TO_DATA:elements}});
+ const context=loadGlobalModules(['assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js'],{globals:{ATOM_Z_TO_DATA:elements}});
  let record={vol:{kind:'xyz',units:'angstrom',atoms:[{id:'a',Z:6,x:0,y:0,z:0},{id:'b',Z:6,x:1,y:0,z:0},{id:'c',Z:1,x:0,y:1,z:0}],bonds:[],annotations:{builder:{byAtomId:{}}},fragmentOps:[]}},mode='edit',busy={};
  let selected=[],writes=0,syncs=0;
  const read=factories.reader({getRecord:()=>record,capture:v=>plain({atoms:v.atoms,bonds:v.bonds,annotations:v.annotations,fragmentOps:v.fragmentOps,units:v.units}),elements,bohr:.529177210903,mode:()=>mode,fragments:factories.fragments,interlocks:()=>busy});

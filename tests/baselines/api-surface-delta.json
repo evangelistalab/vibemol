@@ -1,27 +1,24 @@
 {
   "schemaVersion": 2,
-  "baseCommit": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
-  "baselineGzipSha256": "94d13334a0f5cef41eac0925ad81993af0566ac6969f3481367eaa1e185a1903",
+  "baseCommit": "b1de909288d8ba85da017f18654771eca54547d0",
+  "baselineGzipSha256": "2387e1bee5b4ed7f0037d6ff5a3ed841942c9df1eb4afee31db7fa459f1ba397",
   "captures": 102,
   "delta": [
     {
       "operation": "add-api-namespace",
-      "namespace": "VibeMolEdit",
+      "namespace": "VibeMolForte2Format",
       "members": [
-        "applyBuild",
-        "clearSelection",
-        "context",
-        "copySelection",
-        "enter",
-        "getSelection",
-        "listBuildCatalog",
-        "listBuildSites",
-        "resolveSelection",
-        "setSelection",
-        "translate",
-        "validateBuild"
+        "buildAvasArguments",
+        "createForte2Controller"
+      ]
+    },
+    {
+      "operation": "add-api-namespace",
+      "namespace": "VibeMolForte2",
+      "members": [
+        "export"
       ]
     }
   ],
-  "authority": "Direct human split authorization: additive twelve-method VibeMolEdit API only; all original Testing members retained byte-identically. CI-record exactly 102 namespace additions with 1224 member strings and zero other captured changes; no comparison waiver."
+  "authority": "Direct human export-only forte2 interchange and PR283 CAS selector authorization. Exactly two namespace additions in each of 102 captures (204 additions / 306 member strings); no other capture changes. The existing declared-delta recording mode enforces zero residual difference."
 }

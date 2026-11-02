@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { loadGlobalModules } from './load-global-module.mjs';
 const {VibeMolCalculationsModel:M,VibeMolMinaoRenderer:R}=loadGlobalModules([
-  'assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/calculations-model.js','assets/app/js/minao-renderer.js']);
+  'assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js','assets/app/js/minao-renderer.js']);
 M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url),'utf8')));
 M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz.json',import.meta.url),'utf8')),'cc-pvtz');
 const plain=x=>JSON.parse(JSON.stringify(x));
@@ -146,7 +146,7 @@ test('older saved explicit totals are preserved and automatic totals resolve aft
  const r=ring();pick(r,0,1);const saved=plain(r.calculations);
  saved.options.total=11;delete saved.options.totalFollowsSelection;r.calculations=M.normalize(saved);
  assert.equal(M.optionsFor(r).total,11);assert.equal(M.optionsFor(r).totalFollowsSelection,false);
- const {VibeMolCalculationsModel:fresh}=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/calculations-model.js']);
+ const {VibeMolCalculationsModel:fresh}=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js']);
  saved.options.totalFollowsSelection=true;r.calculations=fresh.normalize(saved);
  assert.equal(fresh.optionsFor(r).total,11); // Loading must not discard a saved value.
  fresh.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url),'utf8')));
@@ -195,7 +195,7 @@ test('ROHF validates half-integer spin, charge parity and electron bounds only f
 test('ROHF can select singly occupied orbitals alone with separate counts, respecting forte2 validation',()=>{
  const r=record([[7,0,0,0]]);pick(r,0);M.setOptions(r,{reference:'ROHF',ms:.5,method:'separate',docc:0,uocc:0});
  assert.match(M.generate(r),/num_active_docc=0,/);assert.match(M.generate(r),/num_active_uocc=0,/);
- M.setOptions(r,{ms:-.5});assert.equal(M.generate(r),'');assert.match(M.validation(r).errors.join(' '),/For negative ms, forte2 AVAS/);
+ M.setOptions(r,{ms:-.5});assert.deepEqual(plain(M.validation(r).errors),[]);assert.match(M.generate(r),/num_active_docc=0/);
  M.setOptions(r,{docc:2});assert.ok(M.generate(r));
  M.setOptions(r,{reference:'RHF',charge:1,docc:0});assert.equal(M.generate(r),'');
  M.setOptions(r,{reference:'ROHF',ms:0});assert.equal(M.generate(r),'');
