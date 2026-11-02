@@ -55,7 +55,7 @@ Two API units reach 14, rather than the proposal's projected maximum of 12:
   complete strict-request and context checks count alongside query execution.
 
 The reused hydrogen-adjustment kernel also reaches 14: 13 closure reads plus
-the explicit draft allocator callback. All three are at the present ceiling: the rule is strictly below 15, so neither has
+the explicit draft allocator callback. All three are at the present ceiling: the rule is strictly below 15, so none has
 room for another input. Future forte2 or Build work must re-cut before adding a
 capability, for example separating query validation from execution, or atom
 attachment from fragment staging. No such expansion is included here.
@@ -225,6 +225,12 @@ capture twice; all four serializations must agree. The promoted goldens then
 require a complete first ordinary37/0/37 run, exact repeat, all48 identity slots
 in eight contexts/all minima, units/WebKit/construction, both exporters and both
 Looks material-family paths. No version mapping or comparison waiver exists.
+
+Recording run41382051475 at source c9d8283 passed all four serializations with
+exactly those 102 namespace additions, 1,224 member strings, zero removals and
+zero residual differences. `tests/baselines/edit-api-recording.json` records the
+immutable source, artifact hashes and independent comparison; this recording
+does not supply the ordinary merge gate.
 
 ## Deferred wrapper batches
 

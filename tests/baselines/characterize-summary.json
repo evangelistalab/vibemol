@@ -1,8 +1,8 @@
 {
   "baseline": {
-    "commit": "57f4dff0fd4b6aa994bac744cdc9fa80c9af3cbf",
-    "tag": "declared-api-removal",
-    "appSha256": "4744507bd4e8e6baf7fd7047531e6961bc2dad2cf3ba6487d93219a63dda73fb",
+    "commit": "c9d8283692f47993ecda7f899cdd82a6e57e1c08",
+    "tag": "declared-api-delta",
+    "appSha256": "00ec2d86cd85443d75c1564a7d46cb588608164d55d33c6c4419f8c7718511b4",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -18,10 +18,10 @@
       0
     ],
     "metrics": {
-      "lines": 31894,
-      "functionDeclarations": 1172,
+      "lines": 32919,
+      "functionDeclarations": 1229,
       "letDeclarations": 250,
-      "constDeclarations": 570
+      "constDeclarations": 591
     },
     "captureProvenance": {
       "os": "Linux",
@@ -31,9 +31,9 @@
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41136902724",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41382051475",
         "runAttempt": "1",
-        "runnerImage": "ubuntu26"
+        "runnerImage": "ubuntu24"
       }
     }
   },
@@ -60,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "da10418951c07cb0931c6520f15afe470923fbd78765a5c6b3945346cf7ef335",
-      "da10418951c07cb0931c6520f15afe470923fbd78765a5c6b3945346cf7ef335"
+      "34e5a3b73197c3354595bcd02a2c85b29853ff20dedda9d2a1fb685a63de8479",
+      "34e5a3b73197c3354595bcd02a2c85b29853ff20dedda9d2a1fb685a63de8479"
     ]
   },
   "api": {
@@ -254,6 +254,20 @@
       "EXCLUSIVE_WINDOW_IDS",
       "WINDOW_IDS",
       "createDisplayWindowsController"
+    ],
+    "VibeMolEdit": [
+      "applyBuild",
+      "clearSelection",
+      "context",
+      "copySelection",
+      "enter",
+      "getSelection",
+      "listBuildCatalog",
+      "listBuildSites",
+      "resolveSelection",
+      "setSelection",
+      "translate",
+      "validateBuild"
     ],
     "VibeMolEditCommands": [
       "createAtomSnapshotCommand"
@@ -820,7 +834,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "8083ee20d7e7c409a7092aac96510af9797f9affbe8af047722e9aeb24ae942a",
+  "goldenSha256": "78e36ecd49c3f66c7c9366a15e56e3f8a0ee05384853d03ab40302ede0885e5a",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
