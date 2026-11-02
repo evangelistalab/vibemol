@@ -8,7 +8,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT/'tests/e2e'))
-from checkpoint_contract import require_checkpoint_counts, require_counts
+from checkpoint_contract import require_checkpoint_counts, require_counts, require_phase_counts
 
 
 class CheckpointContractTests(unittest.TestCase):
@@ -43,9 +43,28 @@ class CheckpointContractTests(unittest.TestCase):
     def test_current_manifest_declares_new_api_and_existing_exporter_coverage(self):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
         self.assertEqual(manifest['checkpointCounts'], {
-            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26},
+            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'atomic-identity-rejection':24},
             'tests/e2e/smoke.py': {'video-activation':58, 'video-export-completion':2, 'smoke-spinor-launcher':8},
+            'tests/e2e/look_references.py': {'registry-readback':500},
+            'tests/e2e/axis_gizmo.py': {'escape-native-case':62},
+            'tests/e2e/edit_tool.py': {'metal-native-case':28},
+            'tests/e2e/build_panel.py': {'retired-cache-case':4},
         })
+
+    def test_all_five_phase_guards_reject_zero_short_and_extra_counts(self):
+        for suite,marker,count in [('look_references','registry-readback',500),('axis_gizmo','escape-native-case',62),
+                                   ('edit_tool','metal-native-case',28),('premerge','atomic-identity-rejection',24),
+                                   ('build_panel','retired-cache-case',4)]:
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertTrue(require_phase_counts({marker:count},'tests/e2e/'+suite+'.py',marker)['passed'])
+            for actual in (0,count-1,count+1):
+                with self.subTest(marker=marker,actual=actual), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
+                    require_phase_counts({marker:actual},'tests/e2e/'+suite+'.py',marker)
+
+    def test_phase_cannot_hide_missing_marker_or_use_another_phases_records(self):
+        for actual in ({'edit-api':115},{'edit-api':115,'atomic-identity-rejection':24},{}):
+            with self.subTest(actual=actual), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
+                require_phase_counts(actual,'tests/e2e/premerge.py','edit-api','edit-api-rejection')
 
 
 if __name__ == '__main__':

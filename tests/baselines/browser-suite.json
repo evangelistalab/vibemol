@@ -89,12 +89,25 @@
   "checkpointCounts": {
     "tests/e2e/premerge.py": {
       "edit-api": 115,
-      "edit-api-rejection": 26
+      "edit-api-rejection": 26,
+      "atomic-identity-rejection": 24
     },
     "tests/e2e/smoke.py": {
       "video-activation": 58,
       "video-export-completion": 2,
       "smoke-spinor-launcher": 8
+    },
+    "tests/e2e/look_references.py": {
+      "registry-readback": 500
+    },
+    "tests/e2e/axis_gizmo.py": {
+      "escape-native-case": 62
+    },
+    "tests/e2e/edit_tool.py": {
+      "metal-native-case": 28
+    },
+    "tests/e2e/build_panel.py": {
+      "retired-cache-case": 4
     }
   }
 }

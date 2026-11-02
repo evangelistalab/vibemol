@@ -14,8 +14,10 @@ Preserve process exit separately; collect every other assigned suite once.
 `make check` includes ESLint `no-unreachable:error` and Python Pylint `W0101`;
 the Python rule is not supplied by Ruff/Pyflakes. Historical evidence and vendors
 are excluded. The exact rejected premerge source is a negative linter control.
-The count audit and its five remaining ordinary cardinality gaps are recorded in
-`tests/baselines/checkpoint-count-audit.json`; they are not accepted failures.
+The five ordinary cardinality gaps are closed with actual completion records:
+registry500, native Escape62, Metal28, atomic-identity24 and retired-cache4. Each
+matrix, worker and join asserts its declared counts. The audit history remains
+in`tests/baselines/checkpoint-count-audit.json`; these are not accepted failures.
 The37/0/37 expectation, intentionally empty accepted set, runtime/capture bytes,
 construction gate and all existing native-input contracts remain unchanged.
 

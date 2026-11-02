@@ -16,9 +16,14 @@ The manifest requires these raw JSON record cardinalities:
 | --- | --- | ---: |
 | Premerge | edit-api | 115 |
 | Premerge | edit-api-rejection | 26 |
+| Premerge | atomic-identity-rejection | 24 |
 | Smoke | video-activation | 58 |
 | Smoke | video-export-completion | 2 |
 | Smoke | smoke-spinor-launcher | 8 |
+| Look references | registry-readback | 500 |
+| Axis gizmo | escape-native-case | 62 |
+| Edit tool | metal-native-case | 28 |
+| Build panel | retired-cache-case | 4 |
 
 The API matrix asserts its actual counters before writing a successful summary.
 Workers count records independently, preserve the real `processExitCode`, and
@@ -34,18 +39,21 @@ support phases. Actual observations are pinned to run41384810185. Existing
 characterization/identity, scientific-buffer cases, paired-control census and
 surface contexts already assert their relevant counts or named compositions.
 
-Five other ordinary phases lack a completed-cardinality guard:
+The five ordinary gaps identified by the audit are now guarded in each matrix, worker and join:
 
-| Phase | Observed coverage | Gap |
+| Phase | Required completion records | Guard |
 | --- | --- | --- |
-| Appearance registry | 10 states ×50 keys | Reported500 is a formula, not an executed-comparison counter. |
-| Native Escape | 62 cases | Case array has no exact completion-count assertion; the separate1248-cell table is guarded. |
-| Metal popover | 28 cases | Per-case assertions exist, but no exact completed-case count. |
-| Atomic identity | 24 rejected inputs | Rejection records are checked individually, without an exact completion count. |
-| Retired-cache UI | 4 cases | Layout/theme cases are checked individually, without an exact completion count. |
+| Appearance registry | 500 | Actual completed key comparisons, replacing the former formula. |
+| Native Escape | 62 | One record after every completed native press case; the1248-cell table stays separately guarded. |
+| Metal popover | 28 | One ordinary native case completion record per context/viewport. |
+| Atomic identity | 24 | One record after every fully checked rejected-input case. |
+| Retired-cache UI | 4 | One record after each fully checked layout/theme case and context retirement. |
 
-These are omission risks, not claims that the observed cases failed or were
-absent. Their existing behavior is unchanged in this PR. The separately invoked
+These guards close omission risks; the observed original cases did not fail and
+were not absent. Existing functional assertions, waits and native behavior are
+unchanged. Each matrix checks only its explicitly named phase markers, while
+the worker and join require the whole entry point inventory. A missing phase
+cannot disappear from its own expected set by reporting an empty counter. The separately invoked
 autosave fault campaign likewise reports `caseCount` without a requested-campaign
 count guard; it is not ordinary37 coverage and varies by requested campaign.
 

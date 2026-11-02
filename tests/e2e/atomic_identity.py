@@ -1,6 +1,7 @@
 """Input-boundary #5 regression; failure reports must precede any live replacement."""
 import json
 import premerge as p
+from checkpoint_contract import require_phase_counts
 
 
 def cube(z,two=False):
@@ -38,6 +39,7 @@ def run(page,dialogs):
                 print('[atomic-identity] '+json.dumps(row),flush=True)
                 assert actual==expected,row
                 cases.append(row)
+                print('[atomic-identity-rejection] '+json.dumps(row),flush=True)
     result=p.load(page,[dict(name='dummy.xyz',text='1\nCatalogued Dummy\nX 0 0 0\n')])
     actual=dict(ok=result['ok'],Z=page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms[0].Z'))
     expected=dict(ok=True,Z=0)
@@ -50,7 +52,9 @@ def run(page,dialogs):
     session=dict(actual=dict(Z=readback),expected=dict(Z=0),restoreResult=restored)
     print('[atomic-identity] '+json.dumps(dict(case='Dummy session round-trip',**session)),flush=True)
     assert session['actual']==session['expected'],session
-    report=dict(passed=True,rejectedCases=cases,dummy=dict(actual=actual,expected=expected),session=session)
+    counts={'atomic-identity-rejection':len(cases)}
+    require_phase_counts(counts,'tests/e2e/premerge.py','atomic-identity-rejection')
+    report=dict(passed=True,rejectedCases=cases,dummy=dict(actual=actual,expected=expected),session=session,checkpointCounts=counts)
     (p.ARTIFACTS/'atomic-identity.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 

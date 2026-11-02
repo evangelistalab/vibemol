@@ -16,6 +16,7 @@ from pathlib import Path
 import premerge as p
 from helpers import run_http_server, wait_for_presented_state, write_failure_artifacts
 from playwright.sync_api import sync_playwright
+from checkpoint_contract import require_phase_counts
 
 
 def run_matrix(browser, source, output, url, diagnostic=False):
@@ -181,6 +182,8 @@ def run_matrix(browser, source, output, url, diagnostic=False):
                         row['committedModes']=committed
                     row['passed']=not diagnostic
                     report['cases'].append(row)
+                    if not diagnostic:
+                        print('[metal-native-case] '+json.dumps(dict(context=label,passed=True,actual=row['committedModes'],expected=['force_covalent','force_dative','no_bonds','auto'])),flush=True)
                     (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
                 if not diagnostic:
                     metal.click()
@@ -205,6 +208,9 @@ def run_matrix(browser, source, output, url, diagnostic=False):
                 raise
             finally:context.close()
     report['sourceUnchanged']=all(hashlib.sha256((source/f).read_bytes()).hexdigest()==h for f,h in hashes.items())
+    if not diagnostic:
+        report['checkpointCounts']={'metal-native-case':len(report['cases'])}
+        require_phase_counts(report['checkpointCounts'],'tests/e2e/edit_tool.py','metal-native-case')
     report['status']='diagnostic-complete' if diagnostic else 'passed'
     (output/'result.json').write_text(json.dumps(report,indent=2)+'\n')
     assert report['sourceUnchanged']

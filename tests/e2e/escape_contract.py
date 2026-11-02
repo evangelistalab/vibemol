@@ -12,6 +12,7 @@ from pathlib import Path
 import premerge as p
 from helpers import wait_for_presented_state
 from assertion_contract import numbers_close
+from checkpoint_contract import require_phase_counts
 
 ROOT = Path(__file__).resolve().parents[2]
 EVENT_OBSERVER = '''window.addEventListener('keydown', event => {
@@ -89,6 +90,8 @@ def press(page, report, label, action, *, detail=None, selection=None, mode=None
         same=all(numbers_close(left[part][axis],right[part][axis],rel_tol=0,abs_tol=1e-6)
                  for part in ['camera','target','up'] for axis in 'xyz')
         check(same and left['mode']==right['mode'],left,right,label+' camera unchanged (existing axis tolerance)')
+    print('[escape-native-case] '+json.dumps(dict(label=label,actual=actual['actions'],expected=expected,passed=True)),flush=True)
+    report['checkpointCounts']['escape-native-case'] += 1
     return actual
 
 
@@ -107,7 +110,7 @@ def prepare(page, mode):
 def escape_regression(browser,url):
     served,identity=observed_source()
     report=dict(**identity,browserVersion=browser.version,playwrightVersion=importlib.metadata.version('playwright'),
-                cases=[],pageerrors=[],passed=False)
+                cases=[],pageerrors=[],passed=False,checkpointCounts={'escape-native-case':0})
     output=p.ARTIFACTS/'escape-contract';output.mkdir(parents=True,exist_ok=True)
     try:
         for legacy in [False,True]:
@@ -213,6 +216,7 @@ def escape_regression(browser,url):
                 p.write_failure_artifacts(page,output,'escape-contract-failure',report['pageerrors'],[])
                 raise
             finally:context.close()
+        require_phase_counts(report['checkpointCounts'],'tests/e2e/axis_gizmo.py','escape-native-case')
         report['passed']=True
     finally:
         (output/'report.json').write_text(json.dumps(report,indent=2)+'\n')

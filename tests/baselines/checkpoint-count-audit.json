@@ -141,9 +141,13 @@
         "states": 10,
         "exactReadbacks": 500
       },
-      "status": "cardinality not asserted",
-      "mechanism": "exactReadbacks is len(states)*len(exported), not a counter of executed comparisons; individual state/key comparisons remain asserted",
-      "disposition": "reported for a separate harness change; no relaxation or instrumentation here"
+      "status": "matrix, worker and join assert actual completion records",
+      "disposition": "closed cardinality gap; existing functional assertions, native actions and waits unchanged",
+      "previousStatus": "cardinality not asserted",
+      "requiredCheckpointCounts": {
+        "registry-readback": 500
+      },
+      "originalMechanism": "exactReadbacks is len(states)*len(exported), not a counter of executed comparisons; individual state/key comparisons remain asserted"
     },
     {
       "phase": "native Escape",
@@ -151,9 +155,13 @@
       "observed": {
         "cases": 62
       },
-      "status": "cardinality not asserted",
-      "mechanism": "native report.cases records completed presses without an exact case-count assertion; the separate Node table gate DOES assert224+1024=1248",
-      "disposition": "reported for a separate harness change"
+      "status": "matrix, worker and join assert actual completion records",
+      "disposition": "closed cardinality gap; existing functional assertions, native actions and waits unchanged",
+      "previousStatus": "cardinality not asserted",
+      "requiredCheckpointCounts": {
+        "escape-native-case": 62
+      },
+      "originalMechanism": "native report.cases records completed presses without an exact case-count assertion; the separate Node table gate DOES assert224+1024=1248"
     },
     {
       "phase": "Metal popover",
@@ -161,9 +169,13 @@
       "observed": {
         "cases": 28
       },
-      "status": "cardinality not asserted",
-      "mechanism": "result.cases contains each2layouts*2themes*7viewports case, but has no exact completed-case guard",
-      "disposition": "reported for a separate harness change"
+      "status": "matrix, worker and join assert actual completion records",
+      "disposition": "closed cardinality gap; existing functional assertions, native actions and waits unchanged",
+      "previousStatus": "cardinality not asserted",
+      "requiredCheckpointCounts": {
+        "metal-native-case": 28
+      },
+      "originalMechanism": "result.cases contains each2layouts*2themes*7viewports case, but has no exact completed-case guard"
     },
     {
       "phase": "atomic identity",
@@ -171,9 +183,13 @@
       "observed": {
         "rejectedCases": 24
       },
-      "status": "cardinality not asserted",
-      "mechanism": "reject-case array has individual exact comparisons but no3atomicInputs*4formats*2clearPolicies completion guard",
-      "disposition": "reported for a separate harness change"
+      "status": "matrix, worker and join assert actual completion records",
+      "disposition": "closed cardinality gap; existing functional assertions, native actions and waits unchanged",
+      "previousStatus": "cardinality not asserted",
+      "requiredCheckpointCounts": {
+        "atomic-identity-rejection": 24
+      },
+      "originalMechanism": "reject-case array has individual exact comparisons but no3atomicInputs*4formats*2clearPolicies completion guard"
     },
     {
       "phase": "retired-cache UI",
@@ -181,9 +197,13 @@
       "observed": {
         "cases": 4
       },
-      "status": "cardinality not asserted",
-      "mechanism": "four layout/theme results are collected without an exact completed-case guard",
-      "disposition": "reported for a separate harness change"
+      "status": "matrix, worker and join assert actual completion records",
+      "disposition": "closed cardinality gap; existing functional assertions, native actions and waits unchanged",
+      "previousStatus": "cardinality not asserted",
+      "requiredCheckpointCounts": {
+        "retired-cache-case": 4
+      },
+      "originalMechanism": "four layout/theme results are collected without an exact completed-case guard"
     },
     {
       "phase": "characterization and identity",
@@ -215,7 +235,7 @@
       "contract": "geometry/pixel/array/cardinality values used as test comparands or diagnostics; not claims about executed assertion totals"
     }
   ],
-  "remainingOrdinaryGaps": 5,
+  "remainingOrdinaryGaps": 0,
   "diagnosticOnly": [
     {
       "source": "tests/e2e/appearance_autosave.py",
@@ -229,5 +249,7 @@
     "Suites emitting only qualitative success labels have no declared numeric assertion total; this is not a claim that all37now have checkpoint counters.",
     "Unit-runner totals are reported by Node/unittest, not fixed cardinality contracts; unit totals can grow.",
     "No native-input suite was converted, no budget changed and no accepted failure added."
-  ]
+  ],
+  "previousOrdinaryGaps": 5,
+  "currentPolicy": "All five ordinary gaps from the original audit now have matrix self-checks and manifest/worker/join raw counts; standalone autosave campaigns remain separately scoped."
 }
