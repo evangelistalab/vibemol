@@ -335,5 +335,11 @@
     "rawLogSha256": "6a3913e12c3a89a727fd9312adbc42301f9e588715c3d236ba10fe9fb8d8ebbb",
     "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log"
   },
-  "status": "local verification complete; exact declared-delta recording and own complete ordinary gate required"
+  "status": "local verification complete; exact declared-delta recording and own complete ordinary gate required",
+  "comparandLogging": {
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-comparands.log",
+    "checkpoints": 68,
+    "sessionImportAndNativeWriteBothOutcomesLogged": true,
+    "rawLogSha256": "1f8809432841df3422d74e3dd77a0884878e80915e66400b634ba4b05a61b918"
+  }
 }
