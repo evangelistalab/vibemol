@@ -90,7 +90,8 @@
     "tests/e2e/premerge.py": {
       "edit-api": 115,
       "edit-api-rejection": 26,
-      "atomic-identity-rejection": 24
+      "atomic-identity-rejection": 24,
+      "edit-testing-case": 84
     },
     "tests/e2e/smoke.py": {
       "video-activation": 58,

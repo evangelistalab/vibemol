@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "status": "candidate; own complete gate pending",
+  "base": "03f174130dc9570978fd214c1a4b6d36714c45e1",
+  "changedTestingMembers": [
+    "setEditSelectionIndices",
+    "replaceGestureTerminalHydrogen",
+    "projectHaloGhostToClient"
+  ],
+  "wrappers": 2,
+  "retirements": 0,
+  "testingMembers": 42,
+  "productMethods": 12,
+  "nativeDragUnchanged": true,
+  "existingE2eConversions": 0,
+  "authorizedCallerCorrection": "Second hydroxyl Smoke attachment explicitly enumerates the first remaining open template identity; native mouse click retained.",
+  "taggedControl": {
+    "ref": "v0.9.5-pre-refactor",
+    "requested": [
+      0,
+      999
+    ],
+    "available": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "resolved": [
+      0
+    ],
+    "result": {
+      "changed": true,
+      "count": 1
+    },
+    "error": null,
+    "geometryUnchanged": true,
+    "sourceAppSha256": "8f782e42993468ec3abcf513b7befdae5c5e67dd8885a8883f3bdfcb0aba95b5",
+    "pageErrors": [],
+    "browser": "156.0.8078.4",
+    "disposition": "Historical unchecked request silently resolves to a partial selection; stricter harness validation is intentional, not a newly diagnosed chemistry defect."
+  },
+  "matrix": {
+    "contexts": [
+      "workbench-light",
+      "workbench-dark",
+      "legacy-light",
+      "legacy-dark"
+    ],
+    "checkpointCounts": {
+      "edit-testing-case": 84
+    },
+    "localPassed": true,
+    "residualContexts": 0,
+    "completeGateRequired": true,
+    "previousLocal80Passed": true,
+    "authoringFailure": {
+      "file": "tests/e2e/edit_testing_adapters.py",
+      "expectedSourceKind": "trajectory",
+      "actualSourceKind": "xyz",
+      "productGuard": "SOURCE_NOT_EDITABLE with unchanged state",
+      "correction": "Assert the full declared kind:xyz/trajectory:true/staticStructure:false source object.",
+      "raw": "out/test-artifacts/edit-testing-risk/local-matrix-84.log",
+      "gateRun": false
+    }
+  },
+  "construction": {
+    "status": "passed",
+    "stages": 19,
+    "ownBindings": 36,
+    "ownConsumers": 0,
+    "inputs": [
+      {
+        "name": "editApiTestingSnapshot",
+        "count": 4,
+        "deps": [],
+        "closure": [
+          "currentIndex",
+          "editApiFault",
+          "volumes"
+        ],
+        "externalServices": [
+          "window.VibeMolEdit"
+        ]
+      },
+      {
+        "name": "editApiTestingSelectionRequest",
+        "count": 3,
+        "deps": [],
+        "closure": [
+          "editApiData",
+          "editApiFault",
+          "editApiTestingSnapshot"
+        ]
+      },
+      {
+        "name": "editApiTestingSetSelection",
+        "count": 9,
+        "deps": [],
+        "closure": [
+          "editApiDifference",
+          "editApiFault",
+          "editApiSyncSelection",
+          "editApiTestingSelectionRequest",
+          "editApiTestingSnapshot",
+          "finalizePendingNewAtomOperatorSession",
+          "getEditAtomSelection",
+          "setEditAtomSelection"
+        ],
+        "externalServices": [
+          "window.VibeMolEdit"
+        ]
+      },
+      {
+        "name": "editApiTestingReplaceHydrogen",
+        "count": 12,
+        "deps": [],
+        "closure": [
+          "editApiData",
+          "editApiElement",
+          "editApiFault",
+          "editApiShape",
+          "editApiTestingSelectionRequest",
+          "editApiTestingSnapshot",
+          "editApiWritable",
+          "finalizePendingNewAtomOperatorSession",
+          "getEditAtomSelection",
+          "replaceGestureTerminalHydrogenFromAnchor",
+          "resolveGestureTerminalHydrogenReplacement"
+        ],
+        "externalServices": [
+          "ATOM_Z_TO_DATA"
+        ]
+      },
+      {
+        "name": "callEditApiTesting",
+        "count": 2,
+        "deps": [],
+        "closure": [
+          "editApiTestingReplaceHydrogen",
+          "editApiTestingSetSelection"
+        ]
+      }
+    ]
+  },
+  "limits": [
+    "Empty clearing is explicit native cross-mode cleanup, including no active structure. Nonempty writes require Edit mode and current selectable IDs.",
+    "Terminal-H replacement retains native pending-operator and hydrogen-adjustment behavior; its caller-free selectionAfter escape hatch is rejected.",
+    "Other legacy helpers retain their documented mode/coercion limits and are not claimed to be validated product adapters.",
+    "Undo remains design-only; remaining wrapper work stops after this batch."
+  ],
+  "rejectionComparands": {
+    "channel": "console.error",
+    "reason": "Existing native suites retain only error console records. Passing matrix observations are collected by its dedicated console handler.",
+    "supersededCandidate": {
+      "head": "7d4a35c9f0ec06b8449269a22950f10a7f2d0ef5",
+      "runId": 41515845441,
+      "acceptance": false,
+      "reason": "Rejected before acceptance for uncollected console.log rejection receipts; source changed before its own new gate."
+    }
+  }
+}

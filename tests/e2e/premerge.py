@@ -1009,6 +1009,8 @@ def main():
             browser.close()
     from edit_api import run_matrix as edit_api_matrix
     edit_api_matrix(ARTIFACTS/'validated-edit-api')
+    from edit_testing_adapters import run_matrix as edit_testing_matrix
+    edit_testing_matrix(ARTIFACTS/'edit-testing-adapters')
     return 0
 
 

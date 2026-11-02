@@ -914,3 +914,8 @@ mutation methods, and28 enumerated Edit-related testing functions of42.
 Calculations focus and MINAO assignment are separate from Edit selection. Pure
 catalog factories are not active app controllers. No AI interface, interchange
 feature, command bus or Undo implementation is released by that reconnaissance.
+
+
+## Risk-first Testing bridge batch
+
+The human releases only the first risk batch after the additive Edit API: strict whole-request `setEditSelectionIndices`, rejection of terminal-H `options.selectionAfter`, and the occupied-direction Smoke caller/projection fallback correction. Three Testing members change, two validated adapters, no retirements; the other39 members including performSelectionMoveDrag remain byte-identical. The product API stays12 methods. Empty selection clearing remains explicit native cross-mode cleanup, with readback. Nonempty requests validate completely before native pending-operator cleanup, preserve atom identities and use the product resolution token. Native hydrogen replacement keeps its pending operator; it is not rewritten as a completed API commit. All input comparands are logged before any failure. The new serial native matrix requires84 completion records in matrix, worker and join; every original suite remains native and unchanged except the specifically authorized projection caller/logging. Smoke requires three projection calls/zero substitutions and reports counts on both outcomes. The remaining wrapper batches are held; fragment-cue remains isolated. Undo stays design-only. Forte2 interchange needs a scope report before implementation.

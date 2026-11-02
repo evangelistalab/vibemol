@@ -184,6 +184,7 @@ class BrowserJoinTests(unittest.TestCase):
                                    ('balanced-3','axis_gizmo','escape-native-case'),
                                    ('balanced-2','edit_tool','metal-native-case'),
                                    ('balanced-2','premerge','atomic-identity-rejection'),
+                                   ('balanced-2','premerge','edit-testing-case'),
                                    ('balanced-2','build_panel','retired-cache-case')]:
             raw=self.paths[shard].parent/suite/'run.log'
             original=raw.read_text()

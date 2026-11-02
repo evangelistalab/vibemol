@@ -83,3 +83,10 @@ excluded. This is file lint, so JavaScript embedded in Python strings or HTML is
 not covered. It catches unconditional unreachable statements; it is not a full
 cross-function reachability proof. The earlier annotation scanner's absent-return-
 argument failure is a different AST-nullability case, covered by its own tests.
+
+The count-guard PR88 first run41507894572 passed the complete37/0/37
+conjunction at cd3fe13 and merged as03f1741 with an identical entire tree.
+All five matrix counters and independently recounted raw comparands matched.
+The durable record is `tests/baselines/checkpoint-count-ci.json`; raw artifacts
+and the immutable archive remain ignored. The separate risk batch adds84
+Testing-adapter cases under Premerge with the same matrix/worker/join guards.

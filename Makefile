@@ -88,6 +88,7 @@ check:
 	node --check tools/audit-edit-api.cjs
 	node --check tests/unit/edit-api-audit.test.cjs
 	python3 -m py_compile tests/e2e/edit_api.py
+	python3 -m py_compile tests/e2e/edit_testing_adapters.py tools/diagnostics/testing_selection_validation.py
 	node --check tests/e2e/scientific_buffers.js
 	python3 -m py_compile tests/e2e/scientific_buffers.py
 	node --check api/figure-runner.mjs

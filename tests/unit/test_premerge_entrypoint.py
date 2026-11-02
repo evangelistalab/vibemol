@@ -10,6 +10,7 @@ sys.path.insert(0, str(ROOT/'tests/e2e'))
 import premerge
 import atomic_identity
 import edit_api
+import edit_testing_adapters
 
 
 class PremergeEntrypointTests(unittest.TestCase):
@@ -26,6 +27,11 @@ class PremergeEntrypointTests(unittest.TestCase):
             browser.close.assert_called_once_with()
             self.assertEqual(output, premerge.ARTIFACTS/'validated-edit-api')
             calls.append('matrix')
+        def bridges(output):
+            browser.close.assert_called_once_with()
+            self.assertEqual(calls, ['matrix'])
+            self.assertEqual(output, premerge.ARTIFACTS/'edit-testing-adapters')
+            calls.append('bridges')
         with contextlib.ExitStack() as stack:
             stack.enter_context(patch.object(premerge, 'run_http_server', return_value=contextlib.nullcontext('http://fixture')))
             stack.enter_context(patch.object(premerge, 'sync_playwright', return_value=contextlib.nullcontext(playwright)))
@@ -35,8 +41,9 @@ class PremergeEntrypointTests(unittest.TestCase):
                 stack.enter_context(patch.object(premerge, name, stub))
             stack.enter_context(patch.object(atomic_identity, 'run', lambda page, dialogs: None))
             stack.enter_context(patch.object(edit_api, 'run_matrix', matrix))
+            stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
-        self.assertEqual(calls, ['matrix'])
+        self.assertEqual(calls, ['matrix', 'bridges'])
         self.assertEqual(browser.new_context.call_count, 16)
 
 

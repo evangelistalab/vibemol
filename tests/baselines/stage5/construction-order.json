@@ -181,7 +181,7 @@
       "expectedStatus": "passed"
     },
     {
-      "label": "Additive validated Edit API; legacy Testing surface unchanged",
+      "label": "Validated Edit API incoming closures in current tree",
       "before": "c37bb07e30c711025da325a14bbbb4a8345d06d7",
       "worktree": ".",
       "consumers": [
@@ -192,6 +192,19 @@
       "recheck": [
         "applyAutomaticHydrogenAdjustmentToVolume",
         "applyHydrogenPlanToVolume"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Risk-first Testing adapters: whole-request selection validation and native hydrogen guard",
+      "before": "03f174130dc9570978fd214c1a4b6d36714c45e1",
+      "worktree": ".",
+      "consumers": [],
+      "recheck": [
+        "editApiTestingSelectionRequest",
+        "editApiTestingSetSelection",
+        "editApiTestingReplaceHydrogen",
+        "callEditApiTesting"
       ],
       "expectedStatus": "passed"
     }
