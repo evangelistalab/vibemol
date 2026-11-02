@@ -308,12 +308,11 @@
     {
       "file": "assets/app/js/app.js",
       "name": "readForte2MinaoSnapshot",
-      "count": 4,
+      "count": 3,
       "factoryInputs": [],
       "services": [],
       "closure": [
         "calculationsModel",
-        "editApiDifference",
         "editApiFault",
         "measurementRecord"
       ],
@@ -390,7 +389,7 @@
     "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log",
     "themeCoverageSuperseded": true
   },
-  "status": "Contract and local verification established; exact CI API recording verified. Every candidate requires its own complete first-pass ordinary37/0/37 gate.",
+  "status": "Held: first ordinary run41535063768 is36/1/37 at Figure CLI cleanup; exact-target source correction is locally verified, not CI acceptance.",
   "comparandLogging": {
     "rawLog": "out/test-artifacts/forte2-export-cas/native-comparands.log",
     "checkpoints": 68,
@@ -407,7 +406,7 @@
   "construction": {
     "status": "passed",
     "stages": 20,
-    "newAppBindings": 18,
+    "newAppBindings": 27,
     "newModuleBindings": 115,
     "consumers": [
       "assets/app/js/calculations-model.js",
@@ -441,5 +440,40 @@
     "runsPerWorker": 2,
     "fourSerializationsExactlyIdentical": true,
     "residualDifference": 0
+  },
+  "exactGuardCorrection": {
+    "rejectedHead": "b7f55e964ed5f1ed7f9fa56728452850f2f4d467",
+    "rejectedRunId": 41535063768,
+    "mechanism": "Edit numeric comparator tolerates fractional numeric differences; identity/normalization comparisons require exact canonical JSON. The old unit mock was stricter than the real helper.",
+    "originalProbe": {
+      "deltaAngstrom": 1e-10,
+      "actual": "accepted",
+      "expected": "GEOMETRY_TARGET_MISMATCH"
+    },
+    "fix": "Local canonical equality; actual shared helper calibration in permanent unit; final plane/assignment readback after validation.",
+    "gateUnchanged": "37/0/37; no retries on unchanged source; old run never supplies acceptance.",
+    "baselineUnchanged": true,
+    "sourceDelta": {
+      "file": "assets/app/js/app.js",
+      "onlyFunction": "readForte2MinaoSnapshot",
+      "beforeFunctionSha256": "baa070ecb2acfe5d500031eb97170c4b13dcb73d0f27cf0bcbed3acf8da6e43a",
+      "afterFunctionSha256": "73d4e9389838b0a1495504cde630f41f958b11a45569d9b03cf427482a1ca8c5",
+      "allOtherAppBytesIdentical": true,
+      "reason": "Exact canonical identity/settings comparison and final requested/applied plane readback; the shared Edit numeric helper is unchanged."
+    },
+    "localUnits": {
+      "javascript": 531,
+      "python": 213,
+      "auditControls": 29
+    }
+  },
+  "exactGuardNative": {
+    "status": "passed",
+    "checkpoints": 68,
+    "actualLightAndDarkVerified": true,
+    "residualContexts": 0,
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-exact.log",
+    "rawLogSha256": "b89d743e046862491ab5fa4ee8214de7abdaeda42e59b2d22c996014766b8b25",
+    "appSha256": "151e6550ced117f0029dcd2bab48a3d1dcd8d4a1db4bf997c153e518f9d0bb8d"
   }
 }
