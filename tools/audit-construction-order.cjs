@@ -12,7 +12,7 @@ const babel = name => require(process.env.VIBEMOL_BABEL_ROOT
   ? path.join(process.env.VIBEMOL_BABEL_ROOT, name) : '@babel/' + name);
 const parser = babel('parser'), traverse = babel('traverse').default;
 const hash = s => crypto.createHash('sha256').update(s).digest('hex');
-const parse = s => parser.parse(s, {sourceType: 'unambiguous'});
+const parse = (s, sourceType='script') => parser.parse(s, {sourceType});
 const text = (s, p) => s.slice(p.node.start, p.node.end);
 
 function mainScope(ast) {
@@ -106,8 +106,8 @@ function auditBinding(binding, boundary, source) {
     references,status:early.length?'review-required':'passed',early};
 }
 
-function auditSource(before, after, extraNames=[]) {
-  const b=mainScope(parse(before)), a=mainScope(parse(after));
+function auditSource(before, after, extraNames=[], sourceType='script') {
+  const b=mainScope(parse(before,sourceType)), a=mainScope(parse(after,sourceType));
   const seenBindings=new WeakSet();
   const bindings=[];
   function append(binding,boundary,scope) {
@@ -190,8 +190,9 @@ if (process.argv.includes('--self-test')) {
   const moduleBefore="import fs from 'node:fs'; function work() {return 1}";
   const moduleEarly="import fs from 'node:fs'; function work() {return late} work(); const late=1;";
   const moduleSafe="import fs from 'node:fs'; function work() {return late} const late=1; work();";
-  assert.equal(auditSource(moduleBefore,moduleEarly).status,'review-required');
-  assert.equal(auditSource(moduleBefore,moduleSafe).status,'passed');
+  assert.equal(auditSource(moduleBefore,moduleEarly,[],'module').status,'review-required');
+  assert.equal(auditSource(moduleBefore,moduleSafe,[],'module').status,'passed');
+  assert.throws(()=>auditSource(moduleBefore,moduleSafe),/sourceType: "module"/);
   console.log('construction-order self-test: direct early call, escaped callback, fixed ordering, lexical shadowing, existing-wrapper parameters and existing-callback locals passed');
   process.exit(0);
 }
@@ -218,7 +219,7 @@ for (const stage of config.stages) {
   for(const file of stage.consumers||[]) {
     const old=git('show',stage.before+':'+file),current=stage.worktree
       ?fs.readFileSync(path.join(stage.worktree,file),'utf8'):git('show',stage.after+':'+file);
-    report.consumers.push({file,...auditSource(old,current)});
+    report.consumers.push({file,...auditSource(old,current,[],path.extname(file)==='.mjs'?'module':'script')});
   }
   if(report.consumers.some(c=>c.status!=='passed'))report.status='review-required';
   report.modules=[];
