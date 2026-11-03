@@ -9,6 +9,7 @@ import json
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'e2e'))
 import compare_ci_baselines as compare
+import release_baseline_recording as recording
 
 
 class CapturePins(unittest.TestCase):
@@ -38,19 +39,23 @@ class CapturePins(unittest.TestCase):
 
 
 class FourCaptureVersions(unittest.TestCase):
-    def prepare(self, root, wrong=False, differing=False):
+    def prepare(self, root, wrong=False, differing=False, version='0.10.1', tag='v0.10.1'):
         commit='a'*40
-        captures={f'case-{i}':{'session':{'appVersion':'0.10.1','preset':{'appVersion':'0.10.1'}}}for i in range(102)}
+        captures={f'case-{i}':{'session':{'appVersion':version,'preset':{'appVersion':version}}}for i in range(102)}
         if wrong:captures['case-0']['session']['preset']['appVersion']='0.10.0'
         for worker in [1,2]:
             folder=root/f'characterization-baseline-{worker}';folder.mkdir()
             actual=json.loads(json.dumps(captures))
             if differing and worker==2:actual['case-0']['extra']='unexpected'
-            golden={'baseline':{'commit':commit,'tag':'v0.10.1','captureProvenance':{'os':'Linux','ci':{'provider':'GitHub Actions'}}},'captures':actual}
+            golden={'baseline':{'commit':commit,'tag':tag,'captureProvenance':{'os':'Linux','ci':{'provider':'GitHub Actions'}}},'captures':actual}
             (folder/'characterize.json.gz').write_bytes(gzip.compress(json.dumps(golden).encode()))
             for run in [1,2]:(folder/f'characterize-run-{run}.json').write_text(json.dumps(actual))
-            proof=dict(status='passed',commit=commit,tag='v0.10.1',recordingMode='candidate',allArchivedBlobsMatchCommit=True,
+            proof=dict(status='passed',commit=commit,tag=tag,recordingMode='candidate',allArchivedBlobsMatchCommit=True,
                 correctedReleaseBase='44bcb5d534cecba27fd0ccfc60f74324a0920b73',mappingHelperAbsent=True,harnessInjection=False,fixturePreparation=False)
+            if tag == 'v0.10.2':
+                proof['versionDelta'] = dict(baseCommit=recording.VERSION_DELTA_BASE_COMMIT,
+                    baselineGzipSha256=recording.VERSION_DELTA_BASE_SHA256,
+                    paths=[list(p) for p in recording.VERSION_DELTA_PATHS], before='0.10.1', after='0.10.2', changedLeaves=204)
             (folder/'release-baseline-source.json').write_text(json.dumps(proof))
         return commit
 
@@ -69,3 +74,30 @@ class FourCaptureVersions(unittest.TestCase):
         with tempfile.TemporaryDirectory()as temp:
             root=Path(temp);commit=self.prepare(root,differing=True)
             with patch.object(compare,'resolve_baseline_commit',return_value=commit),self.assertRaises(AssertionError):compare.main(root,'v0.10.1',commit)
+
+    def test_0102_four_recordings_verify204_exact_changes(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);commit=self.prepare(root,version='0.10.2',tag='v0.10.2')
+            previous={f'case-{i}':{'session':{'appVersion':'0.10.1','preset':{'appVersion':'0.10.1'}}}for i in range(102)}
+            with patch.object(compare,'resolve_baseline_commit',return_value=commit),patch.object(recording,'read_version_delta_base',return_value=previous):
+                compare.main(root,'v0.10.2',commit)
+            report=json.loads((root/'ci-comparison.json').read_text())
+            self.assertEqual(report['changedLeavesPerRun'],204)
+            self.assertEqual(report['residualDifferences'],0)
+            self.assertEqual(len(report['captures']),4)
+
+    def test_0102_join_rejects_undeclared_change_on_either_worker(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);commit=self.prepare(root,differing=True,version='0.10.2',tag='v0.10.2')
+            previous={f'case-{i}':{'session':{'appVersion':'0.10.1','preset':{'appVersion':'0.10.1'}}}for i in range(102)}
+            with patch.object(compare,'resolve_baseline_commit',return_value=commit),patch.object(recording,'read_version_delta_base',return_value=previous),self.assertRaises(AssertionError):
+                compare.main(root,'v0.10.2',commit)
+
+    def test_0102_join_rejects_a_different_declared_path(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root=Path(temp);commit=self.prepare(root,version='0.10.2',tag='v0.10.2')
+            path=root/'characterization-baseline-1/release-baseline-source.json'
+            proof=json.loads(path.read_text());proof['versionDelta']['paths'][0]=['unrelated','appVersion'];path.write_text(json.dumps(proof))
+            previous={f'case-{i}':{'session':{'appVersion':'0.10.1','preset':{'appVersion':'0.10.1'}}}for i in range(102)}
+            with patch.object(compare,'resolve_baseline_commit',return_value=commit),patch.object(recording,'read_version_delta_base',return_value=previous),self.assertRaises(AssertionError):
+                compare.main(root,'v0.10.2',commit)

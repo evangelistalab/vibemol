@@ -15,6 +15,7 @@ BASELINE_COMMITS = {
     'v0.9.5-pre-refactor': '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d',
     'v0.10.0': '3425e0231b71eeb8b8a11523806990f553265cba',
     'v0.10.1': '47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802',  # Actual approved capture source, independent of the later release tag.
+    'v0.10.2': None,  # Pinned to the exact CI recording source after its four serializations agree.
 }
 
 
@@ -45,7 +46,7 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
                       'actualTag': golden['baseline']['tag'], 'expectedTag': baseline_ref}
         print('[baseline-recording-identity] ' + json.dumps(comparands, sort_keys=True), flush=True)
         assert golden['baseline']['commit'] == expected_commit and golden['baseline']['tag'] == baseline_ref, comparands
-        if baseline_ref in ('v0.10.0', 'v0.10.1'):
+        if baseline_ref in ('v0.10.0', 'v0.10.1', 'v0.10.2'):
             proof = json.loads((artifact / 'release-baseline-source.json').read_text())
             assert proof['status'] == 'passed' and proof['commit'] == expected_commit and proof['tag'] == baseline_ref, proof
             if baseline_ref == 'v0.10.0':
@@ -67,6 +68,16 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
             raw = (artifact / f'characterize-run-{run}.json').read_bytes()
             captured = json.loads(raw)
             assert len(captured) == 102 and captured == golden['captures']
+            if baseline_ref == 'v0.10.2':
+                from release_baseline_recording import read_version_delta_base, verify_version_delta
+                from api_surface_recording import exact_difference
+                previous = read_version_delta_base(root)
+                delta = verify_version_delta(previous, captured)
+                assert exact_difference(golden['captures'], captured) is None, 'Golden/raw type or value difference.'
+                declared = dict(baseCommit=delta['previousCommit'], baselineGzipSha256=delta['previousGzipSha256'],
+                    paths=[['session', 'appVersion'], ['session', 'preset', 'appVersion']],
+                    before='0.10.1', after='0.10.2', changedLeaves=204)
+                assert proof['versionDelta'] == declared, (proof['versionDelta'], declared)
             captures.append(captured)
             artifacts.append({'job': number, 'run': run, 'captureSha256': hashlib.sha256(raw).hexdigest()})
         provenances.append(provenance)
@@ -75,6 +86,8 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
     report = {'independentCiJobs': 2, 'runsPerJob': 2, 'capturesPerRun': 102,
               'exactlyIdentical': True, 'toleranceUsedForCiRepeatComparison': False,
               'provenancePerJob': provenances, 'captures': artifacts}
+    if baseline_ref == 'v0.10.2':
+        report.update(versionDelta=declared, changedLeavesPerRun=204, residualDifferences=0)
     (folder / 'ci-comparison.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 

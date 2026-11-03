@@ -1,5 +1,8 @@
 """The explicit release recorder rejects unpublished, different and modified sources."""
 import io
+import copy
+import gzip
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -80,6 +83,33 @@ class PublishedReleaseRecording(unittest.TestCase):
         self.assertEqual(proof['recordingMode'],'candidate')
         self.assertEqual(proof['correctedReleaseBase'],self.shipped)
         self.assertTrue(proof['publicationPending'] and proof['allArchivedBlobsMatchCommit'])
+
+    def test_0102_requires_exact_recording_branch_archive_and_previous_baseline(self):
+        shipped = self.commit
+        previous = version_captures()
+        path = self.root / 'tests/baselines/characterize.json.gz'
+        path.parent.mkdir(parents=True)
+        raw = gzip.compress(json.dumps({'captures': previous}).encode(), mtime=0)
+        path.write_bytes(raw)
+        (self.root / 'assets/app/js/asset-urls.js').write_text("const APP_VERSION = '0.10.1';\n")
+        self.git('add', '.')
+        self.git('-c', 'user.name=Recording Test', '-c', 'user.email=recording-test@example.invalid', 'commit', '-qm', 'Prior102 captures')
+        base = self.git('rev-parse', 'HEAD')
+        self.prepare_candidate(version='0.10.2')
+        self.shipped = shipped
+        self.args.record_release_tag = 'v0.10.2'
+        self.env['GITHUB_REF'] = 'refs/heads/codex/pr90-0.10.2-recording'
+        with patch.object(recording, 'VERSION_DELTA_BASE_COMMIT', base), patch.object(recording, 'VERSION_DELTA_BASE_SHA256', hashlib.sha256(raw).hexdigest()):
+            result = self.invoke_candidate()
+            self.assertEqual(result['tag'], 'v0.10.2')
+            proof = json.loads((self.folder/'candidate-proof.json').read_text())
+            self.assertEqual(proof['versionDelta']['changedLeaves'], 204)
+            self.env['GITHUB_REF'] = 'refs/heads/codex/forte2-export-cas'
+            with self.assertRaises(AssertionError):
+                self.invoke_candidate()
+            self.env['GITHUB_REF'] = 'refs/heads/codex/pr90-0.10.2-recording'
+            with patch.object(recording, 'VERSION_DELTA_BASE_SHA256', '0'*64), self.assertRaises(AssertionError):
+                self.invoke_candidate()
 
     def test_candidate_requires_exact_ci_branch_event_and_sha(self):
         self.prepare_candidate()
@@ -194,6 +224,62 @@ class PublishedReleaseRecording(unittest.TestCase):
         with self.assertRaises(AssertionError) as error:
             self.invoke()
         self.assertIn("'actual': '0.9.5'", str(error.exception))
+
+
+def version_captures():
+    return {f'capture-{i}': {'session': {'appVersion': '0.10.1', 'preset': {'appVersion': '0.10.1'}},
+            'unrelated': {'appVersion': '0.10.1', 'version': '0.10.1', 'flag': True, 'position': 1.25}}
+            for i in range(102)}
+
+
+class ExactVersionDelta(unittest.TestCase):
+    def setUp(self):
+        self.previous = version_captures()
+        self.current = recording.expected_version_captures(self.previous)
+
+    def rejected(self, mutate):
+        current = copy.deepcopy(self.current)
+        mutate(current)
+        with self.assertRaises(AssertionError):
+            recording.verify_version_delta(self.previous, current)
+
+    def test_only_the_exact204_full_paths_change_without_mutating_previous(self):
+        report = recording.verify_version_delta(self.previous, self.current)
+        self.assertEqual(report['actualChangedLeaves'], 204)
+        self.assertEqual(report['changes'][0]['path'], ['session', 'appVersion'])
+        self.assertEqual(report['changes'][1]['path'], ['session', 'preset', 'appVersion'])
+        self.assertTrue(report['zeroOtherChanges'])
+        self.assertIsNone(report['residualDifference'])
+        self.assertEqual(self.previous, version_captures())
+
+    def test_203_changed_leaves_are_rejected(self):
+        self.rejected(lambda c: c['capture-0']['session'].update(appVersion='0.10.1'))
+
+    def test_205th_lookalike_version_leaf_is_rejected(self):
+        self.rejected(lambda c: c['capture-0']['unrelated'].update(appVersion='0.10.2'))
+
+    def test_wrong_new_version_is_rejected(self):
+        self.rejected(lambda c: c['capture-0']['session']['preset'].update(appVersion='0.11.0'))
+
+    def test_missing_required_path_is_rejected(self):
+        self.rejected(lambda c: c['capture-0']['session']['preset'].pop('appVersion'))
+
+    def test_wrong_old_version_is_rejected(self):
+        self.previous['capture-0']['session']['appVersion'] = '0.9.5'
+        with self.assertRaises(AssertionError):
+            recording.verify_version_delta(self.previous, self.current)
+
+    def test_extra_or_missing_capture_is_rejected(self):
+        self.rejected(lambda c: c.update(extra=copy.deepcopy(c['capture-0'])))
+        self.rejected(lambda c: c.pop('capture-0'))
+
+    def test_other_numeric_or_type_changes_are_rejected(self):
+        self.rejected(lambda c: c['capture-0']['unrelated'].update(position=1.250000000001))
+        self.rejected(lambda c: c['capture-0']['unrelated'].update(flag=1))
+
+    def test_added_or_removed_nonversion_leaf_is_rejected(self):
+        self.rejected(lambda c: c['capture-0']['unrelated'].update(extra='unexpected'))
+        self.rejected(lambda c: c['capture-0']['unrelated'].pop('version'))
 
 
 if __name__ == '__main__':
