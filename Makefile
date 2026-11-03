@@ -91,6 +91,7 @@ check:
 	python3 -m py_compile tests/e2e/edit_api.py
 	python3 -m py_compile tests/e2e/edit_testing_adapters.py tools/diagnostics/testing_selection_validation.py
 	node --check tests/e2e/scientific_buffers.js
+	node --check tests/e2e/measurement_connection_widths.js
 	python3 -m py_compile tests/e2e/scientific_buffers.py
 	node --check api/figure-runner.mjs
 	node --check api/figure-browser.mjs

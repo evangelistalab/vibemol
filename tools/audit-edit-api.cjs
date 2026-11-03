@@ -46,7 +46,7 @@ function normalizeHydrogenDefaults(code) {
   .replace('if (!enabled ||','if (!editAddAdjustHydrogensEnabled ||')
   .replace('applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId)','applyHydrogenPlanToVolume(vol, plan)');
 }
-function additiveApp(source, baseline, testingChanges={}) {
+function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
  const api=surface(source),old=surface(baseline,{requireProduct:false});
  const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
  assert.deepEqual(api.testing,old.testing,'Testing members changed');
@@ -57,7 +57,10 @@ function additiveApp(source, baseline, testingChanges={}) {
   else assert.equal(api.testingMembers[name],old.testingMembers[name],'Existing Testing object changed: '+name);
  }
  const statements=s=>parser.parse(s).program.body[0].expression.callee.body.body;
- const legacy=statements(baseline).map(n=>baseline.slice(n.start,n.end));
+ const previousNodes=statements(baseline);
+ const legacy=previousNodes.map(n=>baseline.slice(n.start,n.end));
+ const previousFunctions=new Map(previousNodes.filter(n=>n.type==='FunctionDeclaration').map(n=>[n.id.name,baseline.slice(n.start,n.end)]));
+ const appliedProductChanges=new Set();
  const preserved=[];let exposed=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
  for(const n of statements(source)) {
@@ -71,11 +74,21 @@ function additiveApp(source, baseline, testingChanges={}) {
   }
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
   const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
+  if(n.type==='FunctionDeclaration'&&Object.hasOwn(productChanges,n.id.name)) {
+   const change=productChanges[n.id.name],before=previousFunctions.get(n.id.name);
+   assert.deepEqual(Object.keys(change).sort(),['after','before','reason','units']);
+   assert(typeof change.reason==='string'&&change.reason.trim(),'Named product change requires its human-approved reason');
+   assert.equal(hash(before),change.before,n.id.name+' original product fingerprint');
+   assert.equal(hash(code),change.after,n.id.name+' changed product fingerprint');
+   assert(!appliedProductChanges.has(n.id.name),'Product change must occur once');appliedProductChanges.add(n.id.name);
+   preserved.push(before);continue;
+  }
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }
  assert.equal(exposed,1,'Exactly one additive product API exposure');
+ assert.deepEqual([...appliedProductChanges].sort(),Object.keys(productChanges).sort(),'Every declared product change must be checked');
  assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
- return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges)};
+ return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges),...(appliedProductChanges.size?{productChanges:[...appliedProductChanges].sort()}: {})};
 }
 function semantic(source) {
  return JSON.stringify(parser.parse(source),(key,value)=>['start','end','loc','extra','comments','leadingComments','trailingComments','innerComments','tokens'].includes(key)?undefined:value);
@@ -130,7 +143,11 @@ function audit(root=path.resolve(__dirname,'..')) {
  const kernels=kernelInventory(root,contract.kernelInputs);assert.deepEqual(kernels,contract.kernelInputs,'Reused-kernel inputs changed');assert(kernels.every(r=>r.count<15),'Reused kernels include allocator callbacks in the input count');
  assert.deepEqual(api.methods,contract.methods);assert.deepEqual(api.wrappers,contract.testing.wrappers.slice().sort());assert.deepEqual(contract.testing.retired,[]);
  assert.equal(crypto.createHash('sha256').update(api.retained).digest('hex'),contract.testing.retainedNativeDrag.sha256);
- const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes),helperExtensions=additiveHelpers(root,readBase);
+ const productChanges=contract.productChanges||{};
+ const productUnits=Object.values(productChanges).flatMap(change=>change.units);
+ assert.deepEqual(kernelInventory(root,productUnits),productUnits,'Product helper dependencies changed');
+ assert(productUnits.every(r=>r.count<15),'Product helpers must remain below15 inputs');
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges),helperExtensions=additiveHelpers(root,readBase);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {

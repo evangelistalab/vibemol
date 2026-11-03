@@ -5,6 +5,28 @@ import math
 import os
 import premerge as p
 from helpers import wait_for_presented_state
+from checkpoint_contract import require_phase_counts
+
+
+def connection_widths(page):
+    source = (p.ROOT / 'assets/app/js/app.js').read_text()
+    body = source.split('// Measurement connection mesh: begin.')[1].split('// Measurement connection mesh: end.')[0]
+    page.set_content('<canvas style="width:101px;height:101px"></canvas>')
+    page.add_script_tag(path=str(p.ROOT / 'assets/vendor/js/three.min.js'))
+    result = page.evaluate((p.ROOT / 'tests/e2e/measurement_connection_widths.js').read_text(), body)
+    (p.ARTIFACTS / 'measurement-connection-widths.json').write_text(json.dumps(result, indent=2) + '\n')
+    for row in result['rows']:
+        actual = {'coveredPixels': row['coveredPixels']}
+        expected = {'coveredPixels': row['expectedPixels']}
+        if not row['native']:
+            actual['cssWidth'] = row['uniformWidth']
+            expected['cssWidth'] = 3
+        evidence = {'case': {k: row[k] for k in ('native', 'dpr', 'kind', 'zoom', 'z', 'vertical', 'target')},
+                    'actual': actual, 'expected': expected, 'readback': row}
+        print('[measurement-connection-width] ' + json.dumps(evidence), flush=True)
+        assert actual == expected, evidence
+    require_phase_counts({'measurement-connection-width': len(result['rows'])},
+                         'tests/e2e/measurements.py', 'measurement-connection-width')
 
 
 def settle(page):
@@ -241,6 +263,7 @@ def main():
         context=browser.new_context(viewport={'width':1512,'height':850},permissions=['clipboard-read','clipboard-write'])
         page=context.new_page();errors=[];page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
         try:
+            connection_widths(page)
             measurements(page,url);workspace(page);recovery(page,url);assert not errors,errors
             context=browser.new_context(viewport={'width':1512,'height':850})
             page=context.new_page();page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())

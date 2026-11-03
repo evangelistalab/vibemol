@@ -22654,6 +22654,61 @@
    * Render distance, angle, and dihedral overlays for the current selection.
    */
   function updateEditSelectionVisuals() {
+    // Measurement connection mesh: begin.
+    function createMeasurementConnection(points, color) {
+      const positions = [], others = [], sides = [], indices = [];
+      for (let i = 1; i < points.length; i += 1) {
+        const start = points[i - 1], end = points[i], offset = positions.length / 3;
+        for (const point of [start, start, end, end]) positions.push(point.x, point.y, point.z);
+        for (const point of [end, end, start, start]) others.push(point.x, point.y, point.z);
+        sides.push(-1, 1, 1, -1);
+        indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('other', new THREE.Float32BufferAttribute(others, 3));
+      geometry.setAttribute('side', new THREE.Float32BufferAttribute(sides, 1));
+      geometry.setIndex(indices);
+      const material = new THREE.ShaderMaterial({
+        uniforms: { color: { value: new THREE.Color(color) }, opacity: { value: 0.8 },
+          lineWidth: { value: 3 }, resolution: { value: new THREE.Vector2(1, 1) } },
+        vertexShader: `
+          attribute vec3 other;
+          attribute float side;
+          uniform vec2 resolution;
+          uniform float lineWidth;
+          void main() {
+            vec4 clip = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec4 next = projectionMatrix * modelViewMatrix * vec4(other, 1.0);
+            float w = clip.w < 0.0 ? min(clip.w, -0.000001) : max(clip.w, 0.000001);
+            float nextW = next.w < 0.0 ? min(next.w, -0.000001) : max(next.w, 0.000001);
+            vec2 direction = (next.xy / nextW - clip.xy / w) * resolution;
+            float lengthPx = length(direction);
+            vec2 normal = lengthPx > 0.000001 ? vec2(-direction.y, direction.x) / lengthPx : vec2(0.0);
+            clip.xy += normal * side * lineWidth / resolution * clip.w;
+            gl_Position = clip;
+          }`,
+        fragmentShader: `
+          uniform vec3 color;
+          uniform float opacity;
+          void main() {
+            gl_FragColor = vec4(color, opacity);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+          }`,
+        transparent: true, opacity: 0.8, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+      });
+      const mesh = new THREE.Mesh(geometry, material), viewport = new THREE.Vector4();
+      mesh.frustumCulled = false;
+      mesh.onBeforeRender = (render) => {
+        render.getCurrentViewport(viewport);
+        const height = render.getRenderTarget()?.height || render.domElement.height;
+        const pixelScale = height / Math.max(1, render.domElement.clientHeight);
+        material.uniforms.resolution.value.set(viewport.z / pixelScale, viewport.w / pixelScale);
+      };
+      return mesh;
+    }
+    // Measurement connection mesh: end.
     measurementLayoutKey = '';
     measurementLabelHoverSprite = null;
     clearGroup(editSelGroup);
@@ -22665,8 +22720,7 @@
       if (row.value === null) continue;
       const points = row.points.map(point => new THREE.Vector3(...point));
       const color = row.type === 'distance' ? 0xd3d3d3 : row.type === 'angle' ? 0xffa500 : 0x8e44ad;
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
-        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8, depthTest: false, depthWrite: false }));
+      const line = createMeasurementConnection(points, color);
       editSelGroup.add(line);
       let anchor = points[0].clone().add(points[1]).multiplyScalar(0.5);
       if (row.type === 'angle') {

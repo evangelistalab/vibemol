@@ -851,5 +851,22 @@
     "figureControlResult": "unchanged main native matrix passed, including --list-targets; original41314331930 also covered/passed; causation of candidate session error unclassified",
     "currentPart": "Risk-first batch1 after additive PR87",
     "riskBatchChangedTestingMembers": 3
+  },
+  "productChanges": {
+    "updateEditSelectionVisuals": {
+      "before": "f4f0995a7e9c5abd7f61eaaaa4ceb72e423db0aa34424cc807229c7cfa8544e4",
+      "after": "e82eddd5cded8c30f5e025a7c46fb2261a6dbca6ff32b86bde6adc76304db640",
+      "reason": "Direct human request2026-11-03: make atom-to-atom measurement connections3 CSS pixels wide. Native WebGL widths are clamped to1; use a screen-space triangle strip, preserving opacity/color, angle arcs and label leaders.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "createMeasurementConnection",
+          "count": 1,
+          "inputs": [
+            "THREE"
+          ]
+        }
+      ]
+    }
   }
 }
