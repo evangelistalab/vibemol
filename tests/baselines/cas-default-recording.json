@@ -1,0 +1,99 @@
+{
+  "schemaVersion": 1,
+  "runId": 41702764695,
+  "attempt": 1,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41702764695",
+  "sourceCommit": "719b1d391c8976f8521e6347aa0bceb8fab06455",
+  "sourceTree": "874bed448c0cadbb4b47b21880e9b6aced1af74f",
+  "baseCommit": "e8437ceecc81806effcca61292047f4325b3920d",
+  "baseGoldenSha256": "adbc54eb5ab3e0e3d8bf30df399d7c30cc0fe332562d0ec953faca9a77c71b5f",
+  "authority": "Direct human authorization2026-11-03: exactly180 saved default-method leaves and108 CAS input ID additions; zero other differences.",
+  "scopeSha256": "143d988be71cb73d694cb5a415a1c72f520c28caad338617981bcc76755b5ae7",
+  "comparison": {
+    "status": "passed",
+    "recordingMode": "cas-default",
+    "sourceCommit": "719b1d391c8976f8521e6347aa0bceb8fab06455",
+    "baseCommit": "e8437ceecc81806effcca61292047f4325b3920d",
+    "independentCiJobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "methodLeavesPerRun": 180,
+    "domIdAdditionsPerRun": 108,
+    "residualDifferences": 0,
+    "fourSerializationsExactlyIdentical": true,
+    "records": [
+      {
+        "job": 1,
+        "run": 1,
+        "sha256": "893ab7c0e62d8393e7113aa1d9d3de485cbd670d551c0f02fe5caf744f7e38f3"
+      },
+      {
+        "job": 1,
+        "run": 2,
+        "sha256": "893ab7c0e62d8393e7113aa1d9d3de485cbd670d551c0f02fe5caf744f7e38f3"
+      },
+      {
+        "job": 2,
+        "run": 1,
+        "sha256": "893ab7c0e62d8393e7113aa1d9d3de485cbd670d551c0f02fe5caf744f7e38f3"
+      },
+      {
+        "job": 2,
+        "run": 2,
+        "sha256": "893ab7c0e62d8393e7113aa1d9d3de485cbd670d551c0f02fe5caf744f7e38f3"
+      }
+    ]
+  },
+  "promotedFiles": {
+    "tests/baselines/characterize.json.gz": "fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de",
+    "tests/baselines/characterize-summary.json": "510419c411a9fbe81926a3dbbf3598c8bae386bc5ac86942edd992e229b92c94"
+  },
+  "ordinaryComparison": "Exact values; no mapping, tolerance or ordinary waiver.",
+  "parentGate": {
+    "runId": 41696940106,
+    "head": "e8437ceecc81806effcca61292047f4325b3920d",
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37,
+      "allExecutedOnce": true,
+      "actualFailingWorkflows": []
+    },
+    "exporters": [
+      {
+        "prefix": "trajectory",
+        "downloads": 6,
+        "naturalCompletion": true,
+        "earlyStop": true,
+        "pointerCompletion": true,
+        "spaceCompletion": true,
+        "enterActivation": true,
+        "clickOnlyActivation": true,
+        "freshSaveAssertions": 4
+      },
+      {
+        "prefix": "vibration",
+        "downloads": 6,
+        "naturalCompletion": true,
+        "earlyStop": true,
+        "pointerCompletion": true,
+        "spaceCompletion": true,
+        "enterActivation": true,
+        "clickOnlyActivation": true,
+        "freshSaveAssertions": 4
+      }
+    ],
+    "activationReadbacks": 58,
+    "Looks": {
+      "seconds": 1931.83,
+      "minutes": 32.19716666666667,
+      "materialFamilyPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "riskRemainsOpen": true
+    },
+    "wallMinutes": 47.61666666666667
+  },
+  "status": "Recorded exact delta; own ordinary gate on promoted candidate required; PR90 remains held"
+}
