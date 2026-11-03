@@ -167,3 +167,27 @@ Validation runs inside the existing Figure suite after retiring its original
 browser: PNG, SVG, exact replay, alternate theme/font, target listing, pin
 mismatch, unknown targets, deterministic cancellation, hash verification and
 cleanup. The ordinary 37/0/37 gate and 102-capture goldens are unchanged.
+
+
+Work completion and shutdown are separate boundaries. Target listing completes
+only after the final presented readiness/environment readback and resource
+checks; an image completes after rendering, resource verification, metadata
+capture and the one-page inventory check. Both then enter the same `finally`
+teardown. No result is returned or bundle published before normal browser exit,
+profile removal and server closure have succeeded.
+
+`observations.workComplete` records the boundary. Pending offline Fetch commands
+that reject because their session/transport was retired *after* that boundary
+are recorded, with command, request, timestamp and disposition, in
+`observations.protocolRejections`; they cannot invalidate already completed
+page work. The same rejection before completion fails the job. Other protocol
+errors, page errors, cancellation, deadlines and teardown errors still fail.
+This corrects PR90 run41535063768, which completed target discovery and normal
+Chrome shutdown but exited nonzero on a late detached-session rejection.
+
+Figure's native phases declare 40 runner comparands, 17 synchronous-source,
+17 worker-source and eight coordinate-owner checkpoints, plus 13 published
+ownership records. The phase, browser worker and aggregate join require that
+composition; early runner failure cannot silently omit the standing write traps.
+Process-exit assertions print the return code, stderr tail and artifact path
+before raising, on both passing and failing outcomes.

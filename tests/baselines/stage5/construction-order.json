@@ -207,6 +207,16 @@
         "callEditApiTesting"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Figure CLI single completion and teardown owner",
+      "before": "b1de909288d8ba85da017f18654771eca54547d0",
+      "worktree": ".",
+      "consumers": [
+        "api/figure-runner.mjs"
+      ],
+      "recheck": [],
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -1,0 +1,115 @@
+{
+  "status": "Product CLI lifecycle repair; diagnostics do not supply ordinary acceptance.",
+  "failedRun": {
+    "id": 41535063768,
+    "head": "b7f55e964ed5f1ed7f9fa56728452850f2f4d467",
+    "gate": {
+      "passed": 36,
+      "failed": 1,
+      "total": 37
+    },
+    "preserved": true,
+    "failure": "Session with given id not found. after final readiness and normal Chrome exit",
+    "scientificBuffersRan": false
+  },
+  "control": {
+    "job": "figure-main-control",
+    "branch": "codex/figure-list-targets-control",
+    "runId": 41551472583,
+    "sources": {
+      "main": {
+        "commit": "b1de909288d8ba85da017f18654771eca54547d0",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "listingReached": 3
+      },
+      "pr90": {
+        "commit": "b7f55e964ed5f1ed7f9fa56728452850f2f4d467",
+        "runs": 3,
+        "passed": 3,
+        "failed": 0,
+        "listingReached": 3
+      }
+    },
+    "interpretation": "The fixed additional cohort reproduces the exact normal-exit/detached-session failure on unchanged main: pre-existing product CLI race. No evidence PR90 worsens it; both use byte-identical runner source. Diagnostics never supply acceptance.",
+    "additionalFixedCohort": {
+      "runId": 41552291899,
+      "listingsPerSource": 20,
+      "status": "completed",
+      "sources": {
+        "main": {
+          "freshListings": 20,
+          "failures": 1,
+          "failedIteration": 3,
+          "failureRate": 0.05,
+          "error": "Session with given id not found.",
+          "normalBrowserExit": true,
+          "cleanupElapsedMs": 414.919676
+        },
+        "pr90": {
+          "freshListings": 20,
+          "failures": 0,
+          "failureRate": 0.0
+        }
+      },
+      "fullNativeMatricesPerSource": 3,
+      "allFullNativeMatricesPassed": true
+    }
+  },
+  "taggedBase": "The Figure CLI did not exist at v0.9.5-pre-refactor; a CLI reproduction there is inapplicable. Pre-existing runner source is checked on unchanged merged main.",
+  "completionBoundary": "Final readiness/environment/resource checks for listing; complete render/resource/metadata/page inventory for image. One browser/server finally teardown precedes result publication.",
+  "lateRejections": "Only named detached-session/closed-transport Fetch rejections after workComplete are recorded as retired transport. Before-boundary and all other errors fail. Normal shutdown is still required; teardown failures fail.",
+  "checkpoints": {
+    "figure-runner": 40,
+    "scientific-buffer-synchronous": 17,
+    "scientific-buffer-worker": 17,
+    "scientific-buffer-coordinate-owners": 8,
+    "published-ownership": 13
+  },
+  "local": {
+    "originalFigurePhases": [
+      "run",
+      "auto_iso",
+      "samples"
+    ],
+    "originalPageAndConsoleErrors": 0,
+    "nativePhaseCountsPassed": true,
+    "negativeInvoke": {
+      "returncode": 17,
+      "stderrTailLogged": true,
+      "artifactPathLogged": true
+    },
+    "negativeAbort": {
+      "runner": 40,
+      "bufferSynchronous": 0,
+      "bufferWorker": 0,
+      "coordinateOwners": 0,
+      "ownership": 0,
+      "rejected": true
+    },
+    "proofs": "out/test-artifacts/figure-completion/negative-proofs.log",
+    "artifactPolicy": "Raw native output and deliberate proofs stay ignored; historical failure is unchanged."
+  },
+  "dependencies": {
+    "createFigureCompletion": [
+      "controller",
+      "observations",
+      "FigureError"
+    ],
+    "count": 3,
+    "newBrowserGlobalOrAppBinding": false
+  },
+  "construction": {
+    "status": "passed",
+    "newCliBindings": 13,
+    "scope": "Native ESM program roots are enabled only for explicit .mjs consumers. Browser sources retain script parsing and the classic IIFE requirement. Negative/positive native-module order controls and a default-mode module-syntax rejection all pass."
+  },
+  "ordinaryGate": {
+    "passed": 37,
+    "failed": 0,
+    "total": 37,
+    "acceptedSetIntentionallyEmpty": true
+  },
+  "pr90": "Held and untouched until this repair merges; then rebase and own gate. Scientific conventions still require human sign-off."
+}

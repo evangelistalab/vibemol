@@ -53,5 +53,5 @@ def resolve_pinned_headless_browser(full_executable, launched_version, metadata_
     match = re.search(r'\b\d+\.\d+\.\d+\.\d+\b', version)
     if not match or match[0] != launched_version:
         raise RuntimeError(f'Pinned Figure executable version mismatch: {executable}: {version!r}, expected {launched_version} from {metadata_path}; no browser fallback')
-    print('[figure-runner] pinned executable '+json.dumps(dict(metadata=str(metadata_path), executable=str(executable), revision=shell['revision'], version=launched_version)), flush=True)
+    print('[figure-browser-pin] '+json.dumps(dict(metadata=str(metadata_path), executable=str(executable), revision=shell['revision'], version=launched_version)), flush=True)
     return str(executable)

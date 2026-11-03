@@ -7,7 +7,7 @@ import path from 'node:path';
 import {validateJob,selectTargets,stableValue,FigureError,FIGURE_DEFAULTS} from '../../api/figure-job.mjs';
 import {loadGlobalModules} from './load-global-module.mjs';
 import {Protocol,serveApp,waitForFigureReady,requireNormalShutdown} from '../../api/figure-browser.mjs';
-import {runFigureJob} from '../../api/figure-runner.mjs';
+import {runFigureJob,createFigureCompletion} from '../../api/figure-runner.mjs';
 
 const example=JSON.parse(await readFile(new URL('../../api/examples/figure.json',import.meta.url),'utf8'));
 test('host defaults are an exact typed copy of the product defaults',()=>{
@@ -109,4 +109,32 @@ test('local server exposes only app assets and the supplied session, never arbit
 test('pre-cancelled jobs stop before browser/output setup',async()=>{
   const c=new AbortController();c.abort(new FigureError('cancelled','cancelled'));
   await assert.rejects(runFigureJob('/absent',{browser:'/absent',signal:c.signal}),e=>e.stage==='cancelled');
+});
+
+test('pending Fetch rejection before completion fails; completion cannot hide it',()=>{
+  const controller=new AbortController(),observations={},work=createFigureCompletion(controller,observations);
+  const error=new FigureError('browser','Session with given id not found.');
+  work.reject(error,{method:'Fetch.continueRequest',requestId:'before'});
+  assert.equal(controller.signal.reason,error);
+  assert.throws(()=>work.complete('targets'),e=>e===error);
+  assert.equal(observations.workComplete,undefined);
+  assert.deepEqual(observations.protocolRejections.map(r=>[r.afterCompletion,r.disposition]),[[false,'fatal']]);
+});
+test('only retired transport rejections after the explicit result boundary are nonfatal and recorded',()=>{
+  for(const kind of ['targets','image']) {
+    const controller=new AbortController(),observations={},work=createFigureCompletion(controller,observations);
+    work.complete(kind);
+    work.reject(new FigureError('browser','Session with given id not found.'),{method:'Fetch.continueRequest',requestId:'late'});
+    assert.equal(controller.signal.aborted,false);
+    assert.equal(observations.workComplete.kind,kind);
+    assert.equal(observations.protocolRejections.length,1);
+    assert.equal(observations.protocolRejections[0].afterCompletion,true);
+    assert.equal(observations.protocolRejections[0].context.requestId,'late');
+    assert.equal(observations.protocolRejections[0].disposition,'completed-work transport retired');
+    assert.throws(()=>work.complete(kind),/completed twice/);
+    const error=new FigureError('browser','Unexpected protocol failure');
+    work.reject(error,{method:'Fetch.continueRequest'});
+    assert.equal(controller.signal.reason,error);
+    assert.equal(observations.protocolRejections.at(-1).disposition,'fatal');
+  }
 });
