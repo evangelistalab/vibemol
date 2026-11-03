@@ -102,10 +102,10 @@ Escape first closes the popup, then clears atom focus, then returns to View.
 - With ROHF, forte2 AVAS always includes all singly occupied orbitals. The
   **Additional active**, **Doubly occupied**, and **Virtual** counts are additional
   to those orbitals, and remain spatial counts. Separate counts can both be 0
-  if there are singly occupied orbitals. The current forte2 separate-count
-  validator uses signed `2*ms`: for negative `ms`, it additionally requires
-  `docc + uocc + 2*ms > 0`. VibeMol explains that restriction and blocks invalid
-  input; Total selection or positive `ms` avoids it.
+  if there are singly occupied orbitals. The targeted forte2 version counts
+  these as `abs(2*ms)` for either sign of the spin projection. VibeMol uses that
+  same absolute count; the former signed-ms rejection is removed. See the
+  [target compatibility contract](forte2-interchange.md) for the declared change.
 - GHF emits `x2c_type="so"` and
   `CI(RelCISolver(nel=mf.nel))(avas)`. Enter counts as spatial pairs; GHF doubles
   emitted active counts exactly once and labels the projected count **spinors**.
