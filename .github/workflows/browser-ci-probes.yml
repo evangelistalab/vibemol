@@ -75,7 +75,7 @@ jobs:
   figure-main-control:
     if: github.event_name == 'workflow_dispatch' && inputs.scope == 'figure-main-control'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,7 +88,7 @@ jobs:
           python-version: '3.12.15'
       - name: Ordinary locked browser toolchain
         run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
-      - name: One-off repaired-main rejection observation; stop at first firing or 100 listings
+      - name: One-off repaired-main rejection observation; stop at first firing or 200 short-viewport listings
         env:
           PYTHONUNBUFFERED: '1'
         run: |
@@ -125,14 +125,15 @@ jobs:
           job['environment']['browserVersion'] = pin['browserVersion']
           job['environment']['sandbox'] = False
           job['figure'].update(widthIn=4,dpi=128)
+          job['environment']['viewport'].update(width=1280,height=320)
           jobfile = out/'listing-job.json'
           jobfile.write_text(json.dumps(job,indent=2))
           allowed = ['Session with given id not found.','Chrome disconnected.','Chrome closed.','Chrome connection is closed.']
           rows = []
-          result = dict(diagnosticOnly=True, ordinaryGateAcceptance=False, maximumAttempts=100,
+          result = dict(diagnosticOnly=True, ordinaryGateAcceptance=False, maximumAttempts=200,
               stopRule='first invocation containing an actual protocolRejections event; otherwise budget exhaustion',
               source=environment, attempts=rows, attempted=0, firings=0, rejectionEvents=0,
-              status='running', allowedMessages=allowed)
+              status='running', case='1280x320 supported short viewport', requestedEnvironment=job['environment'], allowedMessages=allowed)
           def save():
               (out/'measurement.json').write_text(json.dumps(result,indent=2))
           def check(label,actual,expected,**context):
@@ -141,7 +142,7 @@ jobs:
               assert json.dumps(actual,sort_keys=True) == json.dumps(expected,sort_keys=True), row
           save()
           try:
-              for iteration in range(1,101):
+              for iteration in range(1,201):
                   row = dict(attempt=iteration)
                   rows.append(row)
                   result['attempted'] = iteration
