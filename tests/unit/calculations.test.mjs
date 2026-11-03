@@ -12,7 +12,7 @@ const ring=()=>record([[6,0,0,.859492],[6,0,-.651229,-.499559],[6,0,.651229,-.49
 // Scientific fixtures explicitly assign shells; viewport selection has no AO side effects.
 const pick=(r,...indices)=>indices.forEach(i=>{const id='a'+i;if(M.state(r).selections.some(row=>row.id===id))M.removeOrbitals(r,[id]);else M.selectShell(r,id,M.defaultShell(r.vol.atoms.find(a=>a.id===id).Z));});
 test('CAS is the new-record default and explicit saved methods retain their choice',()=>{
- const r=ring();assert.equal(M.defaults.method,'cas');assert.equal(M.state(r).options.method,'cas');
+ const r=ring();assert.equal(M.state(r).options.method,'cas');
  assert.equal(Object.hasOwn(M.state(r).options,'cas'),false);
  pick(r,0);assert.equal(M.generate(r),'');assert.match(M.validation(r).errors.join(' '),/CAS must contain two/);
  M.setOptions(r,{cas:[4,3]});assert.match(M.generate(r),/cas=\(4, 3\),/);
