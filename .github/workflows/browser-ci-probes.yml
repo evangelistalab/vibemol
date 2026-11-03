@@ -75,11 +75,19 @@ jobs:
   figure-main-control:
     if: github.event_name == 'workflow_dispatch' && inputs.scope == 'figure-main-control'
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source: main
+            ref: b1de909288d8ba85da017f18654771eca54547d0
+          - source: pr90
+            ref: b7f55e964ed5f1ed7f9fa56728452850f2f4d467
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: c37bb07e30c711025da325a14bbbb4a8345d06d7
+          ref: ${{ matrix.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -88,29 +96,50 @@ jobs:
           python-version: '3.12.15'
       - name: Ordinary locked browser toolchain
         run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
-      - name: Unchanged merged-main native Figure matrix once
+      - name: Three unchanged native Figure matrices per source; diagnostic only
         env:
           PYTHONUNBUFFERED: '1'
+          CONTROL_REF: ${{ matrix.ref }}
+          CONTROL_SOURCE: ${{ matrix.source }}
         run: |
           mkdir -p out/test-artifacts/figure-main-control
           git rev-parse HEAD HEAD^{tree} > out/test-artifacts/figure-main-control/source.txt
-          test "$(git rev-parse HEAD)" = c37bb07e30c711025da325a14bbbb4a8345d06d7
-          python - <<'PY' > out/test-artifacts/figure-main-control/run.log 2>&1
-          import json, pathlib, sys
+          test "$(git rev-parse HEAD)" = "$CONTROL_REF"
+          python - <<'PYCONTROL' > out/test-artifacts/figure-main-control/run.log 2>&1
+          import json, pathlib, sys, traceback, os
           import playwright
           from playwright.sync_api import sync_playwright
           sys.path.insert(0, 'tests/e2e')
           from pinned_figure_browser import resolve_pinned_headless_browser
           from figure_runner import run
+          out = pathlib.Path('out/test-artifacts/figure-main-control').resolve()
           metadata = pathlib.Path(playwright.__file__).parent/'driver/package/browsers.json'
           pinned = next(r['browserVersion'] for r in json.loads(metadata.read_text())['browsers'] if r['name']=='chromium-headless-shell')
           with sync_playwright() as pw:
               executable = resolve_pinned_headless_browser(pw.chromium.executable_path, pinned, metadata)
-          run(executable, pathlib.Path('out/test-artifacts/figure-main-control/native').resolve())
-          PY
+          outcomes = []
+          for iteration in range(1, 4):
+              folder = out / ('native-' + str(iteration))
+              try:
+                  run(executable, folder)
+                  row = dict(iteration=iteration, passed=True)
+              except Exception as error:
+                  traceback.print_exc()
+                  row = dict(iteration=iteration, passed=False, error=str(error))
+              row['source'] = os.environ['CONTROL_SOURCE']
+              row['commit'] = os.environ['CONTROL_REF']
+              row['listingReached'] = (folder/'listing.stderr').exists()
+              if row['listingReached']:
+                  row['listingStdout'] = (folder/'listing.stdout').read_text()
+                  row['listingStderr'] = (folder/'listing.stderr').read_text()
+              outcomes.append(row)
+              print('[figure-control] ' + json.dumps(row), flush=True)
+          (out/'outcomes.json').write_text(json.dumps(outcomes, indent=2))
+          print('[figure-control-summary] ' + json.dumps(dict(source=os.environ['CONTROL_SOURCE'], runs=3, passed=sum(r['passed'] for r in outcomes), failed=sum(not r['passed'] for r in outcomes))), flush=True)
+          PYCONTROL
       - name: Preserve main control and every original comparand
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: figure-main-control
+          name: figure-main-control-${{ matrix.source }}
           path: out/test-artifacts/figure-main-control/
