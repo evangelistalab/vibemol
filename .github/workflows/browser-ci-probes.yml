@@ -75,19 +75,11 @@ jobs:
   figure-main-control:
     if: github.event_name == 'workflow_dispatch' && inputs.scope == 'figure-main-control'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - source: main
-            ref: b1de909288d8ba85da017f18654771eca54547d0
-          - source: pr90
-            ref: b7f55e964ed5f1ed7f9fa56728452850f2f4d467
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ matrix.ref }}
+          ref: 2fb9cbc566b45df6806a90f2e063b3eb179e629c
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
@@ -96,64 +88,134 @@ jobs:
           python-version: '3.12.15'
       - name: Ordinary locked browser toolchain
         run: pip install -r api/requirements-ci.lock && python -m playwright install --with-deps chromium
-      - name: Three unchanged native Figure matrices per source; diagnostic only
+      - name: One-off repaired-main rejection observation; stop at first firing or 100 listings
         env:
           PYTHONUNBUFFERED: '1'
-          CONTROL_REF: ${{ matrix.ref }}
-          CONTROL_SOURCE: ${{ matrix.source }}
         run: |
-          mkdir -p out/test-artifacts/figure-main-control
-          git rev-parse HEAD HEAD^{tree} > out/test-artifacts/figure-main-control/source.txt
-          test "$(git rev-parse HEAD)" = "$CONTROL_REF"
-          python - <<'PYCONTROL' > out/test-artifacts/figure-main-control/run.log 2>&1
-          import json, pathlib, sys, traceback, os
+          mkdir -p out/test-artifacts/figure-main-control/repaired-main
+          git rev-parse HEAD HEAD^{tree} > out/test-artifacts/figure-main-control/repaired-main/source.txt
+          test "$(git rev-parse HEAD)" = 2fb9cbc566b45df6806a90f2e063b3eb179e629c
+          python - <<'PYPROOF' > out/test-artifacts/figure-main-control/repaired-main/run.log 2>&1
+          import hashlib, json, pathlib, subprocess, sys, time, traceback
+          import importlib.metadata
           import playwright
           from playwright.sync_api import sync_playwright
           sys.path.insert(0, 'tests/e2e')
           from pinned_figure_browser import resolve_pinned_headless_browser
-          from figure_runner import run
-          out = pathlib.Path('out/test-artifacts/figure-main-control').resolve()
+          root = pathlib.Path.cwd()
+          out = root/'out/test-artifacts/figure-main-control/repaired-main'
           metadata = pathlib.Path(playwright.__file__).parent/'driver/package/browsers.json'
-          pinned = next(r['browserVersion'] for r in json.loads(metadata.read_text())['browsers'] if r['name']=='chromium-headless-shell')
+          manifest = json.loads(metadata.read_text())
+          pin = next(r for r in manifest['browsers'] if r['name']=='chromium-headless-shell')
           with sync_playwright() as pw:
-              executable = resolve_pinned_headless_browser(pw.chromium.executable_path, pinned, metadata)
-          outcomes = []
-          for iteration in range(1, 4):
-              folder = out / ('native-' + str(iteration))
-              try:
-                  run(executable, folder)
-                  row = dict(iteration=iteration, passed=True)
-              except Exception as error:
-                  traceback.print_exc()
-                  row = dict(iteration=iteration, passed=False, error=str(error))
-              row['source'] = os.environ['CONTROL_SOURCE']
-              row['commit'] = os.environ['CONTROL_REF']
-              row['listingReached'] = (folder/'listing.stderr').exists()
-              if row['listingReached']:
-                  row['listingStdout'] = (folder/'listing.stdout').read_text()
-                  row['listingStderr'] = (folder/'listing.stderr').read_text()
-              outcomes.append(row)
-              print('[figure-control] ' + json.dumps(row), flush=True)
-          (out/'outcomes.json').write_text(json.dumps(outcomes, indent=2))
-          print('[figure-control-summary] ' + json.dumps(dict(source=os.environ['CONTROL_SOURCE'], runs=3, passed=sum(r['passed'] for r in outcomes), failed=sum(not r['passed'] for r in outcomes))), flush=True)
-          # Fixed additional cohort, declared before execution: 20 fresh CLI
-          # listings per source. No repair, retry-to-green or acceptance evidence.
-          import subprocess
-          job = out/'native-1/listing.json'
-          listing_outcomes = []
-          for iteration in range(1, 21):
-              result = subprocess.run(['node', 'api/figure-runner.mjs', str(job), '--browser', executable, '--list-targets'], capture_output=True, text=True, timeout=360)
-              (out/f'listing-{iteration}.stdout').write_text(result.stdout)
-              (out/f'listing-{iteration}.stderr').write_text(result.stderr)
-              row = dict(source=os.environ['CONTROL_SOURCE'], commit=os.environ['CONTROL_REF'], iteration=iteration, returncode=result.returncode, passed=result.returncode==0)
-              listing_outcomes.append(row)
-              print('[listing-control] ' + json.dumps(row), flush=True)
-          (out/'listing-outcomes.json').write_text(json.dumps(listing_outcomes, indent=2))
-          print('[listing-control-summary] ' + json.dumps(dict(source=os.environ['CONTROL_SOURCE'], runs=20, passed=sum(r['passed'] for r in listing_outcomes), failed=sum(not r['passed'] for r in listing_outcomes))), flush=True)
-          PYCONTROL
-      - name: Preserve main control and every original comparand
+              executable = resolve_pinned_headless_browser(pw.chromium.executable_path, pin['browserVersion'], metadata)
+          lock = (root/'api/requirements-ci.lock').read_text()
+          expected_pw = next(l.split('==',1)[1] for l in lock.splitlines() if l.startswith('playwright=='))
+          assert importlib.metadata.version('playwright') == expected_pw
+          environment = dict(sourceCommit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+              sourceTree=subprocess.check_output(['git','rev-parse','HEAD^{tree}'],text=True).strip(),
+              playwright=expected_pw, browserPin=pin, executable=executable, python=sys.version,
+              node=subprocess.check_output(['node','--version'],text=True).strip(),
+              lockSha256=hashlib.sha256(lock.encode()).hexdigest(),
+              runnerSha256=hashlib.sha256((root/'api/figure-runner.mjs').read_bytes()).hexdigest())
+          (out/'environment.json').write_text(json.dumps(environment,indent=2))
+          job = json.loads((root/'api/examples/figure.json').read_text())
+          job['session'] = str(root/'tests/fixtures/characterize/two-scenes.vibemol-session.gz')
+          job['output'] = str(out/'no-bundle-should-be-written')
+          job['environment']['browserVersion'] = pin['browserVersion']
+          job['environment']['sandbox'] = False
+          job['figure'].update(widthIn=4,dpi=128)
+          jobfile = out/'listing-job.json'
+          jobfile.write_text(json.dumps(job,indent=2))
+          allowed = ['Session with given id not found.','Chrome disconnected.','Chrome closed.','Chrome connection is closed.']
+          rows = []
+          result = dict(diagnosticOnly=True, ordinaryGateAcceptance=False, maximumAttempts=100,
+              stopRule='first invocation containing an actual protocolRejections event; otherwise budget exhaustion',
+              source=environment, attempts=rows, attempted=0, firings=0, rejectionEvents=0,
+              status='running', allowedMessages=allowed)
+          def save():
+              (out/'measurement.json').write_text(json.dumps(result,indent=2))
+          def check(label,actual,expected,**context):
+              row = dict(label=label,actual=actual,expected=expected,**context)
+              print('[rejection-proof-comparands] '+json.dumps(row),flush=True)
+              assert json.dumps(actual,sort_keys=True) == json.dumps(expected,sort_keys=True), row
+          save()
+          try:
+              for iteration in range(1,101):
+                  row = dict(attempt=iteration)
+                  rows.append(row)
+                  result['attempted'] = iteration
+                  started = time.monotonic()
+                  proc = subprocess.run(['node','api/figure-runner.mjs',str(jobfile),'--browser',executable,'--list-targets'],
+                      capture_output=True,text=True,timeout=360)
+                  row.update(returncode=proc.returncode,wallSeconds=time.monotonic()-started,
+                      stdout=f'listing-{iteration}.stdout',stderr=f'listing-{iteration}.stderr')
+                  (out/row['stdout']).write_text(proc.stdout)
+                  (out/row['stderr']).write_text(proc.stderr)
+                  try:
+                      available = json.loads(proc.stdout if proc.returncode==0 else proc.stderr.splitlines()[-1])
+                      observations = available.get('observations',{})
+                      rejections = observations.get('protocolRejections',[])
+                      row.update(protocolRejections=rejections,workComplete=observations.get('workComplete'),cleanup=available.get('cleanup'),fired=bool(rejections))
+                      if rejections:
+                          result['firings'] += 1
+                          result['rejectionEvents'] += len(rejections)
+                          result.setdefault('messagesVerbatim',[]).extend(r['message']for r in rejections)
+                  except (ValueError,IndexError,AttributeError) as parse_error:
+                      row['reportReadError'] = str(parse_error)
+                  save()
+                  check('process exit '+str(iteration),proc.returncode,0,stderrTail=proc.stderr[-6000:],artifactPath=str(out/row['stderr']))
+                  check('one complete stdout JSON line '+str(iteration),len(proc.stdout.strip().splitlines()),1)
+                  receipt = json.loads(proc.stdout)
+                  observations = receipt['observations']
+                  rejections = observations['protocolRejections']
+                  actual = dict(ok=receipt.get('ok'),targets=[t['id']for t in receipt['targets']],
+                      readiness=[(r['stage'],r['stableFrames'])for r in observations['readiness']],
+                      imported=observations['import']['ok'],workKind=observations['workComplete']['kind'],
+                      version=observations['browser']['product'].split('/')[-1],
+                      theme=receipt['environment']['theme'],font=receipt['environment']['font'],
+                      viewport=receipt['environment']['viewport'],sandbox=receipt['environment']['sandbox'],
+                      swiftshader='SwiftShader' in receipt['environment']['renderer'],
+                      cleanup={k:receipt['cleanup'][k]for k in ('browserExited','profileRemoved','serverClosed','exitCode','exitSignal','forced')},
+                      outputBundle=(out/'no-bundle-should-be-written').exists())
+                  expected = dict(ok=True,targets=['cube-1','molecule-2'],
+                      readiness=[('startup-readiness',2),('import-readiness',2),('render-readiness',2)],
+                      imported=True,workKind='targets',version=pin['browserVersion'],
+                      theme=job['environment']['theme'],font=job['environment']['font'],
+                      viewport=job['environment']['viewport'],sandbox=False,swiftshader=True,
+                      cleanup=dict(browserExited=True,profileRemoved=True,serverClosed=True,exitCode=0,exitSignal=None,forced=False),
+                      outputBundle=False)
+                  save()
+                  check('complete successful receipt '+str(iteration),actual,expected)
+                  for rejection in rejections:
+                      check('recorded rejection classification '+str(iteration),
+                          dict(afterCompletion=rejection.get('afterCompletion'),disposition=rejection.get('disposition'),
+                              stage=rejection.get('stage'),knownMessage=rejection.get('message') in allowed,
+                              fetchCommand=rejection.get('context',{}).get('method') in ('Fetch.continueRequest','Fetch.failRequest')),
+                          dict(afterCompletion=True,disposition='completed-work transport retired',stage='browser',knownMessage=True,fetchCommand=True))
+                      print('[observed-rejection] '+json.dumps(rejection),flush=True)
+                  row['receiptAssertionsPassed'] = True
+                  print('[listing-observation] '+json.dumps(row),flush=True)
+                  if rejections:
+                      result['status'] = 'observed-and-asserted'
+                      result['messagesVerbatim'] = [r['message']for r in rejections]
+                      save()
+                      break
+              else:
+                  result['status'] = 'budget-exhausted-without-observation'
+                  save()
+                  print('[rejection-proof] '+json.dumps(result),flush=True)
+                  raise SystemExit(2)
+          except Exception as error:
+              result.update(status='unexpected-outcome',error=str(error))
+              save()
+              traceback.print_exc()
+              raise
+          print('[rejection-proof] '+json.dumps(result),flush=True)
+          PYPROOF
+      - name: Preserve every stdout receipt, rejection and comparand; diagnostic only
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: figure-main-control-${{ matrix.source }}
-          path: out/test-artifacts/figure-main-control/
+          name: figure-repaired-main-rejection-proof
+          path: out/test-artifacts/figure-main-control/repaired-main/
