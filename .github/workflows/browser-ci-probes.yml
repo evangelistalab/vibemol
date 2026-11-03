@@ -136,6 +136,20 @@ jobs:
               print('[figure-control] ' + json.dumps(row), flush=True)
           (out/'outcomes.json').write_text(json.dumps(outcomes, indent=2))
           print('[figure-control-summary] ' + json.dumps(dict(source=os.environ['CONTROL_SOURCE'], runs=3, passed=sum(r['passed'] for r in outcomes), failed=sum(not r['passed'] for r in outcomes))), flush=True)
+          # Fixed additional cohort, declared before execution: 20 fresh CLI
+          # listings per source. No repair, retry-to-green or acceptance evidence.
+          import subprocess
+          job = out/'native-1/listing.json'
+          listing_outcomes = []
+          for iteration in range(1, 21):
+              result = subprocess.run(['node', 'api/figure-runner.mjs', str(job), '--browser', executable, '--list-targets'], capture_output=True, text=True, timeout=360)
+              (out/f'listing-{iteration}.stdout').write_text(result.stdout)
+              (out/f'listing-{iteration}.stderr').write_text(result.stderr)
+              row = dict(source=os.environ['CONTROL_SOURCE'], commit=os.environ['CONTROL_REF'], iteration=iteration, returncode=result.returncode, passed=result.returncode==0)
+              listing_outcomes.append(row)
+              print('[listing-control] ' + json.dumps(row), flush=True)
+          (out/'listing-outcomes.json').write_text(json.dumps(listing_outcomes, indent=2))
+          print('[listing-control-summary] ' + json.dumps(dict(source=os.environ['CONTROL_SOURCE'], runs=20, passed=sum(r['passed'] for r in listing_outcomes), failed=sum(not r['passed'] for r in listing_outcomes))), flush=True)
           PYCONTROL
       - name: Preserve main control and every original comparand
         if: always()
