@@ -53,7 +53,12 @@ def run_matrix(output):
                         page.evaluate('()=>VibeMolCalculations.enter()');ready(page,'()=>!!document.querySelector("#subspacePanel.open")',site='forte2-panel')
                         page.evaluate('()=>VibeMolCalculations.ready()');settle(page)
                         page.evaluate('()=>VibeMolCalculations.selectAtoms([0,1,2])')
-                        check('focus-not-orbitals',export({'avas':{}})['error']['code'],'AVAS_INVALID')
+                        check('focus-not-orbitals',dict(error=export({'avas':{}})['error']['code'],
+                            method=page.locator('#avas-method').input_value(),
+                            electrons=page.locator('#avas-casElectrons').input_value(),
+                            orbitals=page.locator('#avas-casOrbitals').input_value()),
+                            dict(error='AVAS_INVALID',method='cas',electrons='',orbitals=''))
+                        page.locator('#avas-method').select_option('cumulative');settle(page)
                         for index in range(3):page.evaluate('i=>VibeMolCalculations.selectShell(i,"2p")',index)
                         value=export({'fragment':{'kind':'labels','labels':['C1','C3']},'avas':{}})['value']
                         check('aset-labels',value['aset'],{'fragment':['C1','C3']})

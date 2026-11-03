@@ -81,9 +81,11 @@ Escape first closes the popup, then clears atom focus, then returns to View.
 - A whole p shell on a plane contributes three MINAO functions but **one**
   subspace orbital. The preview displays that same normal-oriented combination.
   Three ring carbons therefore report **9 MINAO functions → 3 subspace orbitals**.
-- Available methods are cumulative (`sigma=0.98` by default), cutoff, separate
-  occupied/virtual counts, and total count. Diagonalization defaults on. Invalid
-  parameters suppress the generated input and show an explanation.
+- Complete active space (CAS) is the default selection method. Enter the active
+  electron and orbital counts explicitly (spinors for GHF). Saved methods and
+  counts retain their values. Cumulative (`sigma=0.98`), cutoff, separate
+  occupied/virtual counts, and total count remain available. Diagonalization
+  defaults on. Invalid parameters suppress generated input and explain why.
 - Total active count follows the selected spin-free subspace, including π-plane
   constraints, until edited. For example, three whole p shells give 9, or 3 with
   a shared π plane. A manual count persists across selection changes and session

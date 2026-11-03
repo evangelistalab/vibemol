@@ -74,6 +74,7 @@ test('real MINAO snapshot bridge rejects target mismatch and every silent normal
  const context=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js']);
  const M=context.VibeMolCalculationsModel;M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url))));
  const record={vol:{units:'angstrom',atoms:[{id:'a',Z:6,x:0,y:0,z:0},{id:'b',Z:6,x:1,y:0,z:0},{id:'c',Z:6,x:0,y:1,z:0}]}};
+ M.setOptions(record,{method:'cumulative'}); // This fixture verifies the existing non-CAS bridge.
  for(const atom of record.vol.atoms)M.selectShell(record,atom.id,'2p');
  const target={atoms:M.atoms(record).map(a=>({...a,position:a.point}))},original=plain(record.calculations);
  const source=fs.readFileSync(new URL('../../assets/app/js/app.js',import.meta.url),'utf8');
@@ -96,6 +97,7 @@ test('export target identity is exact and post-validation readback rejects a sil
  const ctx=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js']);
  const M=ctx.VibeMolCalculationsModel;M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url))));
  const record={vol:{units:'angstrom',atoms:[{id:'a',Z:6,x:0,y:0,z:0},{id:'b',Z:6,x:1.5,y:0,z:0},{id:'c',Z:6,x:0,y:1.5,z:0}]}};
+ M.setOptions(record,{method:'cumulative'}); // This fixture verifies the existing non-CAS bridge.
  for(const atom of record.vol.atoms)M.selectShell(record,atom.id,'2p');
  const source=fs.readFileSync(new URL('../../assets/app/js/app.js',import.meta.url),'utf8');
  const slice=(start,end)=>source.slice(source.indexOf(start),source.indexOf(end,source.indexOf(start)));

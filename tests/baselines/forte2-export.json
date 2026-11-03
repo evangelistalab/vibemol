@@ -475,5 +475,13 @@
     "rawLog": "out/test-artifacts/forte2-export-cas/native-exact.log",
     "rawLogSha256": "b89d743e046862491ab5fa4ee8214de7abdaeda42e59b2d22c996014766b8b25",
     "appSha256": "151e6550ced117f0029dcd2bab48a3d1dcd8d4a1db4bf997c153e518f9d0bb8d"
-  }
+  },
+  "modelDefaultChanges": [
+    {
+      "key": "method",
+      "before": "cumulative",
+      "after": "cas",
+      "reason": "Direct human request2026-11-03: Complete active space (CAS) is the default selection method. Explicit saved methods and CAS counts remain unchanged."
+    }
+  ]
 }

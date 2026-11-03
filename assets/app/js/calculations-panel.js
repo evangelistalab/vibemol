@@ -92,7 +92,7 @@
       if(lastRecord!==record){lastRecord=record;signature='';planeChecked.clear();}
       $('[data-active]').textContent=record?`Active: ${record.name}`:'Load a structure to choose atomic functions.';
       const rohf=options.reference==='ROHF',cas=options.method==='cas';
-      // Absent until explicitly selected: old sessions/default capture DOM stay unchanged.
+      // Create the count inputs when CAS is the resolved method, including the default.
       if(cas&&!fields.has('casElectrons')){field('casElectrons','CAS electrons','number');field('casOrbitals','CAS orbitals','number');}
 
       for(const [key,input]of fields){input.disabled=!record||(key==='ms'&&!rohf);if(document.activeElement!==input){if(input.type==='checkbox')input.checked=options[key];else input.value=key==='casElectrons'?options.cas?.[0]??'':key==='casOrbitals'?options.cas?.[1]??'':options[key];}}

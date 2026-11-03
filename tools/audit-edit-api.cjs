@@ -93,6 +93,26 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
 function semantic(source) {
  return JSON.stringify(parser.parse(source),(key,value)=>['start','end','loc','extra','comments','leadingComments','trailingComments','innerComments','tokens'].includes(key)?undefined:value);
 }
+function restoreDeclaredModelDefaults(source,previous,changes=[]) {
+ const defaults=code=>{
+  const body=parser.parse(code).program.body[0].expression.callee.body.body;
+  const node=body.filter(n=>n.type==='VariableDeclaration').flatMap(n=>n.declarations).find(n=>n.id.name==='defaults');
+  assert(node&&node.init?.type==='CallExpression'&&node.init.arguments[0]?.type==='ObjectExpression','Model defaults object');
+  return node.init.arguments[0].properties;
+ };
+ const current=defaults(source),old=defaults(previous),edits=[],seen=new Set();
+ for(const change of changes){
+  assert.deepEqual(Object.keys(change).sort(),['after','before','key','reason']);
+  assert(typeof change.reason==='string'&&change.reason.length>0&&!seen.has(change.key),'Distinct documented default changes');seen.add(change.key);
+  const value=properties=>properties.find(n=>n.type==='ObjectProperty'&&n.key.name===change.key)?.value;
+  const before=value(old),after=value(current);assert(before&&after,'Declared model default exists');
+  assert.equal(before.type,'StringLiteral');assert.equal(after.type,'StringLiteral');
+  assert.equal(before.value,change.before,'Original model default');assert.equal(after.value,change.after,'Declared model default');
+  edits.push([after.start,after.end,JSON.stringify(change.before)]);
+ }
+ for(const[start,end,replacement]of edits.sort((a,b)=>b[0]-a[0]))source=source.slice(0,start)+replacement+source.slice(end);
+ return source;
+}
 function additiveHelpers(root, readBase) {
  const files=['calculations-model.js','edit-halo.js','edit-placement.js'];
  for(const name of files) {
@@ -100,6 +120,7 @@ function additiveHelpers(root, readBase) {
   if(name==='calculations-model.js') {
    const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/forte2-export.json')));
    const previous=require('node:child_process').execFileSync('git',['show',contract.baseCommit+':'+file],{cwd:root,encoding:'utf8'});
+   code=restoreDeclaredModelDefaults(code,previous,contract.modelDefaultChanges);
    const functions=s=>parser.parse(s).program.body[0].expression.callee.body.body.filter(n=>n.type==='FunctionDeclaration');
    for(const current of functions(code).filter(n=>contract.changedModelFunctions.includes(n.id.name)).sort((a,b)=>b.start-a.start)){
     const old=functions(previous).find(n=>n.id.name===current.id.name);assert(old);
@@ -154,4 +175,4 @@ if(require.main===module) {
  const result=audit(),index=process.argv.indexOf('--out');if(index>=0)fs.writeFileSync(process.argv[index+1],JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify(result));
 }
-module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,audit};
+module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,restoreDeclaredModelDefaults,audit};

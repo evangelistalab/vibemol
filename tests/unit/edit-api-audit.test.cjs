@@ -57,3 +57,17 @@ test('native-suite error collectors receive rejection comparands and serializati
  const cyclic=[];cyclic.push(cyclic);assert.throws(()=>run('selection',cyclic),caught=>caught===error);
  assert.equal(JSON.parse(records.pop().slice('[edit-testing-rejection] '.length)).requested,'non-JSON request');
 });
+
+test('only the declared CAS default is normalized and other settings still fail the legacy freeze',()=>{
+ const {restoreDeclaredModelDefaults}=require('../../tools/audit-edit-api.cjs');
+ const previous="(function(){const defaults=Object.freeze({method:'cumulative',sigma:.98});})();";
+ const source="(function(){const defaults=Object.freeze({method:'cas',sigma:.98});})();";
+ const changes=[{key:'method',before:'cumulative',after:'cas',reason:'Human-authorized CAS default'}];
+ const semantic=code=>JSON.stringify(require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser')).parse(code),
+  (key,value)=>['start','end','loc','extra'].includes(key)?undefined:value);
+ assert.equal(semantic(restoreDeclaredModelDefaults(source,previous,changes)),semantic(previous));
+ assert.throws(()=>restoreDeclaredModelDefaults(source.replace("method:'cas'","method:'total'"),previous,changes),/Declared model default/);
+ assert.throws(()=>restoreDeclaredModelDefaults(source,previous,[{...changes[0],before:'cutoff'}]),/Original model default/);
+ assert.notEqual(semantic(restoreDeclaredModelDefaults(source.replace('sigma:.98','sigma:.97'),previous,changes)),semantic(previous));
+ assert.notEqual(semantic(restoreDeclaredModelDefaults(source,previous,[])),semantic(previous));
+});

@@ -258,6 +258,8 @@ def run_once(browser, url, inject):
                     page.locator('#mode' + mode + 'Btn').click()
                     page.evaluate('() => VibeMolCalculations.ready()')
                     if name == 'sample' and mode == 'Calculations':
+                        # This fixture keeps its existing cumulative-program contract explicit.
+                        page.evaluate("() => VibeMolCalculations.configure({method:'cumulative'})")
                         page.evaluate("() => VibeMolCalculations.selectShell(5,'2p')")
                         result = page.evaluate('() => VibeMolCalculations.export()')
                         assert result['specs'] == ['C3(2p)'] and not result['validation']['errors'], result
@@ -484,6 +486,7 @@ def main():
                         help='Explicit CI release recording from a verified source; never a version exemption.')
     parser.add_argument('--record-source-commit', help='Full immutable SHA for an explicitly declared CI recording candidate.')
     parser.add_argument('--record-api-delta', help='Tracked exact API delta; CI refuses every undeclared capture difference.')
+    parser.add_argument('--record-cas-default', action='store_true', help='Exact human-authorized180-method/108-DOM-ID CAS default recording only.')
     parser.add_argument('--runs', type=int, default=2)
     parser.add_argument('--matrix-run-index', type=int, choices=(1, 2),
                         help='Capture one half of the CI two-run gate; join_characterize.py must compare both artifacts.')
@@ -499,8 +502,12 @@ def main():
     if args.update_baseline:
         assert os.environ.get('GITHUB_ACTIONS') == 'true', 'Re-record characterization goldens on GitHub CI, never locally.'
     baseline_identity = {'commit': BASE_COMMIT, 'tag': BASE_TAG} if args.update_baseline or args.prepare_fixtures else None
-    api_previous = api_declaration = None
-    if args.record_api_delta:
+    api_previous = api_declaration = cas_previous = None
+    assert sum(bool(x) for x in (args.record_api_delta, args.record_release_tag, args.record_cas_default)) <= 1, 'One recording contract at a time'
+    if args.record_cas_default:
+        from cas_default_recording import require_source
+        baseline_identity, cas_previous = require_source(ROOT, args.source_root, args, ARTIFACTS / 'cas-default-source.json')
+    elif args.record_api_delta:
         from api_surface_recording import require_source
         baseline_identity, api_previous, api_declaration = require_source(ROOT, args.source_root, args, ARTIFACTS / 'api-baseline-source.json')
     elif args.record_release_tag:
@@ -514,7 +521,7 @@ def main():
     if args.record_release_tag == 'v0.10.2':
         from release_baseline_recording import read_version_delta_base
         release_previous = read_version_delta_base(ROOT)
-    if (args.update_baseline or args.prepare_fixtures) and not (args.record_release_tag or args.record_api_delta):
+    if (args.update_baseline or args.prepare_fixtures) and not (args.record_release_tag or args.record_api_delta or args.record_cas_default):
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()
         assert tagged == BASE_COMMIT, 'The pre-refactor tag must still identify the original base.'
         original = subprocess.check_output(['git', 'show', BASE_COMMIT + ':assets/app/js/app.js'], cwd=ROOT)
@@ -567,6 +574,10 @@ def main():
                     from api_surface_recording import verify_captures
                     delta_report = verify_captures(api_previous, captures, api_declaration)
                     (ARTIFACTS / f'api-delta-run-{run}.json').write_text(json.dumps(delta_report, indent=2) + '\n')
+                if cas_previous is not None:
+                    from cas_default_recording import verify
+                    delta_report = verify(cas_previous, captures)
+                    (ARTIFACTS / f'cas-default-delta-run-{run}.json').write_text(json.dumps(delta_report, indent=2) + '\n')
                 if release_previous is not None:
                     from release_baseline_recording import verify_version_delta
                     delta_report = verify_version_delta(release_previous, captures)

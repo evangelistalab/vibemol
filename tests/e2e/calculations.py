@@ -4,6 +4,7 @@ import ast
 import json
 import premerge as p
 from surface_shadows import settings, settle
+from checkpoint_contract import require_phase_counts
 
 CYCLO='''H .912650 0 1.457504
 H -.912650 0 1.457504
@@ -58,7 +59,13 @@ def run(page,url):
     assert page.evaluate('()=>VibeMolCalculations.state().selections.length')==3
     cache=page.evaluate('()=>VibeMolCalculations.cacheSize()')
     assert cache==3,cache  # Nine selected functions share three carbon meshes.
-    assert page.locator('#avas-method').input_value()=='cumulative'
+    actual = dict(method=page.locator('#avas-method').input_value(),
+                  electrons=page.locator('#avas-casElectrons').input_value(),
+                  orbitals=page.locator('#avas-casOrbitals').input_value())
+    expected = dict(method='cas', electrons='', orbitals='')
+    print('[calculations-default] '+json.dumps(dict(actual=actual, expected=expected)),flush=True)
+    assert actual==expected,dict(actual=actual,expected=expected)
+    require_phase_counts({'calculations-default':1},'tests/e2e/calculations.py','calculations-default')
     page.locator('#avas-method').select_option('total')
     assert page.locator('#avas-total').input_value()=='9'
     assert not page.get_by_role('button',name='Use selection count',exact=True).is_visible()
@@ -99,6 +106,7 @@ def run(page,url):
     assert page.locator('#avas-total').input_value()=='9'
     # New files do not inherit another molecule's selection.
     assert p.load(page,[{'name':'formaldehyde.xyz','text':H2CO}])['ok'];page.locator('#modeCalculationsBtn').click();ready(page)
+    page.locator('#avas-method').select_option('cumulative');ready(page)  # This fixture covers the existing cumulative program.
     for index in [0,1]:
         page.evaluate('i=>VibeMolCalculations.toggleAtom(i)',index)
         page.evaluate('i=>VibeMolCalculations.selectComponent(i,"2p","px")',index)
@@ -248,6 +256,7 @@ def transition_metals(page,url):
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolCalculations')
     assert p.load(page,[{'name':'FeNi.xyz','text':'Fe 0 0 0\nNi 0 0 2.4'}])['ok']
     page.locator('#modeCalculationsBtn').click();ready(page)
+    page.locator('#avas-method').select_option('cumulative');ready(page)  # This fixture covers the existing cumulative program.
     popup=page.locator('#calculationOrbitalsPopup')
     page.evaluate('()=>VibeMolCalculations.selectAtoms([0])');ready(page)
     def shell_names():
@@ -344,6 +353,7 @@ def expanded_shells(page,url):
         if page.locator('#modeCalculationsBtn').get_attribute('aria-checked')=='true':page.locator('#modeDisplayBtn').click()
         assert p.load(page,[{'name':element+'.xyz','text':element+' 0 0 0'}])['ok']
         page.locator('#modeCalculationsBtn').click();ready(page)
+        page.locator('#avas-method').select_option('cumulative');ready(page)
         page.evaluate('()=>VibeMolCalculations.selectAtoms([0])');ready(page)
         assert popup.locator('[data-shell]').all_text_contents()==expected
         shell=expected[-1]

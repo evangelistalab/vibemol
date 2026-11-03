@@ -3,7 +3,7 @@
   const BOHR = 0.529177210903;
   const labels = [['s'], ['py', 'pz', 'px'], ['dxy', 'dyz', 'dz2', 'dxz', 'dx2-y2']];
   const defaults = Object.freeze({ reference: 'RHF', charge: 0, ms: 0, basis: 'cc-pvdz', auxiliary: 'def2-universal-jkfit',
-    minao: 'cc-pvtz-minao', method: 'cumulative', sigma: 0.98, cutoff: 0.1, docc: 3, uocc: 3, total: 0, totalFollowsSelection: true, diagonalize: true });
+    minao: 'cc-pvtz-minao', method: 'cas', sigma: 0.98, cutoff: 0.1, docc: 3, uocc: 3, total: 0, totalFollowsSelection: true, diagonalize: true });
   let basis = null, pending = null;
   const referenceBases = new Map();
   const atomSelections = new WeakMap(); // Editing focus, not scientific/session state.
