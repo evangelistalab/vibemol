@@ -121,7 +121,8 @@
       "forte2-case": 68
     },
     "tests/e2e/measurements.py": {
-      "measurement-connection-width": 20
+      "measurement-connection-width": 20,
+      "measurement-connection-fog": 4
     }
   }
 }

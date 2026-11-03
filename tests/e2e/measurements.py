@@ -25,8 +25,14 @@ def connection_widths(page):
                     'actual': actual, 'expected': expected, 'readback': row}
         print('[measurement-connection-width] ' + json.dumps(evidence), flush=True)
         assert actual == expected, evidence
-    require_phase_counts({'measurement-connection-width': len(result['rows'])},
-                         'tests/e2e/measurements.py', 'measurement-connection-width')
+    for row in result['fogComparisons']:
+        evidence = {'case': {'dpr': row['dpr'], 'z': row['z']},
+                    'actual': row['actual'], 'expected': row['expected'], 'readback': row}
+        print('[measurement-connection-fog] ' + json.dumps(evidence), flush=True)
+        assert row['actual'] == row['expected'], evidence
+    require_phase_counts({'measurement-connection-width': len(result['rows']),
+                          'measurement-connection-fog': len(result['fogComparisons'])},
+                         'tests/e2e/measurements.py', 'measurement-connection-width', 'measurement-connection-fog')
 
 
 def settle(page):

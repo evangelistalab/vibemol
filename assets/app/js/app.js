@@ -22670,15 +22670,19 @@
       geometry.setAttribute('side', new THREE.Float32BufferAttribute(sides, 1));
       geometry.setIndex(indices);
       const material = new THREE.ShaderMaterial({
-        uniforms: { color: { value: new THREE.Color(color) }, opacity: { value: 0.8 },
-          lineWidth: { value: 3 }, resolution: { value: new THREE.Vector2(1, 1) } },
+        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
+          color: { value: new THREE.Color(color) }, opacity: { value: 0.8 },
+          lineWidth: { value: 3 }, resolution: { value: new THREE.Vector2(1, 1) },
+        }]),
         vertexShader: `
           attribute vec3 other;
           attribute float side;
           uniform vec2 resolution;
           uniform float lineWidth;
+          #include <fog_pars_vertex>
           void main() {
-            vec4 clip = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vec4 clip = projectionMatrix * mvPosition;
             vec4 next = projectionMatrix * modelViewMatrix * vec4(other, 1.0);
             float w = clip.w < 0.0 ? min(clip.w, -0.000001) : max(clip.w, 0.000001);
             float nextW = next.w < 0.0 ? min(next.w, -0.000001) : max(next.w, 0.000001);
@@ -22687,16 +22691,19 @@
             vec2 normal = lengthPx > 0.000001 ? vec2(-direction.y, direction.x) / lengthPx : vec2(0.0);
             clip.xy += normal * side * lineWidth / resolution * clip.w;
             gl_Position = clip;
+            #include <fog_vertex>
           }`,
         fragmentShader: `
           uniform vec3 color;
           uniform float opacity;
+          #include <fog_pars_fragment>
           void main() {
             gl_FragColor = vec4(color, opacity);
             #include <tonemapping_fragment>
             #include <colorspace_fragment>
+            #include <fog_fragment>
           }`,
-        transparent: true, opacity: 0.8, depthTest: false, depthWrite: false, side: THREE.DoubleSide,
+        transparent: true, opacity: 0.8, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: true,
       });
       const mesh = new THREE.Mesh(geometry, material), viewport = new THREE.Vector4();
       mesh.frustumCulled = false;
