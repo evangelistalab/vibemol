@@ -46,7 +46,7 @@ function normalizeHydrogenDefaults(code) {
   .replace('if (!enabled ||','if (!editAddAdjustHydrogensEnabled ||')
   .replace('applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId)','applyHydrogenPlanToVolume(vol, plan)');
 }
-function additiveApp(source, baseline, testingChanges={}) {
+function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
  const api=surface(source),old=surface(baseline,{requireProduct:false});
  const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
  assert.deepEqual(api.testing,old.testing,'Testing members changed');
@@ -57,33 +57,76 @@ function additiveApp(source, baseline, testingChanges={}) {
   else assert.equal(api.testingMembers[name],old.testingMembers[name],'Existing Testing object changed: '+name);
  }
  const statements=s=>parser.parse(s).program.body[0].expression.callee.body.body;
- const legacy=statements(baseline).map(n=>baseline.slice(n.start,n.end));
+ const previousNodes=statements(baseline);
+ const legacy=previousNodes.map(n=>baseline.slice(n.start,n.end));
+ const previousFunctions=new Map(previousNodes.filter(n=>n.type==='FunctionDeclaration').map(n=>[n.id.name,baseline.slice(n.start,n.end)]));
+ const appliedProductChanges=new Set();
  const preserved=[];let exposed=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
  for(const n of statements(source)) {
-  if(n.type==='FunctionDeclaration'&&fresh.test(n.id.name))continue;
-  if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi')) {
+  if(n.type==='FunctionDeclaration'&&(fresh.test(n.id.name)||n.id.name==='readForte2MinaoSnapshot'))continue;
+  if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi'||d.id.name==='forte2ProductApi')) {
    assert.equal(n.kind,'const','New API state must not add a module let');continue;
   }
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'
     &&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolEdit') {
    assert.equal(n.expression.right.name,'editProductApi');exposed++;continue;
   }
+  if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
   const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
+  if(n.type==='FunctionDeclaration'&&Object.hasOwn(productChanges,n.id.name)) {
+   const change=productChanges[n.id.name],before=previousFunctions.get(n.id.name);
+   assert.deepEqual(Object.keys(change).sort(),['after','before','reason','units']);
+   assert(typeof change.reason==='string'&&change.reason.trim(),'Named product change requires its human-approved reason');
+   assert.equal(hash(before),change.before,n.id.name+' original product fingerprint');
+   assert.equal(hash(code),change.after,n.id.name+' changed product fingerprint');
+   assert(!appliedProductChanges.has(n.id.name),'Product change must occur once');appliedProductChanges.add(n.id.name);
+   preserved.push(before);continue;
+  }
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }
  assert.equal(exposed,1,'Exactly one additive product API exposure');
+ assert.deepEqual([...appliedProductChanges].sort(),Object.keys(productChanges).sort(),'Every declared product change must be checked');
  assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
- return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges)};
+ return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges),...(appliedProductChanges.size?{productChanges:[...appliedProductChanges].sort()}: {})};
 }
 function semantic(source) {
  return JSON.stringify(parser.parse(source),(key,value)=>['start','end','loc','extra','comments','leadingComments','trailingComments','innerComments','tokens'].includes(key)?undefined:value);
+}
+function restoreDeclaredModelDefaults(source,previous,changes=[]) {
+ const defaults=code=>{
+  const body=parser.parse(code).program.body[0].expression.callee.body.body;
+  const node=body.filter(n=>n.type==='VariableDeclaration').flatMap(n=>n.declarations).find(n=>n.id.name==='defaults');
+  assert(node&&node.init?.type==='CallExpression'&&node.init.arguments[0]?.type==='ObjectExpression','Model defaults object');
+  return node.init.arguments[0].properties;
+ };
+ const current=defaults(source),old=defaults(previous),edits=[],seen=new Set();
+ for(const change of changes){
+  assert.deepEqual(Object.keys(change).sort(),['after','before','key','reason']);
+  assert(typeof change.reason==='string'&&change.reason.length>0&&!seen.has(change.key),'Distinct documented default changes');seen.add(change.key);
+  const value=properties=>properties.find(n=>n.type==='ObjectProperty'&&n.key.name===change.key)?.value;
+  const before=value(old),after=value(current);assert(before&&after,'Declared model default exists');
+  assert.equal(before.type,'StringLiteral');assert.equal(after.type,'StringLiteral');
+  assert.equal(before.value,change.before,'Original model default');assert.equal(after.value,change.after,'Declared model default');
+  edits.push([after.start,after.end,JSON.stringify(change.before)]);
+ }
+ for(const[start,end,replacement]of edits.sort((a,b)=>b[0]-a[0]))source=source.slice(0,start)+replacement+source.slice(end);
+ return source;
 }
 function additiveHelpers(root, readBase) {
  const files=['calculations-model.js','edit-halo.js','edit-placement.js'];
  for(const name of files) {
   const file='assets/app/js/'+name;let code=fs.readFileSync(path.join(root,file),'utf8');
   if(name==='calculations-model.js') {
+   const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/forte2-export.json')));
+   const previous=require('node:child_process').execFileSync('git',['show',contract.baseCommit+':'+file],{cwd:root,encoding:'utf8'});
+   code=restoreDeclaredModelDefaults(code,previous,contract.modelDefaultChanges);
+   const functions=s=>parser.parse(s).program.body[0].expression.callee.body.body.filter(n=>n.type==='FunctionDeclaration');
+   for(const current of functions(code).filter(n=>contract.changedModelFunctions.includes(n.id.name)).sort((a,b)=>b.start-a.start)){
+    const old=functions(previous).find(n=>n.id.name===current.id.name);assert(old);
+    code=code.slice(0,current.start)+previous.slice(old.start,old.end)+code.slice(current.end);
+   }
+
    code=code.replace('function fitPlane(record, ids, options = {})','function fitPlane(record, ids)');
    for(const text of [", ...(options.diagnostics ? { code: 'PLANE_TOO_SMALL', rms: null, secondEigenvalue: null } : {})",
     ", ...(options.diagnostics ? { code: 'PLANE_COLLINEAR', rms: Math.sqrt(Math.max(0,values[0])/selected.length), secondEigenvalue: values[1] } : {})",
@@ -121,11 +164,15 @@ function audit(root=path.resolve(__dirname,'..')) {
  const kernels=kernelInventory(root,contract.kernelInputs);assert.deepEqual(kernels,contract.kernelInputs,'Reused-kernel inputs changed');assert(kernels.every(r=>r.count<15),'Reused kernels include allocator callbacks in the input count');
  assert.deepEqual(api.methods,contract.methods);assert.deepEqual(api.wrappers,contract.testing.wrappers.slice().sort());assert.deepEqual(contract.testing.retired,[]);
  assert.equal(crypto.createHash('sha256').update(api.retained).digest('hex'),contract.testing.retainedNativeDrag.sha256);
- const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes),helperExtensions=additiveHelpers(root,readBase);
+ const productChanges=contract.productChanges||{};
+ const productUnits=Object.values(productChanges).flatMap(change=>change.units);
+ assert.deepEqual(kernelInventory(root,productUnits),productUnits,'Product helper dependencies changed');
+ assert(productUnits.every(r=>r.count<15),'Product helpers must remain below15 inputs');
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges),helperExtensions=additiveHelpers(root,readBase);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {
  const result=audit(),index=process.argv.indexOf('--out');if(index>=0)fs.writeFileSync(process.argv[index+1],JSON.stringify(result,null,2)+'\n');
  console.log(JSON.stringify(result));
 }
-module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,audit};
+module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,restoreDeclaredModelDefaults,audit};

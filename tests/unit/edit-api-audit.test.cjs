@@ -3,9 +3,17 @@ const {additiveApp}=require('../../tools/audit-edit-api.cjs');
 const root=path.resolve(__dirname,'../..'),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
 const baseline=cp.execFileSync('git',['show','c37bb07e30c711025da325a14bbbb4a8345d06d7:assets/app/js/app.js'],{cwd:root,encoding:'utf8',maxBuffer:8*1024*1024});
 const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/edit-api.json')));
-const audit=s=>additiveApp(s,baseline,contract.testing.changes);
-test('risk batch changes exactly three Testing members and preserves the remaining app',()=>{
+const audit=s=>additiveApp(s,baseline,contract.testing.changes,contract.productChanges||{});
+test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
  const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,3);assert(result.testingMembers>40&&result.legacyStatements>1000);
+});
+test('the three-pixel connection repair cannot drift past its declared fingerprint',()=>{
+ const changed=source.replace('lineWidth: { value: 3 }','lineWidth: { value: 4 }');assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/changed product fingerprint/);
+});
+test('an approved product repair must match its original source fingerprint too',()=>{
+ const changes=structuredClone(contract.productChanges);changes.updateEditSelectionVisuals.before='0'.repeat(64);
+ assert.throws(()=>additiveApp(source,baseline,contract.testing.changes,changes),/original product fingerprint/);
 });
 test('a Testing getter conversion cannot masquerade as an additive API',()=>{
  const changed=source.replace('return Array.isArray(selection) ? selection.slice() : [];','return [];');assert.notEqual(changed,source);assert.throws(()=>audit(changed),/Testing object changed/);
@@ -48,4 +56,18 @@ test('native-suite error collectors receive rejection comparands and serializati
  assert.deepEqual(receipt,{operation:'selection',requested:[[0,999]],error:error.editApi});
  const cyclic=[];cyclic.push(cyclic);assert.throws(()=>run('selection',cyclic),caught=>caught===error);
  assert.equal(JSON.parse(records.pop().slice('[edit-testing-rejection] '.length)).requested,'non-JSON request');
+});
+
+test('only the declared CAS default is normalized and other settings still fail the legacy freeze',()=>{
+ const {restoreDeclaredModelDefaults}=require('../../tools/audit-edit-api.cjs');
+ const previous="(function(){const defaults=Object.freeze({method:'cumulative',sigma:.98});})();";
+ const source="(function(){const defaults=Object.freeze({method:'cas',sigma:.98});})();";
+ const changes=[{key:'method',before:'cumulative',after:'cas',reason:'Human-authorized CAS default'}];
+ const semantic=code=>JSON.stringify(require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser')).parse(code),
+  (key,value)=>['start','end','loc','extra'].includes(key)?undefined:value);
+ assert.equal(semantic(restoreDeclaredModelDefaults(source,previous,changes)),semantic(previous));
+ assert.throws(()=>restoreDeclaredModelDefaults(source.replace("method:'cas'","method:'total'"),previous,changes),/Declared model default/);
+ assert.throws(()=>restoreDeclaredModelDefaults(source,previous,[{...changes[0],before:'cutoff'}]),/Original model default/);
+ assert.notEqual(semantic(restoreDeclaredModelDefaults(source.replace('sigma:.98','sigma:.97'),previous,changes)),semantic(previous));
+ assert.notEqual(semantic(restoreDeclaredModelDefaults(source,previous,[])),semantic(previous));
 });

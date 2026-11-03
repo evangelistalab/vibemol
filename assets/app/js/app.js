@@ -22654,6 +22654,68 @@
    * Render distance, angle, and dihedral overlays for the current selection.
    */
   function updateEditSelectionVisuals() {
+    // Measurement connection mesh: begin.
+    function createMeasurementConnection(points, color) {
+      const positions = [], others = [], sides = [], indices = [];
+      for (let i = 1; i < points.length; i += 1) {
+        const start = points[i - 1], end = points[i], offset = positions.length / 3;
+        for (const point of [start, start, end, end]) positions.push(point.x, point.y, point.z);
+        for (const point of [end, end, start, start]) others.push(point.x, point.y, point.z);
+        sides.push(-1, 1, 1, -1);
+        indices.push(offset, offset + 1, offset + 2, offset + 2, offset + 1, offset + 3);
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      geometry.setAttribute('other', new THREE.Float32BufferAttribute(others, 3));
+      geometry.setAttribute('side', new THREE.Float32BufferAttribute(sides, 1));
+      geometry.setIndex(indices);
+      const material = new THREE.ShaderMaterial({
+        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib.fog, {
+          color: { value: new THREE.Color(color) }, opacity: { value: 0.8 },
+          lineWidth: { value: 3 }, resolution: { value: new THREE.Vector2(1, 1) },
+        }]),
+        vertexShader: `
+          attribute vec3 other;
+          attribute float side;
+          uniform vec2 resolution;
+          uniform float lineWidth;
+          #include <fog_pars_vertex>
+          void main() {
+            vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+            vec4 clip = projectionMatrix * mvPosition;
+            vec4 next = projectionMatrix * modelViewMatrix * vec4(other, 1.0);
+            float w = clip.w < 0.0 ? min(clip.w, -0.000001) : max(clip.w, 0.000001);
+            float nextW = next.w < 0.0 ? min(next.w, -0.000001) : max(next.w, 0.000001);
+            vec2 direction = (next.xy / nextW - clip.xy / w) * resolution;
+            float lengthPx = length(direction);
+            vec2 normal = lengthPx > 0.000001 ? vec2(-direction.y, direction.x) / lengthPx : vec2(0.0);
+            clip.xy += normal * side * lineWidth / resolution * clip.w;
+            gl_Position = clip;
+            #include <fog_vertex>
+          }`,
+        fragmentShader: `
+          uniform vec3 color;
+          uniform float opacity;
+          #include <fog_pars_fragment>
+          void main() {
+            gl_FragColor = vec4(color, opacity);
+            #include <tonemapping_fragment>
+            #include <colorspace_fragment>
+            #include <fog_fragment>
+          }`,
+        transparent: true, opacity: 0.8, depthTest: false, depthWrite: false, side: THREE.DoubleSide, fog: true,
+      });
+      const mesh = new THREE.Mesh(geometry, material), viewport = new THREE.Vector4();
+      mesh.frustumCulled = false;
+      mesh.onBeforeRender = (render) => {
+        render.getCurrentViewport(viewport);
+        const height = render.getRenderTarget()?.height || render.domElement.height;
+        const pixelScale = height / Math.max(1, render.domElement.clientHeight);
+        material.uniforms.resolution.value.set(viewport.z / pixelScale, viewport.w / pixelScale);
+      };
+      return mesh;
+    }
+    // Measurement connection mesh: end.
     measurementLayoutKey = '';
     measurementLabelHoverSprite = null;
     clearGroup(editSelGroup);
@@ -22665,8 +22727,7 @@
       if (row.value === null) continue;
       const points = row.points.map(point => new THREE.Vector3(...point));
       const color = row.type === 'distance' ? 0xd3d3d3 : row.type === 'angle' ? 0xffa500 : 0x8e44ad;
-      const line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(points),
-        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.8, depthTest: false, depthWrite: false }));
+      const line = createMeasurementConnection(points, color);
       editSelGroup.add(line);
       let anchor = points[0].clone().add(points[1]).multiplyScalar(0.5);
       if (row.type === 'angle') {
@@ -32958,6 +33019,50 @@
     clearSelection:editApiSelection.clearSelection,copySelection:editApiSelection.copySelection,listBuildCatalog:editApiCatalog,
     listBuildSites:editApiQueries.listBuildSites,validateBuild:editApiBuild.validateBuild,applyBuild:editApiBuild.applyBuild,translate:editApiBuild.translate});
   window.VibeMolEdit=editProductApi;
+
+  function readForte2MinaoSnapshot(context, planeResolutions) {
+    // This is an identity boundary, not a derived numeric comparison.
+    // Preserve array order and JSON types; object key order is immaterial.
+    function same(actual, expected) {
+      const ordered=value=>value&&typeof value==='object'?(Array.isArray(value)?value.map(ordered):
+        Object.fromEntries(Object.keys(value).sort().map(key=>[key,ordered(value[key])]))):value;
+      return JSON.stringify(ordered(actual))===JSON.stringify(ordered(expected));
+    }
+    const record=measurementRecord();
+    if(!record)editApiFault('NO_SYSTEM','avas',null,'Calculations target');
+    const actual=calculationsModel.atoms(record).map(a=>({id:a.id,Z:a.Z,position:a.point}));
+    const expected=context.atoms.map(a=>({id:a.id,Z:a.Z,position:a.position}));
+    if(!same(actual,expected))editApiFault('GEOMETRY_TARGET_MISMATCH','avas.geometry',actual,expected,'Calculations and Edit must refer to exactly the same ordered geometry.');
+    // Own the small scientific selection state before any normalize/prune operation.
+    // Source grids/frames/orbitals never cross this boundary.
+    const original=JSON.parse(JSON.stringify(record.calculations||calculationsModel.normalize()));
+    const copy={vol:{units:record.vol.units,atoms:record.vol.atoms.map(a=>({...a}))},calculations:calculationsModel.normalize(original)};
+    for(const [key,value]of Object.entries(original.options||{}))if(!Object.hasOwn(copy.calculations.options,key)||!same(copy.calculations.options[key],value))
+      editApiFault('AVAS_SETTINGS_SHORTFALL','avas.options.'+key,copy.calculations.options[key],value,'No requested setting may be silently dropped or replaced.');
+    const requested={selections:original.selections,planes:original.planes};
+    calculationsModel.prune(copy);
+    const applied={selections:copy.calculations.selections,planes:copy.calculations.planes};
+    if(!same(applied,requested))editApiFault('AVAS_SELECTION_SHORTFALL','avas',applied,requested,'No MINAO assignment or plane may be silently dropped.');
+    if(planeResolutions!==undefined){
+      copy.calculations.planes=[];
+      for(const [index,resolution]of planeResolutions.entries()){
+        const ids=resolution.atomIds,result=calculationsModel.addPlane(copy,ids);
+        if(result.error)editApiFault('AVAS_PLANE_INVALID','avas.planes['+index+']',result,'whole p shells on every plane atom');
+        if(copy.calculations.planes.length!==index+1)editApiFault('DUPLICATE_PLANE','avas.planes['+index+']',ids,'distinct plane');
+      }
+    }
+    const validation=calculationsModel.validation(copy);
+    const requestedFinal={selections:requested.selections,planes:planeResolutions===undefined?requested.planes:planeResolutions.map(r=>r.atomIds)};
+    const appliedFinal={selections:copy.calculations.selections,planes:copy.calculations.planes};
+    if(!same(appliedFinal,requestedFinal))editApiFault('AVAS_SELECTION_SHORTFALL','avas',appliedFinal,requestedFinal,'Validation must retain every requested assignment and plane.');
+    if(validation.errors.length)editApiFault('AVAS_INVALID','avas',validation.errors,'valid MINAO assignment and reference');
+    const options=calculationsModel.optionsFor(copy);
+    return {options,subspace:calculationsModel.specs(copy),planes:calculationsModel.planeSpecs(copy),
+      electrons:actual.reduce((sum,a)=>sum+a.Z,0)-options.charge};
+  }
+  const forte2ProductApi=window.VibeMolForte2Format.createForte2Controller({readContext:editProductApi.context,
+    resolveSelection:editProductApi.resolveSelection,readMinaoSnapshot:readForte2MinaoSnapshot,elements:ATOM_Z_TO_DATA,appVersion:APP_VERSION});
+  window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});
 
   // All application bindings exist before the Escape owner is exposed. Window
   // capture precedes target/document phases by DOM semantics, not registration.

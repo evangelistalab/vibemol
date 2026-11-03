@@ -48,8 +48,8 @@ class CharacterizationComparisonTests(unittest.TestCase):
                 owner = wrong[name]
                 for part in path[:-1]:
                     owner = owner[part]
-                self.assertEqual(owner[path[-1]], '0.10.1')
-                for invalid_version in ('0.10.0', '0.11.0'):
+                self.assertEqual(owner[path[-1]], '0.10.2')
+                for invalid_version in ('0.10.0', '0.10.1', '0.10.3', '0.11.0'):
                     with self.subTest(invalid_version=invalid_version):
                         owner[path[-1]] = invalid_version
                         actual = first_difference(expected, wrong)

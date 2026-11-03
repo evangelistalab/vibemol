@@ -249,7 +249,8 @@ body.vm-workbench #toolbar { width: var(--workspace-sidebar-width); box-sizing: 
 
 
 .wb-bar .wb-overflowed { display: none !important; }
-.wb-icon-tools .wb-context-tools .wb-tool > span:not(.material-symbols-rounded),
+/* Adaptive commands nest their icon inside this body; only their label hides. */
+.wb-icon-tools .wb-context-tools .wb-tool > span:not(.material-symbols-rounded):not(.adaptiveEditItemBody),
 .wb-icon-tools .wb-context-tools .adaptiveEditItemLabel { display: none; }
 .wb-icon-tools .wb-context-tools .wb-tool { min-width: 30px; padding: 6px; }
 .wb-icon-tools .wb-panels-trigger > span:not(.material-symbols-rounded):not(.wb-panel-count) { display: none; }

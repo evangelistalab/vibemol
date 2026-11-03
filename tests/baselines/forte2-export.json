@@ -1,0 +1,487 @@
+{
+  "schemaVersion": 1,
+  "baseCommit": "b1de909288d8ba85da017f18654771eca54547d0",
+  "changedModelFunctions": [
+    "normalize",
+    "setOptions",
+    "validation",
+    "generate"
+  ],
+  "units": [
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "casPartition",
+      "count": 0,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "buildAvasArguments",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "casPartition"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Copy",
+      "count": 0,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Freeze",
+      "count": 0,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Fault",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Copy"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Shape",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Data",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "prepareRequest",
+      "count": 3,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Data",
+        "forte2Fault",
+        "forte2Shape"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Value",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "assertContext",
+      "count": 1,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "resolveSelections",
+      "count": 4,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "assertContext",
+        "forte2Fault",
+        "forte2Value"
+      ],
+      "deps": [],
+      "callbacks": [
+        "resolve"
+      ]
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "atomRanges",
+      "count": 0,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "createGeometryEncoder",
+      "count": 2,
+      "factoryInputs": [
+        "elements"
+      ],
+      "services": [],
+      "closure": [
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "assembleExport",
+      "count": 4,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "atomRanges",
+        "buildAvasArguments",
+        "forte2Fault"
+      ],
+      "deps": [],
+      "callbacks": [
+        "encodeGeometry"
+      ]
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "forte2Result",
+      "count": 2,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "forte2Freeze"
+      ],
+      "deps": [],
+      "callbacks": [
+        "action"
+      ]
+    },
+    {
+      "file": "assets/app/js/forte2-format.js",
+      "name": "createForte2Controller",
+      "count": 12,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "assembleExport",
+        "assertContext",
+        "createGeometryEncoder",
+        "forte2Result",
+        "forte2Value",
+        "prepareRequest",
+        "resolveSelections"
+      ],
+      "deps": [
+        "appVersion",
+        "elements",
+        "readContext",
+        "readMinaoSnapshot",
+        "resolveSelection"
+      ],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/calculations-model.js",
+      "name": "normalize",
+      "count": 2,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "componentsFor",
+        "defaults"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/calculations-model.js",
+      "name": "setOptions",
+      "count": 2,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "defaults",
+        "state"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/calculations-model.js",
+      "name": "validation",
+      "count": 9,
+      "factoryInputs": [],
+      "services": [
+        "global.VibeMolForte2Format"
+      ],
+      "closure": [
+        "atoms",
+        "optionsFor",
+        "previewBasis",
+        "projection",
+        "recordShells",
+        "referenceBases",
+        "specs",
+        "state"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/calculations-model.js",
+      "name": "generate",
+      "count": 6,
+      "factoryInputs": [],
+      "services": [
+        "global.VibeMolForte2Format"
+      ],
+      "closure": [
+        "atoms",
+        "optionsFor",
+        "planeSpecs",
+        "specs",
+        "validation"
+      ],
+      "deps": [],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/calculations-panel.js",
+      "name": "create",
+      "count": 10,
+      "factoryInputs": [],
+      "services": [
+        "global.VibeMolCalculationsModel",
+        "global.VibeMolFloatingPanels",
+        "global.VibeMolUI"
+      ],
+      "closure": [],
+      "deps": [
+        "getContour",
+        "getRecord",
+        "onChange",
+        "onOpenChange",
+        "onPreviewChange",
+        "onSelect",
+        "setContour"
+      ],
+      "callbacks": []
+    },
+    {
+      "file": "assets/app/js/app.js",
+      "name": "readForte2MinaoSnapshot",
+      "count": 3,
+      "factoryInputs": [],
+      "services": [],
+      "closure": [
+        "calculationsModel",
+        "editApiFault",
+        "measurementRecord"
+      ],
+      "deps": [],
+      "callbacks": []
+    }
+  ],
+  "scope": "Export only; no import, execution, undo, wrapper migration or e2e conversion.",
+  "upstream": "e03c169bdf1b2aac62ea4197cd0ffa1b875d3b9f",
+  "nativeCheckpointComposition": {
+    "workbench-light": 30,
+    "workbench-dark": 30,
+    "legacy-light": 4,
+    "legacy-dark": 4
+  },
+  "hostModelCalls": [
+    "atoms",
+    "normalize",
+    "prune",
+    "addPlane",
+    "validation",
+    "optionsFor",
+    "specs",
+    "planeSpecs"
+  ],
+  "intendedChanges": [
+    "CAS selector and optional persisted CAS pair",
+    "export-only frozen geometry/ASET/AVAS facade",
+    "PR283 absolute-ms ROHF validation compatibility",
+    "current forte2 GHF System x2c=X2CParams API"
+  ],
+  "unchanged": [
+    "old non-CAS arguments/count conventions except declared compatibility",
+    "42 Testing members",
+    "12 Edit methods",
+    "performSelectionMoveDrag",
+    "all non-API captured leaves"
+  ],
+  "authoringFailures": [
+    {
+      "evidence": "out/test-artifacts/forte2-export-cas/native-first.log",
+      "cause": "New pair rejected by scalar-only session parameter validator; fixed by exact CAS pair validation."
+    },
+    {
+      "evidence": "out/test-artifacts/forte2-export-cas/native-cas-session.log",
+      "cause": "Harness incorrectly required a legacy Subspace UI. Native UI belongs to Workbench; legacy checks now exercise the product API."
+    },
+    {
+      "evidence": "out/test-artifacts/forte2-export-cas/native-comparands/workbench-dark-cas390.png",
+      "cause": "Visual review showed browser color_scheme did not set the app theme. Superseded theme coverage; set vibemol.uiTheme before navigation and assert html data-theme before/after session import. Production bytes unchanged."
+    }
+  ],
+  "localNative": {
+    "status": "passed",
+    "newCheckpointCounts": {
+      "workbench-light": 30,
+      "workbench-dark": 30,
+      "legacy-light": 4,
+      "legacy-dark": 4
+    },
+    "newCheckpoints": 68,
+    "comparandsAllEqual": true,
+    "residualContexts": 0,
+    "sourceAtCompletion": {
+      "assets/app/js/forte2-format.js": "ae6279060ad0589f7605080f3de549f011f4724e5eabeb1ee183174ae1f40fdb",
+      "assets/app/js/app.js": "fc7bf4c134a7f1087f7470e17a84aac5d79b03ee4f6df098ce03b71fe4fbaefc",
+      "assets/app/js/calculations-model.js": "27ab65c4f7756d5e1d88dfad10aafc549c02fc6bb5f20141b7be36ebb1727e7a",
+      "assets/app/js/calculations-panel.js": "30cbeb90bf22573053df32d90c62186af9091652d30826fc0f357566b13c041a",
+      "assets/app/js/session-format.js": "849800777fec8fcfbdbcb61a62cc746c16e42c8fba137e08625c39b913dd58db",
+      "tests/e2e/forte2_export.py": "3780fae8faa30611cdae95518ae07911c7ccefe769f4f327ce6bb29e54c919e9",
+      "tests/e2e/calculations.py": "41b523651700cc2aa145e80c794e96051381f1539a248005db3c354b791e30ad"
+    },
+    "rawLogSha256": "6a3913e12c3a89a727fd9312adbc42301f9e588715c3d236ba10fe9fb8d8ebbb",
+    "rawLog": "out/test-artifacts/forte2-export-cas/calculations-complete.log",
+    "themeCoverageSuperseded": true
+  },
+  "status": "Held: first ordinary run41535063768 is36/1/37 at Figure CLI cleanup; exact-target source correction is locally verified, not CI acceptance.",
+  "comparandLogging": {
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-comparands.log",
+    "checkpoints": 68,
+    "sessionImportAndNativeWriteBothOutcomesLogged": true,
+    "rawLogSha256": "1f8809432841df3422d74e3dd77a0884878e80915e66400b634ba4b05a61b918",
+    "themeCoverageSuperseded": true
+  },
+  "appStateMetric": {
+    "scope": "app IIFE variable-let bindings; class declarations excluded",
+    "variableLetBindings": 261,
+    "declarationLines": 250,
+    "change": 0
+  },
+  "construction": {
+    "status": "passed",
+    "stages": 20,
+    "newAppBindings": 27,
+    "newModuleBindings": 115,
+    "consumers": [
+      "assets/app/js/calculations-model.js",
+      "assets/app/js/calculations-panel.js",
+      "assets/app/js/session-format.js"
+    ],
+    "earlyReads": 0
+  },
+  "explicitThemeNative": {
+    "status": "passed",
+    "checkpoints": 68,
+    "actualThemesVerified": {
+      "workbench-light": "light",
+      "workbench-dark": "dark",
+      "legacy-light": "light",
+      "legacy-dark": "dark"
+    },
+    "beforeAndAfterSessionImport": true,
+    "residualContexts": 0,
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-explicit-themes.log",
+    "rawLogSha256": "a7c009a9e4e9211a327e37c2edaace24fe3379269e897b0f95ee1fd6b0b023c6",
+    "harnessSha256": "e1e13a372dc283ab22c7669f3d86412308382d4c6ef10ae68a36945dd6ae5abb"
+  },
+  "recording": {
+    "runId": 41528980857,
+    "sourceCommit": "b5ebb0d570184b1d185ba35dd4aa8f106fb4bd61",
+    "namespaceAdditionsPerRun": 204,
+    "memberStringsPerRun": 306,
+    "capturesPerRun": 102,
+    "independentWorkers": 2,
+    "runsPerWorker": 2,
+    "fourSerializationsExactlyIdentical": true,
+    "residualDifference": 0
+  },
+  "exactGuardCorrection": {
+    "rejectedHead": "b7f55e964ed5f1ed7f9fa56728452850f2f4d467",
+    "rejectedRunId": 41535063768,
+    "mechanism": "Edit numeric comparator tolerates fractional numeric differences; identity/normalization comparisons require exact canonical JSON. The old unit mock was stricter than the real helper.",
+    "originalProbe": {
+      "deltaAngstrom": 1e-10,
+      "actual": "accepted",
+      "expected": "GEOMETRY_TARGET_MISMATCH"
+    },
+    "fix": "Local canonical equality; actual shared helper calibration in permanent unit; final plane/assignment readback after validation.",
+    "gateUnchanged": "37/0/37; no retries on unchanged source; old run never supplies acceptance.",
+    "baselineUnchanged": true,
+    "sourceDelta": {
+      "file": "assets/app/js/app.js",
+      "onlyFunction": "readForte2MinaoSnapshot",
+      "beforeFunctionSha256": "baa070ecb2acfe5d500031eb97170c4b13dcb73d0f27cf0bcbed3acf8da6e43a",
+      "afterFunctionSha256": "73d4e9389838b0a1495504cde630f41f958b11a45569d9b03cf427482a1ca8c5",
+      "allOtherAppBytesIdentical": true,
+      "reason": "Exact canonical identity/settings comparison and final requested/applied plane readback; the shared Edit numeric helper is unchanged."
+    },
+    "localUnits": {
+      "javascript": 531,
+      "python": 213,
+      "auditControls": 29
+    }
+  },
+  "exactGuardNative": {
+    "status": "passed",
+    "checkpoints": 68,
+    "actualLightAndDarkVerified": true,
+    "residualContexts": 0,
+    "rawLog": "out/test-artifacts/forte2-export-cas/native-exact.log",
+    "rawLogSha256": "b89d743e046862491ab5fa4ee8214de7abdaeda42e59b2d22c996014766b8b25",
+    "appSha256": "151e6550ced117f0029dcd2bab48a3d1dcd8d4a1db4bf997c153e518f9d0bb8d"
+  },
+  "modelDefaultChanges": [
+    {
+      "key": "method",
+      "before": "cumulative",
+      "after": "cas",
+      "reason": "Direct human request2026-11-03: Complete active space (CAS) is the default selection method. Explicit saved methods and CAS counts remain unchanged."
+    }
+  ]
+}

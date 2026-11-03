@@ -115,5 +115,23 @@
   },
   "ciRerunPerformed": false,
   "productionChanged": false,
-  "diagnosticsSupplyAcceptance": false
+  "diagnosticsSupplyAcceptance": false,
+  "postMergeMain": {
+    "runId": 41515476095,
+    "head": "03f174130dc9570978fd214c1a4b6d36714c45e1",
+    "completeConjunctionVerified": true,
+    "independentChecks": 183,
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "bothExporters": true,
+    "looks": {
+      "seconds": 1928.3,
+      "studioMaterialFamilies": true,
+      "propertiesMaterialFamilies": true
+    },
+    "wholeWallMinutes": 45.71666666666667
+  }
 }

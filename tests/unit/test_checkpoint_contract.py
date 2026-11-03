@@ -50,6 +50,8 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/edit_tool.py': {'metal-native-case':28},
             'tests/e2e/build_panel.py': {'retired-cache-case':4},
             'tests/e2e/figure.py': {'figure-runner':40, 'scientific-buffer-synchronous':17, 'scientific-buffer-worker':17, 'scientific-buffer-coordinate-owners':8, 'published-ownership':13},
+            'tests/e2e/calculations.py': {'forte2-case':68, 'calculations-default':1},
+            'tests/e2e/measurements.py': {'measurement-connection-width':20, 'measurement-connection-fog':4},
         })
 
     def test_all_five_phase_guards_reject_zero_short_and_extra_counts(self):

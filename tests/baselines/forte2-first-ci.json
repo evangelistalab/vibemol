@@ -1,0 +1,144 @@
+{
+  "schemaVersion": 1,
+  "pr": 90,
+  "runId": 41535063768,
+  "head": "b7f55e964ed5f1ed7f9fa56728452850f2f4d467",
+  "attempt": 1,
+  "accepted": false,
+  "gate": {
+    "passed": 36,
+    "failed": 1,
+    "total": 37,
+    "actualFailingWorkflows": [
+      [
+        "tests/e2e/figure.py",
+        null
+      ]
+    ]
+  },
+  "acceptedSetIntentionallyEmpty": true,
+  "wallMinutes": 45.666666666666664,
+  "looks": {
+    "seconds": 1903.17,
+    "bothMaterialPaths": true,
+    "appearanceMaterialPresetTimeoutInCoveredRun": false,
+    "intermittentRiskRemainsOpen": true
+  },
+  "exporters": {
+    "completionRecords": [
+      {
+        "prefix": "trajectory",
+        "downloads": 6,
+        "naturalCompletion": true,
+        "earlyStop": true,
+        "pointerCompletion": true,
+        "spaceCompletion": true,
+        "enterActivation": true,
+        "clickOnlyActivation": true,
+        "freshSaveAssertions": 4
+      },
+      {
+        "prefix": "vibration",
+        "downloads": 6,
+        "naturalCompletion": true,
+        "earlyStop": true,
+        "pointerCompletion": true,
+        "spaceCompletion": true,
+        "enterActivation": true,
+        "clickOnlyActivation": true,
+        "freshSaveAssertions": 4
+      }
+    ],
+    "activationReadbacks": 58
+  },
+  "failure": {
+    "suite": "tests/e2e/figure.py",
+    "phase": "Figure runner --list-targets",
+    "assertion": {
+      "label": "listing exit succeeded",
+      "actual": false,
+      "expected": true
+    },
+    "message": "Session with given id not found.",
+    "stage": "browser",
+    "import": {
+      "ok": true,
+      "name": "2 scenes \u00b7 water.xyz",
+      "sceneCount": 2,
+      "sourceCount": 2
+    },
+    "readiness": [
+      {
+        "stage": "startup-readiness",
+        "elapsedMs": 55.10000000009313,
+        "stableFrames": 2
+      },
+      {
+        "stage": "import-readiness",
+        "elapsedMs": 33.299999999813735,
+        "stableFrames": 2
+      },
+      {
+        "stage": "render-readiness",
+        "elapsedMs": 22.200000000186265,
+        "stableFrames": 2
+      }
+    ],
+    "cleanup": {
+      "browserExited": true,
+      "profileRemoved": true,
+      "exitCode": 0,
+      "exitSignal": null,
+      "forced": false,
+      "closeAckMs": 1.091519000000062,
+      "elapsedMs": 412.7330710000001
+    },
+    "lastEvent": {
+      "method": "Target.detachedFromTarget",
+      "params": {
+        "sessionId": "5A5B93F81B3610C4BA10D14A8FFDAD6A",
+        "targetId": "ABD745AC8049F49FB459EC6FE6BA1068"
+      }
+    },
+    "sourceInference": "An in-flight Fetch continuation rejects after target detachment; its catch aborts the job controller, which is checked immediately after normal close. The command identity is stripped by Protocol, so no request ID is asserted.",
+    "preExistenceControl": "Not run; no retry or diagnosis replay. Main pre-existence is unclassified.",
+    "carried": false,
+    "acceptedCiFailure": false,
+    "targetsAfterReadiness": [
+      "cube-1",
+      "molecule-2"
+    ],
+    "timeout": false,
+    "elapsedToErrorSeconds": 3.151
+  },
+  "coverage": {
+    "calculationsCheckpoints": {
+      "forte2-case": 68
+    },
+    "originalFigureRunAutoIsoSamples": true,
+    "cliPngReplaySvgCompletedBeforeFailure": true,
+    "standingScientificBufferBrowserPhase": "not covered; listing failure precedes it",
+    "goldens": {
+      "capturesPerRun": 102,
+      "runs": 2,
+      "exactRepeat": true,
+      "independentlyVerified": true,
+      "identitySlots": 48,
+      "identityContexts": 8,
+      "fixedCompositionAndAllMinima": true
+    },
+    "units": {
+      "javascript": 530,
+      "python": 213,
+      "auditControls": 29,
+      "webkit": true,
+      "construction": true
+    }
+  },
+  "noCiRetry": true,
+  "raw": {
+    "listingStderrSha256": "f219432ba5dfb1fe90b7d2d49c87d78f30a01f1432e51be5b6aad9f06a5b63e2",
+    "listingStdoutSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "fullRunLogSha256": "e603a5ab3adad03ae0efb6b836c91d263a674cf31c636f5adc3ac70f8131b7c4"
+  }
+}
