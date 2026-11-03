@@ -15,7 +15,7 @@ BASELINE_COMMITS = {
     'v0.9.5-pre-refactor': '1c609b338344aaa49ffd11b9ee2ad834a6e0d85d',
     'v0.10.0': '3425e0231b71eeb8b8a11523806990f553265cba',
     'v0.10.1': '47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802',  # Actual approved capture source, independent of the later release tag.
-    'v0.10.2': None,  # Pinned to the exact CI recording source after its four serializations agree.
+    'v0.10.2': '95df457965a29a7bf59a49e9bc58e304e1118193',  # Exact approved capture source; independent of any future release tag.
 }
 
 
