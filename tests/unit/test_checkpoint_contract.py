@@ -49,6 +49,7 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},
             'tests/e2e/edit_tool.py': {'metal-native-case':28},
             'tests/e2e/build_panel.py': {'retired-cache-case':4},
+            'tests/e2e/figure.py': {'figure-runner':40, 'scientific-buffer-synchronous':17, 'scientific-buffer-worker':17, 'scientific-buffer-coordinate-owners':8, 'published-ownership':13},
         })
 
     def test_all_five_phase_guards_reject_zero_short_and_extra_counts(self):
@@ -60,6 +61,17 @@ class CheckpointContractTests(unittest.TestCase):
             for actual in (0,count-1,count+1):
                 with self.subTest(marker=marker,actual=actual), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
                     require_phase_counts({marker:actual},'tests/e2e/'+suite+'.py',marker)
+
+    def test_figure_runner_cannot_stand_in_for_missing_buffer_phases(self):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        expected = manifest['checkpointCounts']['tests/e2e/figure.py']
+        complete = ''.join(('['+marker+'] {}\n')*count for marker,count in expected.items())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertTrue(require_checkpoint_counts(complete,'tests/e2e/figure.py',manifest['checkpointCounts'])['passed'])
+        for missing in expected:
+            partial = ''.join(('['+marker+'] {}\n')*count for marker,count in expected.items() if marker != missing)
+            with self.subTest(missing=missing),contextlib.redirect_stdout(io.StringIO()),self.assertRaises(AssertionError):
+                require_checkpoint_counts(partial,'tests/e2e/figure.py',manifest['checkpointCounts'])
 
     def test_phase_cannot_hide_missing_marker_or_use_another_phases_records(self):
         for actual in ({'edit-api':115},{'edit-api':115,'atomic-identity-rejection':24},{}):

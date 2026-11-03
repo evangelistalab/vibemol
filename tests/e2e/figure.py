@@ -230,9 +230,11 @@ def main():
     executable=resolve_pinned_headless_browser(full_executable,launched_version,
         Path(playwright.__file__).parent/'driver/package/browsers.json')
     from figure_runner import run as run_figure_runner
-    run_figure_runner(executable,p.ARTIFACTS/'figure-runner')
+    runner_counts=run_figure_runner(executable,p.ARTIFACTS/'figure-runner')
     # Both prior phases have retired their browsers. Three fresh serial contexts
     # enforce the published-source rule without adding a 38th suite.
     from scientific_buffers import run_matrix as run_scientific_buffers
-    run_scientific_buffers(p.ARTIFACTS/'scientific-buffers')
+    buffer_counts=run_scientific_buffers(p.ARTIFACTS/'scientific-buffers')['checkpointCounts']
+    from checkpoint_contract import require_phase_counts
+    require_phase_counts({**runner_counts,**buffer_counts},'tests/e2e/figure.py',*runner_counts,*buffer_counts)
 if __name__=='__main__':main()

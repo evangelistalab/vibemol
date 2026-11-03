@@ -12,10 +12,16 @@ const babel = name => require(process.env.VIBEMOL_BABEL_ROOT
   ? path.join(process.env.VIBEMOL_BABEL_ROOT, name) : '@babel/' + name);
 const parser = babel('parser'), traverse = babel('traverse').default;
 const hash = s => crypto.createHash('sha256').update(s).digest('hex');
-const parse = s => parser.parse(s, {sourceType: 'script'});
+const parse = s => parser.parse(s, {sourceType: 'unambiguous'});
 const text = (s, p) => s.slice(p.node.start, p.node.end);
 
 function mainScope(ast) {
+  // Product Node CLIs are native modules; browser files remain classic IIFEs.
+  if (ast.program.sourceType==='module') {
+    let program;
+    traverse(ast,{Program(p){program=p;}});
+    return program;
+  }
   let found, count=0;
   traverse(ast, {FunctionExpression(p) {
     if (p.parentPath.isCallExpression() && p.parentPath.parentPath.isExpressionStatement()
@@ -181,6 +187,11 @@ if (process.argv.includes('--self-test')) {
   const oldCallback='(function(){register({render(value){return value}})})();';
   const newCallback='(function(){register({render(value){invoke(()=>late);const late=1;return value}})})();';
   assert.equal(auditSource(oldCallback,newCallback).status,'review-required');
+  const moduleBefore="import fs from 'node:fs'; function work() {return 1}";
+  const moduleEarly="import fs from 'node:fs'; function work() {return late} work(); const late=1;";
+  const moduleSafe="import fs from 'node:fs'; function work() {return late} const late=1; work();";
+  assert.equal(auditSource(moduleBefore,moduleEarly).status,'review-required');
+  assert.equal(auditSource(moduleBefore,moduleSafe).status,'passed');
   console.log('construction-order self-test: direct early call, escaped callback, fixed ordering, lexical shadowing, existing-wrapper parameters and existing-callback locals passed');
   process.exit(0);
 }

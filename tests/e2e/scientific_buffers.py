@@ -6,13 +6,15 @@ ROOT=Path(__file__).resolve().parents[2];sys.path.insert(0,str(ROOT/'tests/e2e')
 import premerge as p
 from surface_shadows import settle
 OUT=None
+COUNTS={}
 INIT=Path(__file__).with_suffix('.js').read_text()
 TRJ=''.join(f'2\nframe {i}\nC {-0.7+i*.1} 0 0\nC {0.7+i*.1} 0 0\n' for i in range(4))
 XYZ='2\nvibration\nC -0.7 0 0\nC 0.7 0 0\n'
 VIB=json.dumps({'kind':'vibemol.vibrations','version':1,'units':'angstrom','atomCount':2,'atomSymbols':['C','C'],'modes':[{'frequencyCm1':245,'displacements':[-.18,0,0,.18,0,0]}]})
 lines=p.cube(0).splitlines();values=[float(v) for v in lines[-1].split()];SPIN='\n'.join(lines[:-1]+[' '.join(str(v*scale) for scale in (1,2,.5,.25) for v in values)])+'\n'
 def checkpoint(page,case,stage):
- r=page.evaluate('stage=>__scientificAliasProbe.checkpoint(stage)',stage);(OUT/(case+'-'+stage+'.json')).write_text(json.dumps(r,indent=2));print(json.dumps({'case':case,'stage':stage,'arrays':len(r['arrays']),'sourceChanges':r['sourceChanges'],'expectedSourceChanges':[],'expectedViolations':[],'derivedChangedIds':[a['id'] for a in r['derivedChanges']],'workerMessages':len(r['workerMessages'])}),flush=True);assert r['livePublication'] and all(x['privateView'] for x in r['livePublication']),r['livePublication'];assert not r['sourceChanges'],r['sourceChanges'];assert not r['violations'],r['violations'];assert not any(m['transferredSourceIds'] for m in r['workerMessages']);return r
+ COUNTS['scientific-buffer-'+case]=COUNTS.get('scientific-buffer-'+case,0)+1
+ r=page.evaluate('stage=>__scientificAliasProbe.checkpoint(stage)',stage);(OUT/(case+'-'+stage+'.json')).write_text(json.dumps(r,indent=2));print('[scientific-buffer-'+case+'] '+json.dumps({'case':case,'stage':stage,'arrays':len(r['arrays']),'sourceChanges':r['sourceChanges'],'expectedSourceChanges':[],'expectedViolations':[],'derivedChangedIds':[a['id'] for a in r['derivedChanges']],'workerMessages':len(r['workerMessages'])}),flush=True);assert r['livePublication'] and all(x['privateView'] for x in r['livePublication']),r['livePublication'];assert not r['sourceChanges'],r['sourceChanges'];assert not r['violations'],r['violations'];assert not any(m['transferredSourceIds'] for m in r['workerMessages']);return r
 
 def settings(page,values):
  r=page.evaluate('values=>{const result=VibeMolPreset.import({kind:"vibemol.preset",presetVersion:1,settings:values},{mode:"strict"});const settings=VibeMolPreset.export().settings;return {result,actual:Object.fromEntries(Object.keys(values).map(k=>[k,settings[k]])),expected:values}}',values);print('[settings] '+json.dumps(r),flush=True);assert r['actual']==r['expected'],r;settle(page)
@@ -21,6 +23,7 @@ def ownership(page,case,kind):
  rows=page.evaluate('kind=>__scientificAliasProbe.checkOwnership(__scientificAliasProbe.publishedSource(kind),kind)',kind)
  folder=OUT/'ownership';folder.mkdir(exist_ok=True)
  (folder/(case+'-'+kind+'.json')).write_text(json.dumps(rows,indent=2))
+ COUNTS['published-ownership']=COUNTS.get('published-ownership',0)+1
  print('[published-ownership] '+json.dumps({'case':case,'kind':kind,'controls':rows}),flush=True)
  assert rows and all(x['passed'] and x['actual']==x['expected'] for x in rows),rows
  return rows
@@ -103,7 +106,8 @@ def validate_controls(controls):
  assert controls['detach']['readThrows'] and controls['detach']['methodWriteThrows'] and controls['detach']['transferredOwnerUnchanged'],controls
 
 def run_matrix(output,owners_only=False):
- global OUT
+ global OUT,COUNTS
+ COUNTS={key:0 for key in ('scientific-buffer-synchronous','scientific-buffer-worker','scientific-buffer-coordinate-owners','published-ownership')}
  OUT=Path(output).resolve();OUT.mkdir(parents=True,exist_ok=False)
  results=[]
  with p.run_http_server(ROOT) as url,p.sync_playwright() as pw:
@@ -130,8 +134,11 @@ def run_matrix(output,owners_only=False):
    finally:context.close()
    assert len(browser.contexts)==0
   finally:browser.close()
- if not owners_only:validate_results(results)
- summary={'standingCheck':not owners_only,'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'appSha256':hashlib.sha256((ROOT/'assets/app/js/app.js').read_bytes()).hexdigest(),'probeSha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__).resolve(),Path(__file__).with_suffix('.js').resolve())},'cases':results,'residualContexts':0}
+ if not owners_only:
+  validate_results(results)
+  from checkpoint_contract import require_phase_counts
+  require_phase_counts(COUNTS,'tests/e2e/figure.py',*COUNTS)
+ summary={'checkpointCounts':dict(COUNTS),'standingCheck':not owners_only,'sourceCommit':subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),'appSha256':hashlib.sha256((ROOT/'assets/app/js/app.js').read_bytes()).hexdigest(),'probeSha256':{str(p.relative_to(ROOT)):hashlib.sha256(p.read_bytes()).hexdigest() for p in (Path(__file__).resolve(),Path(__file__).with_suffix('.js').resolve())},'cases':results,'residualContexts':0}
  (OUT/'summary.json').write_text(json.dumps(summary,indent=2))
  print('[scientific-buffers] '+json.dumps({'standingCheck':not owners_only,'cases':len(results),'sourceChanges':0,'writeViolations':0,'sourceTransfers':0,'residualContexts':0}),flush=True)
  return summary
