@@ -3,7 +3,46 @@
 import json
 import premerge as p
 from calculations import ready
+from checkpoint_contract import require_phase_counts
 from edit_tool import tool, arm, close_build
+
+
+AVAS_COMMON_FIELDS = ('charge', 'ms', 'basis', 'auxiliary', 'minao', 'lobe-size', 'method')
+AVAS_METHOD_FIELDS = {
+    'cumulative': ('sigma',),
+    'cutoff': ('cutoff',),
+    'separate': ('docc', 'uocc'),
+    'total': ('total',),
+    'cas': ('casElectrons', 'casOrbitals'),
+}
+
+
+def audit_avas_hitboxes(page):
+    panel = page.locator('#subspacePanel')
+    panel.locator('details').evaluate_all('els=>els.forEach(e=>e.open=true)')
+    tracked_ids = {'avas-' + name for name in AVAS_COMMON_FIELDS}
+    tracked_ids.update('avas-' + name for fields in AVAS_METHOD_FIELDS.values() for name in fields)
+    results = []
+    for method, fields in AVAS_METHOD_FIELDS.items():
+        panel.locator('#avas-method').select_option(method)
+        controls = panel.locator('input, select, button').evaluate_all('''els => els.map(e => {
+          const {width, height} = e.getBoundingClientRect();
+          return {id: e.id || e.type, width, height};
+        }).filter(c => c.width && c.height)''')
+        expected_ids = sorted('avas-' + name for name in (*AVAS_COMMON_FIELDS, *fields))
+        actual_ids = sorted(c['id'] for c in controls if c['id'] in tracked_ids)
+        too_short = [c for c in controls if c['id'] in expected_ids and c['height'] < 32]
+        too_small = [c for c in controls if min(c['width'], c['height']) < 24]
+        actual = dict(method=panel.locator('#avas-method').input_value(), ids=actual_ids,
+                      below32pxHeight=too_short, below24pxMinimum=too_small)
+        expected = dict(method=method, ids=expected_ids, below32pxHeight=[], below24pxMinimum=[])
+        result = dict(actual=actual, expected=expected, controls=controls)
+        print('[avas-hitbox-method] ' + json.dumps(result), flush=True)
+        results.append(result)
+    require_phase_counts({'avas-hitbox-method': len(results)}, 'tests/e2e/ux_review.py', 'avas-hitbox-method')
+    failures = [result for result in results if result['actual'] != result['expected']]
+    assert not failures, failures
+    return results
 
 
 def chips(page):
@@ -73,13 +112,7 @@ def run(page,url):
     popup.get_by_role('checkbox',name='2p shell',exact=True).click();ready(page);chips(page)
     page.keyboard.press('Escape')
     # Targets: check actual label/input hit boxes, including plane row.
-    page.locator('#subspacePanel [data-planes]').evaluate('e=>e.open=true')
-    page.locator('#subspacePanel details').evaluate_all('els=>els.forEach(e=>e.open=true)')
-    controls=page.locator('#subspacePanel input, #subspacePanel select, #subspacePanel button').evaluate_all('els=>els.map(e=>({id:e.id||e.type,w:e.getBoundingClientRect().width,h:e.getBoundingClientRect().height})).filter(c=>c.w&&c.h)')
-    report['avasControls']=controls
-    for id in ['charge','ms','sigma','basis','auxiliary','minao']:
-        assert next(c for c in controls if c['id']=='avas-'+id)['h']>=32,controls
-    assert all(min(c['w'],c['h'])>=24 for c in controls),controls
+    report['avasHitboxes'] = audit_avas_hitboxes(page)
     report['undersizedControls']=page.locator('input,select,button,[role="checkbox"],[role="radio"]').evaluate_all('''els=>els.filter(e=>{
       const r=e.getBoundingClientRect();return r.width&&(r.height<24||r.width<24);
     }).map(e=>({id:e.id||e.getAttribute('aria-label')||e.type,width:e.getBoundingClientRect().width,height:e.getBoundingClientRect().height}))''')
