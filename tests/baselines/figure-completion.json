@@ -111,5 +111,40 @@
     "total": 37,
     "acceptedSetIntentionallyEmpty": true
   },
-  "pr90": "Held and untouched until this repair merges; then rebase and own gate. Scientific conventions still require human sign-off."
+  "pr90": "Held and untouched until this repair merges; then rebase and own gate. Scientific conventions still require human sign-off.",
+  "ordinaryAcceptance": {
+    "pr": 91,
+    "head": "964def857cfafe6e94ca95ff2cb0bd4c7e808fe3",
+    "runId": 41556244376,
+    "attempt": 1,
+    "merge": "2fb9cbc566b45df6806a90f2e063b3eb179e629c",
+    "gate": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37
+    },
+    "independentChecks": 203,
+    "goldens": 102,
+    "runs": 2,
+    "exactRepeat": true,
+    "identitySlots": 48,
+    "identityContexts": 8,
+    "allMinima": true,
+    "figureCheckpointCounts": {
+      "figure-runner": 40,
+      "scientific-buffer-synchronous": 17,
+      "scientific-buffer-worker": 17,
+      "scientific-buffer-coordinate-owners": 8,
+      "published-ownership": 13
+    },
+    "bothExportersComplete": true,
+    "bothLooksMaterialPaths": true,
+    "looksSeconds": 1956.0,
+    "wallMinutes": 46.65,
+    "localTreeCheckedBeforePush": true,
+    "localMakeCheckPassed": true,
+    "pushed": true,
+    "failedRunPreserved": 41535063768,
+    "evidenceArchiveSha256": "6eb24e63bc0a74ab77d7ed4f92f34e0305c2cea7c3c7f99a0a18cec0839eddd0"
+  }
 }

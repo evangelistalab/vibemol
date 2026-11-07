@@ -1,0 +1,132 @@
+{
+  "schemaVersion": 1,
+  "status": "recorded and independently verified; final ordinary gate required",
+  "authority": "Direct human authorization2026-11-03 for exactly204 full-path version leaves0.10.1 to0.10.2.",
+  "runId": 41678278291,
+  "attempt": 1,
+  "url": "https://github.com/evangelistalab/vibemol/actions/runs/41678278291",
+  "sourceCommit": "95df457965a29a7bf59a49e9bc58e304e1118193",
+  "sourceTree": "c385ff12b46d61a8abb7443d76c67ca1790262e3",
+  "baseCommit": "4709f1d676f793222ebc7f758692a69824c5541a",
+  "paths": [
+    [
+      "session",
+      "appVersion"
+    ],
+    [
+      "session",
+      "preset",
+      "appVersion"
+    ]
+  ],
+  "fromVersion": "0.10.1",
+  "toVersion": "0.10.2",
+  "changedLeavesPerRun": 204,
+  "residualDifferences": 0,
+  "capturesPerRun": 102,
+  "comparison": {
+    "independentCiJobs": 2,
+    "runsPerJob": 2,
+    "capturesPerRun": 102,
+    "exactlyIdentical": true,
+    "toleranceUsedForCiRepeatComparison": false,
+    "provenancePerJob": [
+      {
+        "os": "Linux",
+        "osRelease": "7.0.0-1017-azure",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "ci": {
+          "provider": "GitHub Actions",
+          "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41678278291",
+          "runAttempt": "1",
+          "runnerImage": "ubuntu24"
+        }
+      },
+      {
+        "os": "Linux",
+        "osRelease": "7.0.0-1017-azure",
+        "architecture": "x86_64",
+        "browserName": "chromium",
+        "browserVersion": "156.0.8078.4",
+        "ci": {
+          "provider": "GitHub Actions",
+          "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/41678278291",
+          "runAttempt": "1",
+          "runnerImage": "ubuntu24"
+        }
+      }
+    ],
+    "captures": [
+      {
+        "job": 1,
+        "run": 1,
+        "captureSha256": "23efea02c4c790e9ed099fe873040769c51aab6fbfab9a25618a6f2971d06183"
+      },
+      {
+        "job": 1,
+        "run": 2,
+        "captureSha256": "23efea02c4c790e9ed099fe873040769c51aab6fbfab9a25618a6f2971d06183"
+      },
+      {
+        "job": 2,
+        "run": 1,
+        "captureSha256": "23efea02c4c790e9ed099fe873040769c51aab6fbfab9a25618a6f2971d06183"
+      },
+      {
+        "job": 2,
+        "run": 2,
+        "captureSha256": "23efea02c4c790e9ed099fe873040769c51aab6fbfab9a25618a6f2971d06183"
+      }
+    ],
+    "versionDelta": {
+      "baseCommit": "4709f1d676f793222ebc7f758692a69824c5541a",
+      "baselineGzipSha256": "2b22cd7dd75cf2d64f54cfd7e57370af43ed1327efb1428b27da2e74b721e427",
+      "paths": [
+        [
+          "session",
+          "appVersion"
+        ],
+        [
+          "session",
+          "preset",
+          "appVersion"
+        ]
+      ],
+      "before": "0.10.1",
+      "after": "0.10.2",
+      "changedLeaves": 204
+    },
+    "changedLeavesPerRun": 204,
+    "residualDifferences": 0
+  },
+  "promotedFiles": {
+    "tests/baselines/characterize.json.gz": "adbc54eb5ab3e0e3d8bf30df399d7c30cc0fe332562d0ec953faca9a77c71b5f",
+    "tests/baselines/characterize-summary.json": "028be40532af9e8d63a7869d287944429875bd7b2867d716a3e161bdf28b315f"
+  },
+  "ordinaryComparison": "Exact version values; no mapping, tolerance or ordinary waiver.",
+  "iconFixGate": {
+    "runId": 41675074107,
+    "head": "4709f1d676f793222ebc7f758692a69824c5541a",
+    "independentChecks": 219,
+    "browser": {
+      "passed": 37,
+      "failed": 0,
+      "total": 37,
+      "allExecutedOnce": true,
+      "actualFailingWorkflows": []
+    },
+    "Looks": {
+      "seconds": 1513.33,
+      "minutes": 25.222166666666666,
+      "materialFamilyPaths": {
+        "Studio": true,
+        "Properties": true
+      },
+      "riskRemainsOpen": true
+    },
+    "wallMinutes": 45.81666666666667
+  },
+  "scientificSignoffRequired": true
+}

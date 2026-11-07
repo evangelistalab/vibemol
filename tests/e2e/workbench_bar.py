@@ -15,6 +15,14 @@ HARNESS = r'''() => {
       const visible = el => { const r = el.getBoundingClientRect(); return r.width && r.height && getComputedStyle(el).visibility !== 'hidden'; };
       return {
         mode: document.body.dataset.wbMode, width: innerWidth, scrollWidth: tools.scrollWidth, clientWidth: tools.clientWidth,
+        iconOnly: bar.classList.contains('wb-icon-tools'),
+        editIcons: ['editAdaptiveSymmetryBtn', 'editAdaptiveCleanStructureBtn'].map(id => {
+          const button = document.getElementById(id), icon = button.querySelector('.adaptiveEditItemIcon');
+          const rect = icon.getBoundingClientRect();
+          return {id, glyph: icon.textContent, buttonShown: !!visible(button), iconShown: !!visible(icon),
+            iconWidth: rect.width, iconHeight: rect.height,
+            wrapperDisplay: getComputedStyle(button.querySelector('.adaptiveEditItemBody')).display};
+        }),
         occluded: [...bar.querySelectorAll('button')].filter(visible).filter(b => {
           const r = b.getBoundingClientRect(), hit = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2);
           return b !== hit && !b.contains(hit);
@@ -53,6 +61,15 @@ def assert_menu_focus(page, menu, action, expected_id):
 
 def check_bar(page):
     result = page.evaluate('() => __vmqa.snap()')
+    expected_icons = [
+        {'id': 'editAdaptiveSymmetryBtn', 'glyph': 'hub'},
+        {'id': 'editAdaptiveCleanStructureBtn', 'glyph': 'cleaning_services'},
+    ]
+    icon_record = {'width': result['width'], 'mode': result['mode'], 'iconOnly': result['iconOnly'],
+                   'actual': result['editIcons'], 'expected': {'inventory': expected_icons, 'shownButtonsHaveShownIcons': True}}
+    print('[workbench-command-icons] ' + json.dumps(icon_record), flush=True)
+    assert [{'id': icon['id'], 'glyph': icon['glyph']} for icon in result['editIcons']] == expected_icons, icon_record
+    assert all(icon['iconShown'] for icon in result['editIcons'] if icon['buttonShown']), icon_record
     assert result['scrollWidth'] <= result['clientWidth'] + 1, result
     assert not result['occluded'], result
     assert result['pressed'] == 0, result
@@ -257,6 +274,11 @@ def run(page):
             assert any(row['id']=='figurePanel' for row in result['rows']),result
             report['responsive'].append({'width': width, **result})
         if width == 320: screenshot(page, 'mobile-edit')
+    icon_only_observed = any(row['mode'] == 'edit' and row['iconOnly']
+                             and all(icon['buttonShown'] for icon in row['editIcons'])
+                             for row in report['responsive'])
+    print('[workbench-icon-only-coverage] ' + json.dumps({'actual': icon_only_observed, 'expected': True}), flush=True)
+    assert icon_only_observed, report['responsive']
     page.evaluate('() => { for (const button of __allPanelButtons) delete button.hidden; }')
 
     page.set_viewport_size({'width': 1512, 'height': 950})

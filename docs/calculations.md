@@ -81,9 +81,11 @@ Escape first closes the popup, then clears atom focus, then returns to View.
 - A whole p shell on a plane contributes three MINAO functions but **one**
   subspace orbital. The preview displays that same normal-oriented combination.
   Three ring carbons therefore report **9 MINAO functions → 3 subspace orbitals**.
-- Available methods are cumulative (`sigma=0.98` by default), cutoff, separate
-  occupied/virtual counts, and total count. Diagonalization defaults on. Invalid
-  parameters suppress the generated input and show an explanation.
+- Complete active space (CAS) is the default selection method. Enter the active
+  electron and orbital counts explicitly (spinors for GHF). Saved methods and
+  counts retain their values. Cumulative (`sigma=0.98`), cutoff, separate
+  occupied/virtual counts, and total count remain available. Diagonalization
+  defaults on. Invalid parameters suppress generated input and explain why.
 - Total active count follows the selected spin-free subspace, including π-plane
   constraints, until edited. For example, three whole p shells give 9, or 3 with
   a shared π plane. A manual count persists across selection changes and session
@@ -102,10 +104,10 @@ Escape first closes the popup, then clears atom focus, then returns to View.
 - With ROHF, forte2 AVAS always includes all singly occupied orbitals. The
   **Additional active**, **Doubly occupied**, and **Virtual** counts are additional
   to those orbitals, and remain spatial counts. Separate counts can both be 0
-  if there are singly occupied orbitals. The current forte2 separate-count
-  validator uses signed `2*ms`: for negative `ms`, it additionally requires
-  `docc + uocc + 2*ms > 0`. VibeMol explains that restriction and blocks invalid
-  input; Total selection or positive `ms` avoids it.
+  if there are singly occupied orbitals. The targeted forte2 version counts
+  these as `abs(2*ms)` for either sign of the spin projection. VibeMol uses that
+  same absolute count; the former signed-ms rejection is removed. See the
+  [target compatibility contract](forte2-interchange.md) for the declared change.
 - GHF emits `x2c_type="so"` and
   `CI(RelCISolver(nel=mf.nel))(avas)`. Enter counts as spatial pairs; GHF doubles
   emitted active counts exactly once and labels the projected count **spinors**.
@@ -177,3 +179,7 @@ create AVAS assignments. `state().selectedAtomIds` returns that transient focus;
 `configure({total: n})` sets a manual total; `configure({totalFollowsSelection:
 true})` resumes selection-based counts. `state().options.total` returns the
 effective count, in spatial orbitals for RHF/ROHF and spatial pairs for GHF.
+
+## Explicit CAS (forte2 PR283)
+
+Choose **Complete active space (CAS)** in Selection method, then enter total electrons and spatial orbitals (RHF/ROHF) or spinors (GHF). ROHF totals include the singly occupied sector. GHF CAS counts are not doubled. Invalid pairs leave the form visible and disable generated input; virtual availability is checked by forte2 after SCF. CAS survives session save/open. See [forte2 export and CAS](forte2-interchange.md) for count rules, upstream provenance, the export-only `VibeMolForte2.export` API and its validation/error contract.

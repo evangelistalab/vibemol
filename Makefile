@@ -86,10 +86,12 @@ version-assets:
 check:
 	python3 tools/check_unreachable.py
 	node --check tools/audit-edit-api.cjs
+	node --check tools/audit-forte2.cjs
 	node --check tests/unit/edit-api-audit.test.cjs
 	python3 -m py_compile tests/e2e/edit_api.py
 	python3 -m py_compile tests/e2e/edit_testing_adapters.py tools/diagnostics/testing_selection_validation.py
 	node --check tests/e2e/scientific_buffers.js
+	node --check tests/e2e/measurement_connection_widths.js
 	python3 -m py_compile tests/e2e/scientific_buffers.py
 	node --check api/figure-runner.mjs
 	node --check api/figure-browser.mjs
@@ -101,7 +103,7 @@ check:
 	node --check tests/unit/annotation-store-audit.test.cjs
 	python3 tools/sync_asset_versions.py --check
 	python3 -m py_compile tools/sync_asset_versions.py tests/e2e/asset_cache.py
-	python3 -m py_compile tests/e2e/api_surface_recording.py
+	python3 -m py_compile tests/e2e/api_surface_recording.py tests/e2e/cas_default_recording.py
 	python3 -m py_compile tests/e2e/characterize.py tests/e2e/browser_suite.py tests/e2e/ci_evidence.py tests/e2e/join_browser_shards.py tests/e2e/join_characterize.py tests/e2e/compare_ci_baselines.py tests/e2e/release_baseline_recording.py tests/e2e/periodic_table.py tests/e2e/style_lab.py
 	@set -e; \
 	for file in $(JS_CHECK_FILES); do \

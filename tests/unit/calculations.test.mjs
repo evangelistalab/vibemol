@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { loadGlobalModules } from './load-global-module.mjs';
 const {VibeMolCalculationsModel:M,VibeMolMinaoRenderer:R}=loadGlobalModules([
-  'assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/calculations-model.js','assets/app/js/minao-renderer.js']);
+  'assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js','assets/app/js/minao-renderer.js']);
 M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url),'utf8')));
 M.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz.json',import.meta.url),'utf8')),'cc-pvtz');
 const plain=x=>JSON.parse(JSON.stringify(x));
@@ -11,6 +11,18 @@ const record=rows=>({name:'fixture',vol:{units:'angstrom',atoms:rows.map(([Z,x,y
 const ring=()=>record([[6,0,0,.859492],[6,0,-.651229,-.499559],[6,0,.651229,-.499559],[1,.91265,0,1.457504],[1,-.91265,0,1.457504],[1,0,-1.585659,-1.038624],[1,0,1.585659,-1.038624]]);
 // Scientific fixtures explicitly assign shells; viewport selection has no AO side effects.
 const pick=(r,...indices)=>indices.forEach(i=>{const id='a'+i;if(M.state(r).selections.some(row=>row.id===id))M.removeOrbitals(r,[id]);else M.selectShell(r,id,M.defaultShell(r.vol.atoms.find(a=>a.id===id).Z));});
+test('CAS is the new-record default and explicit saved methods retain their choice',()=>{
+ const r=ring();assert.equal(M.state(r).options.method,'cas');
+ assert.equal(Object.hasOwn(M.state(r).options,'cas'),false);
+ pick(r,0);assert.equal(M.generate(r),'');assert.match(M.validation(r).errors.join(' '),/CAS must contain two/);
+ M.setOptions(r,{cas:[4,3]});assert.match(M.generate(r),/cas=\(4, 3\),/);
+ for(const method of ['cumulative','cutoff','separate','total','cas']){
+  const saved={options:{method,cas:[4,3],sigma:.91,total:4,totalFollowsSelection:false}};
+  const restored=M.normalize(saved);assert.equal(restored.options.method,method);
+  assert.deepEqual(plain(restored.options.cas),[4,3]);assert.notEqual(restored.options.cas,saved.options.cas);
+  assert.equal(restored.options.sigma,.91);assert.equal(restored.options.total,4);
+ }
+});
 test('atom selection is transient and does not create or erase AVAS assignments',()=>{
  const r=ring();M.toggleAtom(r,'a0');assert.deepEqual(plain(M.selectedIds(r)),['a0']);
  assert.equal(M.state(r).selections.length,0);assert.equal(M.optionsFor(r).total,0);
@@ -51,7 +63,7 @@ test('occupied, outer and next-shell menus match C, S and Fe in filling order',(
   [26,['1s','2s','2p','3s','3p','4s','3d','4p','5s','4d','5p'],27]
  ];
  for(const [z,expected,count]of examples){
-  const r=record([[z,0,0,0]]);
+  const r=record([[z,0,0,0]]);M.setOptions(r,{method:'cumulative'});
   assert.deepEqual(plain(M.selectionContext(r,['a0']).shells.map(s=>s.label)),expected);
   for(const shell of expected)assert.equal(M.selectShell(r,'a0',shell),true);
   assert.equal(M.projection(r).minao,count);assert.equal(M.optionsFor(r).total,count);
@@ -67,7 +79,7 @@ test('occupied, outer and next-shell menus match C, S and Fe in filling order',(
  for(const ids of [['a0','a2'],['a2','a0']])assert.deepEqual(plain(M.selectionContext(r,ids).shells.map(s=>s.label)),['1s','2s','2p','3s','3p','4s','4p','5s','5p']);
 });
 test('expanded light-element choices use real cc-pVTZ functions and matching input without changing old sessions',()=>{
- const r=record([[6,0,0,0],[8,0,0,2]]);
+ const r=record([[6,0,0,0],[8,0,0,2]]);M.setOptions(r,{method:'cumulative'});
  M.selectComponent(r,'a0','2p','px');const old=plain(M.state(r));
  assert.equal(M.previewBasis(r),'cc-pvtz-minao');
  M.selectComponents(r,['a0','a1'],'3p','pz');
@@ -91,7 +103,7 @@ test('expanded light-element choices use real cc-pVTZ functions and matching inp
 });
 test('older transition-metal assignments survive session normalization and can be explicitly removed',()=>{
  const r=record([[26,0,0,0]]);
- r.calculations=M.normalize({selections:[{id:'a0',shells:{'3d':'all','5d':['dz2']}}]});
+ r.calculations=M.normalize({options:{method:'cumulative'},selections:[{id:'a0',shells:{'3d':'all','5d':['dz2']}}]});
  M.prune(r);assert.deepEqual(plain(M.specs(r)),['Fe(3d)','Fe(5dz2)']);
  assert.equal(M.projection(r).minao,6);assert.match(M.generate(r),/Fe\(5dz2\)/);
  assert.equal(M.selectShell(r,'a0','5d'),false);
@@ -116,13 +128,13 @@ test('whole-shell/component exclusivity, component collapse, and discontiguous r
  M.selectShell(r,'a0','2p');assert.deepEqual(plain(M.specs(r)),['C2-3(2p)']);
 });
 test('cyclopropene plane agrees with the SVD subspace and renders only its normal combination',()=>{
- const r=ring();pick(r,0,1,2);assert.ok(!M.addPlane(r).error);
+ const r=ring();M.setOptions(r,{method:'cumulative'});pick(r,0,1,2);assert.ok(!M.addPlane(r).error);
  const p=M.projection(r);assert.equal(p.minao,9);assert.equal(p.orbitals,3);assert.equal(p.functions.length,3);assert.ok(Math.abs(p.planes[0].normal[0])>.999999);
  assert.deepEqual(plain(M.planeSpecs(r)),[['C1-3']]);assert.match(M.generate(r),/subspace=\["C\(2p\)"\]/);
  M.selectComponent(r,'a0','2p','px');assert.equal(M.planeEligible(M.state(r).selections[0]),false);assert.equal(M.state(r).planes.length,0);assert.equal(M.projection(r).orbitals,7);
 });
 test('automatic total follows shells, components and pi planes, with GHF doubling only in output',()=>{
- const r=ring();assert.equal(M.optionsFor(r).total,0);assert.equal(M.optionsFor(r).method,'cumulative');
+ const r=ring();assert.equal(M.optionsFor(r).total,0);assert.equal(M.optionsFor(r).method,'cas');
  M.setOptions(r,{method:'total'});assert.equal(M.generate(r),'');
  pick(r,0,1,2);assert.equal(M.optionsFor(r).total,9);assert.match(M.generate(r),/num_active=9,/);
  M.addPlane(r);assert.equal(M.optionsFor(r).total,3);assert.match(M.generate(r),/num_active=3,/);
@@ -146,7 +158,7 @@ test('older saved explicit totals are preserved and automatic totals resolve aft
  const r=ring();pick(r,0,1);const saved=plain(r.calculations);
  saved.options.total=11;delete saved.options.totalFollowsSelection;r.calculations=M.normalize(saved);
  assert.equal(M.optionsFor(r).total,11);assert.equal(M.optionsFor(r).totalFollowsSelection,false);
- const {VibeMolCalculationsModel:fresh}=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/calculations-model.js']);
+ const {VibeMolCalculationsModel:fresh}=loadGlobalModules(['assets/vendor/js/atomic-data.js','assets/app/js/edit-utils.js','assets/app/js/forte2-format.js','assets/app/js/calculations-model.js']);
  saved.options.totalFollowsSelection=true;r.calculations=fresh.normalize(saved);
  assert.equal(fresh.optionsFor(r).total,11); // Loading must not discard a saved value.
  fresh.setBasis(JSON.parse(fs.readFileSync(new URL('../../assets/data/basis/cc-pvtz-minao.json',import.meta.url),'utf8')));
@@ -174,14 +186,14 @@ test('ROHF emits matching signed spin projections and high-spin CI states withou
  r.calculations=M.normalize(plain(r.calculations));assert.equal(M.optionsFor(r).ms,-0.5);
  M.setOptions(r,{reference:'GHF'});assert.doesNotMatch(M.generate(r),/\bms=/);assert.match(M.generate(r),/num_active=6,/);
  M.setOptions(r,{reference:'ROHF'});assert.match(M.generate(r),/multiplicity=2, ms=-0.5/);
- const o2=record([[8,0,0,0],[8,0,0,1.2]]);pick(o2,0,1);M.setOptions(o2,{reference:'ROHF',ms:1});
+ const o2=record([[8,0,0,0],[8,0,0,1.2]]);pick(o2,0,1);M.setOptions(o2,{reference:'ROHF',ms:1,method:'cumulative'});
  assert.match(M.generate(o2),/multiplicity=3, ms=1/);
  M.setOptions(o2,{ms:0});assert.match(M.generate(o2),/multiplicity=1, ms=0/);
  M.setOptions(o2,{reference:'RHF',ms:1});assert.match(M.generate(o2),/rhf = RHF\(charge=0\)/);
  assert.match(M.generate(o2),/multiplicity=1, ms=0.0/);
 });
 test('ROHF validates half-integer spin, charge parity and electron bounds only for ROHF',()=>{
- const r=record([[7,0,0,0]]);pick(r,0);M.setOptions(r,{reference:'ROHF'});
+ const r=record([[7,0,0,0]]);pick(r,0);M.setOptions(r,{reference:'ROHF',method:'cumulative'});
  for(const [ms,reason]of [[0,/requires half-integer/],[0.25,/steps of 0.5/],[4,/half the electron count/],[-4,/half the electron count/],[NaN,/steps of 0.5/],[Infinity,/steps of 0.5/]]){
    M.setOptions(r,{ms});assert.equal(M.generate(r),'');assert.match(M.validation(r).errors.join(' '),reason);
  }
@@ -195,7 +207,7 @@ test('ROHF validates half-integer spin, charge parity and electron bounds only f
 test('ROHF can select singly occupied orbitals alone with separate counts, respecting forte2 validation',()=>{
  const r=record([[7,0,0,0]]);pick(r,0);M.setOptions(r,{reference:'ROHF',ms:.5,method:'separate',docc:0,uocc:0});
  assert.match(M.generate(r),/num_active_docc=0,/);assert.match(M.generate(r),/num_active_uocc=0,/);
- M.setOptions(r,{ms:-.5});assert.equal(M.generate(r),'');assert.match(M.validation(r).errors.join(' '),/For negative ms, forte2 AVAS/);
+ M.setOptions(r,{ms:-.5});assert.deepEqual(plain(M.validation(r).errors),[]);assert.match(M.generate(r),/num_active_docc=0/);
  M.setOptions(r,{docc:2});assert.ok(M.generate(r));
  M.setOptions(r,{reference:'RHF',charge:1,docc:0});assert.equal(M.generate(r),'');
  M.setOptions(r,{reference:'ROHF',ms:0});assert.equal(M.generate(r),'');
@@ -209,7 +221,7 @@ test('shared atoms use the normalized mean of independently fitted plane normals
  assert.ok(Math.abs(normal[0]+Math.SQRT1_2)<1e-8);assert.ok(Math.abs(normal[1]+Math.SQRT1_2)<1e-8);assert.ok(Math.abs(normal[2])<1e-8);
 });
 test('formaldehyde selects one px pair per atom; output includes the loaded XYZ and validates parameters',()=>{
- const r=record([[6,0,0,-.59954],[8,0,0,.59938],[1,0,-.9388,-1.187],[1,0,.9388,-1.187]]);pick(r,0,1);
+ const r=record([[6,0,0,-.59954],[8,0,0,.59938],[1,0,-.9388,-1.187],[1,0,.9388,-1.187]]);M.setOptions(r,{method:'cumulative'});pick(r,0,1);
  for(const id of ['a0','a1'])M.selectComponent(r,id,'2p','px');assert.equal(M.projection(r).minao,2);assert.equal(M.projection(r).orbitals,2);
  assert.deepEqual(plain(M.specs(r)),['C(2px)','O(2px)']);assert.match(M.generate(r),/C 0.0000000000 0.0000000000 -0.5995400000/);
  M.state(r).options.cutoff=1;M.state(r).options.method='cutoff';assert.equal(M.generate(r),'');
