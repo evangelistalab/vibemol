@@ -19,6 +19,8 @@
   const entries = model.catalog.map(item => ({ ...item, root: document.getElementById(item.panel), entry: host.windows.getEntry(item.id) }));
   const byId = new Map(entries.map(item => [item.id, item]));
   const body = document.body;
+  const utilities = document.getElementById('topRightUtilities');
+  const connectorButton = utilities?.querySelector('#connectorPilotButton');
   body.classList.add('vm-workbench');
   const canvas = document.getElementById('canvas');
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
@@ -164,8 +166,7 @@
   preferencesButton.setAttribute('data-tooltip', 'App settings');
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
   focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton, preferencesButton);
-  const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
-  const connectorButton = utilities?.querySelector('#connectorPilotButton');
+  if (utilities) actions.append(utilities);
   bar.querySelector('#themeToggleInput')?.setAttribute('aria-label', 'Dark mode');
   const sidebarButton = document.getElementById('toolbarShowBtn');
   if (sidebarButton) { sidebarButton.setAttribute('aria-label', 'Show scenes'); bar.prepend(sidebarButton); }
