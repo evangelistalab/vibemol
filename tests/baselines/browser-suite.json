@@ -127,6 +127,10 @@
     "tests/e2e/measurements.py": {
       "measurement-connection-width": 20,
       "measurement-connection-fog": 4
+    },
+    "tests/e2e/workbench_bar.py": {
+      "connector-shell-network": 3,
+      "connector-shell-hitbox": 33
     }
   }
 }
