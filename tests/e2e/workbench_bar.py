@@ -3,6 +3,8 @@
 import json
 import math
 import premerge as p
+from checkpoint_contract import require_phase_counts
+from connector_shell import audit_connector_hitbox, audit_connector_launches
 
 
 HARNESS = r'''() => {
@@ -265,6 +267,7 @@ def run(page):
     }''')
     widths = [1920, 1512, 1440, 1180, 1050, 1024, 900, 760, 650, 390, 320]
     report['responsive'] = []
+    report['connectorHitboxes'] = []
     for width in widths:
         page.set_viewport_size({'width': width, 'height': 950})
         for mode in ['Display', 'Measure', 'Edit']:
@@ -273,7 +276,10 @@ def run(page):
             assert len(result['rows']) == (10 if mode == 'Edit' else 9), result
             assert any(row['id']=='figurePanel' for row in result['rows']),result
             report['responsive'].append({'width': width, **result})
+            report['connectorHitboxes'].append(audit_connector_hitbox(page, width, mode))
         if width == 320: screenshot(page, 'mobile-edit')
+    require_phase_counts({'connector-shell-hitbox': len(report['connectorHitboxes'])},
+                         'tests/e2e/workbench_bar.py', 'connector-shell-hitbox')
     icon_only_observed = any(row['mode'] == 'edit' and row['iconOnly']
                              and all(icon['buttonShown'] for icon in row['editIcons'])
                              for row in report['responsive'])
@@ -358,6 +364,7 @@ def quick_actions(page, url):
 def main():
     with p.run_http_server(p.ROOT) as url, p.sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
+        audit_connector_launches(browser, url, p.ROOT)
         page = browser.new_page(viewport={'width': 1512, 'height': 950})
         page.add_init_script('(' + HARNESS + ')()')
         errors = []; consoles = []
