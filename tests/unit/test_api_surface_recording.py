@@ -190,4 +190,38 @@ class DeclaredApiDeltaV2(unittest.TestCase):
         self.old['0']['api']['VibeMolEdit']=[]
         with self.assertRaises(AssertionError):expected_removal(self.old,self.spec)
 
+class ConnectorDomDelta(unittest.TestCase):
+    def setUp(self):
+        self.spec = json.loads((ROOT/'tests/baselines/connector-shell-delta.json').read_text())
+        self.old = {str(i): {'dom': {'ids': ['a', 'z']}, 'value': 1.0} for i in range(102)}
+        self.new = {str(i): {'dom': {'ids': ['a', 'connectorPilotButton', 'z']}, 'value': 1.0} for i in range(102)}
+
+    def test_only_the_authorized_id_and_base_can_be_declared(self):
+        for change in ({'captures': 101}, {'baseCommit': 'a'*40}, {'baselineGzipSha256': 'b'*64},
+                       {'delta': [{'operation': 'add-dom-id', 'id': 'other'}]},
+                       {'delta': self.spec['delta'] * 2}):
+            with self.subTest(change=change), self.assertRaises(AssertionError):
+                declaration({**self.spec, **change})
+
+    def test_exact_one_per_capture(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            report = verify_captures(self.old, self.new, self.spec)
+        self.assertEqual(report['actualDomIdAdditions'], 102)
+        self.assertTrue(report['zeroOtherChanges'])
+        self.assertEqual(self.old['0']['dom']['ids'], ['a', 'z'])
+        self.assertEqual(report['changes'][0]['path'], ['dom', 'ids', 1])
+
+    def test_missing_extra_renamed_reordered_and_other_leaves_fail(self):
+        for ids in (['a', 'z'], ['a', 'connectorPilotButton', 'connectorPilotButton', 'z'],
+                    ['a', 'connectorPilotButton', 'extra', 'z'], ['a', 'other', 'z'],
+                    ['a', 'connectorPilotButton'], ['connectorPilotButton', 'a', 'z']):
+            actual = copy.deepcopy(self.new)
+            actual['0']['dom']['ids'] = ids
+            with self.subTest(ids=ids), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
+                verify_captures(self.old, actual, self.spec)
+        self.new['0']['value'] = 1.000000000001
+        with contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
+            verify_captures(self.old, self.new, self.spec)
+
+
 if __name__=='__main__':unittest.main()

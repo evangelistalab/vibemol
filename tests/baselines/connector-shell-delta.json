@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 3,
+  "baseCommit": "a4f4a753b31aae5ccbfa1e8c4e03939c281a5b99",
+  "baselineGzipSha256": "fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de",
+  "captures": 102,
+  "delta": [
+    {"operation": "add-dom-id", "id": "connectorPilotButton"}
+  ],
+  "authority": "Direct human approval for exactly 102 additions of connectorPilotButton to dom.ids, one per capture, with zero other capture changes."
+}

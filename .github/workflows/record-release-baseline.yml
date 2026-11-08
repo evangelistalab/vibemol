@@ -11,14 +11,14 @@ on:
         description: Recording contract
         type: choice
         default: release-0.10.1
-        options: [release-0.10.1, release-0.10.2, declared-api-removal, declared-api-delta, cas-default]
+        options: [release-0.10.1, release-0.10.2, declared-api-removal, declared-api-delta, cas-default, connector-shell-dom-id]
 
 permissions:
   contents: read
 
 jobs:
   record:
-    if: (inputs.mode == 'cas-default' && github.ref == 'refs/heads/codex/pr90-cas-default-recording') || (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta') || (inputs.mode == 'release-0.10.1' && github.ref == 'refs/heads/codex/release-0-10-1-ci') || (inputs.mode == 'release-0.10.2' && github.ref == 'refs/heads/codex/pr90-0.10.2-recording')
+    if: (inputs.mode == 'connector-shell-dom-id' && github.ref == 'refs/heads/codex/connector-shell-recording') || (inputs.mode == 'cas-default' && github.ref == 'refs/heads/codex/pr90-cas-default-recording') || (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta') || (inputs.mode == 'release-0.10.1' && github.ref == 'refs/heads/codex/release-0-10-1-ci') || (inputs.mode == 'release-0.10.2' && github.ref == 'refs/heads/codex/pr90-0.10.2-recording')
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     strategy:
@@ -35,7 +35,7 @@ jobs:
       - name: Install ordinary CI's pinned dependencies
         run: pip install -r api/requirements-ci.lock
       - name: Declared-delta negative controls
-        if: (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta')
+        if: (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta' || inputs.mode == 'connector-shell-dom-id')
         run: python -m unittest discover -s tests/unit -p 'test_api_surface_recording.py'
       - name: Exact CAS-default negative controls
         if: inputs.mode == 'cas-default'
@@ -64,11 +64,17 @@ jobs:
           VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
           VIBEMOL_RECORDING_WORKER: ${{ matrix.capture }}
         run: |
-          test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          if [ "$VIBEMOL_RECORDING_MODE" = connector-shell-dom-id ]; then
+            test "$(git rev-parse HEAD^)" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          else
+            test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          fi
           source_root="$RUNNER_TEMP/release-source"
           mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
           git archive "$VIBEMOL_EXPECTED_SOURCE_COMMIT" | tar -x -C "$source_root"
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = connector-shell-dom-id ]; then
+            python tests/e2e/characterize.py --source-root "$source_root" --record-api-delta tests/baselines/connector-shell-delta.json --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
+          elif [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/characterize.py --source-root "$source_root" --record-api-delta tests/baselines/api-surface-delta.json --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
           elif [ "$VIBEMOL_RECORDING_MODE" = cas-default ]; then
             python tests/e2e/characterize.py --source-root "$source_root" --record-cas-default --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
@@ -104,7 +110,9 @@ jobs:
           VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
           VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
         run: |
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = connector-shell-dom-id ]; then
+            python tests/e2e/api_surface_recording.py out/test-artifacts/release-baselines --declaration tests/baselines/connector-shell-delta.json --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          elif [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/api_surface_recording.py out/test-artifacts/release-baselines --declaration tests/baselines/api-surface-delta.json --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
           elif [ "$VIBEMOL_RECORDING_MODE" = cas-default ]; then
             python tests/e2e/cas_default_recording.py out/test-artifacts/release-baselines --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"

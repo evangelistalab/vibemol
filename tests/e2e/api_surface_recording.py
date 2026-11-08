@@ -10,13 +10,26 @@ import re
 import subprocess
 
 GOLDEN = 'tests/baselines/characterize.json.gz'
+CONNECTOR_MODE = 'connector-shell-dom-id'
+CONNECTOR_REF = 'refs/heads/codex/connector-shell-recording'
+CONNECTOR_DECLARATION = Path('tests/baselines/connector-shell-delta.json')
+CONNECTOR_SOURCE = 'cd2b70dc3ef0c41b380d4e341f131cb4aec6d0d6'
+CONNECTOR_TREE = '88f3e30c68c56eb72c7117bf2e9ac52defc96adf'
+CONNECTOR_BASE = 'a4f4a753b31aae5ccbfa1e8c4e03939c281a5b99'
+CONNECTOR_GOLDEN = 'fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de'
+CONNECTOR_ID = 'connectorPilotButton'
 
 
 def declaration(value):
     assert set(value) == {'schemaVersion', 'baseCommit', 'baselineGzipSha256', 'captures', 'delta', 'authority'}, value
-    assert type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2) and type(value['captures']) is int and value['captures'] == 102, value
+    assert type(value['schemaVersion']) is int and value['schemaVersion'] in (1, 2, 3) and type(value['captures']) is int and value['captures'] == 102, value
     assert re.fullmatch(r'[0-9a-f]{40}', value['baseCommit']), value
     assert re.fullmatch(r'[0-9a-f]{64}', value['baselineGzipSha256']), value
+    assert isinstance(value['authority'], str) and value['authority'].strip(), value
+    if value['schemaVersion'] == 3:
+        assert value['baseCommit'] == CONNECTOR_BASE and value['baselineGzipSha256'] == CONNECTOR_GOLDEN, value
+        assert value['delta'] == [dict(operation='add-dom-id', id=CONNECTOR_ID)], value
+        return value
     deltas = [value['delta']] if value['schemaVersion'] == 1 else value['delta']
     assert isinstance(deltas,list) and deltas, value
     identities=set()
@@ -38,11 +51,12 @@ def declaration(value):
         assert identity not in identities,('Repeated delta',identity)
         assert not any(ns==identity[0] and (member is None or identity[1] is None) for ns,member in identities),('Conflicting namespace deltas',identity)
         identities.add(identity)
-    assert isinstance(value['authority'], str) and value['authority'].strip(), value
     return value
 
 
 def recording_mode(spec):
+    if spec['schemaVersion'] == 3:
+        return CONNECTOR_MODE
     return 'declared-api-removal' if spec['schemaVersion']==1 else 'declared-api-delta'
 
 
@@ -75,6 +89,13 @@ def expected_removal(previous, spec):
     deltas=[spec['delta']] if spec['schemaVersion']==1 else spec['delta']
     for name,capture in expected.items():
         for delta in deltas:
+            if delta['operation'] == 'add-dom-id':
+                ids = capture['dom']['ids']
+                assert type(ids) is list and ids == sorted(set(ids)) and CONNECTOR_ID not in ids, (name, ids)
+                ids.append(CONNECTOR_ID)
+                ids.sort()
+                changes.append(dict(capture=name, path=['dom', 'ids', ids.index(CONNECTOR_ID)], addedDomId=CONNECTOR_ID))
+                continue
             namespace=delta['namespace']
             if delta['operation']=='remove-api-member':
                 member=delta['member'];members=capture['api'][namespace]
@@ -104,6 +125,8 @@ def verify_captures(previous, actual, spec):
     report=dict(delta=spec['delta'],expectedRemovals=removal_count,actualRemovals=sum('removedMember' in c for c in changes),
                 expectedMemberAdditions=member_additions,actualMemberAdditions=sum('addedMember' in c for c in changes),expectedNamespaceAdditions=namespace_count,actualNamespaceAdditions=sum('addedMembers' in c for c in changes),
                 changes=changes,residualDifference=diff,zeroOtherChanges=diff is None)
+    if recording_mode(spec) == CONNECTOR_MODE:
+        report.update(expectedDomIdAdditions=102, actualDomIdAdditions=len(changes) if diff is None else None)
     print('[declared-api-delta] '+json.dumps(report,sort_keys=True),flush=True)
     assert diff is None,('Undeclared capture change; refuse baseline recording',diff)
     return report
@@ -138,20 +161,32 @@ def require_source(root, source_root, args, report_path):
     spec = declaration(json.loads((root/spec_path).read_text()))
     commit = args.record_source_commit
     git = lambda *parts: subprocess.check_output(['git', *parts],cwd=root,text=True).strip()
+    recorder = git('rev-parse', 'HEAD')
+    connector = recording_mode(spec) == CONNECTOR_MODE
     require_mode(dict(ci=os.environ.get('GITHUB_ACTIONS'),event=os.environ.get('GITHUB_EVENT_NAME'),
-        head=git('rev-parse','HEAD'),githubSha=os.environ.get('GITHUB_SHA'),ref=os.environ.get('GITHUB_REF'),
+        head=recorder,githubSha=os.environ.get('GITHUB_SHA'),ref=os.environ.get('GITHUB_REF'),
         updateBaseline=args.update_baseline,injectHarness=args.inject_harness,prepareFixtures=args.prepare_fixtures,
         runs=args.runs,matrixRunIndex=args.matrix_run_index,releaseTag=args.record_release_tag,
-        shallow=git('rev-parse','--is-shallow-repository')),commit)
+        shallow=git('rev-parse','--is-shallow-repository')),recorder if connector else commit)
+    if connector:
+        assert commit == CONNECTOR_SOURCE and git('rev-parse', commit + '^{tree}') == CONNECTOR_TREE, commit
+        assert git('rev-list', '--parents', '-n', '1', recorder).split() == [recorder, commit], recorder
+        assert spec_path == CONNECTOR_DECLARATION and os.environ.get('GITHUB_REF') == CONNECTOR_REF, spec_path
+        assert os.environ.get('GITHUB_RUN_ATTEMPT') == '1', 'Only the first recording attempt is authorized'
+        assert os.environ.get('VIBEMOL_RECORDING_WORKER') in ('1', '2'), 'Require two identified recording workers'
     subprocess.run(['git','merge-base','--is-ancestor',spec['baseCommit'],commit],cwd=root,check=True)
     archived = require_exact_archive(root,source_root,commit)
-    committed = subprocess.check_output(['git','show',commit+':'+str(spec_path)],cwd=root)
-    assert committed == (root/spec_path).read_bytes() == (source_root/spec_path).read_bytes(), 'Declaration differs from tested source'
+    committed = subprocess.check_output(['git','show',recorder+':'+str(spec_path)],cwd=root)
+    assert committed == (root/spec_path).read_bytes(), 'Declaration differs from recorder commit'
+    if not connector:
+        assert committed == (source_root/spec_path).read_bytes(), 'Declaration differs from tested source'
     previous = read_previous(root,spec)
     proof = dict(status='passed',recordingMode=recording_mode(spec),commit=commit,baseCommit=spec['baseCommit'],
         tree=git('rev-parse',commit+'^{tree}'),declaration=spec,declarationSha256=hashlib.sha256(committed).hexdigest(),
         archivedFiles=archived,allArchivedBlobsMatchCommit=True,sourceRefAtCapture=os.environ.get('GITHUB_REF'),
         ciRunId=os.environ.get('GITHUB_RUN_ID'),ciRunAttempt=os.environ.get('GITHUB_RUN_ATTEMPT'))
+    if connector:
+        proof.update(recorderCommit=recorder, recordingWorker=os.environ['VIBEMOL_RECORDING_WORKER'])
     Path(report_path).write_text(json.dumps(proof,indent=2)+'\n')
     return dict(commit=commit,tag=recording_mode(spec)), previous, spec
 
@@ -160,6 +195,8 @@ def compare(folder, root, declaration_path, commit):
     spec = declaration(json.loads(Path(declaration_path).read_text()))
     previous = read_previous(root,spec)
     captures, digests, jobs = [], [], []
+    connector = recording_mode(spec) == CONNECTOR_MODE
+    recorder_runs = set()
     for index in (1,2):
         artifact = Path(folder)/('characterization-baseline-'+str(index))
         proof = json.loads((artifact/'api-baseline-source.json').read_text())
@@ -169,6 +206,11 @@ def compare(folder, root, declaration_path, commit):
         assert golden['baseline']['commit']==commit and golden['baseline']['tag']==recording_mode(spec),golden['baseline']
         provenance = golden['baseline']['captureProvenance']
         assert provenance['os']=='Linux' and provenance['ci']['provider']=='GitHub Actions',provenance
+        if connector:
+            assert proof['tree'] == CONNECTOR_TREE and proof['sourceRefAtCapture'] == CONNECTOR_REF, proof
+            assert proof['recordingWorker'] == str(index) and proof['ciRunAttempt'] == '1', proof
+            assert provenance['ci']['runAttempt'] == '1' and provenance['ci']['runUrl'].endswith('/' + proof['ciRunId']), provenance
+            recorder_runs.add((proof['recorderCommit'], proof['ciRunId']))
         summary=json.loads((artifact/'characterize-summary.json').read_text())
         assert summary['api']==next(iter(golden['captures'].values()))['api'], 'Summary does not match actual captures'
         assert summary['goldenSha256']==hashlib.sha256(gzip.decompress((artifact/'characterize.json.gz').read_bytes())).hexdigest()
@@ -183,6 +225,11 @@ def compare(folder, root, declaration_path, commit):
     assert len(set(digests))==1, 'The four raw serializations must repeat exactly'
     report=dict(status='passed',sourceCommit=commit,declaration=spec,independentCiJobs=2,runsPerJob=2,
         capturesPerRun=102,memberRemovalsPerRun=result['actualRemovals'],namespaceAdditionsPerRun=result['actualNamespaceAdditions'],residualDifferences=0,fourSerializationsExactlyIdentical=True,records=jobs)
+    if connector:
+        assert len(recorder_runs) == 1, recorder_runs
+        recorder, run_id = recorder_runs.pop()
+        report.update(sourceTree=CONNECTOR_TREE, recorderCommit=recorder, ciRunId=run_id,
+                      domIdAdditionsPerRun=result['actualDomIdAdditions'])
     (Path(folder)/'ci-comparison.json').write_text(json.dumps(report,indent=2)+'\n')
     return report
 
