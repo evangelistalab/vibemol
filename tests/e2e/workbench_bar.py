@@ -276,7 +276,8 @@ def run(page):
             assert len(result['rows']) == (10 if mode == 'Edit' else 9), result
             assert any(row['id']=='figurePanel' for row in result['rows']),result
             report['responsive'].append({'width': width, **result})
-            report['connectorHitboxes'].append(audit_connector_hitbox(page, width, mode))
+            report['connectorHitboxes'].append(audit_connector_hitbox(
+                page, width, mode, require_overflow=width == 320 and mode == 'Edit'))
         if width == 320: screenshot(page, 'mobile-edit')
     require_phase_counts({'connector-shell-hitbox': len(report['connectorHitboxes'])},
                          'tests/e2e/workbench_bar.py', 'connector-shell-hitbox')

@@ -92,29 +92,57 @@ def audit_connector_launches(browser, app_url, root):
     require_phase_counts({'connector-shell-network': len(records)}, SUITE, 'connector-shell-network')
 
 
-def audit_connector_hitbox(page, width, mode):
+def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
     wait_for_presented_state(page, '''() =>
       document.body.dataset.wbCompact === String(VibeMolWorkbench.snapshot().compact)''')
-    metrics = page.evaluate('''() => {
+    overflowed = page.locator('#connectorPilotButton.wb-overflowed').count() == 1
+    trigger = page.locator('#workbenchOverflowBtn')
+    menu = page.locator('#workbenchOverflowMenu')
+    if overflowed:
+        trigger.focus()
+        page.keyboard.press('ArrowDown')
+    metrics = page.evaluate('''overflowed => {
       const button = document.getElementById('connectorPilotButton');
       if (!button) return null;
-      const rect = button.getBoundingClientRect();
-      const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+      const rows = [...document.getElementById('workbenchOverflowMenu').children]
+        .filter(row => row.getAttribute('aria-label') === button.getAttribute('aria-label'));
+      const target = overflowed ? rows[0] : button;
+      const rect = target?.getBoundingClientRect();
+      const hit = rect && document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
       return {
-        rect: rect.toJSON(), hit: hit?.id || hit?.tagName || null,
+        rect: rect?.toJSON(), hit: hit?.id || hit?.tagName || null,
         compact: document.body.dataset.wbCompact === 'true',
         actual: {
           previousId: button.previousElementSibling?.id,
           inWorkbenchActions: !!button.closest('#workbenchBar .wb-bar-actions'),
-          meets32pxFloor: Math.min(rect.width, rect.height) >= 32,
-          inViewport: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
-          centerHit: button.contains(hit),
+          overflowed: button.classList.contains('wb-overflowed'),
+          meets32pxFloor: !!rect && Math.min(rect.width, rect.height) >= 32,
+          inViewport: !!rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
+          centerHit: !!target?.contains(hit),
+          ...(overflowed ? {
+            inlineHidden: getComputedStyle(button).display === 'none',
+            menuItems: rows.length,
+            menuItemUnavailable: target?.getAttribute('aria-disabled') === 'true',
+            keyboardReached: target === document.activeElement,
+          } : {}),
         },
       };
-    }''')
+    }''', overflowed)
     actual = metrics and metrics['actual']
     expected = {'previousId': 'githubRepoLink', 'inWorkbenchActions': True,
+                'overflowed': require_overflow or overflowed,
                 'meets32pxFloor': True, 'inViewport': True, 'centerHit': True}
+    if overflowed:
+        expected.update(inlineHidden=True, menuItems=1, menuItemUnavailable=True,
+                        keyboardReached=True, inertOnEnter=True, focusReturned=True)
+        if actual is not None:
+            actual['inertOnEnter'] = False
+            if actual['keyboardReached'] and actual['menuItemUnavailable']:
+                page.keyboard.press('Enter')
+                actual['inertOnEnter'] = menu.is_visible() and menu.evaluate('el => el.contains(document.activeElement)')
+            if menu.is_visible():
+                page.keyboard.press('Escape')
+            actual['focusReturned'] = menu.is_hidden() and trigger.evaluate('el => el === document.activeElement')
     if width <= 390:
         expected['compact'] = True
         if actual is not None:

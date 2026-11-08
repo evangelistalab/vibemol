@@ -99,7 +99,7 @@
   // Keep the real commands and their handlers authoritative. Only their
   // presentation moves into the shared menu shell when icon-only cannot fit.
   function fitTools() {
-    const groups = [quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton];
+    const groups = [connectorButton, quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton].filter(Boolean);
     groups.forEach(group => group.classList.remove('wb-overflowed'));
     bar.classList.remove('wb-icon-tools'); overflowButton.hidden = true;
     const fits = () => tools.scrollWidth <= tools.clientWidth + 1;
@@ -117,14 +117,16 @@
       closeOverflow(); overflowMenu.replaceChildren();
       for (const source of sources) {
         const name = source.getAttribute('aria-label') || source.getAttribute('data-tooltip') || source.textContent.trim();
-        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent,
-          () => { closeOverflow(true); source.click(); }, 'wb-panel-option');
+        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent, () => {
+          if (source.getAttribute('aria-disabled') === 'true') return;
+          closeOverflow(true); source.click();
+        }, 'wb-panel-option');
         row.setAttribute('role', 'menuitem'); row.tabIndex = -1; label(row, name); overflowMenu.append(row);
       }
     }
     [...overflowMenu.children].forEach((row, i) => {
       row.disabled = sources[i].disabled;
-      for (const attr of ['aria-expanded', 'aria-controls']) {
+      for (const attr of ['aria-expanded', 'aria-controls', 'aria-disabled']) {
         if (sources[i].hasAttribute(attr)) row.setAttribute(attr, sources[i].getAttribute(attr)); else row.removeAttribute(attr);
       }
     });
@@ -163,6 +165,7 @@
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
   focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton, preferencesButton);
   const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
+  const connectorButton = utilities?.querySelector('#connectorPilotButton');
   bar.querySelector('#themeToggleInput')?.setAttribute('aria-label', 'Dark mode');
   const sidebarButton = document.getElementById('toolbarShowBtn');
   if (sidebarButton) { sidebarButton.setAttribute('aria-label', 'Show scenes'); bar.prepend(sidebarButton); }
