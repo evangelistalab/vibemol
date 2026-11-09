@@ -2,10 +2,10 @@
 // the relay (agent/relay): set relayUrl to its wss:// address, without /mcp.
 (function (global) {
   const config = Object.assign(global.VibeMolAgentConfig || {}, {
-    relayUrl: 'wss://vibemol-mcp.YOUR-SUBDOMAIN.workers.dev',
+    relayUrl: '',
   });
   // Local testing without editing this file: on localhost only, a URL like
-  // http://localhost:8000/?agentRelay=ws://localhost:8787 overrides relayUrl.
+  // http://localhost:8000/?agent=1&agentRelay=ws://localhost:8787 overrides relayUrl.
   try {
     const host = global.location && global.location.hostname;
     const override = new URLSearchParams(global.location.search).get('agentRelay');
