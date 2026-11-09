@@ -9,11 +9,10 @@ const source = readFileSync(new URL('../../assets/app/js/connector-adapter.js', 
 const origin = 'https://vibemol.example';
 const subtle = webcrypto.subtle;
 
-test('the enabled adapter signs privately and answers discovery with availability only', { timeout: 5000 }, async () => {
+test('the enabled adapter signs privately and advertises only its current public offer', { timeout: 5000 }, async () => {
   const channels = [];
-  const replies = [];
+  const offers = [];
   const proofs = [];
-  const publicKeys = [];
   const lifecycle = new EventTarget();
   let onLabel;
   let generations = 0;
@@ -26,7 +25,7 @@ test('the enabled adapter signs privately and answers discovery with availabilit
     removeAttribute() {},
   });
   const globals = {
-    document: { getElementById: () => button, querySelector: () => null },
+    document: { getElementById: () => button },
     location: { origin },
     isSecureContext: true,
     addEventListener: lifecycle.addEventListener.bind(lifecycle),
@@ -34,14 +33,8 @@ test('the enabled adapter signs privately and answers discovery with availabilit
     crypto: {
       randomUUID: () => webcrypto.randomUUID(),
       subtle: {
-        async generateKey(...args) {
-          generations++;
-          const pair = await subtle.generateKey(...args);
-          publicKeys.push(pair.publicKey);
-          return pair;
-        },
+        generateKey(...args) { generations++; return subtle.generateKey(...args); },
         exportKey: subtle.exportKey.bind(subtle),
-        importKey: subtle.importKey.bind(subtle),
         verify: subtle.verify.bind(subtle),
         async sign(algorithm, key, bytes) {
           const signature = await subtle.sign(algorithm, key, bytes);
@@ -52,7 +45,7 @@ test('the enabled adapter signs privately and answers discovery with availabilit
     },
     BroadcastChannel: class extends EventTarget {
       constructor(name) { super(); this.name = name; this.closed = false; channels.push(this); }
-      postMessage(data) { replies.push(structuredClone(data)); }
+      postMessage(data) { offers.push(structuredClone(data)); }
       close() { this.closed = true; }
     },
   };
@@ -79,12 +72,11 @@ test('the enabled adapter signs privately and answers discovery with availabilit
   send(firstChannel, 'discover', requestId, 'https://other.example');
   send(firstChannel, 'discover', 'invalid');
   send(firstChannel, 'challenge');
-  send(firstChannel, 'prepare');
   send(firstChannel, 'discover');
   const firstState = button.dataset.connectorState;
   const globalsAfter = readGlobals();
   const privateBindingsVisible = runInContext(
-    '[typeof privateKey, typeof active, typeof sign, typeof enable, typeof consentAuthority].some(type => type !== "undefined")',
+    '[typeof privateKey, typeof active, typeof sign, typeof enable, typeof release].some(type => type !== "undefined")',
     context,
   );
   lifecycle.dispatchEvent(new Event('pagehide'));
@@ -92,13 +84,15 @@ test('the enabled adapter signs privately and answers discovery with availabilit
   send(firstChannel, 'discover');
   await activate();
   send(channels[1], 'discover');
+  const [first, second] = offers;
   const [proof] = proofs;
   let privateExportError = null;
   const privateExportRejected = !!proof && await subtle.exportKey('pkcs8', proof.key).then(() => false, error => {
     privateExportError = error.name;
     return true;
   });
-  const challenges = proofs.map(entry => new TextDecoder().decode(entry.bytes).split('\0'));
+  const imported = first && await subtle.importKey('spki', Buffer.from(first.publicKeySpki, 'base64url'),
+    { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify']);
   const actual = {
     idle, firstState, releasedState, privateBindingsVisible, privateExportRejected,
     privateExtractable: proof?.key.extractable,
@@ -107,20 +101,23 @@ test('the enabled adapter signs privately and answers discovery with availabilit
     addedButtonProperties: Reflect.ownKeys(button).filter(key => !buttonKeysBefore.includes(key)),
     channelNames: channels.map(channel => channel.name),
     oldChannelClosed: firstChannel?.closed,
-    replies,
-    differentIdentity: proofs.length === 2 && proofs[0].key !== proofs[1].key && challenges[0][1] !== challenges[1][1],
+    offerFields: offers.map(offer => Object.keys(offer).sort()),
+    offersMatchRequest: offers.every(offer => offer.type === 'offer' && offer.requestId === requestId),
+    differentIdentity: !!(first && second && first.pageInstanceNonce !== second.pageInstanceNonce
+      && first.publicKeySpki !== second.publicKeySpki),
     signatures: proofs.length,
-    enableChallenge: challenges.every(([domain, nonce]) => domain === 'vibemol.connector.enable.v1'
-      && /^[a-f0-9-]{36}$/.test(nonce)),
-    signatureVerifies: !!(proof && await subtle.verify(proof.algorithm, publicKeys[0], proof.signature, proof.bytes)),
+    challengeMatchesNonce: !!proof && new TextDecoder().decode(proof.bytes)
+      === 'vibemol.connector.enable.v1\0' + first?.pageInstanceNonce,
+    signatureVerifies: !!(proof && imported && await subtle.verify(proof.algorithm, imported, proof.signature, proof.bytes)),
   };
+  const fields = ['pageInstanceNonce', 'publicKeySpki', 'requestId', 'type'];
   const expected = {
     idle: { state: 'off', generations: 0, channels: 0 },
     firstState: 'waiting', releasedState: 'off', privateBindingsVisible: false,
     privateExportRejected: true, privateExtractable: false, changedGlobals: [], addedButtonProperties: [],
-    channelNames: ['vibemol.connector.consent.v2', 'vibemol.connector.consent.v2'],
-    oldChannelClosed: true, replies: [{ type: 'available', requestId }, { type: 'available', requestId }],
-    differentIdentity: true, signatures: 2, enableChallenge: true, signatureVerifies: true,
+    channelNames: ['vibemol.connector.consent.v1', 'vibemol.connector.consent.v1'],
+    oldChannelClosed: true, offerFields: [fields, fields], offersMatchRequest: true,
+    differentIdentity: true, signatures: 2, challengeMatchesNonce: true, signatureVerifies: true,
   };
   console.log(JSON.stringify({ actual, expected, privateExportError }));
   assert.deepEqual(actual, expected);

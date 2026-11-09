@@ -131,8 +131,7 @@
     },
     "tests/e2e/workbench_bar.py": {
       "connector-shell-network": 3,
-      "connector-shell-hitbox": 33,
-      "connector-consent-case": 9
+      "connector-shell-hitbox": 33
     }
   }
 }
