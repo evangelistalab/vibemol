@@ -46,7 +46,7 @@ function normalizeHydrogenDefaults(code) {
   .replace('if (!enabled ||','if (!editAddAdjustHydrogensEnabled ||')
   .replace('applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId)','applyHydrogenPlanToVolume(vol, plan)');
 }
-function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
+function additiveApp(source, baseline, testingChanges={}, productChanges={}, legacyStatementRemovals={}) {
  const api=surface(source),old=surface(baseline,{requireProduct:false});
  const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
  assert.deepEqual(api.testing,old.testing,'Testing members changed');
@@ -58,7 +58,15 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
  }
  const statements=s=>parser.parse(s).program.body[0].expression.callee.body.body;
  const previousNodes=statements(baseline);
- const legacy=previousNodes.map(n=>baseline.slice(n.start,n.end));
+ const previousStatements=previousNodes.map(n=>baseline.slice(n.start,n.end));
+ const removed=Object.keys(legacyStatementRemovals).sort();
+ assert.deepEqual(removed,['let __lastBondUpdate = 0;'],'Exactly the one authorized legacy statement removal');
+ for(const statement of removed) {
+  const matches=previousStatements.filter(code=>code===statement);
+  assert.equal(matches.length,1,'Authorized removal must appear once in the pinned baseline: '+statement);
+  assert.equal(hash(matches[0]),legacyStatementRemovals[statement],'Original legacy statement fingerprint: '+statement);
+ }
+ const legacy=previousStatements.filter(code=>!Object.hasOwn(legacyStatementRemovals,code));
  const previousFunctions=new Map(previousNodes.filter(n=>n.type==='FunctionDeclaration').map(n=>[n.id.name,baseline.slice(n.start,n.end)]));
  const appliedProductChanges=new Set();
  const preserved=[];let exposed=0;
@@ -88,7 +96,9 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}) {
  assert.equal(exposed,1,'Exactly one additive product API exposure');
  assert.deepEqual([...appliedProductChanges].sort(),Object.keys(productChanges).sort(),'Every declared product change must be checked');
  assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
- return {legacyStatements:legacy.length,testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges),...(appliedProductChanges.size?{productChanges:[...appliedProductChanges].sort()}: {})};
+ assert.equal(preserved.length,previousStatements.length-removed.length,'Legacy statement count must decrease by exactly the authorized removals');
+ return {legacyStatements:preserved.length,legacyStatementsBeforeRemovals:previousStatements.length,legacyStatementRemovals:removed,
+  testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges),...(appliedProductChanges.size?{productChanges:[...appliedProductChanges].sort()}: {})};
 }
 function semantic(source) {
  return JSON.stringify(parser.parse(source),(key,value)=>['start','end','loc','extra','comments','leadingComments','trailingComments','innerComments','tokens'].includes(key)?undefined:value);
@@ -168,7 +178,7 @@ function audit(root=path.resolve(__dirname,'..')) {
  const productUnits=Object.values(productChanges).flatMap(change=>change.units);
  assert.deepEqual(kernelInventory(root,productUnits),productUnits,'Product helper dependencies changed');
  assert(productUnits.every(r=>r.count<15),'Product helpers must remain below15 inputs');
- const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges),helperExtensions=additiveHelpers(root,readBase);
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {
