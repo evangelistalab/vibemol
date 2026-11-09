@@ -1,15 +1,13 @@
 # VibeMol agent (Claude connector)
 
-Everything for letting a user's own Claude control their open VibeMol tab lives
-in this directory. The rest of the app knows about it in exactly three places:
+The reference connector lives in this directory. Enable the prototype with
+`?agent=1` on the VibeMol page.
 
 | Hook | Where | Purpose |
 |---|---|---|
-| `<span id="vibemolAgentMount">` | `index.html`, next to the GitHub link | where the Claude menu button renders |
-| `<script src="./agent/web/loader.js">` | `index.html` (after `app.js`) | loads everything in `agent/web/` |
-| `window.VibeMolAgentSeam` | end of `assets/app/js/app.js` | narrow list of existing internals the agent may call |
-
-Delete those and the `agent/` folder and VibeMol is back to having no agent.
+| Loader request | `index.html` (after `app.js`) | loads the versioned `agent/web/loader.js` when `agent=1` |
+| `#vibemolAgentMount` | created by the loader next to the GitHub link | where the Claude menu button renders |
+| `window.VibeMolAgentSeam` | end of `assets/app/js/app.js` | internals exposed when `agent=1` |
 
 ## Layout
 ```
@@ -43,10 +41,10 @@ agent/
 
 ## Local development
 ```bash
-cd agent/relay && npm install && npm run dev     # relay on http://localhost:8787
-python3 -m http.server 8000                      # from the repo root; open http://localhost:8000
+cd agent/relay && npm ci && npm run dev -- --local --ip 127.0.0.1 --port 8787
+python3 -m http.server 8000 --bind 127.0.0.1      # from the repo root in another terminal
 ```
-Open `http://localhost:8000/?agentRelay=ws://localhost:8787` to point the page at the local relay
+Open `http://127.0.0.1:8000/?agent=1&agentRelay=ws://127.0.0.1:8787` to point the page at the local relay
 (the override only works on localhost), or set `relayUrl` in `web/config.js` (don't commit that).
 Opening `index.html` as a file does not work; serve it over http.
 `npm run inspect` opens the MCP Inspector (connect it to `http://localhost:8787/mcp`).
