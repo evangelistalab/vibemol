@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="referrer" content="no-referrer" />
+  <title>Connect Claude to VibeMol</title>
+  <link rel="icon" type="image/svg+xml" href="../../assets/app/img/favicon-tetra.svg" />
+  <link rel="stylesheet" href="../../src/styles/tokens.css" />
+  <style>
+    :root { color-scheme: light dark; }
+    body {
+      margin: 0; min-height: 100vh; display: grid; place-items: center;
+      font-family: var(--vm-font-sans, system-ui, sans-serif); font-size: 14px; line-height: 1.5;
+      background: var(--vm-color-surface-canvas, #f4f6fa); color: var(--vm-color-text-primary, #0f172a);
+    }
+    @media (prefers-color-scheme: dark) { body { background: #0f1115; color: #e6e8ee; } .card { background: #171a21 !important; border-color: #2a2f3a !important; } }
+    .card {
+      width: min(440px, calc(100vw - 32px)); padding: 28px; box-sizing: border-box;
+      background: var(--vm-color-surface-panel, #fff); border: 1px solid var(--vm-color-border, #e2e6ee);
+      border-radius: 12px; box-shadow: 0 18px 42px rgba(0, 0, 0, 0.10);
+    }
+    h1 { margin: 0 0 4px; font-size: 20px; }
+    .brand { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .brand img { width: 28px; height: 28px; }
+    .icon { font-size: 26px; line-height: 1; background: linear-gradient(135deg, #2f7bff, #7b4dff 50%, #e23bd6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+    ul { padding-left: 18px; margin: 8px 0 14px; }
+    .muted { color: var(--vm-color-text-muted, #687180); font-size: 12px; }
+    .actions { display: flex; gap: 8px; margin-top: 20px; }
+    button {
+      flex: 1; height: 36px; border: 0; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer;
+      background: var(--vm-color-surface-secondary, #eef1f6); color: inherit;
+    }
+    button.primary { background: var(--accent, #1f3f8f); color: var(--vm-color-text-on-accent, #fff); }
+    .error { color: #d64545; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="brand"><img src="../../assets/app/img/favicon-tetra.svg" alt="" /><span class="icon" aria-hidden="true">✦</span></div>
+    <h1>Connect <span id="client">Claude</span> to VibeMol</h1>
+    <p class="muted">You'll return to <strong id="to">claude.ai</strong> afterwards.</p>
+    <p>Claude will be able to use the VibeMol tabs you open <strong>in this browser</strong>:</p>
+    <ul>
+      <li>view and edit molecules, and change display settings</li>
+      <li>take screenshots of VibeMol and read its source code</li>
+      <li>run JavaScript only if you turn on "Allow scripts", approving each script</li>
+    </ul>
+    <p class="muted">No account is created. This browser gets a random, anonymous ID that links its VibeMol tabs to this Claude connection. You can remove it anytime with "Forget this browser" in VibeMol's Claude menu.</p>
+    <p id="error" class="error" hidden></p>
+    <form id="consent" method="post">
+      <input type="hidden" name="req" />
+      <input type="hidden" name="identity" />
+      <input type="hidden" name="decision" />
+      <div class="actions">
+        <button type="submit" value="deny">Deny</button>
+        <button type="submit" value="allow" class="primary">Allow</button>
+      </div>
+    </form>
+  </main>
+  <script src="./config.js"></script>
+  <script src="./identity.js"></script>
+  <script>
+    (function () {
+      const params = new URLSearchParams(location.search);
+      const form = document.getElementById('consent');
+      const fail = text => { const el = document.getElementById('error'); el.textContent = text; el.hidden = false; form.querySelectorAll('button').forEach(b => { b.disabled = true; }); };
+      document.getElementById('client').textContent = (params.get('client') || 'Claude').slice(0, 80);
+      document.getElementById('to').textContent = (params.get('to') || 'claude.ai').slice(0, 120);
+      const relay = window.VibeMolAgentIdentity.relayHttpOrigin();
+      if (!params.get('req')) return fail('This page is opened by Claude when you add the VibeMol connector.');
+      if (!relay) return fail('The VibeMol relay is not configured on this site (agent/web/config.js).');
+      // Always post to the relay this site is configured with, never to a URL from the link.
+      form.action = `${relay}/authorize/complete`;
+      form.elements.req.value = params.get('req');
+      form.addEventListener('submit', event => {
+        const decision = event.submitter && event.submitter.value === 'allow' ? 'allow' : 'deny';
+        form.elements.decision.value = decision;
+        form.elements.identity.value = decision === 'allow' ? window.VibeMolAgentIdentity.create() : '';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,4 +1,18 @@
 JS_CHECK_FILES = \
+	agent/web/loader.js \
+	agent/web/config.js \
+	agent/web/ui.js \
+	agent/web/host.js \
+	agent/web/tools.js \
+	agent/web/link.js \
+	agent/web/lasso.js \
+	agent/web/source.js \
+	agent/web/extensions.js \
+	agent/web/identity.js \
+	agent/relay/src/auth.js \
+	agent/relay/src/index.js \
+	agent/relay/src/relay.js \
+	agent/relay/src/help.js \
 	assets/app/js/asset-urls.js \
 	assets/app/js/element-utils.js \
 	assets/app/js/periodic-table.js \
@@ -131,7 +145,7 @@ check:
 	git diff --check
 
 test-unit:
-	node --test tests/unit/*.test.mjs
+	node --test tests/unit/*.test.mjs agent/tests/*.test.mjs
 	python3 -m unittest discover -s tests/unit -p 'test_*.py'
 
 test-e2e:
