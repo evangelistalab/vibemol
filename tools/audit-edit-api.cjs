@@ -60,6 +60,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  const previousNodes=statements(baseline);
  const previousStatements=previousNodes.map(n=>baseline.slice(n.start,n.end));
  const removed=Object.keys(legacyStatementRemovals).sort();
+ // Keep the expected list hardcoded so widening it requires editing both this audit and the baseline.
+ // Deriving it from Object.keys(contract.legacyStatementRemovals) would make the check tautological.
  assert.deepEqual(removed,['let __lastBondUpdate = 0;'],'Exactly the one authorized legacy statement removal');
  for(const statement of removed) {
   const matches=previousStatements.filter(code=>code===statement);
