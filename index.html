@@ -3958,7 +3958,7 @@
   <script>
     if (new URLSearchParams(location.search).get('agent') === '1') {
       const agentScript = document.createElement('script');
-      agentScript.src = window.VibeMolAssets.url('./agent/web/loader.js');
+      agentScript.src = './agent/web/loader.js?v=' + encodeURIComponent(window.VibeMolAssets.version);
       document.body.appendChild(agentScript);
     }
     if (new URLSearchParams(location.search).get('qa') === '1') {

@@ -90,9 +90,9 @@ test('every seam member used by agent/web/host.js is exposed by app.js', () => {
   const read = rel => fs.readFileSync(new URL(rel, import.meta.url), 'utf8');
   const host = read('../web/host.js');
   const app = read('../../assets/app/js/app.js');
-  const block = app.slice(app.indexOf('window.VibeMolAgentSeam = Object.freeze({'));
-  const seamSource = block.slice(0, block.indexOf('\n  });'));
-  const exposed = new Set([...seamSource.matchAll(/^\s{4}([A-Za-z]+)[,:]/gm)].map(m => m[1]));
+  const seam = /window\.VibeMolAgentSeam\s*=\s*Object\.freeze\(\{([\s\S]*?)\n\s*\}\);/.exec(app);
+  assert.ok(seam, 'Expected a frozen VibeMolAgentSeam object in app.js');
+  const exposed = new Set([...seam[1].matchAll(/^[\t ]*([A-Za-z_$][\w$]*)[\t ]*[,:]/gm)].map(m => m[1]));
   const used = new Set([...host.matchAll(/\b(?:S|seam\(\))\.([A-Za-z]+)/g)].map(m => m[1]));
   const missing = [...used].filter(name => !exposed.has(name));
   assert.deepEqual(missing, []);
