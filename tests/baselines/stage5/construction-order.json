@@ -235,18 +235,6 @@
         "forte2ProductApi"
       ],
       "expectedStatus": "passed"
-    },
-    {
-      "label": "Connector adapter private key and overflow labels",
-      "before": "b662e35fa529ab774339c1d612e9216334d58324",
-      "worktree": ".",
-      "modules": [
-        "assets/app/js/connector-adapter.js"
-      ],
-      "consumers": [
-        "assets/app/js/workbench.js"
-      ],
-      "expectedStatus": "passed"
     }
   ]
 }

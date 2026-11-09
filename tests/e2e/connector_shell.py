@@ -1,4 +1,4 @@
-"""Check idle connector traffic and the toolbar control in both layouts."""
+"""Check the inert connector shell through both browser transport observers."""
 import json
 
 from checkpoint_contract import require_phase_counts
@@ -7,8 +7,6 @@ from helpers import run_http_server, wait_for_presented_state
 
 SUITE = 'tests/e2e/workbench_bar.py'
 ANALYTICS_URL = 'https://www.googletagmanager.com/gtag/js?id=G-WSP0EFW68E'
-ENABLE_LABEL = 'Enable AI connector'
-WAITING_LABEL = 'AI connector waiting for a client. Release tab'
 
 
 def observe_launch(browser, app_url, relay_url, launch):
@@ -65,18 +63,17 @@ def observe_launch(browser, app_url, relay_url, launch):
         else:
             page.goto(app_url + ('?workspaceLab=0' if launch == 'legacy' else ''))
             wait_for_presented_state(page, '() => !!window.VibeMolTesting')
-            button = page.get_by_role('button', name=ENABLE_LABEL, exact=True)
+            button = page.get_by_role('button', name='AI connector, not connected', exact=True)
             named_controls = button.count()
             actual = {
                 'namedControls': named_controls,
                 'disabled': named_controls == 1 and button.is_disabled(),
-                'state': button.get_attribute('data-connector-state') if named_controls == 1 else None,
                 'workbench': page.evaluate('() => !!window.VibeMolWorkbench'),
                 'relayHttpAttempts': [request for request in http_attempts if request.startswith(relay_url)],
                 'unexpectedHttpAttempts': [request for request in http_attempts if request != ANALYTICS_URL],
                 'webSocketAttempts': socket_attempts,
             }
-            expected = {'namedControls': 1, 'disabled': False, 'state': 'off', 'workbench': launch == 'workbench',
+            expected = {'namedControls': 1, 'disabled': True, 'workbench': launch == 'workbench',
                         'relayHttpAttempts': [], 'unexpectedHttpAttempts': [], 'webSocketAttempts': []}
         record = {'launch': launch, 'relayOrigin': relay_url, 'blockedHttp': http_attempts,
                   'actual': {**actual, 'pageErrors': page_errors}, 'expected': {**expected, 'pageErrors': []}}
@@ -138,29 +135,13 @@ def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
                 'overflowed': require_overflow or overflowed,
                 'meets32pxFloor': True, 'inViewport': True, 'centerHit': True}
     if overflowed:
-        expected.update(inlineHidden=True, menuItems=1, menuItemUnavailable=False,
-                        keyboardReached=True, focusReturned=True)
-        if require_overflow and mode == 'Edit':
-            expected['activation'] = {
-                'enabled': 'waiting', 'label': WAITING_LABEL, 'mirroredTitle': True, 'released': 'off',
-            }
-            if actual and actual['keyboardReached'] and not actual['menuItemUnavailable']:
-                button = page.locator('#connectorPilotButton')
-                page.keyboard.press('Enter')
-                wait_for_presented_state(page, '''() =>
-                  document.getElementById('connectorPilotButton').dataset.connectorState !== 'preparing' ''')
-                enabled = button.get_attribute('data-connector-state')
-                page.keyboard.press('ArrowDown')
-                focused = menu.locator('button:focus')
-                label = focused.get_attribute('aria-label') if focused.count() == 1 else None
-                mirrored_title = label == WAITING_LABEL and focused.get_attribute('title') == button.get_attribute('title')
-                if label == WAITING_LABEL:
-                    page.keyboard.press('Enter')
-                actual['activation'] = {
-                    'enabled': enabled, 'label': label, 'mirroredTitle': mirrored_title,
-                    'released': button.get_attribute('data-connector-state'),
-                }
+        expected.update(inlineHidden=True, menuItems=1, menuItemUnavailable=True,
+                        keyboardReached=True, inertOnEnter=True, focusReturned=True)
         if actual is not None:
+            actual['inertOnEnter'] = False
+            if actual['keyboardReached'] and actual['menuItemUnavailable']:
+                page.keyboard.press('Enter')
+                actual['inertOnEnter'] = menu.is_visible() and menu.evaluate('el => el.contains(document.activeElement)')
             if menu.is_visible():
                 page.keyboard.press('Escape')
             actual['focusReturned'] = menu.is_hidden() and trigger.evaluate('el => el === document.activeElement')

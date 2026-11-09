@@ -133,24 +133,12 @@
       }
     });
   }
-  function syncConnectorOverflowLabel() {
-    const row = overflowMenu.children[overflowSources.indexOf(connectorButton)];
-    if (!row) return;
-    const name = connectorButton.getAttribute('aria-label');
-    row.setAttribute('aria-label', name);
-    row.lastElementChild.textContent = name;
-    row.title = connectorButton.title;
-  }
-  // A status change only updates the proxy. Refitting briefly hides the
-  // overflow trigger and would take away the keyboard focus it just received.
-  connectorButton?.addEventListener('vm-connector-state', syncConnectorOverflowLabel);
   function closeOverflow(restoreFocus = false) {
     overflowMenu.hidden = true; overflowButton.setAttribute('aria-expanded', 'false');
     if (restoreFocus) overflowButton.focus({ preventScroll: true });
   }
   function toggleOverflow(last = false) {
     if (!overflowMenu.hidden) { closeOverflow(true); return; }
-    syncConnectorOverflowLabel();
     closePanelsMenu(); closeMenu(); overflowMenu.hidden = false; overflowButton.setAttribute('aria-expanded', 'true');
     const rect = overflowButton.getBoundingClientRect();
     overflowMenu.style.left = Math.max(12, Math.min(innerWidth - overflowMenu.offsetWidth - 12, rect.left)) + 'px';

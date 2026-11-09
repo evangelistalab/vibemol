@@ -3,7 +3,6 @@ JS_CHECK_FILES = \
 	assets/app/js/element-utils.js \
 	assets/app/js/periodic-table.js \
 	assets/app/js/pubchem.js \
-	assets/app/js/connector-adapter.js \
 	src/vscode_ext/vibemol/src/extension.js \
 	src/vscode_ext/vibemol/src/vmWebview.js \
 	src/vscode_ext/vibemol/src/folderFiles.js \
