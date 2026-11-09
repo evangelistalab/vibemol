@@ -19,8 +19,6 @@
   const entries = model.catalog.map(item => ({ ...item, root: document.getElementById(item.panel), entry: host.windows.getEntry(item.id) }));
   const byId = new Map(entries.map(item => [item.id, item]));
   const body = document.body;
-  const utilities = document.getElementById('topRightUtilities');
-  const connectorButton = utilities?.querySelector('#connectorPilotButton');
   body.classList.add('vm-workbench');
   const canvas = document.getElementById('canvas');
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }), { capture: true });
@@ -101,7 +99,7 @@
   // Keep the real commands and their handlers authoritative. Only their
   // presentation moves into the shared menu shell when icon-only cannot fit.
   function fitTools() {
-    const groups = [connectorButton, quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton].filter(Boolean);
+    const groups = [quickActions, editTools, calculationTools, arrange, focusButton, preferencesButton];
     groups.forEach(group => group.classList.remove('wb-overflowed'));
     bar.classList.remove('wb-icon-tools'); overflowButton.hidden = true;
     const fits = () => tools.scrollWidth <= tools.clientWidth + 1;
@@ -119,16 +117,14 @@
       closeOverflow(); overflowMenu.replaceChildren();
       for (const source of sources) {
         const name = source.getAttribute('aria-label') || source.getAttribute('data-tooltip') || source.textContent.trim();
-        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent, () => {
-          if (source.getAttribute('aria-disabled') === 'true') return;
-          closeOverflow(true); source.click();
-        }, 'wb-panel-option');
+        const row = button(name, source.querySelector('.material-symbols-rounded')?.textContent,
+          () => { closeOverflow(true); source.click(); }, 'wb-panel-option');
         row.setAttribute('role', 'menuitem'); row.tabIndex = -1; label(row, name); overflowMenu.append(row);
       }
     }
     [...overflowMenu.children].forEach((row, i) => {
       row.disabled = sources[i].disabled;
-      for (const attr of ['aria-expanded', 'aria-controls', 'aria-disabled']) {
+      for (const attr of ['aria-expanded', 'aria-controls']) {
         if (sources[i].hasAttribute(attr)) row.setAttribute(attr, sources[i].getAttribute(attr)); else row.removeAttribute(attr);
       }
     });
@@ -166,7 +162,7 @@
   preferencesButton.setAttribute('data-tooltip', 'App settings');
   const focusButton = button('Focus on molecule', 'fullscreen', () => setFocus(!focus));
   focusButton.id = 'workbenchFocus'; const focusLabel = label(focusButton, 'Focus'); actions.append(arrange, focusButton, preferencesButton);
-  if (utilities) actions.append(utilities);
+  const utilities = document.getElementById('topRightUtilities'); if (utilities) actions.append(utilities);
   bar.querySelector('#themeToggleInput')?.setAttribute('aria-label', 'Dark mode');
   const sidebarButton = document.getElementById('toolbarShowBtn');
   if (sidebarButton) { sidebarButton.setAttribute('aria-label', 'Show scenes'); bar.prepend(sidebarButton); }

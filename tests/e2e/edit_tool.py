@@ -2,8 +2,6 @@
 """Armed Edit tool, Escape ladder, keyboard semantics and visual contrast fixtures."""
 import json
 import premerge as p
-from checkpoint_contract import require_phase_counts
-from connector_shell import audit_utility_keyboard
 from helpers import wait_for_presented_state
 from metal_popover import metal_popover_regression
 
@@ -128,7 +126,6 @@ def run(page, url):
     page.locator('#modeDisplayBtn').click();assert page.locator('#editToolStrip').is_hidden()
     page.locator('#modeEditBtn').click();tool(page,'build')
     # Existing bar remains usable at all supported widths.
-    keyboard_count = 0
     for width in [320,390,768,1440,1920]:
         page.set_viewport_size({'width':width,'height':1000});page.locator('#editTransformToolBtn').focus()
         page.keyboard.press('ArrowRight');tool(page,'build')
@@ -154,12 +151,7 @@ def run(page, url):
         assert tool_widths['scrollWidth'] <= tool_widths['clientWidth'] + 1, width
         assert page.locator('#editToolStrip').evaluate('''el=>[...el.querySelectorAll('button')].every(b=>{
           const r=b.getBoundingClientRect();return b.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));})'''),width
-        if width in (320, 768):
-            audit_utility_keyboard(page, width)
-            keyboard_count += 1
         page.keyboard.press('ArrowLeft');tool(page,'transform')
-    require_phase_counts({'connector-utility-keyboard': keyboard_count},
-                         'tests/e2e/edit_tool.py', 'connector-utility-keyboard')
     print('[edit tool] arming, selection, atom/fragment/molecule Escape, ARIA, keyboard, modes and widths: passed',flush=True)
 
 

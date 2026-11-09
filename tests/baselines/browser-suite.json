@@ -105,8 +105,7 @@
       "escape-native-case": 62
     },
     "tests/e2e/edit_tool.py": {
-      "metal-native-case": 28,
-      "connector-utility-keyboard": 2
+      "metal-native-case": 28
     },
     "tests/e2e/build_panel.py": {
       "retired-cache-case": 4
@@ -128,10 +127,6 @@
     "tests/e2e/measurements.py": {
       "measurement-connection-width": 20,
       "measurement-connection-fog": 4
-    },
-    "tests/e2e/workbench_bar.py": {
-      "connector-shell-network": 3,
-      "connector-shell-hitbox": 33
     }
   }
 }

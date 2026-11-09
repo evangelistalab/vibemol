@@ -440,36 +440,6 @@
       fill: currentColor;
     }
 
-    #connectorPilotButton {
-      position: relative;
-      display: inline-grid;
-      place-items: center;
-      flex: 0 0 32px;
-      width: 32px;
-      height: 32px;
-      padding: 0;
-      border: 1px solid currentColor;
-      border-radius: var(--vm-radius-md);
-      background: transparent;
-      color: var(--vm-color-utility-overlay-fg);
-      font: var(--vm-type-badge-weight) var(--vm-type-badge-size) var(--vm-font-sans);
-    }
-
-    .vm-workbench #connectorPilotButton {
-      color: var(--vm-color-text-secondary);
-    }
-
-    #connectorPilotButton::after {
-      content: '';
-      position: absolute;
-      right: 3px;
-      bottom: 3px;
-      width: 4px;
-      height: 4px;
-      border: 1px solid currentColor;
-      border-radius: 50%;
-    }
-
     .themeToggleShell {
       min-height: 32px;
       position: relative;
@@ -2306,8 +2276,6 @@
 <body>
   <div id="topRightUtilities" aria-label="Global utilities">
     <div id="topRightUtilitiesReveal">
-      <button id="connectorPilotButton" type="button" aria-disabled="true" aria-label="AI connector, not connected"
-        title="AI connector is not connected in this tab">AI</button>
       <label id="themeToggleShell" class="themeToggleShell" data-tooltip="Theme toggle placeholder">
         <input id="themeToggleInput" type="checkbox" />
         <span class="themeToggleTrack" aria-hidden="true">
