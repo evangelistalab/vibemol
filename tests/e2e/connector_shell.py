@@ -107,6 +107,8 @@ def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
     metrics = page.evaluate('''overflowed => {
       const button = document.getElementById('connectorPilotButton');
       if (!button) return null;
+      const actions = button.closest('#workbenchBar .wb-bar-actions');
+      const controls = [...(actions?.querySelectorAll('button, input, a[href]') || [])];
       const rows = [...document.getElementById('workbenchOverflowMenu').children]
         .filter(row => row.getAttribute('aria-label') === button.getAttribute('aria-label'));
       const target = overflowed ? rows[0] : button;
@@ -116,8 +118,8 @@ def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
         rect: rect?.toJSON(), hit: hit?.id || hit?.tagName || null,
         compact: document.body.dataset.wbCompact === 'true',
         actual: {
-          previousId: button.previousElementSibling?.id,
-          inWorkbenchActions: !!button.closest('#workbenchBar .wb-bar-actions'),
+          previousId: controls[controls.indexOf(button) - 1]?.id,
+          inWorkbenchActions: !!actions,
           overflowed: button.classList.contains('wb-overflowed'),
           meets32pxFloor: !!rect && Math.min(rect.width, rect.height) >= 32,
           inViewport: !!rect && rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
@@ -132,7 +134,7 @@ def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
       };
     }''', overflowed)
     actual = metrics and metrics['actual']
-    expected = {'previousId': 'githubRepoLink', 'inWorkbenchActions': True,
+    expected = {'previousId': 'workbenchPreferences', 'inWorkbenchActions': True,
                 'overflowed': require_overflow or overflowed,
                 'meets32pxFloor': True, 'inViewport': True, 'centerHit': True}
     if overflowed:
@@ -170,3 +172,45 @@ def audit_connector_hitbox(page, width, mode, *, require_overflow=False):
     print('[connector-shell-hitbox] ' + json.dumps(record), flush=True)
     assert actual == expected, record
     return record
+
+
+def audit_utility_keyboard(page, width):
+    """Check source order and the native route through compact Edit overflow."""
+    tab_order = {
+        320: ['workbenchPanelsBtn', 'workbenchArrange', 'workbenchFocus', 'workbenchPreferences', 'themeToggleInput'],
+        768: ['workbenchPanelsBtn', 'themeToggleInput', 'githubRepoLink'],
+    }[width]
+    expected = {
+        'sourceOrder': ['workbenchPreferences', 'connectorPilotButton', 'themeToggleInput', 'githubRepoLink'],
+        'triggerFromShiftTab': 'workbenchOverflowBtn',
+        'connectorActivatedAndReleased': True,
+        'settingsInOverflow': width == 768,
+        'githubVisible': width == 768,
+        'tabOrder': tab_order,
+    }
+    focus = page.evaluate_handle('() => document.activeElement')
+    try:
+        actual = page.evaluate('''() => ({
+          sourceOrder: Array.from(document.querySelectorAll(
+            '.wb-bar-actions :is(#workbenchPreferences,#connectorPilotButton,#themeToggleInput,#githubRepoLink)'
+          ), el => el.id),
+          githubVisible: document.getElementById('githubRepoLink').getClientRects().length > 0,
+        })''')
+        page.locator('#workbenchPanelsBtn').focus()
+        page.keyboard.press('Shift+Tab')
+        actual['triggerFromShiftTab'] = page.evaluate('() => document.activeElement.id')
+        hitbox = audit_connector_hitbox(page, width, 'Edit', require_overflow=True)['actual']
+        actual['connectorActivatedAndReleased'] = (hitbox['activation']['enabled'] == 'waiting'
+                                                 and hitbox['activation']['released'] == 'off')
+        actual['settingsInOverflow'] = page.locator(
+            '#workbenchOverflowMenu [role="menuitem"][aria-label="App settings"]').count() == 1
+        actual['tabOrder'] = []
+        for _ in tab_order:
+            page.keyboard.press('Tab')
+            actual['tabOrder'].append(page.evaluate('() => document.activeElement.id'))
+    finally:
+        focus.evaluate('el => el.focus({preventScroll: true})')
+        focus.dispose()
+    record = {'width': width, 'actual': actual, 'expected': expected, 'passed': actual == expected}
+    print('[connector-utility-keyboard] ' + json.dumps(record), flush=True)
+    assert record['passed'], record

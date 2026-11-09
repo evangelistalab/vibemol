@@ -25270,7 +25270,6 @@
     setHintMessage(`${modeLabel} ${targetLabel}.${cleanupSuffix}`);
   }
 
-  let __lastBondUpdate = 0;
   canvasEl.addEventListener('pointermove', (e) => {
     if (viewRotateActive && viewRotatePointerId === e.pointerId) {
       const dx = (Number(e.clientX) || 0) - viewRotateLastClientX;

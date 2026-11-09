@@ -105,7 +105,8 @@
       "escape-native-case": 62
     },
     "tests/e2e/edit_tool.py": {
-      "metal-native-case": 28
+      "metal-native-case": 28,
+      "connector-utility-keyboard": 2
     },
     "tests/e2e/build_panel.py": {
       "retired-cache-case": 4
