@@ -4,6 +4,7 @@ import json
 import math
 import premerge as p
 from checkpoint_contract import require_phase_counts
+from connector_consent import audit_connector_consent
 from connector_shell import audit_connector_hitbox, audit_connector_launches
 
 
@@ -366,6 +367,7 @@ def main():
     with p.run_http_server(p.ROOT) as url, p.sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True)
         audit_connector_launches(browser, url, p.ROOT)
+        audit_connector_consent(browser, url, p.ROOT)
         page = browser.new_page(viewport={'width': 1512, 'height': 950})
         page.add_init_script('(' + HARNESS + ')()')
         errors = []; consoles = []
