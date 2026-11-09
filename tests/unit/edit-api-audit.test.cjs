@@ -3,9 +3,31 @@ const {additiveApp}=require('../../tools/audit-edit-api.cjs');
 const root=path.resolve(__dirname,'../..'),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
 const baseline=cp.execFileSync('git',['show','c37bb07e30c711025da325a14bbbb4a8345d06d7:assets/app/js/app.js'],{cwd:root,encoding:'utf8',maxBuffer:8*1024*1024});
 const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/edit-api.json')));
-const audit=s=>additiveApp(s,baseline,contract.testing.changes,contract.productChanges||{});
+const audit=(s,productChanges=contract.productChanges||{},removals=contract.legacyStatementRemovals)=>
+ additiveApp(s,baseline,contract.testing.changes,productChanges,removals);
 test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
  const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,3);assert(result.testingMembers>40&&result.legacyStatements>1000);
+ const actual={before:result.legacyStatementsBeforeRemovals,after:result.legacyStatements,removed:result.legacyStatementRemovals};
+ const expected={before:2502,after:2501,removed:['let __lastBondUpdate = 0;']};
+ console.log(JSON.stringify({actual,expected}));
+ assert.deepEqual(actual,expected);
+});
+test('the authorized removal does not permit another legacy statement to disappear',()=>{
+ const statement='const BOHR_TO_ANG = 0.529177210903;';
+ const changed=source.replace(statement,'');assert.notEqual(changed,source);
+ let actual='accepted';
+ try { audit(changed); } catch(error) { actual=error.message.split('\n',1)[0]; }
+ const expected='Existing app statements changed beyond the opt-in hydrogen extensions';
+ console.log(JSON.stringify({unlistedRemoval:statement,actual,expected}));
+ assert.equal(actual,expected);
+});
+test('the removal allowance requires the exact key set and baseline fingerprint',()=>{
+ const removals=contract.legacyStatementRemovals;
+ assert.throws(()=>audit(source,undefined,{}),/Exactly the one authorized legacy statement removal/);
+ assert.throws(()=>audit(source,undefined,{...removals,'const BOHR_TO_ANG = 0.529177210903;':'0'.repeat(64)}),
+  /Exactly the one authorized legacy statement removal/);
+ assert.throws(()=>audit(source,undefined,{'let __lastBondUpdate = 0;':'0'.repeat(64)}),
+  /Original legacy statement fingerprint/);
 });
 test('the three-pixel connection repair cannot drift past its declared fingerprint',()=>{
  const changed=source.replace('lineWidth: { value: 3 }','lineWidth: { value: 4 }');assert.notEqual(changed,source);
@@ -13,7 +35,7 @@ test('the three-pixel connection repair cannot drift past its declared fingerpri
 });
 test('an approved product repair must match its original source fingerprint too',()=>{
  const changes=structuredClone(contract.productChanges);changes.updateEditSelectionVisuals.before='0'.repeat(64);
- assert.throws(()=>additiveApp(source,baseline,contract.testing.changes,changes),/original product fingerprint/);
+ assert.throws(()=>audit(source,changes),/original product fingerprint/);
 });
 test('a Testing getter conversion cannot masquerade as an additive API',()=>{
  const changed=source.replace('return Array.isArray(selection) ? selection.slice() : [];','return [];');assert.notEqual(changed,source);assert.throws(()=>audit(changed),/Testing object changed/);
@@ -29,7 +51,7 @@ test('an authorized member cannot change past its declared fingerprint',()=>{
 });
 test('an omitted declared change cannot silently shrink the batch guard',()=>{
  const changes={...contract.testing.changes};delete changes.projectHaloGhostToClient;
- assert.throws(()=>additiveApp(source,baseline,changes),/Exactly the three/);
+ assert.throws(()=>additiveApp(source,baseline,changes,contract.productChanges,contract.legacyStatementRemovals),/Exactly the three/);
 });
 test('the lazy facade fails before reading a record when the product API is absent',()=>{
  const parser=require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser')),vm=require('node:vm');

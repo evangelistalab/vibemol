@@ -3,6 +3,18 @@
   "historicalMetric": "Number of source lines matching /^  let /",
   "bindingMetric": "Babel lexical app-IIFE variable bindings declared with let; destructuring and multi-declarators counted individually. ClassDeclaration bindings are reported separately even though Babel calls their kind let.",
   "parserVersion": "7.24.4",
+  "ratchet": {
+    "maximumAppScopeLetBindings": 260,
+    "checkpointCounts": {"app-state-ratchet": 1},
+    "approvedIncreases": [],
+    "initialMeasurement": {
+      "commit": "994ec027c00bd8b7b8f3c61f54bd1b68fb07bbfc",
+      "historicalDeclarationLines": 250,
+      "astLetDeclarationLines": 250,
+      "astLetDeclarationStatements": 252,
+      "appScopeLetBindings": 261
+    }
+  },
   "checkpoints": [
     {
       "ref": "v0.9.5-pre-refactor",

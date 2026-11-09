@@ -38,6 +38,20 @@ jobs:
           VIBEMOL_BABEL_ROOT: ${{ runner.temp }}/construction-audit/node_modules/@babel
         run: |
           mkdir -p out/test-artifacts/construction-order
+          node --test tests/unit/app-state-ratchet.test.cjs
+          node tools/diagnostics/recount_app_state.cjs --check out/test-artifacts/construction-order/app-state-ratchet.json | tee out/test-artifacts/construction-order/app-state-ratchet.log
+          PYTHONPATH=tests/e2e python - <<'PY'
+          import json
+          from pathlib import Path
+          from checkpoint_contract import require_checkpoint_counts
+
+          declared = json.loads(Path('tests/baselines/app-state-metric.json').read_text())['ratchet']['checkpointCounts']
+          expected = {'app-state-ratchet': 1}
+          assert declared == expected, {'actual': declared, 'expected': expected}
+          suite = 'tools/diagnostics/recount_app_state.cjs'
+          log = Path('out/test-artifacts/construction-order/app-state-ratchet.log').read_text()
+          require_checkpoint_counts(log, suite, {suite: expected})
+          PY
           node --test tests/unit/edit-api-audit.test.cjs tests/unit/forte2-audit.test.cjs
           node tools/audit-edit-api.cjs --out out/test-artifacts/construction-order/edit-api.json
           node tools/audit-forte2.cjs --out out/test-artifacts/construction-order/forte2-export.json

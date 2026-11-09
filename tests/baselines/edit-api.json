@@ -852,6 +852,9 @@
     "currentPart": "Risk-first batch1 after additive PR87",
     "riskBatchChangedTestingMembers": 3
   },
+  "legacyStatementRemovals": {
+    "let __lastBondUpdate = 0;": "99a621dc8311923bb0eca8cf7b95758dc9af1bca653f9769f2f3964a44bbc5fb"
+  },
   "productChanges": {
     "updateEditSelectionVisuals": {
       "before": "f4f0995a7e9c5abd7f61eaaaa4ceb72e423db0aa34424cc807229c7cfa8544e4",
