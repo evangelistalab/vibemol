@@ -470,6 +470,10 @@
       border-radius: 50%;
     }
 
+    #connectorPilotButton[data-connector-state="waiting"]::after {
+      background: currentColor;
+    }
+
     .themeToggleShell {
       min-height: 32px;
       position: relative;
@@ -3946,6 +3950,7 @@
   <div id="sessionBusyOverlay" role="status" aria-live="polite" hidden>Opening session…</div>
   <script src="./assets/app/js/pubchem.js?v=0.10.2"></script>
   <script src="./assets/app/js/periodic-table.js?v=0.10.2"></script>
+  <script src="./assets/app/js/connector-adapter.js?v=0.10.2"></script>
   <script src="./assets/app/js/app.js?v=0.10.2"></script>
   <script src="./assets/app/js/workbench-model.js?v=0.10.2"></script>
   <script src="./assets/app/js/workbench.js?v=0.10.2"></script>
