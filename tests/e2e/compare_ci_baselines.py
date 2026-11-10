@@ -8,6 +8,7 @@ import pathlib
 import subprocess
 import sys
 import re
+from release_baseline_recording import VERSION_DELTA_TAGS
 
 # These identify recorded datasets, not movable release labels. The 0.10.0
 # captures were made at3425e02 before its release tag was corrected to44bcb5d.
@@ -16,6 +17,7 @@ BASELINE_COMMITS = {
     'v0.10.0': '3425e0231b71eeb8b8a11523806990f553265cba',
     'v0.10.1': '47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802',  # Actual approved capture source, independent of the later release tag.
     'v0.10.2': '95df457965a29a7bf59a49e9bc58e304e1118193',  # Exact approved capture source; independent of any future release tag.
+    'v0.10.3': None,  # Require the exact candidate SHA until the recording is promoted.
 }
 
 
@@ -36,6 +38,11 @@ def resolve_baseline_commit(root, baseline_ref, expected_commit=None):
 def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
     root = pathlib.Path(__file__).resolve().parents[2]
     expected_commit = resolve_baseline_commit(root, baseline_ref, expected_commit)
+    if baseline_ref in VERSION_DELTA_TAGS:
+        from release_baseline_recording import read_version_delta_base, verify_version_delta, version_delta_declaration
+        from api_surface_recording import exact_difference
+        previous = read_version_delta_base(root, baseline_ref)
+        declared = version_delta_declaration(baseline_ref)
     captures, provenances, artifacts = [], [], []
     for number in (1, 2):
         artifact = folder / f'characterization-baseline-{number}'
@@ -46,7 +53,7 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
                       'actualTag': golden['baseline']['tag'], 'expectedTag': baseline_ref}
         print('[baseline-recording-identity] ' + json.dumps(comparands, sort_keys=True), flush=True)
         assert golden['baseline']['commit'] == expected_commit and golden['baseline']['tag'] == baseline_ref, comparands
-        if baseline_ref in ('v0.10.0', 'v0.10.1', 'v0.10.2'):
+        if baseline_ref in ('v0.10.0', 'v0.10.1', *VERSION_DELTA_TAGS):
             proof = json.loads((artifact / 'release-baseline-source.json').read_text())
             assert proof['status'] == 'passed' and proof['commit'] == expected_commit and proof['tag'] == baseline_ref, proof
             if baseline_ref == 'v0.10.0':
@@ -55,6 +62,8 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
                 assert proof['recordingMode'] == 'candidate' and proof['allArchivedBlobsMatchCommit'], proof
                 assert proof['correctedReleaseBase'] == '44bcb5d534cecba27fd0ccfc60f74324a0920b73' and proof['mappingHelperAbsent'], proof
             assert not proof['harnessInjection'] and not proof['fixturePreparation'], proof
+            if baseline_ref in VERSION_DELTA_TAGS:
+                assert proof['versionDelta'] == declared, (proof['versionDelta'], declared)
             expected_version = baseline_ref.removeprefix('v')
             wrong_versions = [{'capture': name, 'session.appVersion': c['session'].get('appVersion'),
                                'session.preset.appVersion': c['session']['preset'].get('appVersion')}
@@ -68,16 +77,9 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
             raw = (artifact / f'characterize-run-{run}.json').read_bytes()
             captured = json.loads(raw)
             assert len(captured) == 102 and captured == golden['captures']
-            if baseline_ref == 'v0.10.2':
-                from release_baseline_recording import read_version_delta_base, verify_version_delta
-                from api_surface_recording import exact_difference
-                previous = read_version_delta_base(root)
-                delta = verify_version_delta(previous, captured)
+            if baseline_ref in VERSION_DELTA_TAGS:
+                verify_version_delta(previous, captured, baseline_ref)
                 assert exact_difference(golden['captures'], captured) is None, 'Golden/raw type or value difference.'
-                declared = dict(baseCommit=delta['previousCommit'], baselineGzipSha256=delta['previousGzipSha256'],
-                    paths=[['session', 'appVersion'], ['session', 'preset', 'appVersion']],
-                    before='0.10.1', after='0.10.2', changedLeaves=204)
-                assert proof['versionDelta'] == declared, (proof['versionDelta'], declared)
             captures.append(captured)
             artifacts.append({'job': number, 'run': run, 'captureSha256': hashlib.sha256(raw).hexdigest()})
         provenances.append(provenance)
@@ -86,7 +88,7 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
     report = {'independentCiJobs': 2, 'runsPerJob': 2, 'capturesPerRun': 102,
               'exactlyIdentical': True, 'toleranceUsedForCiRepeatComparison': False,
               'provenancePerJob': provenances, 'captures': artifacts}
-    if baseline_ref == 'v0.10.2':
+    if baseline_ref in VERSION_DELTA_TAGS:
         report.update(versionDelta=declared, changedLeavesPerRun=204, residualDifferences=0)
     (folder / 'ci-comparison.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))

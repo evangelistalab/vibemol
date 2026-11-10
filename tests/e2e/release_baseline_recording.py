@@ -104,45 +104,60 @@ SHIPPED_0100_COMMIT = '44bcb5d534cecba27fd0ccfc60f74324a0920b73'
 VERSION_DELTA_BASE_COMMIT = '4709f1d676f793222ebc7f758692a69824c5541a'
 VERSION_DELTA_BASE_SHA256 = '2b22cd7dd75cf2d64f54cfd7e57370af43ed1327efb1428b27da2e74b721e427'
 VERSION_DELTA_PATHS = (('session', 'appVersion'), ('session', 'preset', 'appVersion'))
+VERSION_DELTA_TAGS = ('v0.10.2', 'v0.10.3')
 
 
-def read_version_delta_base(root):
+def version_delta_declaration(tag):
+    specs = {
+        'v0.10.2': (VERSION_DELTA_BASE_COMMIT, VERSION_DELTA_BASE_SHA256, '0.10.1', '0.10.2'),
+        'v0.10.3': ('bd1186959f7b451edcdf6b9d8d6a0b26b7bf2008',
+                    'fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de', '0.10.2', '0.10.3'),
+    }
+    base, digest, before, after = specs[tag]
+    return dict(baseCommit=base, baselineGzipSha256=digest, paths=[list(path) for path in VERSION_DELTA_PATHS],
+                before=before, after=after, changedLeaves=204)
+
+
+def read_version_delta_base(root, tag='v0.10.2'):
     """Pin and declare the complete authorized204-leaf change before capture."""
-    raw = subprocess.check_output(['git', 'show', VERSION_DELTA_BASE_COMMIT +
+    declared = version_delta_declaration(tag)
+    raw = subprocess.check_output(['git', 'show', declared['baseCommit'] +
         ':tests/baselines/characterize.json.gz'], cwd=root)
     digest = hashlib.sha256(raw).hexdigest()
-    print('[version-recording-base] ' + json.dumps(dict(actual=digest, expected=VERSION_DELTA_BASE_SHA256)), flush=True)
-    assert digest == VERSION_DELTA_BASE_SHA256, 'Immutable previous baseline digest differs.'
+    print('[version-recording-base] ' + json.dumps(dict(actual=digest, expected=declared['baselineGzipSha256'])), flush=True)
+    assert digest == declared['baselineGzipSha256'], (digest, declared['baselineGzipSha256'])
     previous = json.loads(gzip.decompress(raw))['captures']
-    expected_version_captures(previous)
-    print('[release-version-declaration] ' + json.dumps(dict(paths=[list(p) for p in VERSION_DELTA_PATHS],
-        before='0.10.1', after='0.10.2', captures=102, changedLeaves=204)), flush=True)
+    expected_version_captures(previous, tag)
+    print('[release-version-declaration] ' + json.dumps(dict(declared, captures=102)), flush=True)
     return previous
 
 
-def expected_version_captures(previous):
+def expected_version_captures(previous, tag='v0.10.2'):
     """Recording-only expectation; ordinary comparisons never call this."""
     assert type(previous) is dict and len(previous) == 102, ('Capture count', len(previous), 102)
     expected = copy.deepcopy(previous)
+    declared = version_delta_declaration(tag)
     changes = 0
     for name, capture in expected.items():
         for path in VERSION_DELTA_PATHS:
             value = capture
             for key in path[:-1]:
                 value = value[key]
-            assert type(value[path[-1]]) is str and value[path[-1]] == '0.10.1', (name, path, value[path[-1]], '0.10.1')
-            value[path[-1]] = '0.10.2'
+            actual = value[path[-1]]
+            assert type(actual) is str and actual == declared['before'], (name, path, actual, declared['before'])
+            value[path[-1]] = declared['after']
             changes += 1
     assert changes == 204, (changes, 204)
     return expected
 
 
-def verify_version_delta(previous, captured):
+def verify_version_delta(previous, captured, tag='v0.10.2'):
     """Refuse any additional leaf, type, value, inventory or numeric change."""
     from api_surface_recording import exact_difference
-    expected = expected_version_captures(previous)
+    declared = version_delta_declaration(tag)
+    expected = expected_version_captures(previous, tag)
     diff = exact_difference(expected, captured)
-    changes = [dict(capture=name, path=list(path), before='0.10.1', after='0.10.2')
+    changes = [dict(capture=name, path=list(path), before=declared['before'], after=declared['after'])
                for name in expected for path in VERSION_DELTA_PATHS]
     actual_changes = []
     if type(captured) is dict:
@@ -154,9 +169,9 @@ def verify_version_delta(previous, captured):
                         value = value[key]
                 except (KeyError, TypeError):
                     continue
-                if type(value) is not str or value != '0.10.1':
+                if type(value) is not str or value != declared['before']:
                     actual_changes.append(dict(capture=name, path=list(path), value=value))
-    report = dict(previousCommit=VERSION_DELTA_BASE_COMMIT, previousGzipSha256=VERSION_DELTA_BASE_SHA256,
+    report = dict(previousCommit=declared['baseCommit'], previousGzipSha256=declared['baselineGzipSha256'],
         expectedCaptures=102, actualCaptures=len(captured), expectedChangedLeaves=204,
         actualChangedLeaves=len(actual_changes), changes=changes,
         residualDifference=diff, zeroOtherChanges=diff is None)
@@ -173,7 +188,8 @@ def require_release_candidate_source(root, source_root, args, report_path):
     commit = args.record_source_commit
     assert commit and re.fullmatch(r'[0-9a-f]{40}', commit), 'Full immutable candidate SHA required.'
     specs = {'v0.10.1': ('0.10.1', 'refs/heads/codex/release-0-10-1-ci'),
-             'v0.10.2': ('0.10.2', 'refs/heads/codex/pr90-0.10.2-recording')}
+             'v0.10.2': ('0.10.2', 'refs/heads/codex/pr90-0.10.2-recording'),
+             'v0.10.3': ('0.10.3', 'refs/heads/codex/0.10.3')}
     assert args.record_release_tag in specs, args.record_release_tag
     version, ref = specs[args.record_release_tag]
     actual = dict(recordReleaseTag=args.record_release_tag, ci=os.environ.get('GITHUB_ACTIONS'),
@@ -194,9 +210,10 @@ def require_release_candidate_source(root, source_root, args, report_path):
     subprocess.run(['git','merge-base','--is-ancestor',SHIPPED_0100_COMMIT,commit],cwd=root,check=True)
     files = require_exact_archive(root, source_root, commit)
     require_version(source_root, version)
-    if version == '0.10.2':
-        subprocess.run(['git', 'merge-base', '--is-ancestor', VERSION_DELTA_BASE_COMMIT, commit], cwd=root, check=True)
-        read_version_delta_base(root)
+    version_delta = version_delta_declaration(args.record_release_tag) if args.record_release_tag in VERSION_DELTA_TAGS else None
+    if version_delta:
+        subprocess.run(['git', 'merge-base', '--is-ancestor', version_delta['baseCommit'], commit], cwd=root, check=True)
+        read_version_delta_base(root, args.record_release_tag)
     absent = not (source_root / 'tests/e2e/release_version_mapping.py').exists()
     assert absent, 'Expired version-mapping helper must remain absent.'
     report = dict(status='passed', recordingMode='candidate', tag=args.record_release_tag, commit=commit,
@@ -205,8 +222,7 @@ def require_release_candidate_source(root, source_root, args, report_path):
         mappingHelperAbsent=absent, publicationPending=True, ciRunId=os.environ.get('GITHUB_RUN_ID'),
         ciRunAttempt=os.environ.get('GITHUB_RUN_ATTEMPT'), runnerName=os.environ.get('RUNNER_NAME'),
         harnessInjection=False, fixturePreparation=False)
-    if version == '0.10.2':
-        report['versionDelta'] = dict(baseCommit=VERSION_DELTA_BASE_COMMIT, baselineGzipSha256=VERSION_DELTA_BASE_SHA256,
-            paths=[list(path) for path in VERSION_DELTA_PATHS], before='0.10.1', after='0.10.2', changedLeaves=204)
+    if version_delta:
+        report['versionDelta'] = version_delta
     Path(report_path).write_text(json.dumps(report,indent=2)+'\n')
     return dict(commit=commit,tag=args.record_release_tag,recordingMode='candidate',sourceRefAtCapture=actual['ref'])
