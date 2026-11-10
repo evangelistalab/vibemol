@@ -4158,7 +4158,12 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.keyboard.press('v')
+            # V now selects View mode. Open the legacy View window via its own launcher.
+            view_launcher = page.locator('#viewPanelBtn')
+            bounds = view_launcher.bounding_box()
+            assert bounds and bounds['width'] > 0 and bounds['height'] > 0, bounds
+            page.mouse.move(bounds['x'] + bounds['width'] / 2, bounds['y'] + bounds['height'] / 2)
+            view_launcher.click()
             page.wait_for_function(
                 """() => {
                     const trajectory = document.getElementById('trajectoryPanel');

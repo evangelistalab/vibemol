@@ -1614,7 +1614,7 @@
       transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
     }
 
-    #toolbarModeRow :is(#modeMeasureBtn, #modeEditBtn) {
+    #toolbarModeRow :is(#modeDisplayBtn, #modeMeasureBtn, #modeEditBtn) {
       display: inline-flex;
       align-items: center;
       gap: 4px;
@@ -2329,8 +2329,8 @@
 
     <div class="tb-section tb-main tb-modes">
       <div id="toolbarModeRow" role="group" aria-label="Interaction mode">
-        <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode"
-          data-tooltip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
+        <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode" aria-keyshortcuts="V"
+          data-tooltip="View mode: orbit and explore the scene. Shortcut: V">View <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">V</kbd></button>
         <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode" aria-keyshortcuts="M"
           data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">M</kbd></button>
         <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode" aria-keyshortcuts="E"
@@ -2933,16 +2933,13 @@
         <span class="adaptiveShortcutKey">Q</span>
       </span>
     </button>
-    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="View window (V)" hidden>
+    <button id="viewPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="View window" hidden>
       <span class="adaptiveEditItemBody">
         <span class="adaptiveEditItemTitleRow">
           <span class="material-symbols-rounded adaptiveEditItemIcon" aria-hidden="true">view_in_ar</span>
           <span class="adaptiveEditItemLabel">View</span>
         </span>
         <span class="adaptiveEditItemMeta"></span>
-      </span>
-      <span class="adaptiveShortcutGroup" aria-hidden="true">
-        <span class="adaptiveShortcutKey">V</span>
       </span>
     </button>
     <button id="measurementsPanelBtn" class="adaptiveEditItem" type="button" data-tooltip="Measurements" hidden>
@@ -3725,6 +3722,7 @@
         <section class="vm-helpSection">
           <h3 class="vm-section-label">Modes</h3>
           <div class="vm-helpGrid">
+            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Switch to View mode</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">M</kbd></div><div class="vm-helpDescription">Switch to Measure from View</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">E</kbd></div><div class="vm-helpDescription">Switch to Edit from View or Measure</div></div>
           </div>
@@ -3760,7 +3758,7 @@
           <h3 class="vm-section-label">View</h3>
           <div class="vm-helpGrid">
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">Q</kbd></div><div class="vm-helpDescription">Access Quick actions</div></div>
-            <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">V</kbd></div><div class="vm-helpDescription">Open View panel</div></div>
+            <div class="vm-helpRow"><div class="vm-helpKeys">Panels → Camera</div><div class="vm-helpDescription">Open camera controls in Workbench</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">O</kbd></div><div class="vm-helpDescription">Open Orbitals panel (molden files only)</div></div>
             <div class="vm-helpRow"><div class="vm-helpKeys"><kbd class="vm-key-pill">C</kbd></div><div class="vm-helpDescription">Open Coordinates panel</div></div>
           </div>

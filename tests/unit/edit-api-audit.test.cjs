@@ -8,7 +8,10 @@ const audit=(s,productChanges=contract.productChanges||{},removals=contract.lega
 test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
  const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,3);assert(result.testingMembers>40&&result.legacyStatements>1000);
  const actual={before:result.legacyStatementsBeforeRemovals,after:result.legacyStatements,removed:result.legacyStatementRemovals};
- const expected={before:2502,after:2501,removed:['let __lastBondUpdate = 0;']};
+ const expected={before:2502,after:2500,removed:[
+  "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });",
+  'let __lastBondUpdate = 0;',
+ ]};
  console.log(JSON.stringify({actual,expected}));
  assert.deepEqual(actual,expected);
 });
@@ -23,10 +26,10 @@ test('the authorized removal does not permit another legacy statement to disappe
 });
 test('the removal allowance requires the exact key set and baseline fingerprint',()=>{
  const removals=contract.legacyStatementRemovals;
- assert.throws(()=>audit(source,undefined,{}),/Exactly the one authorized legacy statement removal/);
+ assert.throws(()=>audit(source,undefined,{}),/Exactly the two authorized legacy statement removals/);
  assert.throws(()=>audit(source,undefined,{...removals,'const BOHR_TO_ANG = 0.529177210903;':'0'.repeat(64)}),
-  /Exactly the one authorized legacy statement removal/);
- assert.throws(()=>audit(source,undefined,{'let __lastBondUpdate = 0;':'0'.repeat(64)}),
+  /Exactly the two authorized legacy statement removals/);
+ assert.throws(()=>audit(source,undefined,{...removals,'let __lastBondUpdate = 0;':'0'.repeat(64)}),
   /Original legacy statement fingerprint/);
 });
 test('the three-pixel connection repair cannot drift past its declared fingerprint',()=>{
@@ -36,6 +39,13 @@ test('the three-pixel connection repair cannot drift past its declared fingerpri
 test('an approved product repair must match its original source fingerprint too',()=>{
  const changes=structuredClone(contract.productChanges);changes.updateEditSelectionVisuals.before='0'.repeat(64);
  assert.throws(()=>audit(source,changes),/original product fingerprint/);
+});
+test('the View shortcut replacement must match both statement fingerprints',()=>{
+ const changed=source.replace('if (!e.altKey) setMode(MODES.DISPLAY);','if (!e.altKey) setMode(MODES.MEASURE);');
+ assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/Every declared product change must be checked/);
+ const changes=structuredClone(contract.productChanges);changes['statement:bindViewMode'].before='0'.repeat(64);
+ assert.throws(()=>audit(source,changes),/statement:bindViewMode original product fingerprint/);
 });
 test('a Testing getter conversion cannot masquerade as an additive API',()=>{
  const changed=source.replace('return Array.isArray(selection) ? selection.slice() : [];','return [];');assert.notEqual(changed,source);assert.throws(()=>audit(changed),/Testing object changed/);

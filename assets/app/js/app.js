@@ -11615,7 +11615,7 @@
         windowId: NON_EDIT_WINDOW_ID.VIEW_PANEL,
         buttonEl: viewPanelBtn,
         visible: showView,
-        presentation: { icon: 'view_in_ar', label: 'View', meta: '', key: 'V', title: 'View window (V)', static: false },
+        presentation: { icon: 'view_in_ar', label: 'View', meta: '', key: '', title: 'View window', static: false },
       },
       {
         windowId: NON_EDIT_WINDOW_ID.COORDS_PANEL,
@@ -25635,8 +25635,7 @@
   bind('down', MODES.CALCULATIONS, 'm', () => setMode(MODES.MEASURE));
   bind('down', MODES.DISPLAY, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.DISPLAY, 'm', () => { setMode(MODES.MEASURE); });
-  // Toggle View window in standard (display) mode
-  bind('down', MODES.DISPLAY, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });
+  bind('down', 'global', 'v', (e) => { if (!e.altKey) setMode(MODES.DISPLAY); });
   // Toggle Coordinates window in standard (display) mode
   bind('down', MODES.DISPLAY, 'c', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL); });
   bind('down', MODES.DISPLAY, 'q', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR); });
@@ -25690,7 +25689,6 @@
     toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
   });
   if (workspaceEnabled) {
-    bind('down', MODES.EDIT, 'v', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL));
     bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
   }
   bind('down', MODES.EDIT, ' ', (e) => {
@@ -25762,7 +25760,6 @@
   bind('down', MODES.MEASURE, 'm', () => { setMode(MODES.DISPLAY); });
   bind('down', MODES.MEASURE, 'e', () => { setMode(MODES.EDIT); });
   bind('down', MODES.MEASURE, 'c', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL); });
-  bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });
   bind('down', MODES.MEASURE, 'q', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR); });
   bind('down', MODES.MEASURE, 'o', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.MOLDEN_INSPECTOR); });
   bind('down', MODES.MEASURE, 't', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.TRAJECTORY_PANEL); });
@@ -25927,7 +25924,7 @@
   // Global key listeners delegate to router
   window.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || e.key === 'Escape') return;
-    // Let native clipboard events run without triggering the plain C/V panels.
+    // Let native clipboard events run without triggering the plain C/V shortcuts.
     // Modified variants (for example Cmd+Shift+C) also belong to the browser.
     if ((e.ctrlKey || e.metaKey) && ['c', 'v', 'x'].includes(normKey(e))) return;
     const helpTogglePressed = !e.ctrlKey && !e.metaKey && !e.altKey && (e.key === '?' || (e.key === '/' && e.shiftKey));

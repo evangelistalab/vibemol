@@ -853,6 +853,7 @@
     "riskBatchChangedTestingMembers": 3
   },
   "legacyStatementRemovals": {
+    "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });": "7ce2fe4f6c301e57eacd393428c90e5f315efabe8cc9607ed316f9e5d7ad6f09",
     "let __lastBondUpdate = 0;": "99a621dc8311923bb0eca8cf7b95758dc9af1bca653f9769f2f3964a44bbc5fb"
   },
   "productChanges": {
@@ -870,6 +871,30 @@
           ]
         }
       ]
+    },
+    "buildDisplayAdaptiveMenuModel": {
+      "before": "93ad71d12763b413032eaf879d361b81974f567880c230ece1d9b6515267fbc6",
+      "after": "78894e58da374f64ded969e1b9460429a583d6752cdd7b7f193aeb2d24ae50e4",
+      "reason": "Remove the V shortcut label from the legacy View panel launcher now that V enters View mode.",
+      "units": []
+    },
+    "statement:bindViewMode": {
+      "before": "ad70e0d53bc53f9fb9821fec391194df8ed2180f1772382877c5193999cdbee7",
+      "after": "a8acdb4be9a8697aa9bfbc9e3f8ca2c12eb2c81f21845d28918d3e914ac60578",
+      "reason": "Route plain V to View mode from all modes, replacing the Display-only panel shortcut.",
+      "units": []
+    },
+    "statement:workbenchEditShortcuts": {
+      "before": "bb4c962f0d26aabcc292a02163eacd0b309bec50ba4634c08564d5d0b53bd50d",
+      "after": "2f7ac7fd44bf25a320e3a82e70e7dad642b4162efaf69b89ac2b1491498cb0e3",
+      "reason": "Remove the Edit-specific V override while preserving the Workbench Q shortcut.",
+      "units": []
+    },
+    "statement:keyboardClipboardComment": {
+      "before": "3cdc0801f3557489ff3d7de20da41233c3be5212ae20e5b2b521b523ed06e623",
+      "after": "e1e41c9a0daf889fa6e1d55fbdbafb209e01666a01f0cfda6560b8caa5242134",
+      "reason": "Correct the clipboard guard comment now that plain V switches mode instead of opening a panel.",
+      "units": []
     }
   }
 }
