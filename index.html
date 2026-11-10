@@ -1591,7 +1591,7 @@
       margin-bottom: 1px;
     }
 
-    /* Mode tabs: text-only controls with active underline accent. */
+    /* Mode tabs with active underline accent. */
     #toolbarModeRow .tb-modeBtn {
       width: 100%;
       min-width: 0;
@@ -1612,6 +1612,19 @@
       border: none !important;
       box-shadow: none !important;
       transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    }
+
+    #toolbarModeRow :is(#modeMeasureBtn, #modeEditBtn) {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    #toolbarModeRow .tb-mode-shortcut {
+      min-width: 16px;
+      min-height: 16px;
+      padding: 0 3px;
+      border-radius: 4px;
     }
 
     #toolbarModeRow .tb-modeBtn::after {
@@ -2318,10 +2331,10 @@
       <div id="toolbarModeRow" role="group" aria-label="Interaction mode">
         <button id="modeDisplayBtn" class="secondary tb-modeBtn" type="button" aria-label="Display mode"
           data-tooltip="Display mode: orbit/explore view. Shortcut to return: M from Measurement, E from Edit.">View</button>
-        <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode"
-          data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure</button>
-        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode"
-          data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E">Edit</button>
+        <button id="modeMeasureBtn" class="secondary tb-modeBtn" type="button" aria-label="Measurement mode" aria-keyshortcuts="M"
+          data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">M</kbd></button>
+        <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode" aria-keyshortcuts="E"
+          data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E">Edit <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">E</kbd></button>
         <button id="modeCalculationsBtn" class="secondary tb-modeBtn" type="button" aria-label="Calculations mode" data-tooltip="Choose atomic functions and prepare a forte2 AVAS input" hidden>Calculations</button>
       </div>
     </div>

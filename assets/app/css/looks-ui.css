@@ -86,6 +86,7 @@
 #inspector .vm-field-row { grid-template-columns: minmax(92px, 0.8fr) minmax(0, 1.2fr); }
 #inspector .vm-field-label { min-width: 0; overflow-wrap: anywhere; }
 #inspector #inspectorSelection { margin: 0 0 12px; overflow-wrap: anywhere; }
+#inspector .vm-structure-summary { margin: 0 0 8px; overflow-wrap: anywhere; }
 #inspector .vm-toggle__input:indeterminate + .vm-toggle__thumb { left: 10px; }
 #inspector .vm-toggle__input:indeterminate + .vm-toggle__thumb::after { content: '−'; position: absolute; inset: 0; color: var(--vm-color-text-secondary); font: 600 14px/16px var(--vm-font-sans); text-align: center; }
 #inspector .vm-appearance-section + .vm-appearance-section { border-top: 1px solid var(--vm-color-border); padding-top: 12px; margin-top: 12px; }

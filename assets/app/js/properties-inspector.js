@@ -1,6 +1,50 @@
 (function (global) {
   'use strict';
 
+  function readXyzCharge(vol) {
+    if (vol.kind !== 'xyz' || typeof vol.comment !== 'string') return null;
+    // Keep quoted metadata values together so text inside them isn't read as charge.
+    const tokens = vol.comment.match(/(?:[^\s"']|"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*')+/g) || [];
+    const charges = tokens.filter(token => /^charge=/i.test(token));
+    if (charges.length !== 1) return null;
+    const match = /^charge=(["']?)([+-]?\d+)\1$/i.exec(charges[0]);
+    const charge = match ? Number(match[2]) : NaN;
+    return Number.isSafeInteger(charge) ? charge : null;
+  }
+
+  function renderStructureSummary(summary, vol) {
+    const counts = new Map();
+    let atomicNumbers = 0, formalCharge = 0, hasFormalCharge = false;
+    for (const atom of vol?.atoms || []) {
+      if (atom.Z <= 0) continue; // Dummy atoms are not chemical elements.
+      const symbol = global.VibeMolElementUtils.getElementSymbol(atom.Z, global.ATOM_Z_TO_DATA);
+      counts.set(symbol, (counts.get(symbol) || 0) + 1);
+      const charge = atom.formalCharge || 0;
+      atomicNumbers += atom.Z;
+      formalCharge += charge;
+      hasFormalCharge ||= charge !== 0;
+    }
+    summary.hidden = !counts.size;
+    summary.replaceChildren();
+    if (summary.hidden) return;
+
+    const first = counts.has('C') ? ['C', 'H'].filter(symbol => counts.has(symbol)) : [];
+    const symbols = [...first, ...[...counts.keys()].filter(symbol => !first.includes(symbol)).sort()];
+    const formula = document.createElement('strong');
+    for (const symbol of symbols) {
+      formula.append(symbol);
+      if (counts.get(symbol) === 1) continue;
+      const subscript = document.createElement('sub');
+      subscript.textContent = counts.get(symbol);
+      formula.append(subscript);
+    }
+    const fileCharge = readXyzCharge(vol);
+    const electrons = atomicNumbers - (fileCharge ?? formalCharge);
+    const count = electrons < 0 ? 'electron count unavailable' : `${electrons} electron${electrons === 1 ? '' : 's'}`;
+    const assumption = fileCharge === null && !hasFormalCharge ? ' (neutral assumed)' : '';
+    summary.append(formula, ` · ${count}${assumption}`);
+  }
+
   // The window is built once. Selection changes update existing controls, so
   // disclosure, scroll positions, keyboard focus, and slider gestures survive.
   function createController(deps) {
@@ -23,13 +67,18 @@
         <p id="inspectorSelection" class="vm-stat-label" aria-live="polite"></p>
         <p id="inspectorEmpty" class="vm-helper-text">Select a structure or orbital in Scenes to edit its properties. Use ⌘/Ctrl-click to select several objects.</p>
         <section id="inspectorSelectionSection" class="vm-appearance-section"><div id="inspectorVisibilityFields"></div></section>
-        <section id="inspectorStructure" class="vm-appearance-section"><h3 id="inspectorStructureTitle" class="vm-section-label">Structure</h3><div id="inspectorStructureFields"></div></section>
+        <section id="inspectorStructure" class="vm-appearance-section">
+          <h3 id="inspectorStructureTitle" class="vm-section-label">Structure</h3>
+          <p class="vm-helper-text vm-structure-summary" hidden></p>
+          <div id="inspectorStructureFields"></div>
+        </section>
       </div>
       <div id="inspectorLook" class="vm-properties-body" role="tabpanel" aria-labelledby="inspectorLookTab" hidden>
         <p class="vm-helper-text vm-properties-scope">Style and color scheme apply across the workspace. Object colors and opacity can override them.</p>
       </div>`;
     document.body.append(panel);
     const lookBody = $('inspectorLook'), objectBody = $('inspectorObject');
+    const structureSummary = objectBody.querySelector('.vm-structure-summary');
     lookBody.append($('looksPanel'));
     const surfaces = $('appearanceSurfacesSection'); objectBody.append(surfaces);
     const box = $('showBox').closest('.vm-field-row'); surfaces.append(box);
@@ -144,6 +193,7 @@
       $('inspectorSelectionSection').hidden = !objects.length;
       $('inspectorStructure').hidden = !molecules.length;
       $('inspectorStructureTitle').textContent = `Structure · ${molecules.length} selected`;
+      renderStructureSummary(structureSummary, molecules.length === 1 ? molecules[0].record?.vol : null);
       surfaces.hidden = !surfaceLayers.length;
       surfaces.querySelector('.vm-section-label').textContent = `Surfaces · ${surfaceLayers.length} selected`;
       const state = { objects, molecules, surfaces: surfaceLayers }; for (const update of controls) update(state);

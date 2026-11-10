@@ -7,6 +7,64 @@ from looks import choose_material
 from navigation_budget import goto_with_budget
 
 
+def structure_summary(page):
+    page.set_viewport_size({'width': 1512, 'height': 950})
+    sidebar_toggle = page.locator('#toolbarShowBtn')
+    if sidebar_toggle.is_visible():
+        sidebar_toggle.click()
+    page.evaluate('VibeMolWorkbench.applyLayout({open:["inspector"],activeRight:"inspector"})')
+    page.locator('#inspectorObjectTab').click()
+    summary = page.locator('#inspectorStructure .vm-structure-summary')
+
+    def readback(case, text, subscripts):
+        expected = {'text': text, 'subscripts': subscripts, 'visible': True}
+        actual = {'text': summary.inner_text(), 'subscripts': summary.locator('sub').all_text_contents(),
+                  'visible': summary.is_visible()}
+        print('[structure-summary] ' + json.dumps({'case': case, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected, (case, actual, expected)
+
+    def select_molecule():
+        graph = p.snapshot(page)
+        scene = next(scene for scene in graph['scenes'] if scene['id'] == graph['focusedSceneId'])
+        layer = next(layer for layer in scene['layers'] if layer['kind'] == 'molecule')
+        page.locator(f'.vm-outliner-row[data-id="{layer["id"]}"]').click()
+
+    water = 'O 0 0 0\nH 0.95 0 0\nH -0.24 0.92 0\n'
+    for comment, text in [('charge=+1', '9 electrons'), ('charge="-1"', '11 electrons'),
+                          ('charge=0', '10 electrons'), ('label="example charge=9"', '10 electrons (neutral assumed)')]:
+        assert p.load(page, [{'name': 'water.xyz', 'text': f'3\n{comment}\n{water}'}])['ok']
+        select_molecule()
+        readback(comment, f'H2O · {text}', ['2'])
+
+    # Import a structure with atom-level charge and inspect the actual molecule layer.
+    envelope = page.evaluate('VibeMolStructure.exportActive()')
+    envelope['volume']['atoms'][0]['formalCharge'] = 1
+    page.evaluate('text => VibeMolStructure.importFromText(text)', json.dumps(envelope))
+    select_molecule()
+    readback('stored formal charge', 'H2O · 9 electrons', ['2'])
+
+    assert p.load(page, [{'name': 'water.xyz', 'text': f'3\nWater\n{water}'}])['ok']
+    select_molecule()
+    readback('no charge metadata', 'H2O · 10 electrons (neutral assumed)', ['2'])
+    page.locator('#modeEditBtn').click()
+    page.evaluate('VibeMolWorkbench.place("coordsPanel", "bottom")')
+    page.locator('#canvas').focus()
+    page.keyboard.press('c')
+    page.locator('#coordsContent [data-atom-index="0"] [data-edit-field="sym"]').click()
+    editor = page.locator('#coordsContent .coordsCellEditor')
+    editor.fill('S'); editor.press('Enter')
+    readback('element change', 'H2S · 18 electrons (neutral assumed)', ['2'])
+    page.locator('#coordsContent [data-atom-index="1"] [data-coords-action="delete"]').click()
+    readback('atom deletion', 'HS · 17 electrons (neutral assumed)', [])
+    page.locator('#canvas').focus()
+    page.keyboard.press(p.CLIPBOARD_MODIFIER + '+z')
+    readback('undo deletion', 'H2S · 18 electrons (neutral assumed)', ['2'])
+    page.keyboard.press(p.CLIPBOARD_MODIFIER + '+z')
+    readback('undo element change', 'H2O · 10 electrons (neutral assumed)', ['2'])
+    page.keyboard.press(p.CLIPBOARD_MODIFIER + '+Shift+z')
+    readback('redo element change', 'H2S · 18 electrons (neutral assumed)', ['2'])
+
+
 def main():
     with p.run_http_server(p.ROOT) as url, p.sync_playwright() as pw:
         browser = pw.chromium.launch(headless=True, args=['--use-angle=metal'])
@@ -187,6 +245,7 @@ def main():
                 for dark in [True,False]:
                     if page.locator('#themeToggleInput').is_checked() != dark: page.locator('#themeToggleShell').click()
                     assert page.locator('#inspectorLook').evaluate('el=>el.scrollWidth<=el.clientWidth+1')
+            structure_summary(page)
             assert not errors, errors
             assert not page.evaluate('__vmqa.errors'), page.evaluate('__vmqa.errors')
             (p.ARTIFACTS/'properties-report.json').write_text(json.dumps(report,indent=2))
