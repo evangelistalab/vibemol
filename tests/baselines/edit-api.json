@@ -901,6 +901,65 @@
       "after": "f3a4e88e2b6ad70eb1ad8bf29bbbce5aae3108970ebce0d98c91f95237c15e0b",
       "reason": "Connect the requested interactive tutorial to existing scene, camera, and measurement actions without adding a global API.",
       "units": []
+    },
+    "fitCameraToScene": {
+      "before": "f3251df5119af77ff1711782703c14385bc74c1869617556a1ab3d37882aa777",
+      "after": "51572007ad6b277b15a0cae5e2c3e3e3ab2ec30f84e7d5c35666bf16c7545860",
+      "reason": "Record a camera default only when visible geometry was successfully fitted.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "fitCameraToScene",
+          "count": 7,
+          "inputs": [
+            "DEFAULT_PERSPECTIVE_FOV",
+            "applySceneCameraFit",
+            "collectVisibleSceneBounds",
+            "computeSceneFitCenter",
+            "computeSceneFitGeometry",
+            "perspectiveCamera",
+            "readRendererViewportMetrics"
+          ]
+        }
+      ]
+    },
+    "applyCameraStrategy": {
+      "before": "3a746c06dc91057ecd244ecdde0ec87873d89f2f7c0fc1589a4bec2c6381fd3e",
+      "after": "55c35549278f95cc23ca5ea6b96ff20636a14535eb328c4b2d65edb0bb30a531",
+      "reason": "Remember the fitted camera pose for the focused scene when an import changes scenes.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyCameraStrategy",
+          "count": 6,
+          "inputs": [
+            "camera",
+            "contentGroup",
+            "controls",
+            "fitCameraToScene",
+            "getFocusedScene",
+            "viewState"
+          ]
+        }
+      ]
+    },
+    "handleSceneDropRecords": {
+      "before": "272f746499dc2c113c991612cf6a94cba34a75592e295494b6e6481a9a3f52df",
+      "after": "f4d5fa7ba5dd5610d17bf7edcc4fb798a98e4cfd0a124bc968fcda39539ca471",
+      "reason": "Fit after the imported scene is made visible and preserve the pose for same-scene additions.",
+      "units": []
+    },
+    "statement:viewState": {
+      "before": "0e1a705cdab7813b6e6d75b1b596b3f39151b74878362f995c0764166975ca0e",
+      "after": "0e82f40fbcd59d6dc520cc5a7a339d00eac4171df695bfc3e07f2a94565ace80",
+      "reason": "Associate fitted camera defaults weakly with their scenes so deleted scenes are not retained.",
+      "units": []
+    },
+    "statement:viewReset": {
+      "before": "57fdab808c0dcf9040aa640dc34c627a58dc04179b21dc8f8b46da0ee5e5f9b5",
+      "after": "0f8b6fea731d233bb8d1c329f84099ca212cfce51c6c9591577f2f03660f21d6",
+      "reason": "Restore the focused scene camera default or fit the current scene if it has no recorded fit.",
+      "units": []
     }
   }
 }
