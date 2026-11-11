@@ -7,6 +7,64 @@ import premerge as p
 from surface_shadows import settings, settle
 
 
+def scene_import_framing(page, context, url):
+    def molecule(name, offset):
+        text = f'2\n{name}\nH {offset - 0.37} {offset} {offset}\nH {offset + 0.37} {offset} {offset}\n'
+        return {'name': name + '.xyz', 'text': text}
+
+    def check_framing(label, offset, expected_visibility):
+        settle(page)
+        actual = page.evaluate('''() => {
+          const {atoms, pose} = readDepthBounds();
+          return {target: Object.values(pose.target), mode: pose.mode,
+            visibility: VibeMolTesting.getSceneGraphSnapshot().scenes.map(scene => scene.visible),
+            atomClipCoordinates: atoms.map(atom => atom.ndc)};
+        }''')
+        expected = dict(target=[offset] * 3, mode=projection, visibility=expected_visibility,
+                        atomsInsideFrustum=2)
+        comparands = dict(case=label, actual=actual, expected=expected)
+        print('[scene-import-framing] ' + json.dumps(comparands), flush=True)
+        assert actual['mode'] == expected['mode'] and actual['visibility'] == expected_visibility, comparands
+        assert all(numbers_close(value, offset, abs_tol=1e-9) for value in actual['target']), comparands
+        assert len(actual['atomClipCoordinates']) == 2, comparands
+        assert all(abs(value) <= 1 for atom in actual['atomClipCoordinates'] for value in atom), comparands
+
+    observe(page)
+    for projection in ['perspective', 'orthographic']:
+        settings(page, {'view.projection': projection, 'view.autoRotate': False})
+        assert p.load(page, [molecule('Near', 0)])['ok']
+        check_framing('first scene', 0, [True])
+        assert p.load(page, [molecule('Far', 50)], clear_first=False)['ok']
+        check_framing('append distant scene', 50, [False, True])
+
+        settings(page, {'view.camera.x': 52, 'view.target.x': 51})
+        settle(page)
+        pose = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        assert p.load(page, [molecule('Far again', 50)], clear_first=False)['ok']
+        settle(page)
+        after = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        comparands = dict(case='matching import preserves adjusted pose', actual=after, expected=pose)
+        print('[scene-import-framing] ' + json.dumps(comparands), flush=True)
+        assert after['mode'] == pose['mode'], comparands
+        assert all(numbers_close(after[key][axis], pose[key][axis], abs_tol=1e-9)
+                   for key in ('camera', 'target', 'up') for axis in 'xyz'), comparands
+
+        session = page.evaluate('() => VibeMolSession.export()')
+        page.evaluate("() => VibeMolWorkbench.open('viewPanel')")
+        page.locator('#viewReset').click()
+        check_framing('reset after distant import', 50, [False, True])
+        assert page.evaluate('doc => VibeMolSession.import(doc)', session)['ok']
+        settle(page)
+        restored = page.evaluate('() => VibeMolTesting.getCameraSnapshot().target')
+        comparands = dict(case='session keeps its saved target', actual=restored, expected=pose['target'])
+        print('[scene-import-framing] ' + json.dumps(comparands), flush=True)
+        assert all(numbers_close(restored[axis], pose['target'][axis], abs_tol=1e-9) for axis in 'xyz'), comparands
+        page.evaluate("() => VibeMolWorkbench.open('viewPanel')")
+        page.locator('#viewReset').click()
+        check_framing('reset after restoring a session', 50, [False, True])
+        page.evaluate("() => VibeMolWorkbench.close('viewPanel')")
+
+
 def assert_camera_frustum_matches_pose(page, label, expected_distance):
     """Check arithmetic after the tested mutation, without a mode flip or resize."""
     settle(page)
@@ -307,14 +365,15 @@ def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [projection_pose_refresh,slab_rotation_and_picking,orbital_depth,edit_grid_continuity]:
+            for run in [scene_import_framing,projection_pose_refresh,slab_rotation_and_picking,orbital_depth,edit_grid_continuity]:
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
                 page.on('console',lambda message:console_errors.append(message.text) if message.type=='error' else None)
                 page.on('dialog',lambda dialog:dialog.dismiss())
                 try:
-                    page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => window.VibeMolSession')
+                    launch = '?appearanceStudy=1' if run is scene_import_framing else '?workspaceLab=0&appearanceStudy=1'
+                    page.goto(url+launch);page.wait_for_function('() => window.VibeMolSession')
                     run(page,context,url);assert not errors,errors
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'camera-depth-'+run.__name__,errors,console_errors);raise

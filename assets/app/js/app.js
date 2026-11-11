@@ -1771,7 +1771,7 @@
     camera: perspectiveCamera,
     perspectiveCamera,
     orthographicCamera,
-    defaultView: null,
+    defaultViews: new WeakMap(),
     orthographicProjection: null,
   };
   let camera = viewState.camera;
@@ -6322,7 +6322,7 @@
   function fitCameraToScene() {
     const metrics = readRendererViewportMetrics();
     const bounds = collectVisibleSceneBounds();
-    if (!bounds.hasContent || bounds.contentBox.isEmpty()) return;
+    if (!bounds.hasContent || bounds.contentBox.isEmpty()) return false;
     const center = computeSceneFitCenter(bounds);
     const fit = computeSceneFitGeometry(
       bounds,
@@ -6331,6 +6331,7 @@
       perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV
     );
     applySceneCameraFit(center, fit.distance);
+    return true;
   }
 
   let trajectoryUiController = null;
@@ -25526,23 +25527,23 @@
     updateAxisGuideLine();
   });
 
-  // Reset view to the initial camera/target/shift
+  // Reset to the fitted pose of the focused scene.
   viewReset.onclick = () => {
-    if (viewState.defaultView) {
-      const defaultMode = viewState.defaultView.projectionMode === 'orthographic' ? 'orthographic' : 'perspective';
+    const defaultView = viewState.defaultViews.get(getFocusedScene());
+    if (defaultView) {
+      const defaultMode = defaultView.projectionMode === 'orthographic' ? 'orthographic' : 'perspective';
       if (defaultMode !== viewState.mode) setProjectionMode(defaultMode, { refreshUi: false });
-      contentGroup.position.copy(viewState.defaultView.contentPos);
-      camera.copy(viewState.defaultView.cam);
+      contentGroup.position.copy(defaultView.contentPos);
+      camera.copy(defaultView.cam);
       controls.object = camera;
+      controls.target.copy(defaultView.target);
       const { w, h } = getViewportSize();
       updateActiveCameraProjection(w, h);
-      controls.target.copy(viewState.defaultView.target);
       controls.update();
-      refreshViewUI();
     } else {
-      fitCameraToScene();
-      refreshViewUI();
+      applyCameraStrategy(false, null, null);
     }
+    refreshViewUI();
   };
   // View action: translate active molecule so mass center is at world origin.
   if (centerMassBtn) centerMassBtn.onclick = () => centerActiveMoleculeMassAtOrigin();
@@ -30584,6 +30585,7 @@
   function handleSceneDropRecords(parsedItems, options = {}) {
     const items = Array.isArray(parsedItems) ? parsedItems.filter((item) => item && item.vol) : [];
     if (!items.length) return false;
+    const previousScene = sceneGraphController.getFocusedScene();
     ensureLegacyRecordSceneKeys();
     const targetSceneKey = String(options.targetSceneKey || '').trim();
     const targetSceneVol = targetSceneKey ? getSceneMoleculeVolume(targetSceneKey) : null;
@@ -30690,20 +30692,21 @@
       setViewControlValue(isoInput, DEFAULT_ISO_VALUE);
     }
     if (activeIndex >= 0) {
-      activateVolumeIndex(activeIndex, {
-        skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
-        preserveView: options.preserveView == null ? volumes.length > loadedCount : !!options.preserveView,
-      });
-      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
+      activateVolumeIndex(activeIndex, { rebuild: false });
     } else {
       syncSceneGraphFromVolumes({ preserveLayerState: true });
       const focused = lastSceneKey
         ? sceneGraphController.getScenes().find((scene) => scene.sceneKey === lastSceneKey)
         : null;
       if (focused) focusScene(focused);
-      rebuildScene({ preserveView: true, syncGraph: false });
-      revealFocusedOutlinerTarget({ soloScene: true, rebuild: true });
     }
+    // Establish which geometry will be visible before using it to fit the camera.
+    revealFocusedOutlinerTarget({ soloScene: true, render: false });
+    const sameScene = previousScene && sceneGraphController.getFocusedScene() === previousScene;
+    rebuildScene({
+      preserveView: options.preserveView == null ? !!sameScene : !!options.preserveView,
+      skipAutoIso: !!options.skipAutoIsoOnInitialRebuild,
+    });
     if (loadedTrajectoryCount > 0) {
       setTrajectoryPanelOpen(true, { auto: true });
     }
@@ -31949,14 +31952,14 @@
       controls.update();
       return;
     }
-    fitCameraToScene();
-    if (!viewState.defaultView) {
-      viewState.defaultView = {
+    const scene = getFocusedScene();
+    if (fitCameraToScene() && scene) {
+      viewState.defaultViews.set(scene, {
         cam: camera.clone(),
         target: controls.target.clone(),
         contentPos: contentGroup.position.clone(),
         projectionMode: viewState.mode,
-      };
+      });
     }
   }
 
