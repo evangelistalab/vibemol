@@ -3,6 +3,7 @@
 
   const uff = global.VibeMolUFF || {};
   const structureCore = global.VibeMolStructureCore || {};
+  const { findSimpleCyclesOfSize } = global.VibeMolBondInference || {};
   const createUFFSystem = typeof uff.createUFFSystem === 'function' ? uff.createUFFSystem : null;
   const createLocalOptimizationContext = typeof uff.createLocalOptimizationContext === 'function' ? uff.createLocalOptimizationContext : null;
   const localEnergy = typeof uff.localEnergy === 'function' ? uff.localEnergy : null;
@@ -71,6 +72,7 @@
       order: normalizeBondOrder(bond && bond.order),
       kind: String(bond && bond.kind || 'normal'),
       origin: String(bond && bond.origin || 'explicit'),
+      style: String(bond && bond.style || 'covalent'),
     }));
   }
 
@@ -90,6 +92,54 @@
       y: y / atomCount,
       z: z / atomCount,
     };
+  }
+
+  // Classify complete neutral six-electron rings in the stored covalent graph.
+  // A fused-ring junction can carry its double bond in the adjoining ring.
+  function assignResonantRingOrders(elements, charges, bonds, bondOrders, covalentIndices) {
+    const incident = elements.map(() => []);
+    for (const index of covalentIndices) {
+      const [i, j] = bonds[index];
+      incident[i].push(index);
+      incident[j].push(index);
+    }
+    const eligible = elements.map((element, i) => {
+      const degree = incident[i].length;
+      if (charges[i] || degree < 2) return false;
+      if (element === 'C' || element === 'N') return degree <= 3;
+      return degree === 2 && (element === 'O' || element === 'S');
+    });
+    const neighbors = elements.map(() => []);
+    const edgeIndices = elements.map(() => new Map());
+    for (const index of covalentIndices) {
+      const [i, j] = bonds[index];
+      if (!eligible[i] || !eligible[j] || bondOrders[index] > 2) continue;
+      neighbors[i].push(j);
+      neighbors[j].push(i);
+      edgeIndices[i].set(j, index);
+      edgeIndices[j].set(i, index);
+    }
+    const cycles = [5, 6].flatMap(size => findSimpleCyclesOfSize(neighbors, size))
+      .map(atoms => ({
+        atoms,
+        edges: atoms.map((i, k) => edgeIndices[i].get(atoms[(k + 1) % atoms.length])),
+      }));
+    const cyclicEdges = new Set(cycles.flatMap(({ edges }) => edges));
+    const electrons = elements.map((element, i) => {
+      if (!eligible[i]) return 0;
+      const multiple = incident[i].filter(index => bondOrders[index] > 1);
+      if (multiple.length) {
+        const [edge] = multiple;
+        const contributesOneElectron = element === 'C' || (element === 'N' && incident[i].length === 2);
+        return contributesOneElectron && multiple.length === 1 && bondOrders[edge] === 2 && cyclicEdges.has(edge) ? 1 : 0;
+      }
+      return element === 'C' ? 0 : 2;
+    });
+    for (const { atoms, edges } of cycles) {
+      if (atoms.every(i => electrons[i] > 0) && atoms.reduce((sum, i) => sum + electrons[i], 0) === 6) {
+        for (const index of edges) bondOrders[index] = 1.5;
+      }
+    }
   }
 
   function createLocalUffContextFromVolume(vol, seedAtomIndices, options = {}) {
@@ -114,6 +164,7 @@
     const globalToSystemAtomIndex = new Map();
     const systemAtomToId = [];
     const elements = [];
+    const formalCharges = [];
     const coords = [];
 
     for (let atomIndex = 0; atomIndex < atoms.length; atomIndex += 1) {
@@ -134,6 +185,7 @@
       globalToSystemAtomIndex.set(atomIndex, supportedGlobalAtomIndices.length - 1);
       systemAtomToId.push(String(ensureAtomId(atom)));
       elements.push(symbol);
+      formalCharges.push(Number(atom.formalCharge) || 0);
       coords.push(point.x, point.y, point.z);
     }
 
@@ -145,6 +197,7 @@
     const rawBonds = snapshotVolumeBonds(vol, cloneBondSnapshotFn);
     const bonds = [];
     const bondOrders = [];
+    const covalentIndices = [];
     let omittedBondCount = 0;
     for (const rawBond of rawBonds) {
       if (!rawBond) continue;
@@ -156,8 +209,12 @@
         omittedBondCount += 1;
         continue;
       }
+      if ((rawBond.style || 'covalent') === 'covalent') covalentIndices.push(bonds.length);
       bonds.push(left < right ? [left, right] : [right, left]);
       bondOrders.push(normalizeBondOrder(rawBond.order));
+    }
+    if (findSimpleCyclesOfSize && bondOrders.includes(2)) {
+      assignResonantRingOrders(elements, formalCharges, bonds, bondOrders, covalentIndices);
     }
 
     const system = createUFFSystem(elements, coords, bonds, {

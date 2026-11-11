@@ -5,6 +5,8 @@ import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 function loadUffAdapterContext() {
   return loadGlobalModules([
     'assets/app/js/structure.js',
+    'assets/app/js/element-utils.js',
+    'assets/app/js/bond-inference.js',
     'assets/app/js/uff.js',
     'assets/app/js/uff-adapter.js',
   ], {
@@ -12,11 +14,80 @@ function loadUffAdapterContext() {
       ATOM_Z_TO_DATA: {
         1: { symbol: 'H' },
         6: { symbol: 'C' },
+        7: { symbol: 'N' },
         8: { symbol: 'O' },
+        16: { symbol: 'S' },
       },
     },
   });
 }
+
+function makeRing(elements, orders, hydrogenCounts, radius = 1.395) {
+  const atomicNumbers = { C: 6, N: 7, O: 8, S: 16 };
+  const atoms = elements.map((element, i) => {
+    const angle = 2 * Math.PI * i / elements.length;
+    return { id: `a${i}`, Z: atomicNumbers[element], x: radius * Math.cos(angle), y: radius * Math.sin(angle), z: 0 };
+  });
+  const bonds = orders.map((order, i) => ({
+    a: atoms[i].id, b: atoms[(i + 1) % atoms.length].id, order, origin: 'explicit',
+  }));
+  hydrogenCounts.forEach((count, i) => {
+    const angle = 2 * Math.PI * i / elements.length;
+    for (let j = 0; j < count; j++) {
+      const id = `h${i}-${j}`;
+      atoms.push({ id, Z: 1, x: (radius + 1.08) * Math.cos(angle), y: (radius + 1.08) * Math.sin(angle), z: j * 0.5 });
+      bonds.push({ a: atoms[i].id, b: id, order: 1, origin: 'explicit' });
+    }
+  });
+  return { atoms, bonds };
+}
+
+test('UFF optimizes either benzene bond pattern to one C–C distance without changing its stored bonds', () => {
+  const { VibeMolUFFAdapter: adapter } = loadUffAdapterContext();
+  for (const orders of [[2, 1, 2, 1, 2, 1], [1, 2, 1, 2, 1, 2]]) {
+    const vol = makeRing(Array(6).fill('C'), orders, Array(6).fill(1));
+    const originalBonds = structuredClone(vol.bonds);
+    const { system } = adapter.createLocalUffContextFromVolume(vol, [0]);
+    const terms = Array.from(system.bondTerms).filter(({ i, j }) => i < 6 && j < 6);
+    assert.deepEqual(Array.from(system.atomTypes.slice(0, 6)), Array(6).fill('C_R'));
+    assert.deepEqual(terms.map(({ bondOrder }) => bondOrder), Array(6).fill(1.5));
+    const result = adapter.optimizeVolumeWithUFF(vol);
+    const lengths = orders.map((_, i) => {
+      const a = vol.atoms[i], b = vol.atoms[(i + 1) % orders.length];
+      return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+    });
+    const spread = Math.max(...lengths) - Math.min(...lengths);
+    assert.ok(spread < 1e-4 && lengths.every(len => Math.abs(len - 1.4) < 0.02),
+      JSON.stringify({ orders, lengths, spread, expected: 'one ring distance near 1.4 Å, spread < 0.0001 Å' }));
+    assert.ok(result.energyAfter < result.energyBefore, JSON.stringify(result));
+    assert.deepEqual(vol.bonds, originalBonds);
+  }
+});
+
+test('UFF types heteroaromatic and fused rings, while retaining localized orders in a nonaromatic ring', () => {
+  const { VibeMolUFFAdapter: adapter } = loadUffAdapterContext();
+  const pyridine = makeRing(['N', 'C', 'C', 'C', 'C', 'C'], [2, 1, 2, 1, 2, 1], [0, 1, 1, 1, 1, 1]);
+  const furan = makeRing(['O', 'C', 'C', 'C', 'C'], [1, 2, 1, 2, 1], [0, 1, 1, 1, 1]);
+  const thiophene = makeRing(['S', 'C', 'C', 'C', 'C'], [1, 2, 1, 2, 1], [0, 1, 1, 1, 1]);
+  const cyclohexadiene = makeRing(Array(6).fill('C'), [2, 1, 2, 1, 1, 1], [1, 1, 1, 1, 2, 2]);
+  const fused = {
+    atoms: Array.from({ length: 10 }, (_, i) => ({ id: `a${i}`, Z: 6 })),
+    bonds: [[0, 1], [1, 3], [3, 7], [7, 6], [6, 2], [2, 0], [1, 5], [5, 9], [9, 8], [8, 4], [4, 0]]
+      .map(([i, j], index) => ({ a: `a${i}`, b: `a${j}`, order: [1, 3, 5, 7, 9].includes(index) ? 2 : 1, origin: 'explicit' })),
+  };
+  for (const [volume, ringAtoms, resonantType, expectedOrders] of [
+    [pyridine, 6, 'N_R', Array(6).fill(1.5)],
+    [furan, 5, 'O_R', Array(5).fill(1.5)],
+    [thiophene, 5, 'S_R', Array(5).fill(1.5)],
+    [cyclohexadiene, 6, 'C_2', [1, 1, 1, 1, 2, 2]],
+    [fused, 10, 'C_R', Array(11).fill(1.5)],
+  ]) {
+    const { system } = adapter.createLocalUffContextFromVolume(volume, [0]);
+    assert.equal(system.atomTypes[0], resonantType);
+    assert.deepEqual(Array.from(system.bondTerms).filter(({ i, j }) => i < ringAtoms && j < ringAtoms)
+      .map(({ bondOrder }) => bondOrder).sort(), expectedOrders);
+  }
+});
 
 test('uff-adapter builds one local UFF context from volume bonds while ignoring blocked bonds', () => {
   const context = loadUffAdapterContext();

@@ -660,7 +660,16 @@
       adj[b].push(a);
     }
 
-    const atomTypes = elements.map((el, i) => assignAtomType(el, adj[i].length));
+    const resonantAtoms = new Set();
+    for (let index = 0; index < bonds.length; index += 1) {
+      if (bondOrders[index] !== 1.5) continue;
+      for (const atom of bonds[index]) resonantAtoms.add(atom);
+    }
+    const atomTypes = elements.map((element, i) => {
+      const resonantType = `${element}_R`;
+      return resonantAtoms.has(i) && getParams(resonantType)
+        ? resonantType : assignAtomType(element, adj[i].length);
+    });
     const topo = buildTopology(nAtoms, bonds);
 
     const bondTerms = bonds.map(([i, j], idx) => {
