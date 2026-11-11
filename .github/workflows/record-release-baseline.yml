@@ -61,7 +61,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
       - name: Install ordinary CI's browser and Linux dependencies
-        run: python -m playwright install --with-deps chromium
+        run: |
+          bash tools/ci/use-ubuntu-archive.sh
+          python -m playwright install --with-deps chromium
       - name: Record the exact candidate twice without injection or a version mapping
         env:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/release-record-pycache
