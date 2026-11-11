@@ -31,6 +31,19 @@ test('parseXYZ handles a minimal XYZ structure', () => {
   assert.equal(vol.atoms[1].Z, 8);
 });
 
+test('XYZ reads Fortran exponents in the initial structure and trajectory frames', () => {
+  const { parseXYZ } = loadParsers();
+  const xyz = '1\nFirst frame\nH 9.6D-01 -2.5d+00 1.0E-2\n1\nSecond frame\nH -3d-1 2D+1 4e-1\n';
+  const vol = parseXYZ(xyz);
+
+  assert.deepEqual(plain(vol.atoms), [{ Z: 1, x: 0.96, y: -2.5, z: 0.01, formalCharge: 0 }]);
+  assert.deepEqual(Array.from(vol.trajectory.frames, frame => Array.from(frame)), [
+    [0.96, -2.5, 0.01].map(Math.fround),
+    [-0.3, 20, 0.4].map(Math.fround),
+  ]);
+  assert.throws(() => parseXYZ(xyz.replace('9.6D-01', '9.6D-')), /coordinates must be numeric/);
+});
+
 test('parseCube handles a minimal 1x1x1 cube', () => {
   const parsers = loadParsers();
   const cube = [
@@ -72,6 +85,33 @@ test('parseTwoComponentCube handles a minimal 2C cube', () => {
   assert.ok(Math.abs(vol.alphaIm[0] - 0.2) < 1e-6);
   assert.ok(Math.abs(vol.betaRe[0] - 0.3) < 1e-6);
   assert.ok(Math.abs(vol.betaIm[0] - 0.4) < 1e-6);
+});
+
+test('both cube formats read Fortran exponents in headers and voxel values', () => {
+  const { parseCube, parseTwoComponentCube } = loadParsers();
+  const header = [
+    'Fortran cube',
+    'density (5.0D-02, 1.0d-01)',
+    '1 1.0D-01 0 -2.0d-01',
+    '1 1.2D+00 0 0',
+    '1 0 1.3d+00 0',
+    '1 0 0 1.4E+00',
+    '1 1.0D+00 9.6D-01 2.0d-02 0',
+  ].join('\n');
+  const cube = parseCube(header + '\n1.0D-01');
+  const spinor = parseTwoComponentCube(header + '\n1.0D-01 -2.0d-01 3.0E-01 4.0D-01');
+
+  for (const vol of [cube, spinor]) {
+    assert.equal(vol.isoHint, 0.05);
+    assert.deepEqual(plain(vol.origin), [0.1, 0, -0.2]);
+    assert.deepEqual(plain(vol.axes), [[1.2, 0, 0], [0, 1.3, 0], [0, 0, 1.4]]);
+    assert.deepEqual(plain(vol.atoms), [{ Z: 1, x: 0.96, y: 0.02, z: 0, formalCharge: 0 }]);
+    assert.equal(vol.data[0], Math.fround(0.1));
+  }
+  assert.equal(spinor.isTwoComponent, true);
+  assert.deepEqual([spinor.alphaRe[0], spinor.alphaIm[0], spinor.betaRe[0], spinor.betaIm[0]],
+    [0.1, -0.2, 0.3, 0.4].map(Math.fround));
+  assert.throws(() => parseCube(header + '\n1.0D-'), /Data size mismatch\. Expected 1, got 0/);
 });
 
 test('parseMolden handles a compact Molden payload', () => {
