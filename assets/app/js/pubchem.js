@@ -21,9 +21,12 @@
     const PUBCHEM_SEARCH_ICON_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>';
 
     const PUBCHEM_AUTOCOMPLETE_LIMIT = 10;
+    const PUBCHEM_REQUEST_INTERVAL_MS = 250;
     let pubchemBusy = false;
     let pubchemSuggestTimer = null;
-    let pubchemSuggestToken = 0;
+    let pubchemSuggestRequest = null;
+    let nextPubChemRequestAt = 0;
+    let pubchemNotice = null;
     const pubchemHas3DByNameCache = new Map();
     const pubchemHas3DByCidCache = new Map();
 
@@ -89,31 +92,49 @@
       return `https://pubchem.ncbi.nlm.nih.gov/compound/${cid}`;
     }
 
+    const isPubChemBusyStatus = status => status === 429 || status === 503;
+    const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function requestPubChem(url, signal) {
+      while (nextPubChemRequestAt > performance.now()) {
+        signal?.throwIfAborted();
+        await wait(nextPubChemRequestAt - performance.now());
+      }
+      signal?.throwIfAborted();
+      nextPubChemRequestAt = performance.now() + PUBCHEM_REQUEST_INTERVAL_MS;
+      return await fetch(url, { signal });
+    }
+
+    function pubChemRetryDelay(response) {
+      const header = response.headers.get('Retry-After');
+      const delay = header && (/^\d+$/.test(header) ? Number(header) * 1000 : Date.parse(header) - Date.now());
+      return Number.isFinite(delay) ? Math.max(1000, delay) : 1000;
+    }
+
+    async function fetchPubChemResponse(url, context, { allow404 = false, retryBusy = false, signal } = {}) {
+      let response = await requestPubChem(url, signal);
+      if (retryBusy && isPubChemBusyStatus(response.status)) {
+        const delay = pubChemRetryDelay(response);
+        if (delay <= 5000) {
+          await wait(delay);
+          response = await requestPubChem(url, signal);
+        }
+      }
+      if (allow404 && response.status === 404) return null;
+      if (!response.ok) throw Object.assign(new Error(`${context} failed (${response.status})`), { status: response.status });
+      return response;
+    }
+
     /**
      * Fetch JSON from PubChem with consistent error handling.
      * @param {string} url
      * @param {string} context
-     * @param {{allow404?:boolean}=} options
+     * @param {{allow404?:boolean,retryBusy?:boolean,signal?:AbortSignal}=} options
      * @returns {Promise<object|null>}
      */
-    async function fetchPubChemJson(url, context, options = {}) {
-      const allow404 = !!options.allow404;
-      const res = await fetch(url);
-      if (allow404 && res.status === 404) return null;
-      if (!res.ok) throw new Error(`${context} failed (${res.status})`);
-      return await res.json();
-    }
-
-    /**
-     * Fetch text from PubChem with consistent error handling.
-     * @param {string} url
-     * @param {string} context
-     * @returns {Promise<string>}
-     */
-    async function fetchPubChemText(url, context) {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`${context} failed (${res.status})`);
-      return await res.text();
+    async function fetchPubChemJson(url, context, options) {
+      const response = await fetchPubChemResponse(url, context, options);
+      return response ? await response.json() : null;
     }
 
     /**
@@ -149,11 +170,12 @@
      * @param {Map<string|number,boolean>} cache
      * @param {string} url
      * @param {string} context
+     * @param {{retryBusy?:boolean,signal?:AbortSignal}=} options
      * @returns {Promise<boolean>}
      */
-    async function hasPubChemConformer(cacheKey, cache, url, context) {
+    async function hasPubChemConformer(cacheKey, cache, url, context, options) {
       if (cache.has(cacheKey)) return cache.get(cacheKey);
-      const data = await fetchPubChemJson(url, context, { allow404: true });
+      const data = await fetchPubChemJson(url, context, { ...options, allow404: true });
       const has3D = !!data;
       cache.set(cacheKey, has3D);
       return has3D;
@@ -162,14 +184,14 @@
     /**
      * Fetch compound name suggestions from PubChem autocomplete API.
      * @param {string} query
-     * @param {number} limit
+     * @param {AbortSignal} signal
      * @returns {Promise<string[]>}
      */
-    async function fetchPubChemSuggestions(query, limit = PUBCHEM_AUTOCOMPLETE_LIMIT) {
+    async function fetchPubChemSuggestions(query, signal) {
       const q = normalizePubChemQuery(query);
       if (!q) return [];
-      const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/JSON?limit=${Math.max(1, Math.min(25, limit | 0))}`;
-      const data = await fetchPubChemJson(url, 'PubChem autocomplete');
+      const url = `https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(q)}/JSON?limit=${PUBCHEM_AUTOCOMPLETE_LIMIT}`;
+      const data = await fetchPubChemJson(url, 'PubChem autocomplete', { signal });
       const terms = (data && data.dictionary_terms && Array.isArray(data.dictionary_terms.compound))
         ? data.dictionary_terms.compound
         : [];
@@ -182,23 +204,16 @@
         seen.add(key);
         unique.push(t.trim());
       }
-      if (unique.length === 0) return unique;
-
       // Keep only entries that have at least one 3D conformer record.
-      const checks = await Promise.all(
-        unique.map(async (term) => {
-          try {
-            return await hasPubChem3DByName(term);
-          } catch (err) {
-            console.warn('[PubChem] 3D availability check failed', term, err);
-            return false;
-          }
-        })
-      );
-
       const filtered = [];
-      for (let i = 0; i < unique.length; i++) {
-        if (checks[i]) filtered.push(unique[i]);
+      for (const term of unique) {
+        signal.throwIfAborted();
+        try {
+          if (await hasPubChem3DByName(term, signal)) filtered.push(term);
+        } catch (err) {
+          if (signal.aborted || isPubChemBusyStatus(err?.status)) throw err;
+          console.warn('[PubChem] 3D availability check failed', term, err);
+        }
       }
       return filtered;
     }
@@ -207,14 +222,15 @@
      * Check whether a PubChem name has at least one 3D conformer entry.
      * Results are memoized to keep autocomplete responsive.
      * @param {string} name
+     * @param {AbortSignal} signal
      * @returns {Promise<boolean>}
      */
-    async function hasPubChem3DByName(name) {
+    async function hasPubChem3DByName(name, signal) {
       const q = normalizePubChemQuery(name);
       if (!q) return false;
       const cacheKey = q.toLowerCase();
       const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/conformers/JSON`;
-      return await hasPubChemConformer(cacheKey, pubchemHas3DByNameCache, url, 'PubChem conformer lookup');
+      return await hasPubChemConformer(cacheKey, pubchemHas3DByNameCache, url, 'PubChem conformer lookup', { signal });
     }
 
     /**
@@ -226,7 +242,7 @@
       const n = Number(cid);
       if (!Number.isFinite(n)) return false;
       const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${n}/conformers/JSON`;
-      return await hasPubChemConformer(n, pubchemHas3DByCidCache, url, 'PubChem CID conformer lookup');
+      return await hasPubChemConformer(n, pubchemHas3DByCidCache, url, 'PubChem CID conformer lookup', { retryBusy: true });
     }
 
     /**
@@ -241,18 +257,21 @@
       const q = normalizePubChemQuery(name);
       if (!q) throw new Error('Empty PubChem query.');
       const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/cids/JSON`;
-      const data = await fetchPubChemJson(url, 'PubChem CID lookup');
+      const data = await fetchPubChemJson(url, 'PubChem CID lookup', { allow404: true, retryBusy: true });
       const cids = extractPubChemCidList(data);
-      if (cids.length === 0) throw new Error(`No PubChem CID found for "${q}".`);
+      if (cids.length === 0) throw new Error(`No PubChem compound found for "${q}".`);
       if (!require3D) return cids[0];
 
+      let lookupError;
       for (const cid of cids.slice(0, 24)) {
         try {
           if (await hasPubChem3DByCid(cid)) return cid;
         } catch (err) {
-          console.warn('[PubChem] CID 3D check failed', cid, err);
+          if (isPubChemBusyStatus(err?.status)) throw err;
+          lookupError ??= err;
         }
       }
+      if (lookupError) throw lookupError;
       throw new Error(`No PubChem 3D structure found for "${q}".`);
     }
 
@@ -270,11 +289,11 @@
       for (const recordType of modes) {
         const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/SDF?record_type=${recordType}`;
         try {
-          return await fetchPubChemText(url, 'PubChem SDF fetch');
+          const response = await fetchPubChemResponse(url, 'PubChem SDF fetch', { retryBusy: true });
+          return await response.text();
         } catch (err) {
-          const msg = String((err && err.message) || err || '');
-          const m = msg.match(/\((\d+)\)$/);
-          lastStatus = m ? Number(m[1]) : lastStatus;
+          if (isPubChemBusyStatus(err?.status)) throw err;
+          lastStatus = err?.status || lastStatus;
         }
       }
       throw new Error(`PubChem SDF fetch failed for CID ${cid} (${lastStatus || 'no response'}).`);
@@ -375,6 +394,24 @@
       els.pubchemLoadBtn.setAttribute('aria-busy', pubchemBusy ? 'true' : 'false');
     }
 
+    function showPubChemNotice(message) {
+      if (!pubchemNotice && message && els.pubchemQueryInput) {
+        pubchemNotice = document.createElement('p');
+        pubchemNotice.className = 'vm-helper-text pubchem-notice';
+        pubchemNotice.setAttribute('role', 'alert');
+        els.pubchemQueryInput.closest('.vm-search-field')?.after(pubchemNotice);
+      }
+      if (pubchemNotice) {
+        pubchemNotice.hidden = !message;
+        pubchemNotice.textContent = message;
+      }
+    }
+
+    function stopPubChemSuggestions() {
+      clearTimeout(pubchemSuggestTimer);
+      pubchemSuggestRequest?.abort();
+    }
+
     /**
      * Import one molecule from PubChem name query and append it as XYZ.
      * @param {string} rawQuery
@@ -383,6 +420,8 @@
     async function loadPubChemCompound(rawQuery) {
       const query = normalizePubChemQuery(rawQuery);
       if (!query || pubchemBusy) return;
+      stopPubChemSuggestions();
+      showPubChemNotice('');
       setPubChemBusy(true);
       try {
         setHintMessage(`PubChem: searching "${query}"...`);
@@ -429,8 +468,10 @@
       } catch (err) {
         const msg = err && err.message ? err.message : String(err);
         console.error('[PubChem] import failed', err);
-        setHintMessage(`PubChem import failed: ${msg}`);
-        alert(`PubChem import failed: ${msg}`);
+        setHintMessage('');
+        showPubChemNotice(isPubChemBusyStatus(err?.status)
+          ? 'PubChem is temporarily busy. Try the search again in a moment.'
+          : `PubChem import failed: ${msg}`);
       } finally {
         setPubChemBusy(false);
       }
@@ -441,20 +482,22 @@
      */
     function schedulePubChemSuggestions() {
       if (!els.pubchemQueryInput) return;
-      if (pubchemSuggestTimer) clearTimeout(pubchemSuggestTimer);
+      stopPubChemSuggestions();
+      showPubChemNotice('');
       const query = normalizePubChemQuery(els.pubchemQueryInput.value);
-      if (query.length < 2) {
+      if (pubchemBusy || query.length < 2) {
         setPubChemSuggestions([]);
         return;
       }
-      const token = ++pubchemSuggestToken;
+      pubchemSuggestRequest = new AbortController();
+      const { signal } = pubchemSuggestRequest;
       pubchemSuggestTimer = setTimeout(async () => {
         try {
-          const terms = await fetchPubChemSuggestions(query, PUBCHEM_AUTOCOMPLETE_LIMIT);
-          if (token !== pubchemSuggestToken) return;
+          const terms = await fetchPubChemSuggestions(query, signal);
+          if (signal.aborted) return;
           setPubChemSuggestions(terms);
         } catch (err) {
-          if (token !== pubchemSuggestToken) return;
+          if (signal.aborted) return;
           console.warn('[PubChem] autocomplete failed', err);
           setPubChemSuggestions([]);
         }

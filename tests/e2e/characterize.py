@@ -24,6 +24,7 @@ from urllib.parse import urlparse
 from playwright.sync_api import sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
 from ci_evidence import artifact_identity
+from release_baseline_recording import VERSION_DELTA_TAGS
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 FIXTURES = ROOT / 'tests/fixtures/characterize'
@@ -482,7 +483,7 @@ def main():
     parser.add_argument('--inject-harness', action='store_true')
     parser.add_argument('--prepare-fixtures', action='store_true')
     parser.add_argument('--update-baseline', action='store_true')
-    parser.add_argument('--record-release-tag', choices=('v0.10.0', 'v0.10.1', 'v0.10.2'),
+    parser.add_argument('--record-release-tag', choices=('v0.10.0', 'v0.10.1', *VERSION_DELTA_TAGS),
                         help='Explicit CI release recording from a verified source; never a version exemption.')
     parser.add_argument('--record-source-commit', help='Full immutable SHA for an explicitly declared CI recording candidate.')
     parser.add_argument('--record-api-delta', help='Tracked exact API delta; CI refuses every undeclared capture difference.')
@@ -512,15 +513,15 @@ def main():
         baseline_identity, api_previous, api_declaration = require_source(ROOT, args.source_root, args, ARTIFACTS / 'api-baseline-source.json')
     elif args.record_release_tag:
         from release_baseline_recording import require_published_release_source, require_release_candidate_source
-        recorder = require_release_candidate_source if args.record_release_tag in ('v0.10.1', 'v0.10.2') else require_published_release_source
+        recorder = require_published_release_source if args.record_release_tag == 'v0.10.0' else require_release_candidate_source
         baseline_identity = recorder(ROOT, args.source_root, args, ARTIFACTS / 'release-baseline-source.json')
     else:
         assert args.record_source_commit is None, 'Candidate SHA requires explicit release recording mode.'
     meta = metadata(args.source_root, baseline_identity)
     release_previous = None
-    if args.record_release_tag == 'v0.10.2':
+    if args.record_release_tag in VERSION_DELTA_TAGS:
         from release_baseline_recording import read_version_delta_base
-        release_previous = read_version_delta_base(ROOT)
+        release_previous = read_version_delta_base(ROOT, args.record_release_tag)
     if (args.update_baseline or args.prepare_fixtures) and not (args.record_release_tag or args.record_api_delta or args.record_cas_default):
         tagged = subprocess.check_output(['git', 'rev-parse', BASE_TAG + '^{commit}'], cwd=ROOT).decode().strip()
         assert tagged == BASE_COMMIT, 'The pre-refactor tag must still identify the original base.'
@@ -580,7 +581,7 @@ def main():
                     (ARTIFACTS / f'cas-default-delta-run-{run}.json').write_text(json.dumps(delta_report, indent=2) + '\n')
                 if release_previous is not None:
                     from release_baseline_recording import verify_version_delta
-                    delta_report = verify_version_delta(release_previous, captures)
+                    delta_report = verify_version_delta(release_previous, captures, args.record_release_tag)
                     (ARTIFACTS / f'release-version-delta-run-{run}.json').write_text(json.dumps(delta_report, indent=2) + '\n')
                 if baseline is None:
                     baseline, pixel_baseline = captures, pixels

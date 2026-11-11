@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function loadAutoHydrogen(extraGlobals = {}) {
@@ -28,6 +29,56 @@ function loadAutoHydrogen(extraGlobals = {}) {
     },
   });
 }
+
+test('intact aromatic imports do not gain H and genuine missing hydrogens are still restored', () => {
+  const { molecules } = JSON.parse(readFileSync(new URL('../fixtures/aromatic-hydrogen.json', import.meta.url)));
+  assert.deepEqual(molecules.map(({ name }) => name), [
+    'anthracene', 'aspirin', 'benzene', 'caffeine', 'furan', 'indole', 'naphthalene', 'phenol', 'pyridine', 'toluene',
+  ]);
+  const { THREE, VibeMolBondInference: inference, VibeMolAutoHydrogen: hydrogen } = loadGlobalModules([
+    'assets/vendor/js/three.min.js', 'assets/vendor/js/atomic-data.js', 'assets/app/js/element-utils.js',
+    'assets/app/js/bond-inference.js', 'assets/app/js/auto-hydrogen.js',
+  ], { globals: { console: { warn() {} } } });
+  const atomicNumbers = { H: 1, C: 6, N: 7, O: 8 };
+  let removals = 0;
+  for (const { name, atoms: rows } of molecules) {
+    const atoms = rows.map(([symbol, x, y, z], i) => ({ id: String(i + 1), Z: atomicNumbers[symbol], x, y, z }));
+    const positions = atoms.map(({ Z, x, y, z }) => ({ Z, pos: new THREE.Vector3(x, y, z) }));
+    const edges = inference.perceiveBondConnectivity(positions);
+    inference.inferBondOrders(positions, edges);
+    const bonds = Array.from(edges, ({ i, j, order, style }) => ({ a: atoms[i].id, b: atoms[j].id, order, style, origin: 'perceived' }));
+    const before = structuredClone(bonds);
+    const intact = hydrogen.buildAutoHydrogenPlan({ atoms, bonds });
+    assert.equal(intact.stats.hydrogenCount, 0, JSON.stringify({ name, actual: intact.stats, expectedHydrogens: 0 }));
+    assert.deepEqual(bonds, before, `${name} planning preserves stored bond orders`);
+
+    for (const atom of atoms.filter(({ Z }) => Z === 1)) {
+      const link = bonds.find(({ a, b }) => a === atom.id || b === atom.id);
+      const parentId = link.a === atom.id ? link.b : link.a;
+      const plan = hydrogen.buildAutoHydrogenPlan({
+        atoms: atoms.filter(({ id }) => id !== atom.id),
+        bonds: bonds.filter(({ a, b }) => a !== atom.id && b !== atom.id),
+      });
+      const actual = Array.from(plan.parents, ({ atomId, hydrogenCount }) => [atomId, hydrogenCount]);
+      assert.deepEqual(actual, [[parentId, 1]], `${name} after removing hydrogen ${atom.id}`);
+      removals++;
+    }
+  }
+  assert.equal(removals, 72);
+});
+
+test('auto-hydrogen respects explicit ring bond orders', () => {
+  const context = loadAutoHydrogen();
+  const atoms = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i % 6) * Math.PI / 3;
+    const radius = i < 6 ? 1.4 : 2.5;
+    return { Z: i < 6 ? 6 : 1, x: radius * Math.cos(angle), y: radius * Math.sin(angle), z: 0 };
+  });
+  const bonds = Array.from({ length: 6 }, (_, i) => ({ a: i, b: (i + 1) % 6, order: i === 0 || i === 3 ? 2 : 1, origin: 'explicit' }))
+    .concat(Array.from({ length: 6 }, (_, i) => ({ a: i, b: i + 6, order: 1, origin: 'explicit' })));
+  const plan = context.VibeMolAutoHydrogen.buildAutoHydrogenPlan({ atoms, bonds });
+  assert.deepEqual(Array.from(plan.parents, ({ atomIndex }) => atomIndex), [2, 5]);
+});
 
 test('auto-hydrogen adds three tetrahedral hydrogens to a terminal carbon', () => {
   const context = loadAutoHydrogen();

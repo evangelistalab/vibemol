@@ -5,6 +5,7 @@ import json
 import premerge as p
 from appearance_controls import change
 from helpers import read_app_version
+from tutorials import run as run_tutorials
 
 sys.path.insert(0, str(p.ROOT / 'api'))
 from vibemol_client import _set_style_with_alias
@@ -87,6 +88,7 @@ def main():
                     else: page.wait_for_function('()=>VibeMolRecovery.getState().ready')
                 finally: context.close()
             print('[release] explicit legacy compatibility and isolated study/demo launches: passed', flush=True)
+            run_tutorials(browser, url)
         finally: browser.close()
 
 

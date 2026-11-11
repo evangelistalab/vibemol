@@ -52,10 +52,8 @@ class FourCaptureVersions(unittest.TestCase):
             for run in [1,2]:(folder/f'characterize-run-{run}.json').write_text(json.dumps(actual))
             proof=dict(status='passed',commit=commit,tag=tag,recordingMode='candidate',allArchivedBlobsMatchCommit=True,
                 correctedReleaseBase='44bcb5d534cecba27fd0ccfc60f74324a0920b73',mappingHelperAbsent=True,harnessInjection=False,fixturePreparation=False)
-            if tag == 'v0.10.2':
-                proof['versionDelta'] = dict(baseCommit=recording.VERSION_DELTA_BASE_COMMIT,
-                    baselineGzipSha256=recording.VERSION_DELTA_BASE_SHA256,
-                    paths=[list(p) for p in recording.VERSION_DELTA_PATHS], before='0.10.1', after='0.10.2', changedLeaves=204)
+            if tag in recording.VERSION_DELTA_TAGS:
+                proof['versionDelta'] = recording.version_delta_declaration(tag)
             (folder/'release-baseline-source.json').write_text(json.dumps(proof))
         return commit
 
@@ -85,6 +83,25 @@ class FourCaptureVersions(unittest.TestCase):
             self.assertEqual(report['changedLeavesPerRun'],204)
             self.assertEqual(report['residualDifferences'],0)
             self.assertEqual(len(report['captures']),4)
+
+    def test_0103_join_requires_exactly204_version_changes_and_zero_residual(self):
+        previous = {f'case-{i}': {'session': {'appVersion': '0.10.2', 'preset': {'appVersion': '0.10.2'}}}
+                    for i in range(102)}
+        for differing in (False, True):
+            with self.subTest(differing=differing), tempfile.TemporaryDirectory() as temp:
+                root = Path(temp)
+                commit = self.prepare(root, differing=differing, version='0.10.3', tag='v0.10.3')
+                with patch.object(compare, 'resolve_baseline_commit', return_value=commit), \
+                        patch.object(recording, 'read_version_delta_base', return_value=previous) as read_base:
+                    if differing:
+                        with self.assertRaises(AssertionError):
+                            compare.main(root, 'v0.10.3', commit)
+                    else:
+                        compare.main(root, 'v0.10.3', commit)
+                        report = json.loads((root / 'ci-comparison.json').read_text())
+                        self.assertEqual((report['changedLeavesPerRun'], report['residualDifferences'], len(report['captures'])),
+                                         (204, 0, 4))
+                    self.assertEqual(read_base.call_args.args[1], 'v0.10.3')
 
     def test_0102_join_rejects_undeclared_change_on_either_worker(self):
         with tempfile.TemporaryDirectory() as temp:

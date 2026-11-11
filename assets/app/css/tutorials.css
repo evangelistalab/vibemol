@@ -1,0 +1,137 @@
+#emptyStatePrimaryAction {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vm-tutorial-start {
+  min-height: 38px;
+  padding: 8px 14px;
+}
+
+.vm-helpOverlayContent > .vm-tutorial-start {
+  justify-self: start;
+}
+
+.vm-tutorial [hidden] {
+  display: none !important;
+}
+
+body:has(#helpOverlay[aria-hidden="false"]) .vm-tutorial {
+  visibility: hidden;
+}
+
+.vm-tutorial-shade,
+.vm-tutorial-target {
+  position: fixed;
+  pointer-events: none;
+}
+
+.vm-tutorial-shade {
+  z-index: 10070;
+  box-shadow: 0 0 0 200vmax color-mix(in srgb, var(--vm-color-text-secondary) 23%, transparent);
+}
+
+.vm-tutorial-target {
+  z-index: 10071;
+  border-radius: 6px;
+  outline: 2px solid var(--vm-color-toolbar-tab-accent);
+  outline-offset: 3px;
+}
+
+.vm-tutorial-target--atom {
+  border-radius: 50%;
+  outline-offset: 0;
+}
+
+.vm-tutorial-target > span {
+  position: absolute;
+  left: calc(50% - 5px);
+  top: -15px;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--vm-color-surface-panel);
+  border-radius: 50%;
+  background: var(--vm-color-toolbar-tab-accent);
+  animation: vm-tutorial-bounce 520ms ease-out 2;
+}
+
+@keyframes vm-tutorial-bounce {
+  0%, 100% { transform: translateY(0); }
+  45% { transform: translateY(-6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vm-tutorial-target > span { animation: none; }
+}
+
+.vm-tutorial-card {
+  position: fixed;
+  z-index: 10072;
+  box-sizing: border-box;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(60dvh, 340px);
+  overflow: auto;
+  padding: 12px;
+  border: 1px solid var(--vm-color-border);
+  border-radius: var(--vm-radius-lg);
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
+  box-shadow: var(--vm-shadow-lg);
+  font: var(--vm-type-body-weight) var(--vm-type-body-size)/var(--vm-leading-body) var(--vm-font-sans);
+}
+
+.vm-tutorial-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.vm-tutorial-progress {
+  color: var(--vm-color-text-secondary);
+  font-size: var(--vm-type-helper-size);
+}
+
+.vm-tutorial-card h2 {
+  margin: 6px 0 4px;
+  font-size: var(--vm-type-window-title-size);
+  line-height: var(--vm-leading-tight);
+}
+
+.vm-tutorial-card p {
+  margin: 0 0 8px;
+}
+
+.vm-tutorial-card .vm-btn {
+  min-height: 32px;
+  padding: 4px 8px;
+}
+
+.vm-tutorial-card [data-exit] {
+  flex: none;
+}
+
+.vm-tutorial-exercise {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.vm-tutorial-exercise textarea {
+  box-sizing: border-box;
+  width: 100%;
+  resize: vertical;
+  padding: 6px 8px;
+  border: 1px solid var(--vm-color-border-input);
+  border-radius: var(--vm-radius-md);
+  background: var(--vm-color-surface-input);
+  color: var(--vm-color-text-primary);
+  font: var(--vm-type-data-weight) var(--vm-type-data-size)/var(--vm-leading-body) var(--vm-font-mono);
+}
+
+.vm-tutorial-picks > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}

@@ -62,7 +62,10 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  const removed=Object.keys(legacyStatementRemovals).sort();
  // Keep the expected list hardcoded so widening it requires editing both this audit and the baseline.
  // Deriving it from Object.keys(contract.legacyStatementRemovals) would make the check tautological.
- assert.deepEqual(removed,['let __lastBondUpdate = 0;'],'Exactly the one authorized legacy statement removal');
+ assert.deepEqual(removed,[
+  "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });",
+  'let __lastBondUpdate = 0;',
+ ],'Exactly the two authorized legacy statement removals');
  for(const statement of removed) {
   const matches=previousStatements.filter(code=>code===statement);
   assert.equal(matches.length,1,'Authorized removal must appear once in the pinned baseline: '+statement);
@@ -70,6 +73,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  }
  const legacy=previousStatements.filter(code=>!Object.hasOwn(legacyStatementRemovals,code));
  const previousFunctions=new Map(previousNodes.filter(n=>n.type==='FunctionDeclaration').map(n=>[n.id.name,baseline.slice(n.start,n.end)]));
+ const statementChanges=new Map(Object.entries(productChanges).filter(([name])=>name.startsWith('statement:'))
+  .map(([name,change])=>[change.after,name]));
  const appliedProductChanges=new Set();
  const preserved=[];let exposed=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
@@ -84,14 +89,21 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   }
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
   const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
-  if(n.type==='FunctionDeclaration'&&Object.hasOwn(productChanges,n.id.name)) {
-   const change=productChanges[n.id.name],before=previousFunctions.get(n.id.name);
+  const name=n.type==='FunctionDeclaration'?n.id.name:statementChanges.get(hash(code));
+  if(name&&Object.hasOwn(productChanges,name)) {
+   const change=productChanges[name];
    assert.deepEqual(Object.keys(change).sort(),['after','before','reason','units']);
    assert(typeof change.reason==='string'&&change.reason.trim(),'Named product change requires its human-approved reason');
-   assert.equal(hash(before),change.before,n.id.name+' original product fingerprint');
-   assert.equal(hash(code),change.after,n.id.name+' changed product fingerprint');
-   assert(!appliedProductChanges.has(n.id.name),'Product change must occur once');appliedProductChanges.add(n.id.name);
-   preserved.push(before);continue;
+   assert.equal(hash(code),change.after,name+' changed product fingerprint');
+   assert(!appliedProductChanges.has(name),'Product change must occur once');appliedProductChanges.add(name);
+   if(change.before===null) {
+    assert.equal(name,'statement:tutorialConnection','Only the private tutorial startup connection may be added');
+   } else {
+    const before=n.type==='FunctionDeclaration'?previousFunctions.get(name):legacy.find(statement=>hash(statement)===change.before);
+    assert.equal(before?hash(before):null,change.before,name+' original product fingerprint');
+    preserved.push(before);
+   }
+   continue;
   }
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }

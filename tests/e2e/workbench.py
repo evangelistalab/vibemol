@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Opt-in workspace behavior against the real renderer and inspector controls."""
 import math
+import json
 import premerge as p
 from workbench_bar import open_menu
 
@@ -82,8 +83,20 @@ def modes(page):
     page.keyboard.press('e');assert page.locator('#modeEditBtn').get_attribute('aria-checked')=='true'
     window_menu(page,page.locator('#coordsPanel'),'Minimize to Panels menu')
     page.locator('#canvas').focus();page.keyboard.press('c');assert page.locator('#coordsPanel').is_visible()
-    page.keyboard.press('v');assert page.locator('#sidePanel').is_visible()
-    page.keyboard.press('v');assert page.locator('#sidePanel').is_hidden()
+    view = page.locator('#modeDisplayBtn')
+    camera_panel = page.locator('#sidePanel')
+    for mode in ['Edit', 'Measure', 'Calculations', 'Display']:
+        page.locator('#mode'+mode+'Btn').click()
+        page.locator('#canvas').focus(); page.keyboard.press('v')
+        actual = {'mode': page.locator('#toolbarModeRow [aria-checked="true"]').get_attribute('id'),
+                  'cameraVisible': camera_panel.is_visible(), 'keycap': view.locator('kbd').inner_text()}
+        expected = {'mode': 'modeDisplayBtn', 'cameraVisible': False, 'keycap': 'V'}
+        print('[view-mode-shortcut] ' + json.dumps({'from': mode, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected, (mode, actual, expected)
+    open_panel(page, 'Camera'); assert camera_panel.is_visible()
+    open_menu(page).get_by_role('menuitemcheckbox', name='Camera', exact=True).click()
+    assert camera_panel.is_hidden()
+    page.locator('#canvas').focus(); page.keyboard.press('e')
     page.evaluate('()=>VibeMolTesting.setEditSelectionIndices([0])')
     page.locator('#canvas').focus();page.keyboard.press('Escape')
     # An active operator cancels before the underlying atom selection clears.

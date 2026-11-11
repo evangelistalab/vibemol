@@ -99,7 +99,9 @@ jobs:
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
       # The install skips cached binaries but still installs Linux dependencies.
       - name: Install Playwright Chromium
-        run: python -m playwright install --with-deps chromium
+        run: |
+          bash tools/ci/use-ubuntu-archive.sh
+          python -m playwright install --with-deps chromium
       - name: Shared assertion contract with the real browser
         if: matrix.shard == 'smoke'
         env:
@@ -168,7 +170,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-chromium
       - name: Install Playwright Chromium
-        run: python -m playwright install --with-deps chromium
+        run: |
+          bash tools/ci/use-ubuntu-archive.sh
+          python -m playwright install --with-deps chromium
       - name: Capture one full characterization run
         env:
           VIBEMOL_TEST_ARTIFACT_DIR: out/test-artifacts/characterize
@@ -227,7 +231,9 @@ jobs:
           path: ~/.cache/ms-playwright
           key: ${{ runner.os }}-${{ runner.arch }}-playwright-${{ steps.playwright.outputs.version }}-webkit
       - name: Install Playwright WebKit
-        run: python -m playwright install --with-deps webkit
+        run: |
+          bash tools/ci/use-ubuntu-archive.sh
+          python -m playwright install --with-deps webkit
       - name: WebKit Properties interactions
         run: python tests/e2e/properties_disclosures.py --browser webkit
       - name: Upload WebKit evidence
