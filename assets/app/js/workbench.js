@@ -43,6 +43,9 @@
   const oldModeSection = modes.closest('.tb-modes');
   bar.append(modes); oldModeSection?.remove();
   modes.setAttribute('role', 'radiogroup');
+  // A real backing element lets contrast audits resolve the shortcut badges' colors.
+  const modeHighlight = label(modes, '', 'wb-mode-highlight');
+  modeHighlight.setAttribute('aria-hidden', 'true');
   const modeButtons = [...modes.querySelectorAll('.tb-modeBtn')];
   for (const control of modeButtons) {
     control.setAttribute('role', 'radio'); control.removeAttribute('aria-pressed');
