@@ -92,13 +92,18 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   const name=n.type==='FunctionDeclaration'?n.id.name:statementChanges.get(hash(code));
   if(name&&Object.hasOwn(productChanges,name)) {
    const change=productChanges[name];
-   const before=n.type==='FunctionDeclaration'?previousFunctions.get(name):legacy.find(statement=>hash(statement)===change.before);
    assert.deepEqual(Object.keys(change).sort(),['after','before','reason','units']);
    assert(typeof change.reason==='string'&&change.reason.trim(),'Named product change requires its human-approved reason');
-   assert.equal(before?hash(before):null,change.before,name+' original product fingerprint');
    assert.equal(hash(code),change.after,name+' changed product fingerprint');
    assert(!appliedProductChanges.has(name),'Product change must occur once');appliedProductChanges.add(name);
-   preserved.push(before);continue;
+   if(change.before===null) {
+    assert.equal(name,'statement:tutorialConnection','Only the private tutorial startup connection may be added');
+   } else {
+    const before=n.type==='FunctionDeclaration'?previousFunctions.get(name):legacy.find(statement=>hash(statement)===change.before);
+    assert.equal(before?hash(before):null,change.before,name+' original product fingerprint');
+    preserved.push(before);
+   }
+   continue;
   }
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }

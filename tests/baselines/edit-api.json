@@ -895,6 +895,12 @@
       "after": "e1e41c9a0daf889fa6e1d55fbdbafb209e01666a01f0cfda6560b8caa5242134",
       "reason": "Correct the clipboard guard comment now that plain V switches mode instead of opening a panel.",
       "units": []
+    },
+    "statement:tutorialConnection": {
+      "before": null,
+      "after": "f3a4e88e2b6ad70eb1ad8bf29bbbce5aae3108970ebce0d98c91f95237c15e0b",
+      "reason": "Connect the requested interactive tutorial to existing scene, camera, and measurement actions without adding a global API.",
+      "units": []
     }
   }
 }

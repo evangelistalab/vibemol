@@ -127,6 +127,9 @@
     "tests/e2e/measurements.py": {
       "measurement-connection-width": 20,
       "measurement-connection-fog": 4
+    },
+    "tests/e2e/workbench_release.py": {
+      "water-tutorial": 2
     }
   }
 }

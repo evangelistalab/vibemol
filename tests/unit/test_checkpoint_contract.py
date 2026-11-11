@@ -53,6 +53,7 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/calculations.py': {'forte2-case':68, 'calculations-default':1},
             'tests/e2e/ux_review.py': {'avas-hitbox-method':5},
             'tests/e2e/measurements.py': {'measurement-connection-width':20, 'measurement-connection-fog':4},
+            'tests/e2e/workbench_release.py': {'water-tutorial':2},
         })
 
     def test_phase_guards_reject_zero_short_and_extra_counts(self):

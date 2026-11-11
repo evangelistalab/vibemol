@@ -104,7 +104,7 @@ SHIPPED_0100_COMMIT = '44bcb5d534cecba27fd0ccfc60f74324a0920b73'
 VERSION_DELTA_BASE_COMMIT = '4709f1d676f793222ebc7f758692a69824c5541a'
 VERSION_DELTA_BASE_SHA256 = '2b22cd7dd75cf2d64f54cfd7e57370af43ed1327efb1428b27da2e74b721e427'
 VERSION_DELTA_PATHS = (('session', 'appVersion'), ('session', 'preset', 'appVersion'))
-VERSION_DELTA_TAGS = ('v0.10.2', 'v0.10.3')
+VERSION_DELTA_TAGS = ('v0.10.2', 'v0.10.3', 'v0.10.4')
 
 
 def version_delta_declaration(tag):
@@ -112,6 +112,8 @@ def version_delta_declaration(tag):
         'v0.10.2': (VERSION_DELTA_BASE_COMMIT, VERSION_DELTA_BASE_SHA256, '0.10.1', '0.10.2'),
         'v0.10.3': ('bd1186959f7b451edcdf6b9d8d6a0b26b7bf2008',
                     'fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de', '0.10.2', '0.10.3'),
+        'v0.10.4': ('bd1186959f7b451edcdf6b9d8d6a0b26b7bf2008',
+                    'fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de', '0.10.2', '0.10.4'),
     }
     base, digest, before, after = specs[tag]
     return dict(baseCommit=base, baselineGzipSha256=digest, paths=[list(path) for path in VERSION_DELTA_PATHS],
@@ -189,7 +191,8 @@ def require_release_candidate_source(root, source_root, args, report_path):
     assert commit and re.fullmatch(r'[0-9a-f]{40}', commit), 'Full immutable candidate SHA required.'
     specs = {'v0.10.1': ('0.10.1', 'refs/heads/codex/release-0-10-1-ci'),
              'v0.10.2': ('0.10.2', 'refs/heads/codex/pr90-0.10.2-recording'),
-             'v0.10.3': ('0.10.3', 'refs/heads/codex/0.10.3')}
+             'v0.10.3': ('0.10.3', 'refs/heads/codex/0.10.3'),
+             'v0.10.4': ('0.10.4', 'refs/heads/codex/new-user-tutorials')}
     assert args.record_release_tag in specs, args.record_release_tag
     version, ref = specs[args.record_release_tag]
     actual = dict(recordReleaseTag=args.record_release_tag, ci=os.environ.get('GITHUB_ACTIONS'),

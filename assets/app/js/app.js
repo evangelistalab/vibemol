@@ -32735,6 +32735,43 @@
     resize,
   });
 
+  if (workspaceEnabled) document.dispatchEvent(new CustomEvent('vm-tutorial-ready', { detail: {
+    async load(sample, signal) {
+      const response = await fetch(window.VibeMolAssets.url(sample.path), { signal });
+      if (!response.ok) throw new Error(`Sample file returned HTTP ${response.status}`);
+      const text = await response.text();
+      signal.throwIfAborted();
+      const result = await fileLoaderController.handleFiles([new File([text], sample.name)], { newScenes: true });
+      if (!result.ok) throw new Error(result.error || 'Sample import failed');
+      signal.throwIfAborted();
+      setMode(MODES.DISPLAY);
+      fitCameraToScene();
+      return getFocusedScene()?.id;
+    },
+    scene() {
+      const scene = getFocusedScene();
+      const moleculeId = scene?.moleculeLayerId;
+      return { id: scene?.id, moleculeId, selected: sceneGraphController.getState().selectedLayerIds.includes(moleculeId),
+        measuring: currentMode === MODES.MEASURE, viewing: currentMode === MODES.DISPLAY, firstPick: editSel.at(-1) };
+    },
+    hasScene: id => !!sceneGraphController.findScene(id),
+    pose: () => ({ rotation: camera.quaternion.toArray(), target: controls.target.toArray() }),
+    xyz: () => getStructureClipboardText(currentIndex >= 0 ? volumes[currentIndex] : null),
+    measurements: () => measurements.rows(measurementRecord()),
+    projectAtom(index) {
+      const mesh = atomGroup.children[index];
+      if (!mesh?.visible) return null;
+      const point = projectWorldToClient(mesh.getWorldPosition(new THREE.Vector3()));
+      return point?.visible && pickAtom({ clientX: point.x, clientY: point.y })?.userData.index === index ? point : null;
+    },
+    pickAtom(sceneId, index) {
+      if (currentMode === MODES.MEASURE && getFocusedScene()?.id === sceneId && measurementRecord()?.vol.atoms[index]) {
+        addEditSelection(index);
+      }
+    },
+    closeHelp: () => closeHelp({ restoreFocus: false }),
+  } }));
+
   // Only the explicit QA launch exposes private cache values. The live DOM
   // is queried by the harness, independently of these cached references.
   if (launchParams.get('qa') === '1') {

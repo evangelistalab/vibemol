@@ -18,6 +18,7 @@ BASELINE_COMMITS = {
     'v0.10.1': '47b9fa63399fa25bbdc7f37f45d6da8ac2bb3802',  # Actual approved capture source, independent of the later release tag.
     'v0.10.2': '95df457965a29a7bf59a49e9bc58e304e1118193',  # Exact approved capture source; independent of any future release tag.
     'v0.10.3': None,  # Require the exact candidate SHA until the recording is promoted.
+    'v0.10.4': None,
 }
 
 
