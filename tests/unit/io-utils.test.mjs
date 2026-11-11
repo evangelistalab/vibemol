@@ -62,6 +62,14 @@ Br -1.2 0.0 0.0
   );
 });
 
+test('XYZ detection accepts Fortran exponents in files and pasted coordinate rows', () => {
+  const { detectAndNormalizeXyzText } = loadIoUtils().window.VibeMolIOUtils;
+  const row = 'H 9.6D-01 -2.5d+00 1.0E-2';
+  assert.equal(detectAndNormalizeXyzText('1\nTest\n' + row).xyzText, '1\nTest\n' + row + '\n');
+  assert.equal(detectAndNormalizeXyzText(row).xyzText, '1\nPasted XYZ\n' + row + '\n');
+  assert.equal(detectAndNormalizeXyzText('H 9.6D- 0 0'), null);
+});
+
 test('io-utils detects full XYZ text with atomic numbers in column 1', () => {
   const context = loadIoUtils();
   const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`

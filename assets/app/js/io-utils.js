@@ -23,7 +23,7 @@
   function isFiniteCoordinateToken(token) {
     const text = String(token || '').trim();
     if (!text) return false;
-    return Number.isFinite(Number(text));
+    return Number.isFinite(Number(text.replace(/[dD]/g, 'E')));
   }
 
   function isValidXyzCoordinateLine(line) {

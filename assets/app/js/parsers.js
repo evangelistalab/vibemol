@@ -62,7 +62,10 @@ function createNumberTokenizer(lines, startLine) {
   return function nextNumber() {
     while (true) {
       if (partIndex < parts.length) {
-        const n = parseFloat(parts[partIndex++]);
+        const token = parts[partIndex++];
+        // Ordinary voxel values need no exponent normalization.
+        let n = +token;
+        if (Number.isNaN(n)) n = parseLooseNumber(token);
         if (Number.isFinite(n)) return n;
         continue;
       }
@@ -132,6 +135,11 @@ function createCubeDataTokenizer(lines, dataStartLine, natomsRaw, isORCA) {
   return createNumberTokenizer(lines, dataStartLine);
 }
 
+function parseCubeIsoHint(comment) {
+  const match = comment.match(/\(([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eEdD][+-]?\d+)?)\)/);
+  return match ? parseLooseNumber(match[1]) : null;
+}
+
 /**
  * Parse a Gaussian `.cube/.cub` file into the internal volume shape.
  * Handles an ORCA-specific extra header line when present.
@@ -160,12 +168,7 @@ function parseCube(text) {
   const title = lines[0];
   const comment = lines[1];
 
-  // Generic "(x,y)" capture anywhere on the 2nd line (your regex)
-  let isoHint = null;
-  {
-    const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
-    if (m) isoHint = parseFloat(m[1]); // take the first number as suggested level
-  }
+  const isoHint = parseCubeIsoHint(comment);
 
   // natoms / origin line
   const L3raw = (lines[2] || '').trim();
@@ -178,15 +181,15 @@ function parseCube(text) {
   }
   const natoms = natomsRaw | 0;
   const atomCount = Math.abs(natoms);
-  const origin = [Number(L3[1]), Number(L3[2]), Number(L3[3])];
+  const origin = L3.slice(1, 4).map(parseLooseNumber);
   if (!origin.every(Number.isFinite)) {
     throw new Error('Malformed CUBE header at line 3 (invalid origin coordinates).');
   }
 
   // grid counts + per-voxel step vectors (Bohr)
-  const sx = ((lines[3] || '').trim()).split(/\s+/).map(Number); // [numx, ax, ay, az]
-  const sy = ((lines[4] || '').trim()).split(/\s+/).map(Number); // [numy, bx, by, bz]
-  const sz = ((lines[5] || '').trim()).split(/\s+/).map(Number); // [numz, cx, cy, cz]
+  const sx = ((lines[3] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numx, ax, ay, az]
+  const sy = ((lines[4] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numy, bx, by, bz]
+  const sz = ((lines[5] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numz, cx, cy, cz]
   if (sx.length < 4 || sy.length < 4 || sz.length < 4) {
     throw new Error('Malformed CUBE grid header at lines 4-6 (expected nx/ny/nz and axis vectors).');
   }
@@ -207,7 +210,7 @@ function parseCube(text) {
     const lineNo = 7 + i;
     const raw = (lines[6 + i] || '').trim();
     if (!raw) throw new Error(`Malformed CUBE atom line ${lineNo} (missing atom record).`);
-    const p = raw.split(/\s+/).slice(0, 5).map(Number);
+    const p = raw.split(/\s+/).slice(0, 5).map(parseLooseNumber);
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
@@ -273,11 +276,7 @@ function parseTwoComponentCube(text) {
   if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
   const title = lines[0];
   const comment = lines[1] || '';
-  let isoHint = null;
-  try {
-    const m = comment.match(/\(([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*,\s*([-+]?\d*\.?\d+(?:[eE][+-]?\d+)?)\)/);
-    if (m) isoHint = parseFloat(m[1]);
-  } catch { }
+  const isoHint = parseCubeIsoHint(comment);
   const L3raw = (lines[2] || '').trim();
   if (!L3raw) throw new Error('Malformed 2C CUBE header at line 3 (missing atom count and origin).');
   const L3 = L3raw.split(/\s+/);
@@ -288,13 +287,13 @@ function parseTwoComponentCube(text) {
   }
   const natoms = natomsRaw | 0;
   const atomCount = Math.abs(natoms);
-  const origin = [Number(L3[1]), Number(L3[2]), Number(L3[3])];
+  const origin = L3.slice(1, 4).map(parseLooseNumber);
   if (!origin.every(Number.isFinite)) {
     throw new Error('Malformed 2C CUBE header at line 3 (invalid origin coordinates).');
   }
-  const sx = ((lines[3] || '').trim()).split(/\s+/).map(Number);
-  const sy = ((lines[4] || '').trim()).split(/\s+/).map(Number);
-  const sz = ((lines[5] || '').trim()).split(/\s+/).map(Number);
+  const sx = ((lines[3] || '').trim()).split(/\s+/).map(parseLooseNumber);
+  const sy = ((lines[4] || '').trim()).split(/\s+/).map(parseLooseNumber);
+  const sz = ((lines[5] || '').trim()).split(/\s+/).map(parseLooseNumber);
   if (sx.length < 4 || sy.length < 4 || sz.length < 4) {
     throw new Error('Malformed 2C CUBE grid header at lines 4-6 (expected nx/ny/nz and axis vectors).');
   }
@@ -313,7 +312,7 @@ function parseTwoComponentCube(text) {
     const lineNo = 7 + i;
     const raw = (lines[6 + i] || '').trim();
     if (!raw) throw new Error(`Malformed 2C CUBE atom line ${lineNo} (missing atom record).`);
-    const p = raw.split(/\s+/).slice(0, 5).map(Number);
+    const p = raw.split(/\s+/).slice(0, 5).map(parseLooseNumber);
     if (p.length < 5 || !p.every(Number.isFinite)) {
       throw new Error(`Malformed 2C CUBE atom line ${lineNo} (expected: Z q x y z).`);
     }
@@ -443,9 +442,9 @@ function parseXYZ(text) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
       }
       const Z = requireParsedAtomicNumber(window.ATOM_SYMBOL_TO_Z[symbolKey], `Malformed XYZ atom line ${lineNo}`);
-      const x = parseFloat(parts[1]);
-      const y = parseFloat(parts[2]);
-      const z = parseFloat(parts[3]);
+      const x = parseLooseNumber(parts[1]);
+      const y = parseLooseNumber(parts[2]);
+      const z = parseLooseNumber(parts[3]);
       if (!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: coordinates must be numeric.`);
       }
