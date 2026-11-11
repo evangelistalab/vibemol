@@ -7,8 +7,12 @@
     getCovalentRadiusAngstrom,
     isAutoBondSupportedAtomicNumber,
     countsTowardAtomValence,
+    buildBondAdjacency,
+    findSimpleCyclesOfSize,
+    getUndirectedPairKey,
   } = global.VibeMolBondInference || {};
-  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber, countsTowardAtomValence].every((fn) => typeof fn === 'function')) {
+  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber, countsTowardAtomValence,
+    buildBondAdjacency, findSimpleCyclesOfSize, getUndirectedPairKey].every((fn) => typeof fn === 'function')) {
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/auto-hydrogen.js.');
   }
 
@@ -409,6 +413,118 @@
     return Math.max(1, Math.min(4, Math.round(n)));
   }
 
+  function isPlanarRing(cycle, atoms) {
+    const points = cycle.map(i => vec3(atoms[i].x, atoms[i].y, atoms[i].z));
+    const origin = points[0];
+    const offsets = points.map(point => vecSub(point, origin));
+    const area = offsets.reduce((sum, offset, i) => vecAdd(sum,
+      vecCross(offset, offsets[(i + 1) % offsets.length])), [0, 0, 0]);
+    if (vecLengthSq(area) < EPSILON) return false;
+    const normal = vecNormalize(area);
+    return offsets.every(offset => Math.abs(vecDot(normal, offset)) <= 0.12);
+  }
+
+  function isConjugatedRingSite(atom, env) {
+    if (!atom || Number(atom.formalCharge) || env.maxBondOrder > 2 || env.neighborCount < 2) return false;
+    const z = atom.Z | 0;
+    if (z === 6 && env.neighborCount === 3) {
+      const [a, b, c] = env.occupiedDirs;
+      return Math.abs(vecDot(vecCross(a, b), c)) <= 0.18;
+    }
+    if (z === 6 || z === 7) return env.neighborCount <= 3;
+    return (z === 8 || z === 16) && env.neighborCount === 2;
+  }
+
+  function findPiPartner(start, adjacency, partners) {
+    const previous = new Map([[start, null]]);
+    const search = [start];
+    for (const index of search) {
+      for (const neighbor of adjacency[index]) {
+        if (previous.has(neighbor)) continue;
+        previous.set(neighbor, index);
+        if (partners.has(neighbor)) {
+          const paired = partners.get(neighbor);
+          previous.set(paired, neighbor);
+          search.push(paired);
+          continue;
+        }
+        // Follow the alternating path back to the unpaired starting site.
+        for (let end = neighbor; end !== null;) {
+          const from = previous.get(end);
+          partners.set(end, from);
+          end = previous.get(from);
+        }
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /** Fill missing pi valences only where a complete alternating assignment exists. */
+  function completePerceivedRingValences(atoms, envs, bonds) {
+    if (!bonds.some(bond => bond.order === 2)) return;
+    const byPair = new Map(bonds.map(bond => [getUndirectedPairKey(bond.i, bond.j), bond]));
+    const adjacency = buildBondAdjacency(bonds, atoms.length);
+    const ringBonds = new Set();
+    const lonePairSites = new Set();
+    for (const size of [5, 6]) {
+      for (const cycle of findSimpleCyclesOfSize(adjacency, size)) {
+        const edges = cycle.map((index, i) => byPair.get(getUndirectedPairKey(index, cycle[(i + 1) % size])));
+        if (!edges.some(edge => edge.order === 2) || !isPlanarRing(cycle, atoms)) continue;
+        for (const edge of edges) ringBonds.add(edge);
+        if (size === 5 && !cycle.some(i => [8, 16].includes(atoms[i].Z | 0) ||
+          ((atoms[i].Z | 0) === 7 && envs[i].neighborCount === 3))) {
+          // Deleting N–H from a pyrrole-like ring leaves its N with two single bonds.
+          const possibleDonors = cycle.filter(i => (atoms[i].Z | 0) === 7 && envs[i].maxBondOrder === 1);
+          if (possibleDonors.length === 1) lonePairSites.add(possibleDonors[0]);
+        }
+      }
+    }
+
+    const ringDoubleSites = new Set();
+    for (const { i, j, order } of ringBonds) {
+      if (order === 2) { ringDoubleSites.add(i); ringDoubleSites.add(j); }
+    }
+    const piSites = atoms.map((atom, i) => {
+      const { maxBondOrder, bondOrderSum, neighborCount } = envs[i];
+      const z = atom?.Z | 0;
+      // Ring O/S and three-coordinate N can contribute a lone pair without needing a double bond.
+      return (z === 6 || (z === 7 && neighborCount === 2 && !lonePairSites.has(i))) && bondOrderSum - neighborCount <= 1
+        && (maxBondOrder === 1 || ringDoubleSites.has(i));
+    });
+    const piBonds = [...ringBonds].filter(({ i, j }) => piSites[i] && piSites[j]);
+    const piAdjacency = buildBondAdjacency(piBonds, atoms.length);
+    const sides = new Map();
+    for (let start = 0; start < atoms.length; start++) {
+      if (!piAdjacency[start].length || sides.has(start)) continue;
+      const component = [start];
+      sides.set(start, 0);
+      let alternating = true;
+      for (const index of component) {
+        const side = sides.get(index);
+        for (const neighbor of piAdjacency[index]) {
+          if (!sides.has(neighbor)) {
+            sides.set(neighbor, 1 - side);
+            component.push(neighbor);
+          } else if (sides.get(neighbor) === side) {
+            alternating = false;
+          }
+        }
+      }
+      const openSites = component.filter(index => envs[index].maxBondOrder === 1);
+      if (!alternating || !openSites.length || component.length % 2 !== 0) continue;
+      const partners = new Map();
+      const left = component.filter(index => sides.get(index) === 0);
+      if (left.length * 2 !== component.length || !left.every(index => findPiPartner(index, piAdjacency, partners))) continue;
+
+      // Use the completed valence for hydrogen planning without writing inferred bond orders to the molecule.
+      for (const index of openSites) {
+        envs[index].bondOrderSum += 1;
+        envs[index].maxBondOrder = 2;
+      }
+    }
+  }
+
   function buildAtomEnvironments(structure) {
     const atoms = Array.isArray(structure && structure.atoms) ? structure.atoms : [];
     const bonds = Array.isArray(structure && structure.bonds) ? structure.bonds : [];
@@ -423,6 +539,7 @@
       neighborIndices: [],
       occupiedDirs: [],
     }));
+    const perceivedRingCandidates = [];
     for (const rawBond of bonds) {
       if (!rawBond || typeof rawBond !== 'object') continue;
       const i = resolveBondIndex(structure, rawBond.a, atomIds);
@@ -450,11 +567,18 @@
         envJ.neighborIndices.push(i);
         envJ.occupiedDirs.push(vecNormalize(deltaJI));
       }
+      if (rawBond.origin === 'perceived' && rawBond.kind !== 'blocked' && (rawBond.style || 'covalent') === 'covalent'
+        && order <= 2 && (atomI.Z | 0) !== AUTO_HYDROGEN_Z && (atomJ.Z | 0) !== AUTO_HYDROGEN_Z) {
+        const distance = vecLength(deltaIJ);
+        if (distance >= 1.25 && distance <= 1.50) perceivedRingCandidates.push({ i, j, order });
+      }
     }
     envs.forEach((env) => {
       env.neighborCount = env.neighborIndices.length;
       if (!(env.maxBondOrder > 0)) env.maxBondOrder = env.neighborCount > 0 ? 1 : 0;
     });
+    completePerceivedRingValences(atoms, envs, perceivedRingCandidates.filter(({ i, j }) =>
+      isConjugatedRingSite(atoms[i], envs[i]) && isConjugatedRingSite(atoms[j], envs[j])));
     return envs;
   }
 
