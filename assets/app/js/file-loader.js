@@ -43,7 +43,8 @@
       }
       if (kind === 'molden') return deps.parseMolden(text);
       if (kind === 'two_component_cube') return deps.parseTwoComponentCube(text);
-      return deps.parseCube(text);
+      if (kind === 'cube') return deps.parseCube(text);
+      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, or a VibeMol session file.');
     }
 
     async function resolveXyzUnits(item) {

@@ -266,7 +266,7 @@ function parseXYZ(text) {
   const frames = [];
   const frameComments = [];
   let natoms = null;
-  let atomSymbols = null;
+  const atomNumbers = [];
   let firstFrameAtoms = null;
 
   while (cursor < lines.length) {
@@ -304,15 +304,18 @@ function parseXYZ(text) {
       if (!l) throw new Error(`Malformed XYZ file at line ${lineNo}: missing atom record.`);
       const parts = l.split(/\s+/);
       if (parts.length < 4) {
-        throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Symbol X Y Z".`);
+        throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Element X Y Z".`);
       }
       const sym = parts[0];
-      const symbolKey = sym.toUpperCase();
-      const hasSymbol = !!(window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, symbolKey));
-      if (!hasSymbol) {
+      const label = sym.toUpperCase().replace(/^([A-Z]+)\d+$/, '$1');
+      const key = label === 'D' || label === 'T' ? 'H' : label;
+      const table = window.ATOM_SYMBOL_TO_Z || {};
+      const number = Number(sym);
+      const atomicNumber = !Number.isNaN(number) ? number : (Object.hasOwn(table, key) ? table[key] : null);
+      if (atomicNumber === null) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
       }
-      const Z = requireParsedAtomicNumber(window.ATOM_SYMBOL_TO_Z[symbolKey], `Malformed XYZ atom line ${lineNo}`);
+      const Z = requireParsedAtomicNumber(atomicNumber, `Malformed XYZ atom line ${lineNo}`);
       const x = parseLooseNumber(parts[1]);
       const y = parseLooseNumber(parts[2]);
       const z = parseLooseNumber(parts[3]);
@@ -320,9 +323,8 @@ function parseXYZ(text) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: coordinates must be numeric.`);
       }
 
-      if (!atomSymbols) atomSymbols = [];
-      if (atomSymbols.length <= i) atomSymbols.push(symbolKey);
-      else if (atomSymbols[i] !== symbolKey) {
+      if (atomNumbers.length <= i) atomNumbers.push(Z);
+      else if (atomNumbers[i] !== Z) {
         throw new Error(`Malformed XYZ trajectory at line ${lineNo}: element sequence differs from first frame.`);
       }
 

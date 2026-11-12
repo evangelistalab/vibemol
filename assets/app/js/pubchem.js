@@ -250,7 +250,7 @@
      * When `require3D` is set, returns the first CID with a 3D conformer.
      * @param {string} name
      * @param {{require3D?:boolean}=} options
-     * @returns {Promise<number>}
+     * @returns {Promise<number|null>}
      */
     async function fetchPubChemCidByName(name, options = {}) {
       const require3D = !!options.require3D;
@@ -259,7 +259,7 @@
       const url = `https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(q)}/cids/JSON`;
       const data = await fetchPubChemJson(url, 'PubChem CID lookup', { allow404: true, retryBusy: true });
       const cids = extractPubChemCidList(data);
-      if (cids.length === 0) throw new Error(`No PubChem compound found for "${q}".`);
+      if (cids.length === 0) return null;
       if (!require3D) return cids[0];
 
       let lookupError;
@@ -426,6 +426,11 @@
       try {
         setHintMessage(`PubChem: searching "${query}"...`);
         const cid = await fetchPubChemCidByName(query, { require3D: true });
+        if (cid === null) {
+          setHintMessage('');
+          showPubChemNotice(`No PubChem match for “${query}”. Check the spelling or try another name.`);
+          return;
+        }
         const sdfText = await fetchPubChemSdfByCid(cid, { require3D: true });
         let pubchemMeta = null;
         try {

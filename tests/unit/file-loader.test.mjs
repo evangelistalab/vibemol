@@ -88,6 +88,21 @@ test('file loader routes volume parsing by detected kind', () => {
   assert.equal(controller.parseVolumeByName('sample.cube', 'x').kind, 'cube');
 });
 
+test('unsupported uploads report the format and keep the working scene', async () => {
+  const existing = { name: 'open.xyz', vol: { atoms: [] } };
+  const { controller, events, getVolumes } = createController({
+    volumes: [existing], detectInputFileKind: () => 'unknown',
+    parseCube: () => assert.fail('Unsupported files must not reach the cube parser'),
+  });
+  const result = await controller.handleFiles(['sample.pdb', 'sample.mol', 'notes.txt', 'README']
+    .map(name => new File(['Unknown format'], name)), { clearFirst: true });
+  assert.equal(result.ok, false);
+  assert.equal(result.failures.length, 4);
+  for (const failure of result.failures) assert.match(failure, /Unsupported file format.*Use XYZ, Cube/);
+  assert.strictEqual(getVolumes()[0], existing);
+  assert.equal(events.filter(([type]) => type === 'alertUser').length, 1);
+});
+
 test('file loader wraps coordinates-only xyz files before parsing', () => {
   const { controller } = createController({
     detectInputFileKind: (name) => name.endsWith('.xyz') ? 'xyz' : 'cube',

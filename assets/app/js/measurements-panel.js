@@ -40,7 +40,9 @@
     function sync() {
       if (!isOpen()) return;
       const record = deps.getRecord(), settings = model.state(record), rows = model.rows(record);
-      panel.querySelector('[data-active]').textContent = record ? `Active: ${record.name} · ${rows.length} measurements` : 'No active structure';
+      panel.querySelector('[data-active]').textContent = record
+        ? `Active: ${record.name} · ${rows.length} measurement${rows.length === 1 ? '' : 's'}`
+        : 'No active structure';
       action('units').textContent = settings.units === 'bohr' ? 'Bohr' : 'Å';
       action('units').setAttribute('aria-label', settings.units === 'bohr' ? 'Measurements in bohr; switch to angstroms' : 'Measurements in angstroms; switch to bohr');
       panel.querySelector('select').value = settings.decimals;

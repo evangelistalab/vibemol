@@ -30931,12 +30931,16 @@
    * @param {string} prefix
    */
   function setNavigationHint(prefix) {
-    const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
+    const navigation = window.matchMedia('(pointer: coarse)').matches
+      ? 'Orbit: one-finger drag • Zoom: pinch • Pan: two-finger drag'
+      : HINT_NAVIGATION;
+    const parts = [String(prefix || '').trim(), navigation];
     setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
   }
 
   if (hintEl) {
-    revealHintTemporarily();
+    if (lastHintMessage) revealHintTemporarily();
+    else setNavigationHint(HINT_START);
     window.addEventListener('mousemove', handleHintRevealPointerMove, { passive: true });
   }
 
@@ -32501,7 +32505,7 @@
     onOpened: staged => {
       if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
-      if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
+      if (sessionRecovery) { void sessionRecovery.startFresh({ remember: false }); sessionRecovery.markDirty(); }
       setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
     },
   });
@@ -32572,7 +32576,10 @@
     recoverSessionBtn.disabled = true;
     try { await sessionRecovery.recover(); } finally { recoverSessionBtn.disabled = false; }
   };
-  skipRecoveryBtn.onclick = () => sessionRecovery.startFresh();
+  skipRecoveryBtn.onclick = async () => {
+    skipRecoveryBtn.disabled = true;
+    try { await sessionRecovery.startFresh(); } finally { skipRecoveryBtn.disabled = false; }
+  };
   retryAutosaveBtn.onclick = async () => {
     if (!sessionRecovery.getState().ready) await sessionRecovery.initialize();
     else await sessionRecovery.flush({force:true});

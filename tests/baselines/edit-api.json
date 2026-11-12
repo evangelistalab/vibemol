@@ -976,6 +976,40 @@
       "after": "639818a3c0678a46f830b0e9e16da28b21d2da59cd5b2d3ef05251ac3f261671",
       "reason": "Display the explicit recentering chord on the existing Edit action.",
       "units": []
+    },
+    "setNavigationHint": {
+      "before": "0703f2405cd8c0ee623346adfb240324ccea7099369910df659e4fccfcea17fc",
+      "after": "8b8f6aee9c269fbceb47d4b98418e50d759ddaff54250153802ccc88e3536e8f",
+      "reason": "Describe pinch, one-finger orbit and two-finger pan on touch-first devices.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setNavigationHint",
+          "count": 2,
+          "inputs": [
+            "HINT_NAVIGATION",
+            "setHintMessage"
+          ]
+        }
+      ]
+    },
+    "statement:sessionOpenRecovery": {
+      "before": "4e33899056d3665329ddc920d8149f92ddac65f32f5edd45ac430f61f7bc55f5",
+      "after": "fa409197de24aa8d828269fa047774790ea30f0d419258e0cb151aeef7093617",
+      "reason": "Reserve durable snapshot decline for an explicit Start fresh choice.",
+      "units": []
+    },
+    "statement:declineRecovery": {
+      "before": "c097c58990662dc21f9917f2f28f73b2431206478623f1d5229941ce955787d3",
+      "after": "156dcf975fc0f9c57d6524a9bd09a6811599271d9e288c08387ce8358585ed70",
+      "reason": "Wait for the Start fresh decision to persist before dismissing the prompt.",
+      "units": []
+    },
+    "statement:initialNavigationHint": {
+      "before": "ee838a70e186611a3ccd43de7b168ac705e66288ce1320f6ebf4a1f3c4f7a8b0",
+      "after": "48815b46de4c627a9c76526f7ef1d5567f96cbb42cf7cde091040ba87cf4a6f4",
+      "reason": "Populate the device-appropriate navigation hint before the first file load while preserving startup notices.",
+      "units": []
     }
   }
 }

@@ -31,6 +31,16 @@ test('parseXYZ handles a minimal XYZ structure', () => {
   assert.equal(vol.atoms[1].Z, 8);
 });
 
+test('XYZ uses atomic identity across numbered labels, atomic numbers and H isotope aliases', () => {
+  const { parseXYZ } = loadParsers();
+  const xyz = '4\nFirst\nC1 0 0 0\n8 1 0 0\nD 0 1 0\nT 0 0 1\n4\nSecond\n6 0 0 0\nO2 1 0 0\nH 0 1 0\n1 0 0 1\n';
+  const vol = parseXYZ(xyz);
+  assert.deepEqual(Array.from(vol.atoms, ({ Z }) => Z), [6, 8, 1, 1]);
+  assert.equal(vol.trajectory.frames.length, 2);
+  assert.throws(() => parseXYZ('1\nBad identity\n101 0 0 0'), /unsupported atomic number 101/);
+  assert.throws(() => parseXYZ('1\nBad label\nQq2 0 0 0'), /unknown element symbol/);
+});
+
 test('XYZ reads Fortran exponents in the initial structure and trajectory frames', () => {
   const { parseXYZ } = loadParsers();
   const xyz = '1\nFirst frame\nH 9.6D-01 -2.5d+00 1.0E-2\n1\nSecond frame\nH -3d-1 2D+1 4e-1\n';

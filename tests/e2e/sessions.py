@@ -174,6 +174,40 @@ def mobile_pending_recovery(page, dialogs):
     assert not dialogs, dialogs
 
 
+def declined_recovery(page, dialogs):
+    page.wait_for_function('() => VibeMolRecovery.getState().ready')
+    assert load(page, [{'name':'declined.xyz', 'text':'1\nOriginal\nH 0 0 0\n'}])['ok']
+    assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
+    read_store = '() => VibeMolSessionRecovery.createRecoveryStore().read()'
+    original = page.evaluate(read_store)['latest']
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolRecovery?.getState().pending')
+    page.locator('#skipRecoveryBtn').click()
+    page.wait_for_function('() => !VibeMolRecovery.getState().pending')
+    # Clear the temporary work before the debounce can produce a newer snapshot.
+    result = page.evaluate('''async files => {
+      const loaded = await VibeMolEmbed.loadFiles(files, {clearFirst:true});
+      if (loaded.ok) document.getElementById('clearBtn').click();
+      return {loaded: loaded.ok, scenes: VibeMolTesting.getSceneGraphSnapshot().scenes.length};
+    }''', [{'name':'temporary.xyz', 'text':'1\nTemporary\nN 0 0 0\n'}])
+    cleared = {'loaded':True, 'scenes':0}
+    print(f'[declined-recovery-clear] actual={result}, expected={cleared}', flush=True)
+    assert result == cleared, (result, cleared)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolRecovery?.getState().ready')
+    saved = page.evaluate(read_store)
+    actual = (saved['latest'] == original, saved['declinedId'], page.locator('#sessionRecoveryPrompt').is_visible())
+    expected = (True, original['id'], False)
+    print(f'[declined-recovery] actual={actual}, expected={expected}', flush=True)
+    assert actual == expected, (actual, expected)
+    assert load(page, [{'name':'later.xyz', 'text':'1\nLater\nC 0 0 0\n'}])['ok']
+    assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolRecovery?.getState().pending')
+    assert 'later.xyz' in page.locator('#sessionRecoveryMessage').inner_text()
+    assert not dialogs, dialogs
+
+
 def scoped_shortcuts(page, dialogs):
     offset_cube = cube(0).replace('1 1 0 0 0', '6 6 3 4 5', 1)
     assert load(page, [{'name':'offset.cube','text':offset_cube}])['ok']
@@ -408,7 +442,7 @@ def main():
         browser = playwright.chromium.launch(headless=True)
         try:
             for run in (portable_round_trip, failed_imports, multi_dataset_cubes, arithmetic_and_lazy_orbitals,
-                        vibration_and_topology, recovery_and_quota, mobile_pending_recovery, spinor_and_download,
+                        vibration_and_topology, recovery_and_quota, mobile_pending_recovery, declined_recovery, spinor_and_download,
                         retained_source, autosave_and_tab_conflict, scoped_shortcuts):
                 context = browser.new_context(viewport={'width':1440,'height':1000})
                 page = context.new_page()

@@ -26,7 +26,7 @@
   </script>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>VibeMol — CUBE Isosurface Viewer</title>
+  <title>VibeMol — Molecular Viewer and Editor</title>
   <link rel="icon" type="image/svg+xml" href="assets/app/img/favicon-tetra.svg?v=0.10.6" />
   <script>
     (function () {
@@ -2336,7 +2336,7 @@
           data-tooltip="Measurement mode: select atoms and measure distances/angles. Shortcut: M">Measure <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">M</kbd></button>
         <button id="modeEditBtn" class="secondary tb-modeBtn" type="button" aria-label="Edit mode" aria-keyshortcuts="E"
           data-tooltip="Edit mode: move/add/delete atoms. Shortcut: E">Edit <kbd class="vm-key-pill tb-mode-shortcut" aria-hidden="true">E</kbd></button>
-        <button id="modeCalculationsBtn" class="secondary tb-modeBtn" type="button" aria-label="Calculations mode" data-tooltip="Choose atomic functions and prepare a forte2 AVAS input" hidden>Calculations</button>
+        <button id="modeCalculationsBtn" class="secondary tb-modeBtn" type="button" aria-label="Calculations mode" data-tooltip="Choose atomic functions and prepare a forte2 AVAS input" hidden><span class="tb-mode-full-label">Calculations</span><span class="tb-mode-short-label" aria-hidden="true">Calc</span></button>
       </div>
     </div>
 
@@ -3165,7 +3165,7 @@
       </details>
     </div>
   </div>
-  <div id="hint" class="is-visible" aria-hidden="false">Orbit: mouse drag • Zoom: wheel • Pan: right-drag</div>
+  <div id="hint" class="is-visible" aria-hidden="false">Drag to orbit the scene</div>
   <!-- Phase wheel legend (shown in phase-hue modes) -->
   <div id="phaseWheel" aria-hidden="true"
     style="position:fixed; right:12px; bottom:calc(var(--status-ribbon-height) + 34px); width:96px; height:120px; z-index:31; pointer-events:none; display:none;">

@@ -562,6 +562,7 @@
       const target = getOutlinerRowTarget(options);
       const renaming = isOutlinerTargetBeingRenamed(target);
       const inheritedHidden = !!(options.visible && options.effectiveVisible === false);
+      const cubeLike = options.layer && isCubeLikeLayer(options.layer);
       const row = document.createElement('div');
       row.className = 'vm-outliner-row';
       row.dataset.id = options.id || '';
@@ -575,10 +576,12 @@
       row.classList.toggle('is-hidden', !options.effectiveVisible);
       row.classList.toggle('is-hidden-inherited', inheritedHidden);
       row.classList.toggle('is-group', !!options.expandable);
+      row.classList.toggle('is-cube-layer', !!cubeLike);
       row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
       row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
-      if (!renaming && options.layer && isCubeLikeLayer(options.layer)) {
+      if (!renaming && cubeLike) {
         row.draggable = true;
+        row.setAttribute('data-tooltip', [options.layer.labelId, options.label || 'Untitled'].filter(Boolean).join(' — '));
         row.setAttribute('aria-grabbed', 'false');
         row.addEventListener('dragstart', (event) => handleOutlinerDragStart(target, row, event));
         row.addEventListener('dragend', handleOutlinerDragEnd);
@@ -648,7 +651,7 @@
 
       const label = document.createElement('span');
       label.className = 'vm-outliner-row__label';
-      if (options.layer && isCubeLikeLayer(options.layer)) {
+      if (cubeLike) {
         const prefix = document.createElement('span');
         prefix.className = 'vm-outliner-row__prefix';
         prefix.textContent = options.layer.labelId || '';
@@ -685,7 +688,10 @@
         });
         label.appendChild(input);
       } else {
-        label.appendChild(document.createTextNode(options.label || 'Untitled'));
+        const name = document.createElement('span');
+        name.className = 'vm-outliner-row__name';
+        name.textContent = options.label || 'Untitled';
+        label.appendChild(name);
         if (isOutlinerTargetRenameable(target)) {
           label.addEventListener('dblclick', (event) => {
             if (event.target && event.target.closest && event.target.closest('.vm-outliner-row__prefix')) return;

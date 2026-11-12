@@ -44,6 +44,7 @@
   padding: 0;
   min-width: 0;
   overflow-x: hidden;
+  container-type: inline-size;
 }
 
 #toolbar .vm-outliner__empty {
@@ -224,6 +225,10 @@
   font-weight: var(--vm-type-data-emphasis-weight);
 }
 
+#toolbar .is-cube-layer .vm-outliner-row__label { display: flex; align-items: center; }
+#toolbar .is-cube-layer .vm-outliner-row__prefix { flex: none; }
+#toolbar .vm-outliner-row__name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+
 #toolbar .vm-outliner-row__meta {
   min-width: 0;
   max-width: 72px;
@@ -236,6 +241,17 @@
   font-weight: var(--vm-type-helper-weight);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+@container (max-width: 245px) {
+  #toolbar .vm-outliner-row.is-cube-layer {
+    grid-template-columns: 28px 16px minmax(0, 1fr);
+    row-gap: 1px;
+  }
+  #toolbar .is-cube-layer .vm-outliner-row__twisty.is-leaf { display: none; }
+  #toolbar .is-cube-layer .vm-outliner-row__eye,
+  #toolbar .is-cube-layer .vm-outliner-row__icon { grid-row: 1 / span 2; }
+  #toolbar .is-cube-layer .vm-outliner-row__meta { grid-column: 3; max-width: none; }
 }
 
 .vm-outliner-drop-indicator {

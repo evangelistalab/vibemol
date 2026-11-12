@@ -64,7 +64,8 @@ test('PubChem reports repeated 503s inline and preserves the current workspace',
 
 test('PubChem distinguishes no match from a busy service and honors a longer wait', async () => {
   for (const [response, message] of [
-    [new Response(null, { status: 404 }), 'PubChem import failed: No PubChem compound found for "benzene".'],
+    [new Response(null, { status: 404 }), 'No PubChem match for “benzene”. Check the spelling or try another name.'],
+    [json({ IdentifierList: { CID: [] } }), 'No PubChem match for “benzene”. Check the spelling or try another name.'],
     [busy('60'), 'PubChem is temporarily busy. Try the search again in a moment.'],
   ]) {
     const { requests, notices, imported, button } = setup([response]);

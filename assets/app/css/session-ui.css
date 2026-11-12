@@ -24,7 +24,7 @@
 #sessionRecoveryPrompt {
   position: fixed;
   z-index: 1000;
-  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  top: calc(env(safe-area-inset-top, 0px) + max(64px, var(--wb-top, 56px) + 8px));
   inset-inline: 12px;
   width: min(420px, calc(100% - 24px));
   box-sizing: border-box;

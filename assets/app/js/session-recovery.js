@@ -27,7 +27,10 @@
         const store = tx.objectStore('snapshots');
         const latest = store.get('latest');
         const previous = store.get('previous');
-        tx.oncomplete = () => resolve({ latest: latest.result || null, previous: previous.result || null });
+        const declined = store.get('declinedId');
+        tx.oncomplete = () => resolve({
+          latest: latest.result || null, previous: previous.result || null, declinedId: declined.result || null,
+        });
         tx.onabort = tx.onerror = () => reject(tx.error || new Error('Could not read recovery data.'));
       });
     }
@@ -55,7 +58,26 @@
         tx.onabort = tx.onerror = () => reject(error || tx.error || new Error('Could not save recovery data.'));
       });
     }
-    return Object.freeze({ read, write });
+    async function decline(id) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('snapshots', 'readwrite');
+        const store = tx.objectStore('snapshots');
+        const latest = store.get('latest');
+        const previous = store.get('previous');
+        const declined = store.get('declinedId');
+        declined.onsuccess = () => {
+          // Autosave may have rotated the offered snapshot while the prompt was open.
+          const latestId = latest.result?.id;
+          if (latestId === id || (previous.result?.id === id && declined.result !== latestId)) {
+            store.put(id, 'declinedId');
+          }
+        };
+        tx.oncomplete = () => resolve();
+        tx.onabort = tx.onerror = () => reject(tx.error || new Error('Could not remember the recovery decision.'));
+      });
+    }
+    return Object.freeze({ read, write, decline });
   }
 
   // One serialized writer and two bounded snapshots on disk. An unanswered
@@ -68,6 +90,7 @@
     const now = deps.now || Date.now;
     let ready = false;
     let pending = false;
+    let dismissing = false;
     let recovering = false;
     let stopped = false;
     let failed = false;
@@ -138,7 +161,8 @@
         const saved = await store.read();
         if (stopped) return;
         expectedId = saved.latest && saved.latest.id || null;
-        candidates = [saved.latest, saved.previous].filter(Boolean);
+        candidates = saved.declinedId && expectedId === saved.declinedId ? []
+          : [saved.latest, saved.previous].filter(snapshot => snapshot && snapshot.id !== saved.declinedId);
         pending = candidates.length > 0;
         ready = true;
         if (pending) {
@@ -153,17 +177,27 @@
         status('error', `Autosave unavailable: ${error.message} Use Save session to download your work.`);
       }
     }
-    function startFresh() {
-      if (recovering) return;
+    async function startFresh({ remember = true } = {}) {
+      if (recovering || dismissing) return false;
+      if (pending && remember) {
+        dismissing = true;
+        try {
+          await store.decline(candidates[0].id);
+        } catch (error) {
+          status('error', `Could not dismiss recovery: ${error.message}`);
+          return false;
+        } finally { dismissing = false; }
+      }
       pending = false;
       candidates = [];
       failed = false;
       if (deps.onRecovery) deps.onRecovery([]);
       status('idle', 'Autosave ready');
       schedule();
+      return true;
     }
     async function recover() {
-      if (stopped || recovering || !pending) return false;
+      if (stopped || recovering || dismissing || !pending) return false;
       recovering = true;
       clearTimer();
       let lastError;
