@@ -908,8 +908,8 @@
     },
     "fitCameraToScene": {
       "before": "f3251df5119af77ff1711782703c14385bc74c1869617556a1ab3d37882aa777",
-      "after": "51572007ad6b277b15a0cae5e2c3e3e3ab2ec30f84e7d5c35666bf16c7545860",
-      "reason": "Record a camera default only when visible geometry was successfully fitted.",
+      "after": "a92f9b1b8bd3968262391cbc03ff922bf62a7aa79276ac750e67ce6a3c57fe14",
+      "reason": "Reserve enough framing space for an initial atom and its Build halo.",
       "units": [
         {
           "file": "app.js",
@@ -929,8 +929,8 @@
     },
     "applyCameraStrategy": {
       "before": "3a746c06dc91057ecd244ecdde0ec87873d89f2f7c0fc1589a4bec2c6381fd3e",
-      "after": "55c35549278f95cc23ca5ea6b96ff20636a14535eb328c4b2d65edb0bb30a531",
-      "reason": "Remember the fitted camera pose for the focused scene when an import changes scenes.",
+      "after": "67208e34b217f74adb05e8f24c1528474a1cd2ea89e019e509f5426f255f1cfb",
+      "reason": "Use the Build workspace size on the first-atom refit.",
       "units": [
         {
           "file": "app.js",
@@ -1180,7 +1180,7 @@
     },
     "beginGestureAddedAtomOperatorSession": {
       "before": "ed722da57ba854c5e99e5a7c39022c543c1e7e1746be44661b78ca966f465b2f",
-      "after": "febc4effbbfa29b9af84159f3059d0a0cbef5543476ddc508da8085c99a1c9d1",
+      "after": "291572d5ea3e54da7a528b4afcd6959d419bf6d30fb5de9824cbb9c01b6b819f",
       "reason": "Fit the first atom added to an empty scene.",
       "units": []
     },
@@ -1315,12 +1315,18 @@
       "after": "e758f02b8307516d807f23c5df1a45f58de2d86ebd0762f28019b161a4cc6301",
       "reason": "Space does not apply hydrogens to a hidden Edit target.",
       "units": []
+    },
+    "rebuildScene": {
+      "before": "cfc7c8c6876cbadb4b7f8af148a4cd242b232174d9d761dd46a5d7871651c11f",
+      "after": "1eae0538275e4434e60585f8f59e0b573d957824743607784d266ea46ec83bb8",
+      "reason": "Pass the initial Build framing option through the existing camera owner.",
+      "units": []
     }
   },
   "placementChanges": {
     "appendAtomAtWorld": {
       "before": "3b736d6e07c2cf64b033edca86d78bcf31b054b81c64e6493bc59bf377b9b451",
-      "after": "c5469e793271183bf4e6452d04d30541c03dfe4537837085d4dd8e2e6528f4aa"
+      "after": "c457e4ca0f4a8606f32e5b9dd13337027c4f3db183cd34e975498ce485f4eaf9"
     },
     "beginAddAtomOperatorSession": {
       "before": "80b6a5be29f3cc628e33bb2a8d0efad36e7bf120a7bffb7b38b948fcd3e06e59",

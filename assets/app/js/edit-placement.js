@@ -926,7 +926,7 @@
       vol.atoms.push(atom);
       vol.natoms = vol.atoms.length;
       ensureVolumeSchema(vol, { inferMissingBonds: false });
-      rebuildScene({ preserveView: beforeAtoms.length > 0 });
+      rebuildScene({ preserveView: beforeAtoms.length > 0, buildSpace: beforeAtoms.length === 0 });
       beginAddAtomOperatorSession(
         record,
         ensureAtomId(atom),

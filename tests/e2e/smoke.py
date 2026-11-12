@@ -1894,15 +1894,15 @@ def main() -> int:
                     return (exported?.volume?.atoms || []).length === 1;
                 }"""
             )
-            page.mouse.move(x, y)
+            # The first atom refits the camera. Resolve its current hit point,
+            # then hover it without selecting it for the hovered-delete case.
+            hover_x, hover_y = find_atom_click_point(page, 0)
+            page.mouse.move(hover_x, hover_y)
             page.wait_for_timeout(360)
             page.keyboard.press('Delete')
-            page.wait_for_function(
-                """() => {
-                    const exported = window.VibeMolStructure.exportActive();
-                    return (exported?.volume?.atoms || []).length === 0;
-                }"""
-            )
+            remaining = page.evaluate("() => VibeMolStructure.exportActive()?.volume?.atoms?.length")
+            print('[smoke-first-atom-delete] ' + json.dumps({'actual': remaining, 'expected': 0}), flush=True)
+            assert remaining == 0, {'actual': remaining, 'expected': 0}
             confirm_clear_files(page)
             page.wait_for_function(
                 """() => {

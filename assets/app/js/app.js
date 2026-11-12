@@ -6319,11 +6319,17 @@
   /**
    * Fit camera position and clipping planes to the current visible content bounds.
    */
-  function fitCameraToScene() {
+  function fitCameraToScene({ buildSpace = false } = {}) {
     const metrics = readRendererViewportMetrics();
     const bounds = collectVisibleSceneBounds();
     if (!bounds.hasContent || bounds.contentBox.isEmpty()) return false;
     const center = computeSceneFitCenter(bounds);
+    if (buildSpace) {
+      // A single atom's rendered sphere is much smaller than the workspace
+      // needed to see its first bonds and the Build halo.
+      bounds.contentBox.expandByPoint(center.clone().addScalar(-2.5));
+      bounds.contentBox.expandByPoint(center.clone().addScalar(2.5));
+    }
     const fit = computeSceneFitGeometry(
       bounds,
       center,
@@ -21226,7 +21232,7 @@
       }
     );
     setEditAtomSelection(selectionAfter);
-    rebuildScene({ preserveView: beforeAtoms.length > 0 });
+    rebuildScene({ preserveView: beforeAtoms.length > 0, buildSpace: beforeAtoms.length === 0 });
     updateSidePanel();
     updateSelectedHalos();
     updateEditSelectionVisuals();
@@ -32017,7 +32023,7 @@
    * @param {THREE.Camera|null} savedCam
    * @param {THREE.Vector3|null} savedTarget
    */
-  function applyCameraStrategy(preserveView, savedCam, savedTarget) {
+  function applyCameraStrategy(preserveView, savedCam, savedTarget, options = {}) {
     if (preserveView && savedCam && savedTarget) {
       camera.copy(savedCam);
       controls.target.copy(savedTarget);
@@ -32025,7 +32031,7 @@
       return;
     }
     const scene = getFocusedScene();
-    if (fitCameraToScene() && scene) {
+    if (fitCameraToScene(options) && scene) {
       viewState.defaultViews.set(scene, {
         cam: camera.clone(),
         target: controls.target.clone(),
@@ -32037,7 +32043,7 @@
 
   /**
    * Recompute scene content for the active file and current render settings.
-   * @param {{preserveView?:boolean, skipAutoIso?:boolean}} options
+   * @param {{preserveView?:boolean, skipAutoIso?:boolean, buildSpace?:boolean}} options
    */
   function rebuildScene(options = {}) {
     if (applyingSession) return;
@@ -32131,7 +32137,7 @@
     }
 
     refreshSimulationBoxes();
-    applyCameraStrategy(preserveView, savedCam, savedTarget);
+    applyCameraStrategy(preserveView, savedCam, savedTarget, { buildSpace: options.buildSpace });
     if (figureRendering) return;
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
