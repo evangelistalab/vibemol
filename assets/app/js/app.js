@@ -8509,8 +8509,8 @@
             icon: 'center_focus_strong',
             label: 'COM → Origin',
             meta: '',
-            key: 'R',
-            title: 'Shift COM to origin (R)',
+            key: 'Shift+R',
+            title: 'Shift COM to origin (Shift+R)',
             static: false,
           },
         };
@@ -25578,19 +25578,9 @@
 
   // --- Shortcut bindings ---
 
-  // Global: save, batch, toggle surfaces/axes
-  bind('down', 'global', 's', () => saveBtn && saveBtn.click());
-  bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
-  bind('down', 'global', 'i', () => {
-    toggleActiveSurfaceVisibility();
+  bind('down', MODES.EDIT, 'r', (e) => {
+    if (e.shiftKey && !e.repeat) centerActiveMoleculeMassAtOrigin();
   });
-  bind('down', 'global', 'a', () => {
-    window.__showAxes__ = !window.__showAxes__;
-    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
-    syncAllAppearanceActionToggleButtons();
-    scheduleAppearancePresetAutosave();
-  });
-  bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
 
   // Global: Up/Down arrows cycle cube layers in the focused scene.
   /**
@@ -25934,9 +25924,9 @@
       toggleHelp(document.activeElement || helpBtn || null);
       return;
     }
-    if (isHelpOpen() && e.key === 'Tab') {
-      handleHelpOverlayKeydown(e);
-      if (e.defaultPrevented) return;
+    if (isHelpOpen()) {
+      if (e.key === 'Tab') handleHelpOverlayKeydown(e);
+      return;
     }
     if (currentMode === MODES.EDIT && addAtomOperatorSession) {
       if (e.key === 'Enter' && !isTypingInInput()) {
@@ -25967,7 +25957,7 @@
     if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     if (handleOutlinerSelectionHotkey(e)) return;
-    dispatchShortcut(e, 'down', currentMode);
+    if (!(e.ctrlKey || e.metaKey || e.altKey)) dispatchShortcut(e, 'down', currentMode);
   });
   window.addEventListener('copy', handleStructureCopy);
   window.addEventListener('paste', (e) => {
@@ -30601,7 +30591,9 @@
       const forceNewScene = !!(item.forceNewScene || isTrajectoryVolumeRecord(item.vol));
       let group = null;
       if (!forceNewScene) {
-        group = groups.find((candidate) => !candidate.forceNewScene && moleculeMatchesVolume(item.vol, candidate.representativeVol)) || null;
+        group = groups.find(candidate => !candidate.forceNewScene
+          && ((item.sourceInput && candidate.items[0]?.sourceInput === item.sourceInput)
+            || moleculeMatchesVolume(item.vol, candidate.representativeVol))) || null;
       }
       if (!group) {
         group = makeDropSceneGroup(item, resolveSceneKeyForItem(item, forceNewScene));

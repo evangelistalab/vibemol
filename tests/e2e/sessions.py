@@ -2,11 +2,13 @@
 """Portable workspace and browser recovery regressions."""
 from __future__ import annotations
 
+import base64
 import copy
 import json
 import math
 import os
 import pathlib
+import struct
 
 from playwright.sync_api import sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
@@ -100,6 +102,117 @@ def failed_imports(page, dialogs):
     assert 'one session file at a time' in dialogs[-1]
     assert load(page, [{'name':'saved.vibemol-session','text':json.dumps(saved)}])['ok']
     assert snapshot(page) == before
+
+
+def multi_dataset_cubes(page, dialogs):
+    header = ['Test cube', 'Two interleaved datasets in angstroms', '-1 1 2 3',
+              '-2 0.5 0 0', '-2 0.1 0.5 0', '-2 0 0 0.5', '6 6 1 2 3']
+    values = ' '.join(str(value) for index in range(8) for value in (index, -index))
+    for atom_header, ids, labels in [
+        ('-1 1 2 3', ['2 7', '12'], ['orbital 7', 'orbital 12']),
+        ('1 1 2 3 2', [], ['dataset 1', 'dataset 2']),
+        ('0 1 2 3 2', [], ['dataset 1', 'dataset 2']),
+    ]:
+        header[2] = atom_header
+        has_atoms = not atom_header.startswith('0 ')
+        result = load(page, [{'name':'fields.cube', 'text':'\n'.join(header[:7 if has_atoms else 6] + ids + [values])}])
+        assert result['ok'] and result['loadedCount'] == 1, result
+        expected_names = [f'fields ({label}).cube' for label in labels]
+        scenes = snapshot(page)['scenes']
+        assert len(scenes) == 1, scenes
+        assert [layer['name'] for layer in cubes(page)] == expected_names, scenes
+        assert [layer['visible'] for layer in cubes(page)] == [True, False], scenes
+        saved = export(page)
+        buffers = {buffer['id']: buffer for buffer in saved['buffers']}
+        factor = 0.529177210903
+        for index, source in enumerate(saved['sources']):
+            vol = source['volume']
+            assert vol['units'] == 'bohr', vol
+            assert_close([value * factor for value in vol['origin']], [1, 2, 3])
+            assert_close([[value * factor for value in axis] for axis in vol['axes']],
+                         [[0.5, 0, 0], [0.1, 0.5, 0], [0, 0, 0.5]])
+            if has_atoms:
+                assert_close([vol['atoms'][0][axis] * factor for axis in 'xyz'], [1, 2, 3])
+            else:
+                assert vol['atoms'] == [], vol['atoms']
+            raw = base64.b64decode(buffers[vol['data']['$array']]['data'])
+            actual = list(struct.unpack('<8f', raw))
+            expected = [value * (-1 if index else 1) for value in range(8)]
+            print(f'[cube-datasets] {source["name"]}: actual={actual}, expected={expected}', flush=True)
+            assert actual == expected, (actual, expected)
+        open_session(page, saved)
+        assert export(page)['sources'] == saved['sources']
+    assert not dialogs, dialogs
+
+
+def mobile_pending_recovery(page, dialogs):
+    page.set_viewport_size({'width':375, 'height':780})
+    page.wait_for_function('() => VibeMolRecovery.getState().ready')
+    assert load(page, [{'name':'old.xyz','text':'1\nOriginal\nH 0 0 0\n'}])['ok']
+    assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolRecovery?.getState().pending')
+    prompt = page.locator('#sessionRecoveryPrompt')
+    bounds = prompt.bounding_box()
+    assert bounds and bounds['x'] >= 0 and bounds['x'] + bounds['width'] <= 375, bounds
+    assert not prompt.evaluate('el => el.closest("#toolbar")'), 'Recovery depends on the drawer'
+    assert 'old.xyz' in prompt.inner_text(), prompt.inner_text()
+    assert load(page, [{'name':'new.xyz','text':'1\nNew workspace\nN 2 3 4\n'}], clear_first=False)['ok']
+    page.wait_for_function("""() => {
+      const state = VibeMolRecovery.getState();
+      return state.pending && !!state.lastSavedAt && state.revision === state.savedRevision;
+    }""")
+    newest = page.evaluate("""async () => {
+      const {latest} = await VibeMolSessionRecovery.createRecoveryStore().read();
+      return latest.name;
+    }""")
+    print(f'[mobile-recovery] pending prompt bounds={bounds}, autosaved={newest!r}, expected new.xyz', flush=True)
+    assert 'new.xyz' in newest, newest
+    page.locator('#recoverSessionBtn').click()
+    page.wait_for_function('() => !VibeMolRecovery.getState().pending')
+    assert 'old.xyz' in export(page)['sources'][0]['name']
+    assert not dialogs, dialogs
+
+
+def scoped_shortcuts(page, dialogs):
+    offset_cube = cube(0).replace('1 1 0 0 0', '6 6 3 4 5', 1)
+    assert load(page, [{'name':'offset.cube','text':offset_cube}])['ok']
+    coords = '() => VibeMolStructure.exportActive().volume.atoms.map(({x,y,z}) => [x,y,z])'
+    page.evaluate("""() => {
+      window.__fileShortcutClicks = [];
+      for (const id of ['saveBtn','batchBtn']) {
+        document.getElementById(id).addEventListener('click', () => window.__fileShortcutClicks.push(id));
+      }
+    }""")
+    axes = page.evaluate('() => !!window.__showAxes__')
+    for mode in ('Display', 'Measure', 'Calculations', 'Edit'):
+        page.locator(f'#mode{mode}Btn').click()
+        page.locator('#canvas').focus()
+        visible = [layer['visible'] for layer in cubes(page)]
+        for key in ('r', 'a', 'i', 'b') if mode == 'Edit' else ('r', 'a', 'i', 'b', 's', 'Shift+R'):
+            page.keyboard.press(key)
+        actual = {'coordinates':page.evaluate(coords), 'axes':page.evaluate('() => !!window.__showAxes__'),
+                  'fileActions':page.evaluate('() => window.__fileShortcutClicks'),
+                  'surfaces':[layer['visible'] for layer in cubes(page)]}
+        expected = {'coordinates':[[3, 4, 5]], 'axes':axes, 'fileActions':[], 'surfaces':visible}
+        print(f'[shortcuts] {mode}: actual={actual}, expected={expected}', flush=True)
+        assert actual == expected, (actual, expected)
+    page.keyboard.press('?')
+    assert 'Shift+R' in page.locator('#helpModal').inner_text()
+    page.keyboard.press('Shift+R')
+    actual = page.evaluate(coords)
+    assert actual == [[3, 4, 5]], (actual, [[3, 4, 5]])
+    page.keyboard.press('Escape')
+    page.locator('#canvas').focus()
+    page.keyboard.press('Shift+R')
+    actual = page.evaluate(coords)
+    print(f'[shortcuts] Shift+R: actual={actual}, expected=[[0, 0, 0]]', flush=True)
+    assert_close(actual, [[0, 0, 0]])
+    page.keyboard.press('Control+z')
+    actual = page.evaluate(coords)
+    print(f'[shortcuts] Undo: actual={actual}, expected=[[3, 4, 5]]', flush=True)
+    assert actual == [[3, 4, 5]], (actual, [[3, 4, 5]])
+    assert not dialogs, dialogs
 
 
 def arithmetic_and_lazy_orbitals(page, dialogs):
@@ -294,8 +407,9 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (portable_round_trip, failed_imports, arithmetic_and_lazy_orbitals, vibration_and_topology,
-                        recovery_and_quota, spinor_and_download, retained_source, autosave_and_tab_conflict):
+            for run in (portable_round_trip, failed_imports, multi_dataset_cubes, arithmetic_and_lazy_orbitals,
+                        vibration_and_topology, recovery_and_quota, mobile_pending_recovery, spinor_and_download,
+                        retained_source, autosave_and_tab_conflict, scoped_shortcuts):
                 context = browser.new_context(viewport={'width':1440,'height':1000})
                 page = context.new_page()
                 errors, console_errors, dialogs = [], [], []

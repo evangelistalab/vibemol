@@ -18,18 +18,46 @@ function setup(initial = {}) {
   return {controller, deps, snapshots, messages, recovered};
 }
 
-test('recovery waits for a decision and never overwrites a snapshot with an empty startup', async () => {
+test('an unanswered recovery offer saves new work and keeps the original candidates', async () => {
   const {controller, deps, snapshots, recovered} = setup({latest:{id:'old',text:'old data'}});
-  await controller.initialize();
-  controller.markDirty();
-  assert.equal(await controller.flush(), false);
-  assert.equal(snapshots.latest.id, 'old');
-  assert.equal(await controller.recover(), true);
-  assert.deepEqual(recovered, ['old data']);
   deps.hasWork = () => false;
+  await controller.initialize();
   controller.markDirty();
   assert.equal(await controller.flush({force:true}), false);
   assert.equal(snapshots.latest.id, 'old');
+  deps.hasWork = () => true;
+  for (const text of ['first new save', 'second new save']) {
+    deps.exportText = async () => text;
+    controller.markDirty();
+    assert.equal(await controller.flush(), true);
+    assert.equal(snapshots.latest.text, text);
+    assert.equal(controller.getState().pending, true);
+  }
+  assert.equal(snapshots.previous.text, 'first new save');
+  assert.equal(await controller.recover(), true);
+  assert.deepEqual(recovered, ['old data']);
+  assert.equal(controller.getState().pending, false);
+  deps.exportText = async () => recovered[0];
+  assert.equal(await controller.flush(), true);
+  assert.equal(snapshots.latest.text, 'old data');
+  assert.equal(snapshots.previous.text, 'second new save');
+  controller.stop();
+});
+
+test('recovering while autosave writes imports only after that write completes', async () => {
+  const {controller, deps, recovered} = setup({latest:{id:'old',text:'old data'}});
+  await controller.initialize();
+  let finish;
+  deps.exportText = () => new Promise(resolve => { finish = resolve; });
+  controller.markDirty();
+  const saving = controller.flush();
+  const restoring = controller.recover();
+  assert.equal(controller.getState().recovering, true);
+  assert.deepEqual(recovered, []);
+  finish('new work');
+  assert.equal(await saving, true);
+  assert.equal(await restoring, true);
+  assert.deepEqual(recovered, ['old data']);
   controller.stop();
 });
 

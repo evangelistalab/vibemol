@@ -168,7 +168,21 @@
             item.vol = parseVolumeByName(inputName, text);
           }
           item.extras = Object.assign({ inferBondOrders: true }, options.extras, item.extras);
-          plan.primaries.push(item);
+          if (item.vol.datasets) {
+            const { datasets, ...volume } = item.vol;
+            const extensionAt = item.name.lastIndexOf('.');
+            const stem = extensionAt < 0 ? item.name : item.name.slice(0, extensionAt);
+            const extension = extensionAt < 0 ? '' : item.name.slice(extensionAt);
+            for (const [index, { id, data }] of datasets.entries()) {
+              const label = id === null ? `dataset ${index + 1}` : `orbital ${id}`;
+              plan.primaries.push({ ...item, sourceInput: item, name: `${stem} (${label})${extension}`, vol: {
+                ...volume, data, origin: volume.origin.slice(), nxyz: volume.nxyz.slice(),
+                axes: volume.axes.map(axis => axis.slice()), atoms: volume.atoms.map(atom => ({ ...atom })),
+              } });
+            }
+          } else {
+            plan.primaries.push(item);
+          }
         } catch (err) {
           plan.failures.push(`${inputName}: ${err && err.message || err}`);
         }
@@ -249,7 +263,7 @@
         if (deps.getActiveVibrationInfo().enabled) deps.setVibrationPanelOpen(true);
       }
       if (!successful.size) deps.updateEmptyStateVisibility();
-      const loadedNames = Array.from(successful, item => item.inputName);
+      const loadedNames = Array.from(new Set(Array.from(successful, item => item.sourceInput || item)), item => item.inputName);
       if (loadedNames.length) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
       if (failures.length) {
         deps.setHintMessage(failures[0]);

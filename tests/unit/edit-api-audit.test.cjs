@@ -8,9 +8,13 @@ const audit=(s,productChanges=contract.productChanges||{},removals=contract.lega
 test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
  const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,3);assert(result.testingMembers>40&&result.legacyStatements>1000);
  const actual={before:result.legacyStatementsBeforeRemovals,after:result.legacyStatements,removed:result.legacyStatementRemovals};
- const expected={before:2502,after:2500,removed:[
+ const expected={before:2502,after:2496,removed:[
+  "bind('down', 'global', 'a', () => {\n    window.__showAxes__ = !window.__showAxes__;\n    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;\n    syncAllAppearanceActionToggleButtons();\n    scheduleAppearancePresetAutosave();\n  });",
+  "bind('down', 'global', 'b', () => batchBtn && batchBtn.click());",
+  "bind('down', 'global', 'i', () => {\n    toggleActiveSurfaceVisibility();\n  });",
+  "bind('down', 'global', 's', () => saveBtn && saveBtn.click());",
   "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });",
-  'let __lastBondUpdate = 0;',
+  "let __lastBondUpdate = 0;",
  ]};
  console.log(JSON.stringify({actual,expected}));
  assert.deepEqual(actual,expected);
@@ -26,9 +30,9 @@ test('the authorized removal does not permit another legacy statement to disappe
 });
 test('the removal allowance requires the exact key set and baseline fingerprint',()=>{
  const removals=contract.legacyStatementRemovals;
- assert.throws(()=>audit(source,undefined,{}),/Exactly the two authorized legacy statement removals/);
+ assert.throws(()=>audit(source,undefined,{}),/Exactly the six authorized legacy statement removals/);
  assert.throws(()=>audit(source,undefined,{...removals,'const BOHR_TO_ANG = 0.529177210903;':'0'.repeat(64)}),
-  /Exactly the two authorized legacy statement removals/);
+  /Exactly the six authorized legacy statement removals/);
  assert.throws(()=>audit(source,undefined,{...removals,'let __lastBondUpdate = 0;':'0'.repeat(64)}),
   /Original legacy statement fingerprint/);
 });

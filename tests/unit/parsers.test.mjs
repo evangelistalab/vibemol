@@ -87,6 +87,51 @@ test('parseTwoComponentCube handles a minimal 2C cube', () => {
   assert.ok(Math.abs(vol.betaIm[0] - 0.4) < 1e-6);
 });
 
+function datasetCube(atomHeader, values, sign = 1) {
+  return ['Dataset cube', 'Two fields', atomHeader,
+    `${sign} 0.5 0 0`, `${sign} 0.1 0.5 0`, `${2 * sign} 0 0 0.5`,
+    '6 6 1 2 3', values].join('\n');
+}
+
+test('scalar cubes deinterleave orbital IDs and NVAL fields in voxel order', () => {
+  const { parseCube } = loadParsers();
+  for (const [header, ids, expected] of [['-1 1 2 3', '2 7\n12\n', [7, 12]], ['1 1 2 3 2', '', [null, null]]]) {
+    const vol = parseCube(datasetCube(header, ids + '1 -1 2 -2'));
+    assert.deepEqual(Array.from(vol.datasets, field => field.id), expected);
+    assert.deepEqual(Array.from(vol.datasets, field => Array.from(field.data)), [[1, 2], [-1, -2]]);
+    assert.strictEqual(vol.data, vol.datasets[0].data);
+    assert.throws(() => parseCube(datasetCube(header, ids + '1 -1 2')), /Data size mismatch/);
+    assert.throws(() => parseCube(datasetCube(header, ids + '1 -1 2 -2 9')), /Data size mismatch/);
+    assert.throws(() => parseCube(datasetCube(header, ids + '1 broken -1 2 -2')), /Malformed CUBE numeric token/);
+  }
+});
+
+test('negative grid counts convert origin, skew axes and atom positions from angstroms', () => {
+  const { parseCube, parseTwoComponentCube } = loadParsers();
+  const angstrom = 0.529177210903;
+  for (const parse of [parseCube, parseTwoComponentCube]) {
+    const source = datasetCube('1 1 2 3', '1 2', -1);
+    const vol = parse(source);
+    assert.equal(vol.units, 'bohr');
+    assert.deepEqual(Array.from(vol.nxyz), [1, 1, 2]);
+    assert.deepEqual(Array.from(vol.origin), [1, 2, 3].map(n => n / angstrom));
+    assert.deepEqual(plain(vol.axes), [[0.5, 0, 0], [0.1, 0.5, 0], [0, 0, 0.5]]
+      .map(axis => axis.map(n => n / angstrom)));
+    assert.deepEqual([vol.atoms[0].x, vol.atoms[0].y, vol.atoms[0].z], [1, 2, 3].map(n => n / angstrom));
+    assert.deepEqual(Array.from(vol.data), [1, 2]);
+    assert.throws(() => parse(source.replace('-2 0 0 0.5', '2 0 0 0.5')), /mixed voxel-count signs/);
+  }
+});
+
+test('2C cubes distinguish explicit interleaving from legacy component blocks', () => {
+  const { parseTwoComponentCube } = loadParsers();
+  const fields = vol => [vol.alphaRe, vol.alphaIm, vol.betaRe, vol.betaIm].map(field => Array.from(field));
+  const expected = [[1, 2], [3, 4], [5, 6], [7, 8]];
+  assert.deepEqual(fields(parseTwoComponentCube(datasetCube('1 0 0 0 4', '1 3 5 7 2 4 6 8'))), expected);
+  assert.deepEqual(fields(parseTwoComponentCube(datasetCube('1 0 0 0', '1 2 3 4 5 6 7 8'))), expected);
+  assert.throws(() => parseTwoComponentCube(datasetCube('1 0 0 0 2', '1 2 3 4')), /needs one or four fields/);
+});
+
 test('both cube formats read Fortran exponents in headers and voxel values', () => {
   const { parseCube, parseTwoComponentCube } = loadParsers();
   const header = [

@@ -1,10 +1,10 @@
-#toolbar .vm-session-actions {
+:is(#toolbar, #sessionRecoveryPrompt) .vm-session-actions {
   display: flex;
   gap: 8px;
   width: 100%;
 }
 
-#toolbar .vm-session-actions button {
+:is(#toolbar, #sessionRecoveryPrompt) .vm-session-actions button {
   flex: 1;
   min-width: 0;
   padding: 7px 8px;
@@ -21,7 +21,17 @@
 :is(#toolbar, #styleStudio) :is(.vm-helper-text, .vm-status-text):empty { display: none; }
 #sessionFileInput[hidden], #sessionRecoveryPrompt[hidden], #sessionBusyOverlay[hidden], #retryAutosaveBtn[hidden] { display: none; }
 
-#toolbar .vm-session-recovery {
+#sessionRecoveryPrompt {
+  position: fixed;
+  z-index: 1000;
+  top: calc(env(safe-area-inset-top, 0px) + 64px);
+  inset-inline: 12px;
+  width: min(420px, calc(100% - 24px));
+  box-sizing: border-box;
+  margin-inline: auto;
+  background: var(--vm-color-surface-panel);
+  color: var(--vm-color-text-primary);
+  box-shadow: var(--vm-shadow-sm);
   border: 1px solid var(--vm-accent-outline, #8796af);
   border-radius: 8px;
   padding: 10px;
@@ -30,7 +40,7 @@
   line-height: var(--vm-leading-body);
 }
 
-#toolbar .vm-session-recovery p { margin: 0 0 8px; }
+#sessionRecoveryPrompt p { margin: 0 0 8px; overflow-wrap: anywhere; }
 
 #sessionBusyOverlay {
   position: fixed;

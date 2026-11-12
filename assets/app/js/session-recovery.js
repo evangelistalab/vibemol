@@ -58,8 +58,8 @@
     return Object.freeze({ read, write });
   }
 
-  // One serialized writer, two bounded snapshots, and an explicit recovery gate.
-  // A failed transaction keeps both previously completed snapshots intact.
+  // One serialized writer and two bounded snapshots on disk. An unanswered
+  // offer keeps its original candidates in this tab while autosave advances.
   function createRecoveryController(deps) {
     const store = deps.store || createRecoveryStore();
     const debounceMs = deps.debounceMs ?? 1500;
@@ -85,7 +85,7 @@
     }
     function clearTimer() { if (timer) clearTimeout(timer); timer = 0; }
     function schedule() {
-      if (stopped || !ready || pending || recovering || failed || revision === savedRevision || !deps.hasWork()) return;
+      if (stopped || !ready || recovering || failed || revision === savedRevision || !deps.hasWork()) return;
       clearTimer();
       if (firstDirtyAt == null) firstDirtyAt = now();
       const delay = Math.min(debounceMs, Math.max(0, maxDelayMs - (now() - firstDirtyAt)));
@@ -98,7 +98,7 @@
     }
     async function flush(options = {}) {
       clearTimer();
-      if (stopped || !ready || pending || recovering || !deps.hasWork()) return false;
+      if (stopped || !ready || recovering || !deps.hasWork()) return false;
       if (writing) return writing;
       if (failed && !options.force) return false;
       if (revision === savedRevision && !options.force) return false;
@@ -120,7 +120,6 @@
             name: deps.getName ? deps.getName() : 'VibeMol session', text };
           await store.write(snapshot, expectedId);
           expectedId = snapshot.id;
-          candidates = [snapshot, candidates[0]].filter(Boolean);
           lastSavedAt = stamp;
           savedRevision = savingRevision;
           status('saved', `Autosaved at ${new Date(stamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`);
@@ -147,7 +146,8 @@
           if (deps.onRecovery) deps.onRecovery(candidates.map(({id, name, savedAt, text}) => ({
             id, name: deps.getSnapshotName?.(text) || name, savedAt,
           })));
-        } else { status('idle', 'Autosave ready'); schedule(); }
+        } else status('idle', 'Autosave ready');
+        schedule();
       } catch (error) {
         ready = false;
         status('error', `Autosave unavailable: ${error.message} Use Save session to download your work.`);
@@ -156,24 +156,29 @@
     function startFresh() {
       if (recovering) return;
       pending = false;
+      candidates = [];
       failed = false;
       if (deps.onRecovery) deps.onRecovery([]);
       status('idle', 'Autosave ready');
-      // Existing snapshots remain available until a new nonempty save succeeds.
       schedule();
     }
     async function recover() {
-      if (recovering || writing || !pending) return false;
+      if (stopped || recovering || !pending) return false;
       recovering = true;
+      clearTimer();
       let lastError;
       try {
+        if (writing) await writing;
+        const newerWorkspaceSaved = expectedId !== candidates[0]?.id;
         for (let index = 0; index < candidates.length; index++) {
           const candidate = candidates[index];
           try {
             await deps.importText(candidate.text);
             pending = false;
+            candidates = [];
             failed = false;
             savedRevision = revision;
+            if (newerWorkspaceSaved) revision++;
             lastSavedAt = candidate.savedAt;
             if (deps.onRecovery) deps.onRecovery([]);
             status('saved', index ? 'Recovered the previous autosave; the newest snapshot was damaged.' : 'Session recovered. Playback is paused.');
@@ -182,7 +187,7 @@
         }
         status('error', `Could not recover the session: ${lastError && lastError.message || 'No valid snapshot.'} Your current workspace is unchanged.`);
         return false;
-      } finally { recovering = false; }
+      } finally { recovering = false; schedule(); }
     }
     function stop() { stopped = true; clearTimer(); }
     return Object.freeze({ initialize, markDirty, flush, startFresh, recover, stop,

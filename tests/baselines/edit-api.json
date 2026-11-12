@@ -854,7 +854,11 @@
   },
   "legacyStatementRemovals": {
     "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });": "7ce2fe4f6c301e57eacd393428c90e5f315efabe8cc9607ed316f9e5d7ad6f09",
-    "let __lastBondUpdate = 0;": "99a621dc8311923bb0eca8cf7b95758dc9af1bca653f9769f2f3964a44bbc5fb"
+    "let __lastBondUpdate = 0;": "99a621dc8311923bb0eca8cf7b95758dc9af1bca653f9769f2f3964a44bbc5fb",
+    "bind('down', 'global', 'a', () => {\n    window.__showAxes__ = !window.__showAxes__;\n    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;\n    syncAllAppearanceActionToggleButtons();\n    scheduleAppearancePresetAutosave();\n  });": "6f5b67e0ce99efb38f3119c2220d47699174c068fabdd0e6e20a15c5fbb16c99",
+    "bind('down', 'global', 'b', () => batchBtn && batchBtn.click());": "c524e0c7eeb05cf9158572e08d3ef246bf1c35880e0c1e9be1f94f3449fdc47f",
+    "bind('down', 'global', 'i', () => {\n    toggleActiveSurfaceVisibility();\n  });": "d4ec1762ef03f6da45d8994b81055f4b3e3eae77031696babbc3c2f6f242580d",
+    "bind('down', 'global', 's', () => saveBtn && saveBtn.click());": "35ce1eed30d9f523ee1c9b9b722ab3eada83ab9a450ee2d066e5279192fd76a6"
   },
   "productChanges": {
     "updateEditSelectionVisuals": {
@@ -892,8 +896,8 @@
     },
     "statement:keyboardClipboardComment": {
       "before": "3cdc0801f3557489ff3d7de20da41233c3be5212ae20e5b2b521b523ed06e623",
-      "after": "e1e41c9a0daf889fa6e1d55fbdbafb209e01666a01f0cfda6560b8caa5242134",
-      "reason": "Correct the clipboard guard comment now that plain V switches mode instead of opening a panel.",
+      "after": "c5d19759fa6c82fc8cd187327ef9817773c74577ff3bec1826840ce9eed8d5ad",
+      "reason": "Keep modified browser and system chords out of bare shortcut dispatch and block app shortcuts while keyboard help is open.",
       "units": []
     },
     "statement:tutorialConnection": {
@@ -945,8 +949,8 @@
     },
     "handleSceneDropRecords": {
       "before": "272f746499dc2c113c991612cf6a94cba34a75592e295494b6e6481a9a3f52df",
-      "after": "f4d5fa7ba5dd5610d17bf7edcc4fb798a98e4cfd0a124bc968fcda39539ca471",
-      "reason": "Fit after the imported scene is made visible and preserve the pose for same-scene additions.",
+      "after": "0b5855253000d8d45bab5b011ccac989276ddc5cd561d32673566e7c6adf88a7",
+      "reason": "Fit after the imported scene is made visible and preserve the pose for same-scene additions. Group every field from one multi-dataset cube into one scene, including atomless cubes.",
       "units": []
     },
     "statement:viewState": {
@@ -959,6 +963,18 @@
       "before": "57fdab808c0dcf9040aa640dc34c627a58dc04179b21dc8f8b46da0ee5e5f9b5",
       "after": "0f8b6fea731d233bb8d1c329f84099ca212cfce51c6c9591577f2f03660f21d6",
       "reason": "Restore the focused scene camera default or fit the current scene if it has no recorded fit.",
+      "units": []
+    },
+    "statement:recenterShortcut": {
+      "before": "0841556f780646cdcaadbb2e65d8634fe9f881f7800a6a1ca540a0bacdd57897",
+      "after": "167077e72d52083db1e04ca320e32c238be58a9c78707c21c9a0749354ec490f",
+      "reason": "Move coordinate-changing recentering to explicit Shift+R in Edit.",
+      "units": []
+    },
+    "statement:recenterShortcutLabel": {
+      "before": "d05d2ef248f166ef5ec238ce0aa9e2ec47999c0812e9cf4b6b9d5e910b28d18c",
+      "after": "639818a3c0678a46f830b0e9e16da28b21d2da59cd5b2d3ef05251ac3f261671",
+      "reason": "Display the explicit recentering chord on the existing Edit action.",
       "units": []
     }
   }
