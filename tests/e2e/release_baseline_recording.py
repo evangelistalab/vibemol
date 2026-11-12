@@ -104,7 +104,9 @@ SHIPPED_0100_COMMIT = '44bcb5d534cecba27fd0ccfc60f74324a0920b73'
 VERSION_DELTA_BASE_COMMIT = '4709f1d676f793222ebc7f758692a69824c5541a'
 VERSION_DELTA_BASE_SHA256 = '2b22cd7dd75cf2d64f54cfd7e57370af43ed1327efb1428b27da2e74b721e427'
 VERSION_DELTA_PATHS = (('session', 'appVersion'), ('session', 'preset', 'appVersion'))
-VERSION_DELTA_TAGS = ('v0.10.2', 'v0.10.3', 'v0.10.4', 'v0.10.5')
+VERSION_DELTA_TAGS = ('v0.10.2', 'v0.10.3', 'v0.10.4', 'v0.10.5', 'v0.10.6')
+RELEASE_0106_SOURCE_COMMIT = 'f52976f8d43888d32d308677aa809628ea862267'
+PUBCHEM_BOND_ORDERS_0106 = ((5, 1, 2), (7, 1, 2), (9, 2, 1))
 
 
 def version_delta_declaration(tag):
@@ -116,10 +118,20 @@ def version_delta_declaration(tag):
                     'fd5d9011685d44e1f7225afe05b9fbfed865e53f150f20d6e0be6743d15e43de', '0.10.2', '0.10.4'),
         'v0.10.5': ('56860d70e324fd76607d1ab699fc3a909ead4048',
                     'e52e4a75b729e4c413c2b24655d7bb92b18e95d2f0f1294c8b3bd157d17b5d9e', '0.10.4', '0.10.5'),
+        'v0.10.6': ('16f6a0d78d8905872b1b22fded293015d62e2974',
+                    'c2f4bdef506bfccea5b25b1026e624cf4494548b9aa38d8e7a1a1c23af7e82eb', '0.10.5', '0.10.6'),
     }
     base, digest, before, after = specs[tag]
-    return dict(baseCommit=base, baselineGzipSha256=digest, paths=[list(path) for path in VERSION_DELTA_PATHS],
-                before=before, after=after, changedLeaves=204)
+    declaration = dict(baseCommit=base, baselineGzipSha256=digest, paths=[list(path) for path in VERSION_DELTA_PATHS],
+                       before=before, after=after, changedLeaves=204)
+    if tag == 'v0.10.6':
+        declaration['pubchemBondOrderChanges'] = [
+            dict(capture=f'pubchem/{theme}/{mode}', path=['session', 'sources', 0, 'volume', 'bonds', index, 'order'],
+                 before=old, after=new)
+            for theme in ('light', 'dark') for mode in ('Display', 'Measure', 'Edit', 'Calculations')
+            for index, old, new in PUBCHEM_BOND_ORDERS_0106
+        ]
+    return declaration
 
 
 def read_version_delta_base(root, tag='v0.10.2'):
@@ -131,7 +143,7 @@ def read_version_delta_base(root, tag='v0.10.2'):
     print('[version-recording-base] ' + json.dumps(dict(actual=digest, expected=declared['baselineGzipSha256'])), flush=True)
     assert digest == declared['baselineGzipSha256'], (digest, declared['baselineGzipSha256'])
     previous = json.loads(gzip.decompress(raw))['captures']
-    expected_version_captures(previous, tag)
+    expected_release_captures(previous, tag)
     print('[release-version-declaration] ' + json.dumps(dict(declared, captures=102)), flush=True)
     return previous
 
@@ -159,7 +171,7 @@ def verify_version_delta(previous, captured, tag='v0.10.2'):
     """Refuse any additional leaf, type, value, inventory or numeric change."""
     from api_surface_recording import exact_difference
     declared = version_delta_declaration(tag)
-    expected = expected_version_captures(previous, tag)
+    expected = expected_release_captures(previous, tag)
     diff = exact_difference(expected, captured)
     changes = [dict(capture=name, path=list(path), before=declared['before'], after=declared['after'])
                for name in expected for path in VERSION_DELTA_PATHS]
@@ -179,10 +191,28 @@ def verify_version_delta(previous, captured, tag='v0.10.2'):
         expectedCaptures=102, actualCaptures=len(captured), expectedChangedLeaves=204,
         actualChangedLeaves=len(actual_changes), changes=changes,
         residualDifference=diff, zeroOtherChanges=diff is None)
+    if tag == 'v0.10.6':
+        report['pubchemBondOrderChanges'] = declared['pubchemBondOrderChanges']
     print('[release-version-delta] ' + json.dumps(report, sort_keys=True), flush=True)
     assert len(actual_changes) == 204, ('Version leaf count', len(actual_changes), 204, diff)
     assert diff is None, ('Undeclared capture change; refuse release recording', diff)
     return report
+
+
+def expected_release_captures(previous, tag):
+    expected = expected_version_captures(previous, tag)
+    changes = version_delta_declaration(tag).get('pubchemBondOrderChanges', [])
+    if tag == 'v0.10.6':
+        assert len(changes) == 24 and len({change['capture'] for change in changes}) == 8
+    for change in changes:
+        value = expected[change['capture']]
+        for key in change['path'][:-1]:
+            value = value[key]
+        key = change['path'][-1]
+        actual = value[key]
+        assert type(actual) is int and actual == change['before'], (change, actual)
+        value[key] = change['after']
+    return expected
 
 
 def require_release_candidate_source(root, source_root, args, report_path):
@@ -195,9 +225,15 @@ def require_release_candidate_source(root, source_root, args, report_path):
              'v0.10.2': ('0.10.2', 'refs/heads/codex/pr90-0.10.2-recording'),
              'v0.10.3': ('0.10.3', 'refs/heads/codex/0.10.3'),
              'v0.10.4': ('0.10.4', 'refs/heads/codex/new-user-tutorials'),
-             'v0.10.5': ('0.10.5', 'refs/heads/codex/release-0.10.5')}
+             'v0.10.5': ('0.10.5', 'refs/heads/codex/release-0.10.5'),
+             'v0.10.6': ('0.10.6', 'refs/heads/codex/record-0.10.6')}
     assert args.record_release_tag in specs, args.record_release_tag
     version, ref = specs[args.record_release_tag]
+    checkout = commit
+    if args.record_release_tag == 'v0.10.6':
+        assert commit == RELEASE_0106_SOURCE_COMMIT, (commit, RELEASE_0106_SOURCE_COMMIT)
+        assert git('rev-parse', 'HEAD^') == commit, 'Recorder checkout must directly descend from the pinned source.'
+        checkout = git('rev-parse', 'HEAD')
     actual = dict(recordReleaseTag=args.record_release_tag, ci=os.environ.get('GITHUB_ACTIONS'),
         ref=os.environ.get('GITHUB_REF'), event=os.environ.get('GITHUB_EVENT_NAME'),
         updateBaseline=args.update_baseline, injectHarness=args.inject_harness,
@@ -207,7 +243,7 @@ def require_release_candidate_source(root, source_root, args, report_path):
     expected = dict(recordReleaseTag=args.record_release_tag, ci='true',
         ref=ref, event='workflow_dispatch',
         updateBaseline=True, injectHarness=False, prepareFixtures=False, runs=2,
-        matrixRunIndex=None, shallow='false', head=commit, githubSha=commit)
+        matrixRunIndex=None, shallow='false', head=checkout, githubSha=checkout)
     print('[release-candidate-mode] '+json.dumps(dict(actual=actual, expected=expected),sort_keys=True),flush=True)
     assert actual == expected, (actual, expected)
     corrected = git('rev-parse', 'v0.10.0^{commit}')
@@ -223,6 +259,7 @@ def require_release_candidate_source(root, source_root, args, report_path):
     absent = not (source_root / 'tests/e2e/release_version_mapping.py').exists()
     assert absent, 'Expired version-mapping helper must remain absent.'
     report = dict(status='passed', recordingMode='candidate', tag=args.record_release_tag, commit=commit,
+        recorderCheckout=checkout,
         tree=git('rev-parse',commit+'^{tree}'), sourceRefAtCapture=actual['ref'],
         archivedFiles=files, allArchivedBlobsMatchCommit=True, correctedReleaseBase=corrected,
         mappingHelperAbsent=absent, publicationPending=True, ciRunId=os.environ.get('GITHUB_RUN_ID'),

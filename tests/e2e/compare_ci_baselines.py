@@ -8,7 +8,7 @@ import pathlib
 import subprocess
 import sys
 import re
-from release_baseline_recording import VERSION_DELTA_TAGS
+from release_baseline_recording import RELEASE_0106_SOURCE_COMMIT, VERSION_DELTA_TAGS
 
 # These identify recorded datasets, not movable release labels. The 0.10.0
 # captures were made at3425e02 before its release tag was corrected to44bcb5d.
@@ -20,6 +20,7 @@ BASELINE_COMMITS = {
     'v0.10.3': None,  # Require the exact candidate SHA until the recording is promoted.
     'v0.10.4': '367903b1c6c4744553816f0323c4b83ae446ff06',  # Exact CI recording source.
     'v0.10.5': '70af57fbb590f44dcd1736f30b469d01f7030e5a',  # Exact CI recording source.
+    'v0.10.6': RELEASE_0106_SOURCE_COMMIT,
 }
 
 
@@ -92,6 +93,8 @@ def main(folder, baseline_ref='v0.9.5-pre-refactor', expected_commit=None):
               'provenancePerJob': provenances, 'captures': artifacts}
     if baseline_ref in VERSION_DELTA_TAGS:
         report.update(versionDelta=declared, changedLeavesPerRun=204, residualDifferences=0)
+    if baseline_ref == 'v0.10.6':
+        report.update(pubchemCapturesPerRun=8, pubchemBondOrderLeavesPerRun=len(declared['pubchemBondOrderChanges']))
     (folder / 'ci-comparison.json').write_text(json.dumps(report, indent=2) + '\n')
     print(json.dumps(report, indent=2))
 

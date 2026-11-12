@@ -282,5 +282,33 @@ class ExactVersionDelta(unittest.TestCase):
         self.rejected(lambda c: c['capture-0']['unrelated'].pop('version'))
 
 
+class Exact0106Delta(unittest.TestCase):
+    def test_the_24_declared_bond_orders_are_the_only_nonversion_changes(self):
+        previous = version_captures()
+        for case in previous.values():
+            case['session']['appVersion'] = '0.10.5'
+            case['session']['preset']['appVersion'] = '0.10.5'
+        names = [f'pubchem/{theme}/{mode}' for theme in ('light', 'dark')
+                 for mode in ('Display', 'Measure', 'Edit', 'Calculations')]
+        for i, name in enumerate(names):
+            previous[name] = previous.pop(f'capture-{i}')
+            previous[name]['session']['sources'] = [{'volume': {'bonds': [
+                {'order': 2 if index == 9 else 1} for index in range(10)
+            ]}}]
+        current = recording.expected_release_captures(previous, 'v0.10.6')
+        proof = recording.verify_version_delta(previous, current, 'v0.10.6')
+        self.assertEqual(proof['actualChangedLeaves'], 204)
+        self.assertEqual(len(proof['pubchemBondOrderChanges']), 24)
+        self.assertTrue(proof['zeroOtherChanges'])
+        for index, value in [(5, 1), (7, 2.0), (8, 2), (9, 2)]:
+            with self.subTest(index=index, value=value), self.assertRaises(AssertionError):
+                changed = copy.deepcopy(current)
+                changed[names[0]]['session']['sources'][0]['volume']['bonds'][index]['order'] = value
+                recording.verify_version_delta(previous, changed, 'v0.10.6')
+        current['capture-10']['unrelated']['position'] += 1e-12
+        with self.assertRaises(AssertionError):
+            recording.verify_version_delta(previous, current, 'v0.10.6')
+
+
 if __name__ == '__main__':
     unittest.main()
