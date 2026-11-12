@@ -32,8 +32,8 @@ def run(page,dialogs):
                 actual=dict(ok=result['ok'],loaded=result['loadedCount'],
                     failureExplained='atomic number'in result.get('error','').lower(),
                     hintExplained='atomic number'in hint.lower(),sceneUnchanged=p.snapshot(page)==before,
-                    alertFired=len(dialogs)==previous_dialogs+1 and 'Could not load'in dialogs[-1])
-                expected=dict(ok=False,loaded=0,failureExplained=True,hintExplained=True,sceneUnchanged=True,alertFired=True)
+                    dialogCount=len(dialogs)-previous_dialogs)
+                expected=dict(ok=False,loaded=0,failureExplained=True,hintExplained=True,sceneUnchanged=True,dialogCount=0)
                 row=dict(file=name,Z=z,clearFirst=clear,actual=actual,expected=expected,result=result,hint=hint,
                     alerts=dialogs[previous_dialogs:])
                 print('[atomic-identity] '+json.dumps(row),flush=True)
