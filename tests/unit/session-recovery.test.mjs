@@ -7,7 +7,12 @@ function setup(initial = {}) {
   const snapshots = {...initial};
   const messages = [];
   const recovered = [];
-  const store = { read: async()=>({...snapshots}), write: async(next, expected) => {
+  const store = { read: async()=>({...snapshots}), decline: async id => {
+    const latestId = snapshots.latest?.id;
+    if (latestId === id || (snapshots.previous?.id === id && snapshots.declinedId !== latestId)) {
+      snapshots.declinedId = id;
+    }
+  }, write: async(next, expected) => {
     if ((snapshots.latest?.id || null) !== expected) throw new Error('Another tab wrote a snapshot');
     snapshots.previous = snapshots.latest; snapshots.latest = next;
   }};
@@ -15,21 +20,49 @@ function setup(initial = {}) {
     importText:async text => { if(text==='broken') throw new Error('damaged snapshot'); recovered.push(text); },
     onStatus:state=>messages.push(state), onRecovery:()=>{}};
   const controller = ctx.VibeMolSessionRecovery.createRecoveryController(deps);
-  return {controller, deps, snapshots, messages, recovered};
+  return {controller, deps, snapshots, messages, recovered, create: ctx.VibeMolSessionRecovery.createRecoveryController};
 }
 
-test('recovery waits for a decision and never overwrites a snapshot with an empty startup', async () => {
+test('an unanswered recovery offer saves new work and keeps the original candidates', async () => {
   const {controller, deps, snapshots, recovered} = setup({latest:{id:'old',text:'old data'}});
-  await controller.initialize();
-  controller.markDirty();
-  assert.equal(await controller.flush(), false);
-  assert.equal(snapshots.latest.id, 'old');
-  assert.equal(await controller.recover(), true);
-  assert.deepEqual(recovered, ['old data']);
   deps.hasWork = () => false;
+  await controller.initialize();
   controller.markDirty();
   assert.equal(await controller.flush({force:true}), false);
   assert.equal(snapshots.latest.id, 'old');
+  deps.hasWork = () => true;
+  for (const text of ['first new save', 'second new save']) {
+    deps.exportText = async () => text;
+    controller.markDirty();
+    assert.equal(await controller.flush(), true);
+    assert.equal(snapshots.latest.text, text);
+    assert.equal(controller.getState().pending, true);
+  }
+  assert.equal(snapshots.previous.text, 'first new save');
+  assert.equal(await controller.recover(), true);
+  assert.deepEqual(recovered, ['old data']);
+  assert.equal(controller.getState().pending, false);
+  deps.exportText = async () => recovered[0];
+  assert.equal(await controller.flush(), true);
+  assert.equal(snapshots.latest.text, 'old data');
+  assert.equal(snapshots.previous.text, 'second new save');
+  controller.stop();
+});
+
+test('recovering while autosave writes imports only after that write completes', async () => {
+  const {controller, deps, recovered} = setup({latest:{id:'old',text:'old data'}});
+  await controller.initialize();
+  let finish;
+  deps.exportText = () => new Promise(resolve => { finish = resolve; });
+  controller.markDirty();
+  const saving = controller.flush();
+  const restoring = controller.recover();
+  assert.equal(controller.getState().recovering, true);
+  assert.deepEqual(recovered, []);
+  finish('new work');
+  assert.equal(await saving, true);
+  assert.equal(await restoring, true);
+  assert.deepEqual(recovered, ['old data']);
   controller.stop();
 });
 
@@ -50,7 +83,7 @@ test('recovery prompt derives legacy names without opening or rewriting snapshot
 
 test('quota failure preserves last good data and requires an explicit retry', async () => {
   const {controller, deps, snapshots, messages} = setup({latest:{id:'old',text:'old data'}});
-  await controller.initialize(); controller.startFresh(); controller.markDirty();
+  await controller.initialize(); await controller.startFresh(); controller.markDirty();
   const write = deps.store.write;
   deps.store.write = async()=> { const error = new Error('quota'); error.name='QuotaExceededError'; throw error; };
   assert.equal(await controller.flush(), false);
@@ -93,7 +126,7 @@ test('changes during an asynchronous save stay dirty and overlapping saves share
 
 test('size limits and another tab changing recovery both leave completed snapshots intact', async () => {
   const {controller, deps, snapshots} = setup({latest:{id:'old',text:'valid'}});
-  await controller.initialize(); controller.startFresh(); controller.markDirty();
+  await controller.initialize(); await controller.startFresh(); controller.markDirty();
   deps.exportText = async () => { throw new Error('numeric data exceeds recovery limit'); };
   assert.equal(await controller.flush(), false);
   assert.equal(snapshots.latest.id, 'old');
@@ -102,6 +135,53 @@ test('size limits and another tab changing recovery both leave completed snapsho
   assert.equal(await controller.flush({force:true}), false);
   assert.equal(snapshots.latest.text, 'keep me');
   controller.stop();
+});
+
+test('Start fresh suppresses only the declined snapshot on reload and preserves the payload', async () => {
+  const latest = { id:'declined', text:'old data' };
+  const {controller, create, deps, snapshots} = setup({ latest, previous:{id:'older', text:'older data'} });
+  await controller.initialize();
+  assert.equal(await controller.startFresh(), true);
+  assert.equal(snapshots.declinedId, latest.id);
+  assert.strictEqual(snapshots.latest, latest);
+  controller.stop();
+
+  const reloaded = create(deps);
+  await reloaded.initialize();
+  assert.equal(reloaded.getState().pending, false);
+  reloaded.markDirty();
+  assert.equal(await reloaded.flush(), true);
+  reloaded.stop();
+
+  const newer = create(deps);
+  await newer.initialize();
+  assert.equal(newer.getState().pending, true);
+  assert.notEqual(snapshots.latest.id, latest.id);
+  newer.stop();
+});
+
+test('clearing while an autosave is in flight dismisses the completed snapshot without erasing it', async () => {
+  const {controller, create, deps, snapshots} = setup();
+  let hasWork = true;
+  deps.hasWork = () => hasWork;
+  await controller.initialize();
+  let finish;
+  deps.exportText = () => new Promise(resolve => { finish = resolve; });
+  controller.markDirty();
+  const saving = controller.flush();
+  hasWork = false;
+  const clearing = controller.startFresh({discardCurrent:true});
+  finish('cleared workspace');
+  assert.equal(await saving, true);
+  assert.equal(await clearing, true);
+  assert.equal(snapshots.latest.text, 'cleared workspace');
+  assert.equal(snapshots.declinedId, snapshots.latest.id);
+  controller.stop();
+
+  const reloaded = create(deps);
+  await reloaded.initialize();
+  assert.equal(reloaded.getState().pending, false);
+  reloaded.stop();
 });
 
 test('starting a new workspace resumes autosave after the preceding workspace exceeded its limit', async () => {

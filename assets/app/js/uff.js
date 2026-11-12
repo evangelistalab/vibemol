@@ -683,7 +683,8 @@
 
     const angleTerms = topo.angles.map(([i, j, k]) => {
       const pj = getParams(atomTypes[j]);
-      const theta0 = pj[THETA0] * DEG2RAD;
+      const theta = options.angleTargets?.get(`${Math.min(i, k)}:${j}:${Math.max(i, k)}`) ?? pj[THETA0];
+      const theta0 = theta * DEG2RAD;
       const pi = getParams(atomTypes[i]);
       const pk = getParams(atomTypes[k]);
       const rij = naturalBondLength(pi, pj, 1.0);

@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import expect, sync_playwright
 from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -149,8 +149,10 @@ def scene_creation(page, dialogs):
     open_add_menu()
     with page.expect_file_chooser() as picker:
         page.get_by_role('menuitem', name='From file...', exact=True).click()
-    with page.expect_event('dialog'):
-        picker.value.set_files({'name': 'broken.cube', 'mimeType': 'text/plain', 'buffer': b'invalid cube'})
+    previous_dialogs = len(dialogs)
+    picker.value.set_files({'name': 'broken.cube', 'mimeType': 'text/plain', 'buffer': b'invalid cube'})
+    expect(page.locator('#hint')).to_have_text('broken.cube: Not enough lines for a CUBE file.', timeout=30000)
+    assert len(dialogs) == previous_dialogs, dialogs[previous_dialogs:]
     assert snapshot(page) == before
 
 
@@ -283,14 +285,17 @@ def imports(page, dialogs):
     rejected = load(page, [{'name': 'bad.cube', 'text': 'not a cube'}])
     assert not rejected['ok'] and rejected['loadedNames'] == [], rejected
     assert snapshot(page) == before, {'before': before, 'after': snapshot(page)}
-    assert 'bad.cube' in dialogs[-1]
+    expect(page.locator('#hint')).to_have_text('bad.cube: Not enough lines for a CUBE file.')
+    assert not dialogs, dialogs
     # The picker uses exactly the same failure handling and supports partial success.
     page.locator('#fileInput').set_input_files([
         {'name': 'bad.xyz', 'mimeType': 'text/plain', 'buffer': b'3\ninvalid\n'},
         {'name': 'c.cube', 'mimeType': 'text/plain', 'buffer': cube(0).encode()},
     ])
     page.wait_for_function("() => window.VibeMolTesting.getSceneGraphSnapshot().scenes.flatMap(s=>s.layers).filter(l=>l.kind==='cube').length === 3")
-    assert any('bad.xyz' in message for message in dialogs)
+    expect(page.locator('#hint')).to_have_text(
+        'bad.xyz: Malformed XYZ file: expected 3 atom lines after line 2, but file ended early.', timeout=30000)
+    assert not dialogs, dialogs
     # A sidecar alongside a new primary must not divert the batch to a destructive loader.
     sidecar = json.dumps({'kind':'vibemol.vibrations', 'version':1, 'units':'angstrom', 'atomCount':2, 'atomSymbols':['C','C'], 'modes':[{'frequencyCm1':245, 'displacements':[-0.18,0,0,0.18,0,0]}]})
     xyz = '2\nSidecar fixture\nC -0.7 0 0\nC 0.7 0 0\n'

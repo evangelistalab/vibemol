@@ -63,9 +63,13 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  // Keep the expected list hardcoded so widening it requires editing both this audit and the baseline.
  // Deriving it from Object.keys(contract.legacyStatementRemovals) would make the check tautological.
  assert.deepEqual(removed,[
+  "bind('down', 'global', 'a', () => {\n    window.__showAxes__ = !window.__showAxes__;\n    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;\n    syncAllAppearanceActionToggleButtons();\n    scheduleAppearancePresetAutosave();\n  });",
+  "bind('down', 'global', 'b', () => batchBtn && batchBtn.click());",
+  "bind('down', 'global', 'i', () => {\n    toggleActiveSurfaceVisibility();\n  });",
+  "bind('down', 'global', 's', () => saveBtn && saveBtn.click());",
   "bind('down', MODES.MEASURE, 'v', () => { toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_PANEL); });",
-  'let __lastBondUpdate = 0;',
- ],'Exactly the two authorized legacy statement removals');
+  "let __lastBondUpdate = 0;",
+ ],'Exactly the six authorized legacy statement removals');
  for(const statement of removed) {
   const matches=previousStatements.filter(code=>code===statement);
   assert.equal(matches.length,1,'Authorized removal must appear once in the pinned baseline: '+statement);

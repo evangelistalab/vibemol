@@ -36,9 +36,9 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   padding: 2px; background: var(--vm-color-surface-base); border-radius: var(--vm-radius-md);
 }
 .wb-bar .wb-mode-highlight {
-  position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px) / 4);
+  position: absolute; left: 2px; top: 2px; bottom: 2px; width: calc((100% - 4px - 3 * var(--wb-mode-gap, 0px)) / 4);
   border-radius: var(--vm-radius-md); background: var(--vm-color-surface-panel); box-shadow: var(--vm-shadow-sm);
-  transform: translateX(calc(var(--wb-mode-index, 0) * 100%)); transition: transform 160ms ease;
+  transform: translateX(calc(var(--wb-mode-index, 0) * (100% + var(--wb-mode-gap, 0px)))); transition: transform 160ms ease;
   pointer-events: none; z-index: -1;
 }
 .wb-bar #toolbarModeRow .tb-modeBtn {
@@ -47,6 +47,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   background: transparent !important;
 }
 .wb-bar #toolbarModeRow .tb-modeBtn::after { display: none; }
+.wb-bar #toolbarModeRow .tb-mode-short-label { display: none; }
 .wb-bar #toolbarModeRow .tb-modeBtn[aria-checked='true'] { color: var(--vm-color-toolbar-tab-fg-active) !important; }
 .wb-bar #toolbarModeRow .tb-modeBtn:hover { color: var(--vm-color-toolbar-tab-fg-hover) !important; }
 .wb-bar #toolbarModeRow .tb-modeBtn:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring) !important; }
@@ -215,14 +216,16 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
   .vm-workbench:not([data-wb-compact='true']) .wb-bar-actions .vm-btn > span:not(.material-symbols-rounded) { display: none; }
 }
 @container workbench-bar (max-width: 420px) {
-  .wb-bar #toolbarModeRow { width: 180px; }
+  .wb-bar #toolbarModeRow { width: 200px; --wb-mode-gap: 3px; gap: var(--wb-mode-gap); }
+  .wb-bar #toolbarModeRow .tb-modeBtn { padding: 0; font-size: 11px; }
+  .wb-bar #toolbarModeRow .tb-mode-full-label { display: none; }
+  .wb-bar #toolbarModeRow .tb-mode-short-label { display: inline; }
   .wb-bar #toolbarModeRow .tb-mode-shortcut { display: none; }
   .wb-bar .wb-tool-label, .wb-bar .adaptiveEditItemLabel { display: none; }
   .wb-panels-trigger > span:not(.material-symbols-rounded):not(.wb-panel-count) { display: none; }
 }
-@container workbench-bar (max-width: 360px) {
-  .wb-bar #toolbarModeRow { width: 180px; }
-  .wb-bar #toolbarModeRow .tb-modeBtn { padding: 0 4px; }
+@media (max-width: 420px) {
+  .vm-workbench[data-wb-compact='true'] .wb-bar { height: auto; }
 }
 @media (prefers-reduced-motion: reduce) {
   .vm-workbench * { scroll-behavior: auto !important; }

@@ -43,7 +43,8 @@
       }
       if (kind === 'molden') return deps.parseMolden(text);
       if (kind === 'two_component_cube') return deps.parseTwoComponentCube(text);
-      return deps.parseCube(text);
+      if (kind === 'cube') return deps.parseCube(text);
+      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, VibeMol session or preset, vibration JSON (.vib.json, .vmodes.json, .modes.json), ORCA .hess with its matching XYZ, or Psi4 vibrational output (.dat, .out, .output).');
     }
 
     async function resolveXyzUnits(item) {
@@ -168,7 +169,21 @@
             item.vol = parseVolumeByName(inputName, text);
           }
           item.extras = Object.assign({ inferBondOrders: true }, options.extras, item.extras);
-          plan.primaries.push(item);
+          if (item.vol.datasets) {
+            const { datasets, ...volume } = item.vol;
+            const extensionAt = item.name.lastIndexOf('.');
+            const stem = extensionAt < 0 ? item.name : item.name.slice(0, extensionAt);
+            const extension = extensionAt < 0 ? '' : item.name.slice(extensionAt);
+            for (const [index, { id, data }] of datasets.entries()) {
+              const label = id === null ? `dataset ${index + 1}` : `orbital ${id}`;
+              plan.primaries.push({ ...item, sourceInput: item, name: `${stem} (${label})${extension}`, vol: {
+                ...volume, data, origin: volume.origin.slice(), nxyz: volume.nxyz.slice(),
+                axes: volume.axes.map(axis => axis.slice()), atoms: volume.atoms.map(atom => ({ ...atom })),
+              } });
+            }
+          } else {
+            plan.primaries.push(item);
+          }
         } catch (err) {
           plan.failures.push(`${inputName}: ${err && err.message || err}`);
         }
@@ -249,11 +264,10 @@
         if (deps.getActiveVibrationInfo().enabled) deps.setVibrationPanelOpen(true);
       }
       if (!successful.size) deps.updateEmptyStateVisibility();
-      const loadedNames = Array.from(successful, item => item.inputName);
+      const loadedNames = Array.from(new Set(Array.from(successful, item => item.sourceInput || item)), item => item.inputName);
       if (loadedNames.length) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
       if (failures.length) {
         deps.setHintMessage(failures[0]);
-        deps.alertUser(`Could not load ${failures.length === 1 ? 'one file' : `${failures.length} files`}:\n\n${failures.map((failure, i) => `${i + 1}. ${failure}`).join('\n')}`);
       }
       return {
         ok: loadedNames.length > 0 && !failures.length,
@@ -396,7 +410,6 @@
       } catch (err) {
         const message = `Could not load ${label}: ${err && err.message || err}`;
         deps.setHintMessage(message);
-        deps.alertUser(message);
         return false;
       }
     }

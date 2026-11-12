@@ -2,14 +2,16 @@
   function getCanonicalElementSymbol(token) {
     const raw = String(token || '').trim();
     if (!raw) return '';
-    const upper = raw.toUpperCase();
-    if (window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, upper)) {
-      const z = window.ATOM_SYMBOL_TO_Z[upper];
+    const label = raw.toUpperCase().replace(/^([A-Z]+)\d+$/, '$1');
+    if (label === 'BQ') return 'X';
+    const key = label === 'D' || label === 'T' ? 'H' : label;
+    if (window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, key)) {
+      const z = window.ATOM_SYMBOL_TO_Z[key];
       const info = window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z];
-      return String((info && info.symbol) || raw);
+      return String((info && info.symbol) || key);
     }
     const z = Number(raw);
-    if (Number.isInteger(z) && z > 0) {
+    if (Number.isInteger(z)) {
       const info = window.ATOM_Z_TO_DATA && window.ATOM_Z_TO_DATA[z];
       if (info && info.symbol) return String(info.symbol);
     }
@@ -69,7 +71,7 @@
     const normalizedBlocks = [];
     while (cursor < nonEmptyLines.length) {
       const countRaw = Number(nonEmptyLines[cursor]);
-      if (!Number.isInteger(countRaw) || countRaw < 0) {
+      if (!Number.isSafeInteger(countRaw) || countRaw < 0) {
         normalizedBlocks.length = 0;
         break;
       }
@@ -77,7 +79,7 @@
         normalizedBlocks.length = 0;
         break;
       }
-      const frameAtomCount = countRaw | 0;
+      const frameAtomCount = countRaw;
       if (firstFrameAtomCount == null) firstFrameAtomCount = frameAtomCount;
       else if (frameAtomCount !== firstFrameAtomCount) {
         normalizedBlocks.length = 0;

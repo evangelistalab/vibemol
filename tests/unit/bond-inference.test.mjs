@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function createThreeStub() {
@@ -316,6 +317,64 @@ test('bond-order promotion can infer imported carbon-carbon triples from connect
     { i: 0, j: 2, order: 3, maxOrder: 4 },
     { i: 2, j: 3, order: 1, maxOrder: 4 },
   ]);
+});
+
+test('PubChem conjugated rings store a complete Kekulé assignment under atom and edge reordering', () => {
+  const { molecules } = JSON.parse(readFileSync(new URL('../fixtures/aromatic-hydrogen.json', import.meta.url)));
+  const context = loadGlobalModules([
+    'assets/vendor/js/atomic-data.js', 'assets/app/js/element-utils.js', 'assets/app/js/bond-inference.js',
+  ], { globals: { THREE: createThreeStub() } });
+  const inference = context.VibeMolBondInference;
+  const doubleCounts = {
+    anthracene: 7, aspirin: 3, benzene: 3, caffeine: 2, furan: 2,
+    indole: 4, naphthalene: 5, phenol: 3, pyridine: 3, toluene: 3,
+  };
+  assert.deepEqual(molecules.map(({ name }) => name).sort(), Object.keys(doubleCounts).sort());
+  for (const { name, atoms: rows } of molecules) {
+    const original = rows.map(([symbol, ...xyz]) => ({
+      Z: context.ATOM_SYMBOL_TO_Z[symbol], pos: new context.THREE.Vector3(...xyz),
+    }));
+    const staggered = original.filter((_, index) => index % 2 === 0)
+      .concat(original.filter((_, index) => index % 2 === 1).reverse());
+    for (const [order, atoms] of [original, original.slice().reverse(), staggered].entries()) {
+      const edges = inference.perceiveBondConnectivity(atoms);
+      if (order === 2) edges.reverse();
+      inference.inferBondOrders(atoms, edges);
+      const adjacency = inference.buildBondAdjacency(edges, atoms.length);
+      const rings = [5, 6].flatMap(size => inference.findSimpleCyclesOfSize(adjacency, size));
+      const ringPairs = new Set(rings.flatMap(ring => ring.map((i, k) => (
+        inference.getUndirectedPairKey(i, ring[(k + 1) % ring.length])
+      ))));
+      const valence = atoms.map((_, i) => edges.reduce((sum, edge) => (
+        edge.i === i || edge.j === i ? sum + edge.order : sum
+      ), 0));
+      const actual = {
+        doubleCount: edges.filter(({ i, j, order }) => order === 2 && ringPairs.has(inference.getUndirectedPairKey(i, j))).length,
+        valence,
+      };
+      const expected = { doubleCount: doubleCounts[name], valence: atoms.map(({ Z }) => ({ 1: 1, 6: 4, 7: 3, 8: 2 })[Z]) };
+      assert.deepEqual(actual, expected, JSON.stringify({ name, order, actual, expected }));
+    }
+  }
+});
+
+test('a planar quinone keeps its exocyclic carbonyls and only two ring double bonds', () => {
+  const context = loadBondInference();
+  const { perceiveBondConnectivity, inferBondOrders } = context.VibeMolBondInference;
+  const atoms = Array.from({ length: 12 }, (_, index) => {
+    const i = index % 6;
+    const angle = i * Math.PI / 3;
+    const terminalOxygen = index >= 6 && (i === 0 || i === 3);
+    const radius = index < 6 ? 1.41 : 1.41 + (terminalOxygen ? 1.22 : 1.09);
+    return { Z: index < 6 ? 6 : terminalOxygen ? 8 : 1,
+      pos: new context.THREE.Vector3(radius * Math.cos(angle), radius * Math.sin(angle), 0) };
+  });
+  const edges = perceiveBondConnectivity(atoms);
+  inferBondOrders(atoms, edges);
+  const carbonyls = edges.filter(({ j }) => atoms[j].Z === 8).map(({ order }) => order);
+  const ringDoubles = edges.filter(({ j, order }) => j < 6 && order === 2).length;
+  assert.deepEqual(Array.from(carbonyls), [2, 2]);
+  assert.equal(ringDoubles, 2);
 });
 
 test('cleanup diff distinguishes additions, removable perceived bonds, and explicit warnings', () => {

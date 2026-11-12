@@ -548,16 +548,163 @@
     return collectRawBondCandidates(atomPositions, options);
   }
 
-  /**
-   * Deprecated compatibility alias that mutates the input edge array in place.
-   * @deprecated App code should call perceiveBondConnectivity(...) directly.
-   */
+  // Edmonds' augmenting-path search contracts odd cycles during the search.
+  // Start with the short-bond preferences, then rearrange those pairs as needed.
+  function findPerfectBondMatching(adjacency, preferredPairs) {
+    const size = adjacency.length;
+    if (size % 2) return null;
+    const mate = new Array(size).fill(-1);
+    for (const [a, b] of preferredPairs) {
+      if (mate[a] !== -1 || mate[b] !== -1) continue;
+      mate[a] = b;
+      mate[b] = a;
+    }
+
+    function augment(root) {
+      const parent = new Array(size).fill(-1);
+      const base = adjacency.map((_, i) => i);
+      const queued = new Set([root]);
+      const queue = [root];
+      const ancestorOf = (a, b) => {
+        const path = new Set();
+        while (true) {
+          a = base[a];
+          path.add(a);
+          if (mate[a] === -1) break;
+          a = parent[mate[a]];
+        }
+        while (!path.has(base[b])) b = parent[mate[base[b]]];
+        return base[b];
+      };
+      const markPath = (vertex, common, child, contracted) => {
+        while (base[vertex] !== common) {
+          contracted.add(base[vertex]);
+          contracted.add(base[mate[vertex]]);
+          parent[vertex] = child;
+          child = mate[vertex];
+          vertex = parent[child];
+        }
+      };
+      for (let cursor = 0; cursor < queue.length; cursor++) {
+        const vertex = queue[cursor];
+        for (const neighbor of adjacency[vertex]) {
+          if (base[vertex] === base[neighbor] || mate[vertex] === neighbor) continue;
+          if (neighbor === root || (mate[neighbor] !== -1 && parent[mate[neighbor]] !== -1)) {
+            const common = ancestorOf(vertex, neighbor);
+            const contracted = new Set();
+            markPath(vertex, common, neighbor, contracted);
+            markPath(neighbor, common, vertex, contracted);
+            for (let i = 0; i < size; i++) {
+              if (!contracted.has(base[i])) continue;
+              base[i] = common;
+              if (!queued.has(i)) { queued.add(i); queue.push(i); }
+            }
+          } else if (parent[neighbor] === -1) {
+            parent[neighbor] = vertex;
+            const partner = mate[neighbor];
+            if (partner === -1) {
+              for (let end = neighbor; end !== -1;) {
+                const start = parent[end];
+                const next = mate[start];
+                mate[end] = start;
+                mate[start] = end;
+                end = next;
+              }
+              return true;
+            }
+            queued.add(partner);
+            queue.push(partner);
+          }
+        }
+      }
+      return false;
+    }
+
+    for (let i = 0; i < size; i++) {
+      if (mate[i] === -1 && !augment(i)) return null;
+    }
+    return mate;
+  }
+
+  function inferConjugatedRingOrders(atoms, covalentEdges, valence) {
+    const incident = atoms.map(() => []);
+    const byPair = new Map();
+    for (const edge of covalentEdges) {
+      incident[edge.i].push(edge);
+      incident[edge.j].push(edge);
+      byPair.set(getUndirectedPairKey(edge.i, edge.j), edge);
+    }
+    // Assign one electron to sites that need a double bond and two to lone
+    // pair donors. A full sigma coordination count distinguishes pyridine
+    // nitrogen (two neighbors) from pyrrole nitrogen (three, including H).
+    const electrons = atoms.map((atom, i) => {
+      const degree = incident[i].length;
+      if (!atom || Number(atom.formalCharge) || valence[i] !== degree) return 0;
+      if (incident[i].some(edge => {
+        const other = edge.i === i ? edge.j : edge.i;
+        // A short terminal multiple-bond candidate (e.g. quinone C=O)
+        // consumes the pi site outside the ring.
+        return edge.maxOrder > 1 && incident[other].length === 1 && edge.ratio < 0.9;
+      })) return 0;
+      if ((atom.Z === 6 && degree === 3) || (atom.Z === 7 && degree === 2)) return 1;
+      if ((atom.Z === 7 && degree === 3) || ([8, 16].includes(atom.Z) && degree === 2)) return 2;
+      return 0;
+    });
+    const candidates = covalentEdges.filter(({ i, j, len }) => electrons[i] && electrons[j]
+      && len >= 1.18 && len <= (atoms[i].Z === 16 || atoms[j].Z === 16 ? 1.83 : 1.50));
+    if (!candidates.length) return;
+    const candidateAdj = buildBondAdjacency(candidates, atoms.length);
+    const ringEdges = new Set();
+    for (const size of [5, 6]) {
+      for (const cycle of findSimpleCyclesOfSize(candidateAdj, size)) {
+        if (cycle.reduce((sum, i) => sum + electrons[i], 0) !== 6) continue;
+        const geometry = measureRingGeometry(cycle, atoms);
+        if (!geometry || geometry.maxPlaneDeviation > 0.12) continue;
+        for (let i = 0; i < size; i++) {
+          ringEdges.add(byPair.get(getUndirectedPairKey(cycle[i], cycle[(i + 1) % size])));
+        }
+      }
+    }
+    if (!ringEdges.size) return;
+    const ringAdj = buildBondAdjacency([...ringEdges], atoms.length);
+    const visited = new Set();
+    for (let i = 0; i < atoms.length; i++) {
+      if (!ringAdj[i].length || visited.has(i)) continue;
+      const component = [i];
+      visited.add(i);
+      for (let cursor = 0; cursor < component.length; cursor++) {
+        for (const neighbor of ringAdj[component[cursor]]) {
+          if (visited.has(neighbor)) continue;
+          visited.add(neighbor);
+          component.push(neighbor);
+        }
+      }
+      const sites = component.filter(atom => electrons[atom] === 1).sort((a, b) => a - b);
+      const localIndex = new Map(sites.map((atom, index) => [atom, index]));
+      const pairs = sites.flatMap((atom, index) => ringAdj[atom]
+        .filter(other => localIndex.get(other) > index)
+        .map(other => [index, localIndex.get(other)]));
+      const edgeFor = (a, b) => byPair.get(getUndirectedPairKey(sites[a], sites[b]));
+      pairs.sort(([a, b], [c, d]) => edgeFor(a, b).ratio - edgeFor(c, d).ratio || a - c || b - d);
+      const matching = findPerfectBondMatching(buildBondAdjacency(pairs.map(([i, j]) => ({ i, j })), sites.length), pairs);
+      if (!matching) continue;
+      for (const [a, b] of matching.entries()) {
+        if (a >= b) continue;
+        edgeFor(a, b).order = 2;
+        valence[sites[a]]++;
+        valence[sites[b]]++;
+      }
+    }
+  }
+
+  /** Infer stored orders on a perceived graph, in place. */
   function inferBondOrders(atomPositions, edges) {
     validateBondAtomicNumbers(atomPositions);
     if (!Array.isArray(atomPositions) || !Array.isArray(edges)) return;
     const atomCount = atomPositions.length | 0;
     const valence = new Array(atomCount).fill(0);
     const targetValence = new Array(atomCount).fill(0);
+    const covalentEdges = [];
     for (const edge of edges) {
       if (!edge) continue;
       const i = edge.i | 0;
@@ -574,6 +721,7 @@
         continue;
       }
       edge.maxOrder = Math.max(baseOrder, getPairMaxBondOrder(atomI.Z, atomJ.Z) | 0);
+      covalentEdges.push(edge);
       valence[i] += baseOrder;
       valence[j] += baseOrder;
     }
@@ -581,11 +729,11 @@
       const atom = atomPositions[index];
       targetValence[index] = atom ? chooseTargetValence(atom.Z, valence[index]) : valence[index];
     }
+    inferConjugatedRingOrders(atomPositions, covalentEdges, valence);
     while (true) {
       let bestEdge = null;
       let bestScore = Infinity;
-      for (const edge of edges) {
-        if (!edge) continue;
+      for (const edge of covalentEdges) {
         const i = edge.i | 0;
         const j = edge.j | 0;
         if (i < 0 || j < 0 || i >= atomCount || j >= atomCount || i === j) continue;
@@ -845,6 +993,31 @@
     }
   }
 
+  function measureRingGeometry(cycle, atoms) {
+    const center = new global.THREE.Vector3();
+    for (const i of cycle) center.add(atoms[i].pos);
+    center.multiplyScalar(1 / cycle.length);
+    const normal = new global.THREE.Vector3();
+    for (let k = 0; k < cycle.length; k++) {
+      const p0 = atoms[cycle[k]].pos.clone().sub(center);
+      const p1 = atoms[cycle[(k + 1) % cycle.length]].pos.clone().sub(center);
+      normal.add(new global.THREE.Vector3().crossVectors(p0, p1));
+    }
+    if (normal.lengthSq() < 1e-10) return null;
+    normal.normalize();
+    let maxPlaneDeviation = 0;
+    let avgRadius = 0;
+    for (const i of cycle) {
+      const rel = atoms[i].pos.clone().sub(center);
+      maxPlaneDeviation = Math.max(maxPlaneDeviation, Math.abs(rel.dot(normal)));
+      const projected = rel.clone().addScaledVector(normal, -rel.dot(normal));
+      avgRadius += projected.length();
+    }
+    avgRadius /= cycle.length;
+    if (!Number.isFinite(avgRadius) || avgRadius < 0.2) return null;
+    return { center, normal, maxPlaneDeviation, avgRadius };
+  }
+
   /**
    * Detect benzene-like aromatic six-member carbon rings from inferred bonds.
    * Matching rings are normalized to alternating single/double order and
@@ -916,30 +1089,9 @@
       const stdLen = Math.sqrt(varLen / cycleEdgeLengths.length);
       if (meanLen < 1.32 || meanLen > 1.47 || stdLen > 0.09) continue;
 
-      const center = new global.THREE.Vector3();
-      for (const atomIdx of cycle) center.add(atomPositions[atomIdx].pos);
-      center.multiplyScalar(1 / cycle.length);
-
-      const normal = new global.THREE.Vector3();
-      for (let k = 0; k < cycle.length; k++) {
-        const p0 = atomPositions[cycle[k]].pos.clone().sub(center);
-        const p1 = atomPositions[cycle[(k + 1) % cycle.length]].pos.clone().sub(center);
-        normal.add(new global.THREE.Vector3().crossVectors(p0, p1));
-      }
-      if (normal.lengthSq() < 1e-10) continue;
-      normal.normalize();
-
-      let maxPlaneDeviation = 0;
-      let avgRadius = 0;
-      for (const atomIdx of cycle) {
-        const rel = atomPositions[atomIdx].pos.clone().sub(center);
-        maxPlaneDeviation = Math.max(maxPlaneDeviation, Math.abs(rel.dot(normal)));
-        const projected = rel.clone().addScaledVector(normal, -rel.dot(normal));
-        avgRadius += projected.length();
-      }
-      avgRadius /= cycle.length;
-      if (!Number.isFinite(avgRadius) || avgRadius < 0.2) continue;
-      if (maxPlaneDeviation > 0.12) continue;
+      const geometry = measureRingGeometry(cycle, atomPositions);
+      if (!geometry || geometry.maxPlaneDeviation > 0.12) continue;
+      const { center, normal, avgRadius } = geometry;
 
       enforceAlternatingSixRingBondOrders(edges, edgeIndices);
       aromaticRings.push({

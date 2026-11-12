@@ -10,7 +10,7 @@ function requireParsedAtomicNumber(z, label) {
 }
 /**
  * Atom record used by parsed molecular files.
- * Coordinates are stored in file-native units.
+ * Coordinates use the units of their enclosing volume.
  * @typedef {{id?:string,Z:number,x:number,y:number,z:number,formalCharge:number}} ParsedAtom
  */
 
@@ -31,7 +31,7 @@ function arrayMinMax(a) {
 
 /**
  * Create a streaming numeric reader over whitespace-delimited text lines.
- * Invalid numeric tokens are skipped; `null` is returned once input is exhausted.
+ * Reject malformed tokens so each value stays at its declared grid position.
  * @param {string[]} lines
  * @param {number} startLine
  * @returns {() => (number|null)}
@@ -67,7 +67,7 @@ function createNumberTokenizer(lines, startLine) {
         let n = +token;
         if (Number.isNaN(n)) n = parseLooseNumber(token);
         if (Number.isFinite(n)) return n;
-        continue;
+        throw new Error(`Malformed CUBE numeric token "${token}" at line ${lineIndex}.`);
       }
       if (!loadNextLine()) return null;
     }
@@ -78,11 +78,13 @@ function createNumberTokenizer(lines, startLine) {
  * Read exactly `length` values from a tokenizer into a `Float32Array`.
  * @param {() => (number|null)} nextNumber
  * @param {number} length
+ * @param {number|null} firstValue
  * @returns {Float32Array}
  */
-function readFloatArray(nextNumber, length) {
+function readFloatArray(nextNumber, length, firstValue = null) {
   const out = new Float32Array(length);
-  for (let i = 0; i < length; i++) {
+  if (firstValue !== null) out[0] = firstValue;
+  for (let i = firstValue === null ? 0 : 1; i < length; i++) {
     const n = nextNumber();
     if (n == null) {
       throw new Error(`Data size mismatch. Expected ${length}, got ${i}`);
@@ -92,47 +94,20 @@ function readFloatArray(nextNumber, length) {
   return out;
 }
 
-/**
- * Build a tokenizer positioned at the first scalar voxel value for CUBE data.
- * Handles negative-`natoms` dataset-id headers and ORCA legacy extra data-id lines.
- * @param {string[]} lines
- * @param {number} dataStartLine
- * @param {number} natomsRaw
- * @param {boolean} isORCA
- * @returns {() => (number|null)}
- */
-function createCubeDataTokenizer(lines, dataStartLine, natomsRaw, isORCA) {
-  // Standard CUBE with natoms < 0: one dataset header value (N) followed by N ids.
-  if ((natomsRaw | 0) < 0) {
-    const nextNumber = createNumberTokenizer(lines, dataStartLine);
-    const nDatasetsRaw = nextNumber();
-    if (nDatasetsRaw == null || !Number.isFinite(nDatasetsRaw) || !Number.isInteger(nDatasetsRaw) || nDatasetsRaw <= 0) {
-      throw new Error('Malformed CUBE dataset header (invalid dataset count after atom block).');
-    }
-    const nDatasets = nDatasetsRaw | 0;
-    for (let i = 0; i < nDatasets; i++) {
-      const datasetId = nextNumber();
-      if (datasetId == null || !Number.isFinite(datasetId)) {
-        throw new Error('Malformed CUBE dataset header (missing dataset ids after atom block).');
+// Scalar CUBE fields are interleaved with the dataset index varying fastest.
+function readCubeDatasets(nextNumber, total, count) {
+  if (count === 1) return [readFloatArray(nextNumber, total)];
+  const fields = Array.from({ length: count }, () => new Float32Array(total));
+  for (let voxel = 0; voxel < total; voxel++) {
+    for (let field = 0; field < count; field++) {
+      const value = nextNumber();
+      if (value == null) {
+        throw new Error(`Data size mismatch. Expected ${total * count}, got ${voxel * count + field}`);
       }
-    }
-    return nextNumber;
-  }
-
-  // ORCA compatibility: some files include one extra "<count> <id>" line before data.
-  if (isORCA) {
-    const raw = (lines[dataStartLine] || '').trim();
-    if (raw) {
-      const parts = raw.split(/\s+/);
-      const maybeLegacyIds = (
-        parts.length === 2
-        && /^[-+]?\d+$/.test(parts[0])
-        && /^[-+]?\d+$/.test(parts[1])
-      );
-      if (maybeLegacyIds) return createNumberTokenizer(lines, dataStartLine + 1);
+      fields[field][voxel] = value;
     }
   }
-  return createNumberTokenizer(lines, dataStartLine);
+  return fields;
 }
 
 function parseCubeIsoHint(comment) {
@@ -140,232 +115,125 @@ function parseCubeIsoHint(comment) {
   return match ? parseLooseNumber(match[1]) : null;
 }
 
-/**
- * Parse a Gaussian `.cube/.cub` file into the internal volume shape.
- * Handles an ORCA-specific extra header line when present.
- * @param {string} text
- * @returns {{
- *   title:string,
- *   comment:string,
- *   natoms:number,
- *   origin:number[],
- *   nxyz:number[],
- *   axes:number[][],
- *   atoms:ParsedAtom[],
- *   data:Float32Array,
- *   idx:(i:number,j:number,k:number)=>number,
- *   units:'bohr',
- *   isoHint:(number|null)
- * }}
- */
-function parseCube(text) {
-  // Split lines, handle CRLF
+// Grid consumers share the Bohr representation for axes, origin, and atoms.
+const CUBE_BOHR_TO_ANGSTROM = 0.529177210903;
+
+function parseCubeHeader(text, format) {
   const lines = text.replace(/\r/g, '').split('\n');
-  const isORCA = /ORCA/i.test(lines[0] || '');
-
-  if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
-
-  const title = lines[0];
-  const comment = lines[1];
-
-  const isoHint = parseCubeIsoHint(comment);
-
-  // natoms / origin line
-  const L3raw = (lines[2] || '').trim();
-  if (!L3raw) throw new Error('Malformed CUBE header at line 3 (missing atom count and origin).');
-  const L3 = L3raw.split(/\s+/);
-  if (L3.length < 4) throw new Error('Malformed CUBE header at line 3 (expected: natoms ox oy oz).');
-  const natomsRaw = Number(L3[0]);
-  if (!Number.isFinite(natomsRaw) || !Number.isInteger(natomsRaw)) {
-    throw new Error('Malformed CUBE header at line 3 (invalid atom count).');
+  if (lines.length < 6) throw new Error(`Not enough lines for a ${format} file.`);
+  const [title, comment] = lines;
+  const header = lines[2].trim().split(/\s+/);
+  const [rawAtomCount, ...coordinates] = header;
+  const atomCount = Number(rawAtomCount);
+  const origin = coordinates.slice(0, 3).map(parseLooseNumber);
+  const nval = header[4] === undefined ? 1 : Number(header[4]);
+  if (!Number.isSafeInteger(atomCount) || origin.length !== 3 || !origin.every(Number.isFinite)) {
+    throw new Error(`Malformed ${format} header at line 3 (expected atom count and origin coordinates).`);
   }
-  const natoms = natomsRaw | 0;
-  const atomCount = Math.abs(natoms);
-  const origin = L3.slice(1, 4).map(parseLooseNumber);
-  if (!origin.every(Number.isFinite)) {
-    throw new Error('Malformed CUBE header at line 3 (invalid origin coordinates).');
+  if (!Number.isSafeInteger(nval) || nval < 1 || (atomCount < 0 && nval !== 1)) {
+    throw new Error(`Malformed ${format} header at line 3 (invalid NVAL for this atom count).`);
   }
 
-  // grid counts + per-voxel step vectors (Bohr)
-  const sx = ((lines[3] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numx, ax, ay, az]
-  const sy = ((lines[4] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numy, bx, by, bz]
-  const sz = ((lines[5] || '').trim()).split(/\s+/).map(parseLooseNumber); // [numz, cx, cy, cz]
-  if (sx.length < 4 || sy.length < 4 || sz.length < 4) {
-    throw new Error('Malformed CUBE grid header at lines 4-6 (expected nx/ny/nz and axis vectors).');
+  const grid = lines.slice(3, 6).map(line => line.trim().split(/\s+/).slice(0, 4).map(parseLooseNumber));
+  if (grid.some(row => row.length !== 4 || !row.every(Number.isFinite) || !Number.isSafeInteger(row[0]) || row[0] === 0)) {
+    throw new Error(`Malformed ${format} grid header at lines 4-6 (expected nonzero integer counts and axis vectors).`);
   }
-  if (![sx[0], sx[1], sx[2], sx[3], sy[0], sy[1], sy[2], sy[3], sz[0], sz[1], sz[2], sz[3]].every(Number.isFinite)) {
-    throw new Error('Malformed CUBE grid header at lines 4-6 (non-numeric values).');
+  const angstrom = grid[0][0] < 0;
+  if (grid.some(row => (row[0] < 0) !== angstrom)) {
+    throw new Error(`Malformed ${format} grid header: mixed voxel-count signs leave the coordinate unit ambiguous.`);
   }
-  const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
-  if (numx <= 0 || numy <= 0 || numz <= 0) {
-    throw new Error('Malformed CUBE grid header at lines 4-6 (grid counts must be positive).');
-  }
-  const ax = sx.slice(1, 4); // per-voxel step along i
-  const ay = sy.slice(1, 4); // per-voxel step along j
-  const az = sz.slice(1, 4); // per-voxel step along k
+  const toBohr = value => angstrom ? value / CUBE_BOHR_TO_ANGSTROM : value;
+  const nxyz = grid.map(row => Math.abs(row[0]));
+  const axes = grid.map(row => row.slice(1).map(toBohr));
 
-  // atoms: Z, q, x, y, z  (positions in Bohr)
+  const natoms = Math.abs(atomCount);
   const atoms = [];
-  for (let i = 0; i < atomCount; i++) {
+  for (let i = 0; i < natoms; i++) {
     const lineNo = 7 + i;
     const raw = (lines[6 + i] || '').trim();
-    if (!raw) throw new Error(`Malformed CUBE atom line ${lineNo} (missing atom record).`);
+    if (!raw) throw new Error(`Malformed ${format} atom line ${lineNo} (missing atom record).`);
     const p = raw.split(/\s+/).slice(0, 5).map(parseLooseNumber);
     if (p.length < 5 || !p.every(Number.isFinite)) {
-      throw new Error(`Malformed CUBE atom line ${lineNo} (expected: Z q x y z).`);
+      throw new Error(`Malformed ${format} atom line ${lineNo} (expected: Z q x y z).`);
     }
-    atoms.push({ Z: requireParsedAtomicNumber(p[0], `Malformed CUBE atom line ${lineNo}`), x: p[2], y: p[3], z: p[4], formalCharge: 0 });
+    atoms.push({ Z: requireParsedAtomicNumber(p[0], `Malformed ${format} atom line ${lineNo}`),
+      x: toBohr(p[2]), y: toBohr(p[3]), z: toBohr(p[4]), formalCharge: 0 });
   }
 
-  // volumetric data (z fastest, then y, then x) — reshape (numx,numy,numz)
-  const dataStartLine = 6 + atomCount;
+  let dataStart = 6 + natoms;
+  // ORCA compatibility: some positive-atom-count cubes have one legacy id row.
+  if (atomCount >= 0 && nval === 1 && /ORCA/i.test(title) && /^1\s+[-+]?\d+$/.test((lines[dataStart] || '').trim())) {
+    dataStart++;
+  }
+  const nextNumber = createNumberTokenizer(lines, dataStart);
+  let datasetIds = null;
+  if (atomCount < 0) {
+    const count = nextNumber();
+    if (!Number.isSafeInteger(count) || count < 1) {
+      throw new Error('Malformed CUBE dataset header (invalid dataset count after atom block).');
+    }
+    datasetIds = [];
+    for (let i = 0; i < count; i++) {
+      const id = nextNumber();
+      if (!Number.isSafeInteger(id)) {
+        throw new Error('Malformed CUBE dataset header (missing or invalid dataset id after atom block).');
+      }
+      datasetIds.push(id);
+    }
+  }
+  const count = datasetIds ? datasetIds.length : nval;
+  const [numx, numy, numz] = nxyz;
   const total = numx * numy * numz;
-  const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
-  const data = readFloatArray(nextNumber, total);
-
-  // index helper matching your reshape: data[i,j,k]
-  /**
-   * Map voxel coordinates to a flat array index.
-   * Layout is `[x][y][z]` with `z` as the fastest axis.
-   * @param {number} i
-   * @param {number} j
-   * @param {number} k
-   * @returns {number}
-   */
+  if (!Number.isSafeInteger(total * count) || total * count > text.length) {
+    throw new Error(`Data size mismatch. The ${format} dimensions and dataset count exceed the available input.`);
+  }
   const idx = (i, j, k) => (i * numy + j) * numz + k;
+  const volume = { title, comment, natoms, origin: origin.map(toBohr), nxyz, axes, atoms };
+  return { volume, idx, isoHint: parseCubeIsoHint(comment), total, count, datasetIds, nextNumber };
+}
 
-  return {
-    title, comment,
-    natoms: atomCount,
-    origin,                        // Bohr
-    nxyz: [numx, numy, numz],
-    axes: [ax, ay, az],            // per-voxel step vectors in Bohr
-    atoms, data, idx,
-    units: 'bohr',                 // positions stored in Bohr
-    isoHint                        // may be null if not present
-  };
+/** Parse a scalar CUBE, retaining separately addressable fields when present. */
+function parseCube(text) {
+  const { volume, idx, isoHint, total, count, datasetIds, nextNumber } = parseCubeHeader(text, 'CUBE');
+  const fields = readCubeDatasets(nextNumber, total, count);
+  if (nextNumber() != null) throw new Error(`Data size mismatch. More than ${total * count} CUBE values for the declared datasets.`);
+  const parsed = { ...volume, data: fields[0], idx, units: 'bohr', isoHint };
+  if (count > 1) {
+    parsed.datasets = fields.map((data, index) => ({
+      id: datasetIds?.[index] ?? null, data,
+    }));
+  }
+  return parsed;
 }
 
 /**
- * Parse a two-component CUBE (`.2ccube`) file.
- * Expected channel order: `alphaRe`, `alphaIm`, `betaRe`, `betaIm`.
- * For single-channel fallback files, companion channels are zero-filled.
- * @param {string} text
- * @returns {{
- *   title:string,
- *   comment:string,
- *   natoms:number,
- *   origin:number[],
- *   nxyz:number[],
- *   axes:number[][],
- *   atoms:ParsedAtom[],
- *   alphaRe:Float32Array,
- *   alphaIm:Float32Array,
- *   betaRe:Float32Array,
- *   betaIm:Float32Array,
- *   data:Float32Array,
- *   idx:(i:number,j:number,k:number)=>number,
- *   units:'bohr',
- *   isoHint:(number|null),
- *   isTwoComponent:boolean
- * }}
+ * Parse a two-component CUBE. Legacy files store four consecutive blocks
+ * (or just alphaRe); an explicit four-field header declares interleaving.
  */
 function parseTwoComponentCube(text) {
-  const lines = text.replace(/\r/g, '').split('\n');
-  const isORCA = /ORCA/i.test(lines[0] || '');
-  if (lines.length < 6) throw new Error('Not enough lines for a CUBE file.');
-  const title = lines[0];
-  const comment = lines[1] || '';
-  const isoHint = parseCubeIsoHint(comment);
-  const L3raw = (lines[2] || '').trim();
-  if (!L3raw) throw new Error('Malformed 2C CUBE header at line 3 (missing atom count and origin).');
-  const L3 = L3raw.split(/\s+/);
-  if (L3.length < 4) throw new Error('Malformed 2C CUBE header at line 3 (expected: natoms ox oy oz).');
-  const natomsRaw = Number(L3[0]);
-  if (!Number.isFinite(natomsRaw) || !Number.isInteger(natomsRaw)) {
-    throw new Error('Malformed 2C CUBE header at line 3 (invalid atom count).');
-  }
-  const natoms = natomsRaw | 0;
-  const atomCount = Math.abs(natoms);
-  const origin = L3.slice(1, 4).map(parseLooseNumber);
-  if (!origin.every(Number.isFinite)) {
-    throw new Error('Malformed 2C CUBE header at line 3 (invalid origin coordinates).');
-  }
-  const sx = ((lines[3] || '').trim()).split(/\s+/).map(parseLooseNumber);
-  const sy = ((lines[4] || '').trim()).split(/\s+/).map(parseLooseNumber);
-  const sz = ((lines[5] || '').trim()).split(/\s+/).map(parseLooseNumber);
-  if (sx.length < 4 || sy.length < 4 || sz.length < 4) {
-    throw new Error('Malformed 2C CUBE grid header at lines 4-6 (expected nx/ny/nz and axis vectors).');
-  }
-  if (![sx[0], sx[1], sx[2], sx[3], sy[0], sy[1], sy[2], sy[3], sz[0], sz[1], sz[2], sz[3]].every(Number.isFinite)) {
-    throw new Error('Malformed 2C CUBE grid header at lines 4-6 (non-numeric values).');
-  }
-  const numx = Math.abs(sx[0]) | 0, numy = Math.abs(sy[0]) | 0, numz = Math.abs(sz[0]) | 0;
-  if (numx <= 0 || numy <= 0 || numz <= 0) {
-    throw new Error('Malformed 2C CUBE grid header at lines 4-6 (grid counts must be positive).');
-  }
-  const ax = sx.slice(1, 4);
-  const ay = sy.slice(1, 4);
-  const az = sz.slice(1, 4);
-  const atoms = [];
-  for (let i = 0; i < atomCount; i++) {
-    const lineNo = 7 + i;
-    const raw = (lines[6 + i] || '').trim();
-    if (!raw) throw new Error(`Malformed 2C CUBE atom line ${lineNo} (missing atom record).`);
-    const p = raw.split(/\s+/).slice(0, 5).map(parseLooseNumber);
-    if (p.length < 5 || !p.every(Number.isFinite)) {
-      throw new Error(`Malformed 2C CUBE atom line ${lineNo} (expected: Z q x y z).`);
+  const { volume, idx, isoHint, total, count, nextNumber } = parseCubeHeader(text, '2C CUBE');
+  let alphaRe, alphaIm, betaRe, betaIm;
+  let isTwoComponent = true;
+  if (count === 4) {
+    [alphaRe, alphaIm, betaRe, betaIm] = readCubeDatasets(nextNumber, total, count);
+  } else if (count === 1) {
+    alphaRe = readFloatArray(nextNumber, total);
+    const firstCompanion = nextNumber();
+    isTwoComponent = firstCompanion != null;
+    if (isTwoComponent) {
+      alphaIm = readFloatArray(nextNumber, total, firstCompanion);
+      betaRe = readFloatArray(nextNumber, total);
+      betaIm = readFloatArray(nextNumber, total);
+    } else {
+      alphaIm = new Float32Array(total);
+      betaRe = new Float32Array(total);
+      betaIm = new Float32Array(total);
     }
-    atoms.push({ Z: requireParsedAtomicNumber(p[0], `Malformed 2C CUBE atom line ${lineNo}`), x: p[2], y: p[3], z: p[4], formalCharge: 0 });
-  }
-  const dataStartLine = 6 + atomCount;
-  const nextNumber = createCubeDataTokenizer(lines, dataStartLine, natoms, isORCA);
-  const total = numx * numy * numz;
-  let alphaRe, alphaIm, betaRe, betaIm, isTwoComponent = false;
-
-  alphaRe = readFloatArray(nextNumber, total);
-
-  const maybeAlphaIm0 = nextNumber();
-  if (maybeAlphaIm0 == null) {
-    // single-dataset file; keep compat by exposing zeroed companion arrays
-    alphaIm = new Float32Array(total);
-    betaRe = new Float32Array(total);
-    betaIm = new Float32Array(total);
   } else {
-    isTwoComponent = true;
-    alphaIm = new Float32Array(total);
-    betaRe = new Float32Array(total);
-    betaIm = new Float32Array(total);
-
-    alphaIm[0] = maybeAlphaIm0;
-    for (let i = 1; i < total; i++) {
-      const n = nextNumber();
-      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${total + i}`);
-      alphaIm[i] = n;
-    }
-    for (let i = 0; i < total; i++) {
-      const n = nextNumber();
-      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${2 * total + i}`);
-      betaRe[i] = n;
-    }
-    for (let i = 0; i < total; i++) {
-      const n = nextNumber();
-      if (n == null) throw new Error(`Data size mismatch. Expected ${4 * total}, got ${3 * total + i}`);
-      betaIm[i] = n;
-    }
+    throw new Error(`A 2C CUBE needs one or four fields; this file declares ${count}. Open scalar datasets as a .cube file.`);
   }
-  /**
-   * Map voxel coordinates to a flat array index.
-   * @param {number} i
-   * @param {number} j
-   * @param {number} k
-   * @returns {number}
-   */
-  const idx = (i, j, k) => (i * numy + j) * numz + k;
-  const vol = { title, comment, natoms: atomCount, origin, nxyz: [numx, numy, numz], axes: [ax, ay, az], atoms, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent };
-  // default dataset
-  vol.data = isTwoComponent ? alphaRe : alphaRe;
-  return vol;
+  if (nextNumber() != null) throw new Error('Data size mismatch. Extra values after the 2C CUBE channels.');
+  return { ...volume, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent, data: alphaRe };
 }
 
 /**
@@ -395,7 +263,7 @@ function parseXYZ(text) {
   const frames = [];
   const frameComments = [];
   let natoms = null;
-  let atomSymbols = null;
+  const atomNumbers = [];
   let firstFrameAtoms = null;
 
   while (cursor < lines.length) {
@@ -406,10 +274,10 @@ function parseXYZ(text) {
     const countRaw = (lines[cursor] || '').trim();
     if (!countRaw) throw new Error(`Malformed XYZ file at line ${blockStartLine}: missing atom count.`);
     const natomsVal = Number(countRaw);
-    if (!Number.isFinite(natomsVal) || !Number.isInteger(natomsVal) || natomsVal < 0) {
+    if (!Number.isSafeInteger(natomsVal) || natomsVal < 0) {
       throw new Error(`Malformed XYZ file at line ${blockStartLine}: atom count must be a non-negative integer.`);
     }
-    const frameNatoms = natomsVal | 0;
+    const frameNatoms = natomsVal;
     if (natoms == null) natoms = frameNatoms;
     else if (frameNatoms !== natoms) {
       throw new Error(`Malformed XYZ trajectory at line ${blockStartLine}: atom count ${frameNatoms} does not match first frame count ${natoms}.`);
@@ -420,28 +288,31 @@ function parseXYZ(text) {
       throw new Error(`Malformed XYZ file: missing comment line after atom count at line ${blockStartLine}.`);
     }
     const comment = lines[commentIndex] || '';
+    if (frameNatoms > lines.length - commentIndex - 1) {
+      throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
+    }
 
     const frame = new Float32Array(frameNatoms * 3);
     const frameAtoms = [];
     for (let i = 0; i < frameNatoms; i++) {
       const rowIndex = cursor + 2 + i;
       const lineNo = rowIndex + 1;
-      if (rowIndex >= lines.length) {
-        throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
-      }
       const l = (lines[rowIndex] || '').trim();
       if (!l) throw new Error(`Malformed XYZ file at line ${lineNo}: missing atom record.`);
       const parts = l.split(/\s+/);
       if (parts.length < 4) {
-        throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Symbol X Y Z".`);
+        throw new Error(`Malformed XYZ file at line ${lineNo}: expected "Element X Y Z".`);
       }
       const sym = parts[0];
-      const symbolKey = sym.toUpperCase();
-      const hasSymbol = !!(window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, symbolKey));
-      if (!hasSymbol) {
+      const label = sym.toUpperCase().replace(/^([A-Z]+)\d+$/, '$1');
+      const key = label === 'D' || label === 'T' ? 'H' : label;
+      const table = window.ATOM_SYMBOL_TO_Z || {};
+      const number = Number(sym);
+      const atomicNumber = key === 'BQ' ? 0 : (!Number.isNaN(number) ? number : (Object.hasOwn(table, key) ? table[key] : null));
+      if (atomicNumber === null) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
       }
-      const Z = requireParsedAtomicNumber(window.ATOM_SYMBOL_TO_Z[symbolKey], `Malformed XYZ atom line ${lineNo}`);
+      const Z = requireParsedAtomicNumber(atomicNumber, `Malformed XYZ atom line ${lineNo}`);
       const x = parseLooseNumber(parts[1]);
       const y = parseLooseNumber(parts[2]);
       const z = parseLooseNumber(parts[3]);
@@ -449,9 +320,8 @@ function parseXYZ(text) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: coordinates must be numeric.`);
       }
 
-      if (!atomSymbols) atomSymbols = [];
-      if (atomSymbols.length <= i) atomSymbols.push(symbolKey);
-      else if (atomSymbols[i] !== symbolKey) {
+      if (atomNumbers.length <= i) atomNumbers.push(Z);
+      else if (atomNumbers[i] !== Z) {
         throw new Error(`Malformed XYZ trajectory at line ${lineNo}: element sequence differs from first frame.`);
       }
 
@@ -464,6 +334,13 @@ function parseXYZ(text) {
     frameComments.push(comment);
     if (!firstFrameAtoms) firstFrameAtoms = frameAtoms;
     cursor += frameNatoms + 2;
+    while (cursor < lines.length && !lines[cursor].trim()) cursor++;
+    if (cursor < lines.length) {
+      const next = lines[cursor].trim().split(/\s+/);
+      if (next.length >= 4 && next.slice(1, 4).every(token => Number.isFinite(parseLooseNumber(token)))) {
+        throw new Error(`Malformed XYZ file: atom count ${frameNatoms} at line ${blockStartLine} is too small; extra atom record at line ${cursor + 1}.`);
+      }
+    }
   }
 
   if (!firstFrameAtoms || natoms == null) throw new Error('Malformed XYZ file: no atom frame found.');

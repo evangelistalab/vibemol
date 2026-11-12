@@ -76,7 +76,12 @@ def measurements(page, url):
     assert p.load(page,[{'name':'water.xyz','text':'O 0 0 0\nH 1 0 0\nH 0 1 0'}])['ok']
     page.locator('#modeMeasureBtn').click();settle(page)
     panel=page.locator('#measurementsPanel');assert panel.is_visible()
-    for index in [0,1,2]:pick(page,index)
+    for index in [0,1]:pick(page,index)
+    active = panel.locator('[data-active]').inner_text()
+    expected = 'Active: water.xyz · 1 measurement'
+    print(f'[measurement-count] actual={active!r}, expected={expected!r}', flush=True)
+    assert active == expected, (active, expected)
+    pick(page,2)
     assert len(snapshot(page)['rows']) == 3;assert_labels(page)
     page.locator('#canvas').focus();page.keyboard.press('Escape')
     assert snapshot(page)['atomIndices'] == [] and len(snapshot(page)['rows']) == 3
@@ -222,6 +227,7 @@ def recovery_live_panels(page,url):
     wait_for_saved_layout(page)
     assert page.evaluate('()=>VibeMolRecovery.flush({force:true})')
     original=page.evaluate('async()=> (await VibeMolSessionRecovery.createRecoveryStore().read()).latest')
+    original_atoms=page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms')
     page.reload();page.wait_for_selector('#sessionRecoveryPrompt',state='visible');settle(page)
     # Saved windows stay deferred; panels explicitly opened now must still work.
     assert page.locator('#workbenchDockRight').is_hidden() and page.locator('#workbenchDockBottom').is_hidden()
@@ -250,15 +256,23 @@ def recovery_live_panels(page,url):
     assert page.evaluate('()=>VibeMolCalculations.state().selectedAtomIds.length')==1
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==[]
     page.screenshot(path=str(p.ARTIFACTS/'calculations-pending-recovery.png'))
-    # The recovery choice and scientific snapshot are unaffected by panel actions.
+    # The original offer stays available in this tab while current work autosaves.
     assert page.evaluate('()=>VibeMolRecovery.getState().pending')
-    assert not page.evaluate('()=>VibeMolRecovery.flush({force:true})')
-    assert page.evaluate('async()=> (await VibeMolSessionRecovery.createRecoveryStore().read()).latest')==original
+    saved=page.evaluate('''async oldId=>{
+      const flushed=await VibeMolRecovery.flush({force:true});
+      const {latest}=await VibeMolSessionRecovery.createRecoveryStore().read();
+      return {flushed,name:latest.name,newSnapshot:latest.id!==oldId};
+    }''',original['id'])
+    expected={'flushed':True,'name':'current.xyz','newSnapshot':True}
+    print(f'[pending-recovery-save] actual={saved}, expected={expected}',flush=True)
+    assert saved==expected,(saved,expected)
     page.set_viewport_size({'width':850,'height':850});settle(page)
     assert page.locator('#workbenchDockBottom').is_visible() and page.locator('#subspacePanel').is_visible()
     page.locator('#recoverSessionBtn').click();page.wait_for_selector('#sessionRecoveryPrompt',state='hidden');settle(page)
     assert page.locator('#modeDisplayBtn').get_attribute('aria-checked')=='true'
-    assert page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.length')==3
+    atoms=page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms')
+    print(f'[pending-recovery-restore] actual={atoms}, expected={original_atoms}',flush=True)
+    assert atoms==original_atoms,(atoms,original_atoms)
     assert page.locator('#coordsPanel').is_visible() or page.locator('#inspector').is_visible()
     print('[recovery] manual panels, Calculations dock/checkmarks, compact layout and preserved recovery snapshot: passed',flush=True)
 

@@ -8509,8 +8509,8 @@
             icon: 'center_focus_strong',
             label: 'COM → Origin',
             meta: '',
-            key: 'R',
-            title: 'Shift COM to origin (R)',
+            key: 'Shift+R',
+            title: 'Shift COM to origin (Shift+R)',
             static: false,
           },
         };
@@ -25578,19 +25578,9 @@
 
   // --- Shortcut bindings ---
 
-  // Global: save, batch, toggle surfaces/axes
-  bind('down', 'global', 's', () => saveBtn && saveBtn.click());
-  bind('down', 'global', 'b', () => batchBtn && batchBtn.click());
-  bind('down', 'global', 'i', () => {
-    toggleActiveSurfaceVisibility();
+  bind('down', MODES.EDIT, 'r', (e) => {
+    if (e.shiftKey && !e.repeat) centerActiveMoleculeMassAtOrigin();
   });
-  bind('down', 'global', 'a', () => {
-    window.__showAxes__ = !window.__showAxes__;
-    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;
-    syncAllAppearanceActionToggleButtons();
-    scheduleAppearancePresetAutosave();
-  });
-  bind('down', 'global', 'r', () => centerActiveMoleculeMassAtOrigin());
 
   // Global: Up/Down arrows cycle cube layers in the focused scene.
   /**
@@ -25934,9 +25924,9 @@
       toggleHelp(document.activeElement || helpBtn || null);
       return;
     }
-    if (isHelpOpen() && e.key === 'Tab') {
-      handleHelpOverlayKeydown(e);
-      if (e.defaultPrevented) return;
+    if (isHelpOpen()) {
+      if (e.key === 'Tab') handleHelpOverlayKeydown(e);
+      return;
     }
     if (currentMode === MODES.EDIT && addAtomOperatorSession) {
       if (e.key === 'Enter' && !isTypingInInput()) {
@@ -25967,7 +25957,7 @@
     if (handleGlobalFileHotkey(e)) return;
     if (handleUndoRedoHotkey(e)) return;
     if (handleOutlinerSelectionHotkey(e)) return;
-    dispatchShortcut(e, 'down', currentMode);
+    if (!(e.ctrlKey || e.metaKey || e.altKey)) dispatchShortcut(e, 'down', currentMode);
   });
   window.addEventListener('copy', handleStructureCopy);
   window.addEventListener('paste', (e) => {
@@ -30601,7 +30591,9 @@
       const forceNewScene = !!(item.forceNewScene || isTrajectoryVolumeRecord(item.vol));
       let group = null;
       if (!forceNewScene) {
-        group = groups.find((candidate) => !candidate.forceNewScene && moleculeMatchesVolume(item.vol, candidate.representativeVol)) || null;
+        group = groups.find(candidate => !candidate.forceNewScene
+          && ((item.sourceInput && candidate.items[0]?.sourceInput === item.sourceInput)
+            || moleculeMatchesVolume(item.vol, candidate.representativeVol))) || null;
       }
       if (!group) {
         group = makeDropSceneGroup(item, resolveSceneKeyForItem(item, forceNewScene));
@@ -30776,7 +30768,6 @@
     setVibrationPanelOpen,
     setNavigationHint,
     setHintMessage,
-    alertUser: (message) => alert(message),
     clearEditHistory,
     clearSceneMeshes,
     HINT_START,
@@ -30939,12 +30930,16 @@
    * @param {string} prefix
    */
   function setNavigationHint(prefix) {
-    const parts = [String(prefix || '').trim(), HINT_NAVIGATION];
+    const navigation = window.matchMedia('(pointer: coarse)').matches
+      ? 'Orbit: one-finger drag • Zoom: pinch • Pan: two-finger drag'
+      : HINT_NAVIGATION;
+    const parts = [String(prefix || '').trim(), navigation];
     setHintMessage(parts.filter(Boolean).join(' • '), { accent: false });
   }
 
   if (hintEl) {
-    revealHintTemporarily();
+    if (lastHintMessage) revealHintTemporarily();
+    else setNavigationHint(HINT_START);
     window.addEventListener('mousemove', handleHintRevealPointerMove, { passive: true });
   }
 
@@ -30997,7 +30992,8 @@
     return fileLoaderController.clearAllLoadedFiles(options);
   }
 
-  function handleClearAllLoadedFilesClick() {
+  async function handleClearAllLoadedFilesClick() {
+    if (!window.confirm('Clear all loaded files and their undo history?')) return;
     if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
     closeCubeLayerContextMenu();
     closeCombinePopover();
@@ -31005,6 +31001,7 @@
     clearAllLoadedFiles();
     if (currentMode !== MODES.DISPLAY) setMode(MODES.DISPLAY);
     else updateEmptyStateVisibility();
+    await sessionRecovery?.startFresh({ discardCurrent: true });
   }
 
   /**
@@ -32509,7 +32506,7 @@
     onOpened: staged => {
       if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
-      if (sessionRecovery) { sessionRecovery.startFresh(); sessionRecovery.markDirty(); }
+      if (sessionRecovery) { void sessionRecovery.startFresh({ remember: false }); sessionRecovery.markDirty(); }
       setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
     },
   });
@@ -32580,7 +32577,10 @@
     recoverSessionBtn.disabled = true;
     try { await sessionRecovery.recover(); } finally { recoverSessionBtn.disabled = false; }
   };
-  skipRecoveryBtn.onclick = () => sessionRecovery.startFresh();
+  skipRecoveryBtn.onclick = async () => {
+    skipRecoveryBtn.disabled = true;
+    try { await sessionRecovery.startFresh(); } finally { skipRecoveryBtn.disabled = false; }
+  };
   retryAutosaveBtn.onclick = async () => {
     if (!sessionRecovery.getState().ready) await sessionRecovery.initialize();
     else await sessionRecovery.flush({force:true});

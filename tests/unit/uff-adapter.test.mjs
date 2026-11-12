@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { evaluateInContext, loadGlobalModules } from './load-global-module.mjs';
 
 function loadUffAdapterContext() {
@@ -87,6 +88,30 @@ test('UFF types heteroaromatic and fused rings, while retaining localized orders
     assert.deepEqual(Array.from(system.bondTerms).filter(({ i, j }) => i < ringAtoms && j < ringAtoms)
       .map(({ bondOrder }) => bondOrder).sort(), expectedOrders);
   }
+});
+
+test('UFF keeps indole’s fused resonant rings near their bond lengths without rewriting stored orders', () => {
+  const { VibeMolUFFAdapter: adapter } = loadUffAdapterContext();
+  const { molecules } = JSON.parse(readFileSync(new URL('../fixtures/aromatic-hydrogen.json', import.meta.url)));
+  const fixture = molecules.find(({ name }) => name === 'indole');
+  const atomicNumbers = { H: 1, C: 6, N: 7 };
+  const atoms = fixture.atoms.map(([symbol, x, y, z], i) => ({ id: `a${i}`, Z: atomicNumbers[symbol], x, y, z }));
+  const edges = [[0,1,1],[0,6,1],[0,9,1],[1,2,2],[1,4,1],[2,3,1],[2,5,1],[3,6,2],[3,10,1],
+    [4,7,2],[4,11,1],[5,8,2],[5,12,1],[6,13,1],[7,8,1],[7,14,1],[8,15,1]];
+  const bonds = edges.map(([i, j, order]) => ({ a: atoms[i].id, b: atoms[j].id, order, origin: 'explicit' }));
+  const volume = { atoms, bonds };
+  const stored = structuredClone(bonds);
+  const { system } = adapter.createLocalUffContextFromVolume(volume, [0]);
+  const ringOrders = Array.from(system.bondTerms).filter(({ i, j }) => i < 9 && j < 9).map(term => term.bondOrder);
+  assert.deepEqual(ringOrders, Array(10).fill(1.5));
+  adapter.optimizeVolumeWithUFF(volume);
+  const lengths = edges.filter(([, j]) => j < 9).map(([i, j]) => {
+    const a = atoms[i], b = atoms[j];
+    return Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+  });
+  assert.ok(lengths.every(length => length > 1.345 && length < 1.42),
+    JSON.stringify({ lengths, expected: 'all ring bonds in (1.345, 1.42) Å' }));
+  assert.deepEqual(volume.bonds, stored);
 });
 
 test('uff-adapter builds one local UFF context from volume bonds while ignoring blocked bonds', () => {

@@ -94,6 +94,31 @@
     };
   }
 
+  function resonantFiveRingAngleTargets(rings, bonds, incident) {
+    const centers = new Set(rings.filter(ring => ring.length === 5).flat()
+      .filter(i => incident[i].length === 3));
+    if (!centers.size) return undefined;
+    const targets = new Map();
+    for (const ring of rings) {
+      for (const [index, center] of ring.entries()) {
+        if (!centers.has(center)) continue;
+        const left = ring[(index + ring.length - 1) % ring.length];
+        const right = ring[(index + 1) % ring.length];
+        targets.set(`${Math.min(left, right)}:${center}:${Math.max(left, right)}`, ring.length === 5 ? 108 : 120);
+      }
+    }
+    // Complete the planar trigonal angles around the five-ring wedge.
+    // At a junction the neighboring six-ring wedge keeps its 120° target.
+    for (const center of centers) {
+      const [a, b, c] = incident[center].map(index => bonds[index].find(atom => atom !== center)).sort((i, j) => i - j);
+      const keys = [`${a}:${center}:${b}`, `${a}:${center}:${c}`, `${b}:${center}:${c}`];
+      const unassigned = keys.filter(key => !targets.has(key));
+      const remaining = 360 - keys.reduce((sum, key) => sum + (targets.get(key) || 0), 0);
+      for (const key of unassigned) targets.set(key, remaining / unassigned.length);
+    }
+    return targets;
+  }
+
   // Classify complete neutral six-electron rings in the stored covalent graph.
   // A fused-ring junction can carry its double bond in the adjoining ring.
   function assignResonantRingOrders(elements, charges, bonds, bondOrders, covalentIndices) {
@@ -135,11 +160,12 @@
       }
       return element === 'C' ? 0 : 2;
     });
-    for (const { atoms, edges } of cycles) {
-      if (atoms.every(i => electrons[i] > 0) && atoms.reduce((sum, i) => sum + electrons[i], 0) === 6) {
-        for (const index of edges) bondOrders[index] = 1.5;
-      }
+    const resonant = cycles.filter(({ atoms }) =>
+      atoms.every(i => electrons[i] > 0) && atoms.reduce((sum, i) => sum + electrons[i], 0) === 6);
+    for (const { edges } of resonant) {
+      for (const index of edges) bondOrders[index] = 1.5;
     }
+    return resonantFiveRingAngleTargets(resonant.map(({ atoms }) => atoms), bonds, incident);
   }
 
   function createLocalUffContextFromVolume(vol, seedAtomIndices, options = {}) {
@@ -213,12 +239,13 @@
       bonds.push(left < right ? [left, right] : [right, left]);
       bondOrders.push(normalizeBondOrder(rawBond.order));
     }
-    if (findSimpleCyclesOfSize && bondOrders.includes(2)) {
-      assignResonantRingOrders(elements, formalCharges, bonds, bondOrders, covalentIndices);
-    }
+    const angleTargets = findSimpleCyclesOfSize && bondOrders.includes(2)
+      ? assignResonantRingOrders(elements, formalCharges, bonds, bondOrders, covalentIndices)
+      : undefined;
 
     const system = createUFFSystem(elements, coords, bonds, {
       bondOrders,
+      angleTargets,
       cutoff: Number(options.cutoff) > 0 ? Number(options.cutoff) : undefined,
     });
 

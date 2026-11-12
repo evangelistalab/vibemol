@@ -27,7 +27,10 @@
         const store = tx.objectStore('snapshots');
         const latest = store.get('latest');
         const previous = store.get('previous');
-        tx.oncomplete = () => resolve({ latest: latest.result || null, previous: previous.result || null });
+        const declined = store.get('declinedId');
+        tx.oncomplete = () => resolve({
+          latest: latest.result || null, previous: previous.result || null, declinedId: declined.result || null,
+        });
         tx.onabort = tx.onerror = () => reject(tx.error || new Error('Could not read recovery data.'));
       });
     }
@@ -55,11 +58,30 @@
         tx.onabort = tx.onerror = () => reject(error || tx.error || new Error('Could not save recovery data.'));
       });
     }
-    return Object.freeze({ read, write });
+    async function decline(id) {
+      const db = await open();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction('snapshots', 'readwrite');
+        const store = tx.objectStore('snapshots');
+        const latest = store.get('latest');
+        const previous = store.get('previous');
+        const declined = store.get('declinedId');
+        declined.onsuccess = () => {
+          // Autosave may have rotated the offered snapshot while the prompt was open.
+          const latestId = latest.result?.id;
+          if (latestId === id || (previous.result?.id === id && declined.result !== latestId)) {
+            store.put(id, 'declinedId');
+          }
+        };
+        tx.oncomplete = () => resolve();
+        tx.onabort = tx.onerror = () => reject(tx.error || new Error('Could not remember the recovery decision.'));
+      });
+    }
+    return Object.freeze({ read, write, decline });
   }
 
-  // One serialized writer, two bounded snapshots, and an explicit recovery gate.
-  // A failed transaction keeps both previously completed snapshots intact.
+  // One serialized writer and two bounded snapshots on disk. An unanswered
+  // offer keeps its original candidates in this tab while autosave advances.
   function createRecoveryController(deps) {
     const store = deps.store || createRecoveryStore();
     const debounceMs = deps.debounceMs ?? 1500;
@@ -68,6 +90,7 @@
     const now = deps.now || Date.now;
     let ready = false;
     let pending = false;
+    let dismissing = false;
     let recovering = false;
     let stopped = false;
     let failed = false;
@@ -85,7 +108,7 @@
     }
     function clearTimer() { if (timer) clearTimeout(timer); timer = 0; }
     function schedule() {
-      if (stopped || !ready || pending || recovering || failed || revision === savedRevision || !deps.hasWork()) return;
+      if (stopped || !ready || recovering || failed || revision === savedRevision || !deps.hasWork()) return;
       clearTimer();
       if (firstDirtyAt == null) firstDirtyAt = now();
       const delay = Math.min(debounceMs, Math.max(0, maxDelayMs - (now() - firstDirtyAt)));
@@ -98,7 +121,7 @@
     }
     async function flush(options = {}) {
       clearTimer();
-      if (stopped || !ready || pending || recovering || !deps.hasWork()) return false;
+      if (stopped || !ready || recovering || dismissing || !deps.hasWork()) return false;
       if (writing) return writing;
       if (failed && !options.force) return false;
       if (revision === savedRevision && !options.force) return false;
@@ -120,7 +143,6 @@
             name: deps.getName ? deps.getName() : 'VibeMol session', text };
           await store.write(snapshot, expectedId);
           expectedId = snapshot.id;
-          candidates = [snapshot, candidates[0]].filter(Boolean);
           lastSavedAt = stamp;
           savedRevision = savingRevision;
           status('saved', `Autosaved at ${new Date(stamp).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`);
@@ -139,7 +161,8 @@
         const saved = await store.read();
         if (stopped) return;
         expectedId = saved.latest && saved.latest.id || null;
-        candidates = [saved.latest, saved.previous].filter(Boolean);
+        candidates = saved.declinedId && expectedId === saved.declinedId ? []
+          : [saved.latest, saved.previous].filter(snapshot => snapshot && snapshot.id !== saved.declinedId);
         pending = candidates.length > 0;
         ready = true;
         if (pending) {
@@ -147,33 +170,51 @@
           if (deps.onRecovery) deps.onRecovery(candidates.map(({id, name, savedAt, text}) => ({
             id, name: deps.getSnapshotName?.(text) || name, savedAt,
           })));
-        } else { status('idle', 'Autosave ready'); schedule(); }
+        } else status('idle', 'Autosave ready');
+        schedule();
       } catch (error) {
         ready = false;
         status('error', `Autosave unavailable: ${error.message} Use Save session to download your work.`);
       }
     }
-    function startFresh() {
-      if (recovering) return;
+    async function startFresh({ remember = true, discardCurrent = false } = {}) {
+      if (recovering || dismissing) return false;
+      if (remember && (pending || discardCurrent)) {
+        dismissing = true;
+        try {
+          if (writing) await writing;
+          const id = discardCurrent || !deps.hasWork() ? expectedId : candidates[0].id;
+          if (id) await store.decline(id);
+        } catch (error) {
+          status('error', `Could not dismiss recovery: ${error.message}`);
+          return false;
+        } finally { dismissing = false; schedule(); }
+      }
       pending = false;
+      candidates = [];
       failed = false;
       if (deps.onRecovery) deps.onRecovery([]);
       status('idle', 'Autosave ready');
-      // Existing snapshots remain available until a new nonempty save succeeds.
       schedule();
+      return true;
     }
     async function recover() {
-      if (recovering || writing || !pending) return false;
+      if (stopped || recovering || dismissing || !pending) return false;
       recovering = true;
+      clearTimer();
       let lastError;
       try {
+        if (writing) await writing;
+        const newerWorkspaceSaved = expectedId !== candidates[0]?.id;
         for (let index = 0; index < candidates.length; index++) {
           const candidate = candidates[index];
           try {
             await deps.importText(candidate.text);
             pending = false;
+            candidates = [];
             failed = false;
             savedRevision = revision;
+            if (newerWorkspaceSaved) revision++;
             lastSavedAt = candidate.savedAt;
             if (deps.onRecovery) deps.onRecovery([]);
             status('saved', index ? 'Recovered the previous autosave; the newest snapshot was damaged.' : 'Session recovered. Playback is paused.');
@@ -182,7 +223,7 @@
         }
         status('error', `Could not recover the session: ${lastError && lastError.message || 'No valid snapshot.'} Your current workspace is unchanged.`);
         return false;
-      } finally { recovering = false; }
+      } finally { recovering = false; schedule(); }
     }
     function stop() { stopped = true; clearTimer(); }
     return Object.freeze({ initialize, markDirty, flush, startFresh, recover, stop,

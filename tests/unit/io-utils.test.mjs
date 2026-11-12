@@ -29,6 +29,12 @@ function loadIoUtils() {
   });
 }
 
+test('XYZ clipboard normalization maps the Bq ghost label to the dummy symbol', () => {
+  const { VibeMolIOUtils } = loadIoUtils();
+  const result = VibeMolIOUtils.detectAndNormalizeXyzText('Bq 0 0 0\nH 1 0 0');
+  assert.equal(result.xyzText, '2\nPasted XYZ\nX 0 0 0\nH 1 0 0\n');
+});
+
 test('io-utils detects full XYZ text', () => {
   const context = loadIoUtils();
   const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`
@@ -68,6 +74,13 @@ test('XYZ detection accepts Fortran exponents in files and pasted coordinate row
   assert.equal(detectAndNormalizeXyzText('1\nTest\n' + row).xyzText, '1\nTest\n' + row + '\n');
   assert.equal(detectAndNormalizeXyzText(row).xyzText, '1\nPasted XYZ\n' + row + '\n');
   assert.equal(detectAndNormalizeXyzText('H 9.6D- 0 0'), null);
+});
+
+test('XYZ detection canonicalizes numbered symbols and hydrogen isotope aliases', () => {
+  const { detectAndNormalizeXyzText } = loadIoUtils().window.VibeMolIOUtils;
+  const detected = detectAndNormalizeXyzText('C1 0 0 0\nD 0 1 0\nT2 1 0 0\n17 0 0 1');
+  assert.equal(detected.xyzText, '4\nPasted XYZ\nC 0 0 0\nH 0 1 0\nH 1 0 0\nCl 0 0 1\n');
+  assert.equal(detectAndNormalizeXyzText('Qq2 0 0 0'), null);
 });
 
 test('io-utils detects full XYZ text with atomic numbers in column 1', () => {
