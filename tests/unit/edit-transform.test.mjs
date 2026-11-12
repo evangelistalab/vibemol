@@ -419,6 +419,7 @@ test('edit-transform rotate drag creates rotate history on finish', () => {
 
 test('edit-transform clearAllTransformState cancels move and rotate drags', () => {
   const moveHarness = createHarness([0, 1]);
+  const beforeMove = plain(moveHarness.record.vol.atoms);
   assert.equal(
     moveHarness.controller.startMoveDrag(
       { clientX: 0, clientY: 0, hitPoint: new moveHarness.THREE.Vector3(0, 0, 0) },
@@ -428,14 +429,25 @@ test('edit-transform clearAllTransformState cancels move and rotate drags', () =
     ),
     true
   );
+  moveHarness.controller.updateMoveDrag({ clientX: 12, clientY: 3, hitPoint: new moveHarness.THREE.Vector3(0.5, 0.3, 0) });
+  assert.notDeepEqual(moveHarness.record.vol.atoms, beforeMove);
   moveHarness.controller.clearAllTransformState();
   assert.equal(moveHarness.state.dragActive, false);
+  assert.deepEqual(moveHarness.record.vol.atoms, beforeMove);
+  assert.deepEqual(moveHarness.calls.history, []);
+  assert.equal(moveHarness.controller.finishMoveDrag(), false);
 
   const rotateHarness = createHarness([0, 1]);
+  const beforeRotate = plain(rotateHarness.record.vol.atoms);
   assert.equal(
     rotateHarness.controller.startRotateDrag({ clientX: 0, clientY: 0, hitPoint: new rotateHarness.THREE.Vector3(0, 1, 0) }, [0, 1], { axis: 'none' }),
     true
   );
+  rotateHarness.controller.updateRotateDrag({ clientX: 24, clientY: 12 });
+  assert.notDeepEqual(rotateHarness.record.vol.atoms, beforeRotate);
   rotateHarness.controller.clearAllTransformState();
   assert.equal(rotateHarness.state.rotateDragActive, false);
+  assert.deepEqual(rotateHarness.record.vol.atoms, beforeRotate);
+  assert.deepEqual(rotateHarness.calls.history, []);
+  assert.equal(rotateHarness.controller.finishRotateDrag(), false);
 });

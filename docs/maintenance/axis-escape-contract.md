@@ -51,17 +51,21 @@ so Measure/Calculations axis Escape retains their mode and selections.
 
 | Edit branch | Required current state | Action |
 | --- | --- | --- |
+| cancel-drag | dragging | Restore coordinates from before the drag |
 | cancel | placing | Cancel provisional placement; retain Build |
-| transform | build | Disarm Build; retain selection |
+| transform | build | Disarm Build and close its panel; retain selection |
 | clear | selected | Clear Transform selection |
+| close-build | paletteOpen | Close the Build panel in Transform |
 <!-- escape-ladder:end -->
 
 ## Regression assertions and remaining questions
 
 The checker enumerates every level × four modes × eight concrete focus holders
-across four focus kinds, plus every Edit sub-ladder state (1248 cases). Applicable cases have one winner/one action; fully
+across four focus kinds, plus every Edit sub-ladder state (4320 cases). Applicable cases have one winner/one action; fully
 inapplicable cases have none, never a fabricated no-op. Two- and three-press
 sequences exercise modal→menu→Edit and cancel→disarm→clear from fresh state.
+Two added state flags cover an active transform drag and the open Build panel.
+Native Edit tests check exact drag rollback and the resulting undo history.
 
 Assert actual/expected active element, Edit action and invocation count, atom IDs,
 Build state, mode and camera pose. Cover all four modes, each Edit ladder rung,

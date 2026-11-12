@@ -235,6 +235,18 @@
         "forte2ProductApi"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Edit target visibility, drag rollback and Build placement",
+      "before": "d8b2d42fec11e97f2514aacfd66775b0accba283",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/edit-placement.js",
+        "assets/app/js/edit-transform.js",
+        "assets/app/js/edit-tool-ui.js",
+        "assets/app/js/scene-outliner.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

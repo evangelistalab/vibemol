@@ -101,7 +101,9 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
    assert.equal(hash(code),change.after,name+' changed product fingerprint');
    assert(!appliedProductChanges.has(name),'Product change must occur once');appliedProductChanges.add(name);
    if(change.before===null) {
-    assert.equal(name,'statement:tutorialConnection','Only the private tutorial startup connection may be added');
+    assert(['statement:tutorialConnection','isEditTargetHidden','prepareOutlinerEditTarget'].includes(name),
+     'Only the enumerated private product statements may be added');
+    assert(!previousFunctions.has(name),'A new function may not replace a legacy statement');
    } else {
     const before=n.type==='FunctionDeclaration'?previousFunctions.get(name):legacy.find(statement=>hash(statement)===change.before);
     assert.equal(before?hash(before):null,change.before,name+' original product fingerprint');
@@ -141,7 +143,7 @@ function restoreDeclaredModelDefaults(source,previous,changes=[]) {
  for(const[start,end,replacement]of edits.sort((a,b)=>b[0]-a[0]))source=source.slice(0,start)+replacement+source.slice(end);
  return source;
 }
-function additiveHelpers(root, readBase) {
+function additiveHelpers(root, readBase, placementChanges) {
  const files=['calculations-model.js','edit-halo.js','edit-placement.js'];
  for(const name of files) {
   const file='assets/app/js/'+name;let code=fs.readFileSync(path.join(root,file),'utf8');
@@ -161,6 +163,25 @@ function additiveHelpers(root, readBase) {
     ", ...(options.diagnostics ? { code: 'PLANE_NONCOPLANAR', rms, secondEigenvalue: values[1] } : {})"]){assert(code.includes(text));code=code.replace(text,'');}
   } else if(name==='edit-placement.js') {
    for(const symbol of ['appendPlacedMoleculeBonds','appendTemplateTopologyBonds','getFuseRingOmittedLocalIndices'])code=code.replace('      '+symbol+',\n','');
+   assert.deepEqual(Object.keys(placementChanges).sort(),[
+    'appendAtomAtWorld','beginAddAtomOperatorSession','commitMoleculePlacement',
+    'finalizeAddAtomOperatorSession','setAddAtomOperatorWorldPosition',
+   ],'Exactly the five authorized placement and history changes');
+   const functions=source=>{
+    const nodes=new Map();
+    traverse(parser.parse(source),{FunctionDeclaration(p){if(Object.hasOwn(placementChanges,p.node.id.name))nodes.set(p.node.id.name,p.node);}});
+    return nodes;
+   };
+   const baseline=readBase(file), before=functions(baseline), after=functions(code);
+   const fingerprint=source=>require('node:crypto').createHash('sha256').update(source).digest('hex');
+   for(const [symbol,node] of [...after].sort(([,a],[,b])=>b.start-a.start)){
+    const original=before.get(symbol), previous=baseline.slice(original.start,original.end);
+    const change=placementChanges[symbol];
+    assert.equal(fingerprint(previous),change.before,symbol+' original placement fingerprint');
+    assert.equal(fingerprint(code.slice(node.start,node.end)),change.after,symbol+' changed placement fingerprint');
+    code=code.slice(0,node.start)+previous+code.slice(node.end);
+   }
+   assert.equal(after.size,Object.keys(placementChanges).length,'Every placement change must be checked');
   } else {
    const edits=[];traverse(parser.parse(code),{FunctionDeclaration(p){if(p.node.id?.name==='listBuildSites')edits.push([p.node.start,p.node.end]);},ObjectProperty(p){if(p.node.key.name==='listBuildSites')edits.push([p.node.start,p.node.end+(code[p.node.end]===','?1:0)]);}});
    assert.equal(edits.length,2);for(const[a,b]of edits.sort((a,b)=>b[0]-a[0]))code=code.slice(0,a)+code.slice(b);
@@ -196,7 +217,7 @@ function audit(root=path.resolve(__dirname,'..')) {
  const productUnits=Object.values(productChanges).flatMap(change=>change.units);
  assert.deepEqual(kernelInventory(root,productUnits),productUnits,'Product helper dependencies changed');
  assert(productUnits.every(r=>r.count<15),'Product helpers must remain below15 inputs');
- const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase);
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase,contract.placementChanges);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {

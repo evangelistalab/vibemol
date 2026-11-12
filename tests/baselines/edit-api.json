@@ -1041,6 +1041,302 @@
           ]
         }
       ]
+    },
+    "setSceneHeaderActive": {
+      "before": "fcbfcfc545334e97c99933a3e097f713c202b494a59975c5cc46ebfaf02ceeb0",
+      "after": "be2ddd6bb98f0d2e1c5ad7974778a2d910c0b1aaf308c05ea7ca7c986c64ab6c",
+      "reason": "An explicit Edit scene switch reveals and rebuilds the target before pointer input.",
+      "units": []
+    },
+    "isEditTargetHidden": {
+      "before": null,
+      "after": "72022235d6951c53e694fe98c2889bb2ed9e0eec144ffa7705684bccd800f500",
+      "reason": "Check visibility from the same scene graph used to draw molecules.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "isEditTargetHidden",
+          "count": 2,
+          "inputs": [
+            "getFocusedScene",
+            "sceneGraphController"
+          ]
+        }
+      ]
+    },
+    "prepareOutlinerEditTarget": {
+      "before": null,
+      "after": "dfbf197aaf5a081d78072d989a2f15a86f810c64bb3ad592d3f37835ce6ec22b",
+      "reason": "Retire the outgoing Edit state and reveal the newly focused molecule before rendering.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "prepareOutlinerEditTarget",
+          "count": 10,
+          "inputs": [
+            "addAtomOperatorSession",
+            "clearTransientInteractionState",
+            "commitMoleculePlacement",
+            "editGestureController",
+            "finalizeAddAtomOperatorSession",
+            "getFocusedScene",
+            "isEditTargetHidden",
+            "moleculePlaceActive",
+            "sceneGraphController",
+            "showOnlySceneGraphScene"
+          ]
+        }
+      ]
+    },
+    "setActiveSceneGraphLayer": {
+      "before": "3a098bc23a47d6aea86c868dc1f30a1856c7404a9840f374d6dffae1a6f122e5",
+      "after": "a8f87666b6e28d46bbf4d216ffc141ee858245bef0782407dfe67819c856fb99",
+      "reason": "Reveal and rebuild the explicitly selected Edit scene or molecule layer.",
+      "units": []
+    },
+    "setMode": {
+      "before": "f81b8aef246cdf3078796d4e0a7695e76b6f7c7cceddeb721b77d019d2b923ed",
+      "after": "ec6af8aa4e15d9ea4843e6a24d912cf5c99caa1bd5215f8676db1c2015db9283",
+      "reason": "Retain dropped molecules on mode exit and reveal the target when entering Edit.",
+      "units": []
+    },
+    "getEditToolState": {
+      "before": "49ef7e343f64d27e50f66f1a6c5f8ccc865f000f8d2c57fca4a934deaf195f5c",
+      "after": "2d0f56683724f683d46c3c4080a6a36838cc480d4c002e6f1aed8c7c34c493e8",
+      "reason": "Supply drag and palette state to the existing Edit Escape ladder.",
+      "units": []
+    },
+    "chooseEditTool": {
+      "before": "edde5294c34276bf38899fce5550718d3f0844fb8bebddb2782b2657fb916646",
+      "after": "9256d13eed8531d66d0b7276757910c025c866cf059f1e30cc1d03f761110c80",
+      "reason": "Confirm dropped placement and clear the Build filter on an explicit tool switch.",
+      "units": []
+    },
+    "handleEditToolEscape": {
+      "before": "710fe6cfaf597ad32bcf528ed784be864e14528b6d96742edd9419a9a79008cc",
+      "after": "e416d7b3abc887063e4b4bbba17a2035c84758a860d3cc9b5e91dbbbe8f516bb",
+      "reason": "Cancel in-flight drags and dismiss Build from either palette or scene focus.",
+      "units": []
+    },
+    "setEditAddElement": {
+      "before": "284566ead45282afd3f94a6346c679462f832af0b6976b65ca4e4695dd5b5c57",
+      "after": "5fb500c0909440b510179389a0c979ae06803bb4a0780df78c858f286b546ebf",
+      "reason": "Confirm a dropped molecule before arming a different valid atom.",
+      "units": []
+    },
+    "updateBuildPaletteFilter": {
+      "before": "0a5c371b0c28fb750cbfafde09c5ed547fd53c094692bb183e68460b87d38ad5",
+      "after": "4ed6da060b1dcae8f32072ffba3f74817b781fbc0c6198a96b673b9f25791311",
+      "reason": "Hide placement-only alignment actions while filtering and show an empty result.",
+      "units": []
+    },
+    "setEditAddFragment": {
+      "before": "d1460e09d3e09bcab6b38beecb0af680f5d02e0d7db28737f965e7f2b67ca671",
+      "after": "145792e1088dfd21b6bcfffa24bb36f3d1932f0bcd08fd86106a8ef6a955cf7f",
+      "reason": "Confirm a dropped molecule before arming a different valid fragment.",
+      "units": []
+    },
+    "setEditAddMolecule": {
+      "before": "3f3d02b90be320208126fe43549a0376cbcda3f7fa48dcfa2e55ac4dc87ae4b7",
+      "after": "9396c900d54daa3bbb691e736b5ff6af92e9af803701445033fd199064d89b2b",
+      "reason": "Confirm a dropped molecule before arming a different valid template.",
+      "units": []
+    },
+    "handleUnifiedEditControllerPointerDown": {
+      "before": "2cbcfc5356971202d52a5941a6893217c58612794d9c934634b2da6e82391ef8",
+      "after": "8a7b5712218f1adaf3320430e9000c09cd5a7ae364278d1060fd9be068a1a398",
+      "reason": "Reject hidden-target pointer input and finish actual operator edits before a drag.",
+      "units": []
+    },
+    "handleUnifiedEditControllerPointerMove": {
+      "before": "5e735f8ff90315b871c24b0c9f42829dd7923c7ae317a43caafb090b8fc68478",
+      "after": "3eb94e21c8c6a6e2a5956a6ff43de6eceec15b28223bd71f54291d23ca07d4b3",
+      "reason": "Prevent continued mutation after a dragged molecule is hidden.",
+      "units": []
+    },
+    "handleUnifiedEditControllerPointerUp": {
+      "before": "0e94da20334ae59e0c77c7af9bbe6f73f9c6660369122f0d7e62cf5725690515",
+      "after": "d61eaa6343b4f469620d9f04c7cac7625663c4963b8ee800548a0c6d96ef7e8c",
+      "reason": "Ignore hidden-target releases and release a completed transform pointer capture.",
+      "units": []
+    },
+    "handleUnifiedEditControllerPointerCancel": {
+      "before": "5a4b03c1f0ba5019586e3be6fbc318d6913a5efffed1e34869a3947399e37d71",
+      "after": "6eaabf91e154ab59e5e6eaf051a6f2b661749005147669a301629c21991324b1",
+      "reason": "Restore an interrupted drag and retire capture and gesture state.",
+      "units": []
+    },
+    "updateAddAtomOperatorUi": {
+      "before": "e5fb49ef8b4558c5fb594fc551b20292e05fe345e83ec20fba75b59c498feb6b",
+      "after": "fdce966ce573a2b85c2e0cb4d6a39223519a61218b29af265659dcee955a21b0",
+      "reason": "Label selected-atom coordinate editing as a move.",
+      "units": []
+    },
+    "beginSelectedAtomManipulationOperatorSession": {
+      "before": "98818766d5b03990e7dd885e7b982be7ac50f1f12329d9b0f5fbb40982e00dd9",
+      "after": "1ef4e12c6708ba445cda7ecf43a530a0d5d1f779e3be14c9c87d94a4a35edcff",
+      "reason": "Defer snapshot ownership until the coordinate field actually changes.",
+      "units": []
+    },
+    "beginGestureAddedAtomOperatorSession": {
+      "before": "ed722da57ba854c5e99e5a7c39022c543c1e7e1746be44661b78ca966f465b2f",
+      "after": "febc4effbbfa29b9af84159f3059d0a0cbef5543476ddc508da8085c99a1c9d1",
+      "reason": "Fit the first atom added to an empty scene.",
+      "units": []
+    },
+    "updateMoleculePlacementOperatorUi": {
+      "before": "38e0c9f6eefed0864481fd56ab47351df2ffb320ff9dde4d8172543d430a512b",
+      "after": "24a291a89324ce17a7bf1d379fbfc93687a48e443d8eaedd1e6b160b31958a67",
+      "reason": "Show axis alignment only during a dropped catalog placement with no filter.",
+      "units": []
+    },
+    "pickSelectedAtomDragFallback": {
+      "before": "6cee0094ee930669f59919b6d971eeecd0f4c5973570e0191b24e99bbb5ff934",
+      "after": "707b0b2b6d33175d108a337dcbb46b49c8635ec6ac064b5a9a95dc83db6874fb",
+      "reason": "Exclude hidden molecules from the selected-atom picking fallback.",
+      "units": []
+    },
+    "pickMoleculeHitUncached": {
+      "before": "11bb4b85fcba8b88bc01fa6aa60afed7a2ca437ac75ec7de22c1d1b0905a9a33",
+      "after": "81708acd2a7683e4ebefb029c4e499bdef3ecd80856528ef832ac8e05bbfec21",
+      "reason": "Exclude hidden edit targets from molecule and bond picking.",
+      "units": []
+    },
+    "deleteSelectedOrHoveredAtom": {
+      "before": "2fa0f1665b55c216b9da79adfceef2d7e0dc2e0da062c782c5d509d289d9db2a",
+      "after": "3badc6bd83b5291207e9b82187f5970524ee3d9f74b35b2d3e7867d0697ad898",
+      "reason": "Refuse to delete atoms from a hidden molecule.",
+      "units": []
+    },
+    "handleUndoRedoHotkey": {
+      "before": "a9f6db7aade5aa4de3f75bd602840cc0eaff2cc747fd1d23dfffba331e68ae00",
+      "after": "c37b0ac640be545ad353edc37278acbda6bc7cf0116575affc199a919f882160",
+      "reason": "Give Undo and Redo the same placement history for atoms and dropped molecules.",
+      "units": []
+    },
+    "statement:buildKeyboardShortcut": {
+      "before": "c529b48294b3b1c74eeb49df1295197cf5fd424e6c097e2cc1c723dd58bb59bc",
+      "after": "a9645e9c45f2c6efb92b3106c18127b648801600d3f251c82bfffdc12bd28a1e",
+      "reason": "Slash arms Build before opening and focusing its search.",
+      "units": []
+    },
+    "deleteAtomAtIndex": {
+      "before": "e940f4fe00fd578f2782bccb55ae79c2c7ab9a1feba86ec3698bbba7f0d42948",
+      "after": "42029f2b72cb01fc3d1e2f4e6ace209297b36cb38989038514cdbadd9a607132",
+      "reason": "Block coordinate-row deletion from a hidden Edit target.",
+      "units": []
+    },
+    "deleteHoveredAtom": {
+      "before": "baaf31b8bbb82301d373bc89a5f72567a423e485e4cb470dfce1e9da6613a6b8",
+      "after": "3e9708678094e824fa94bf66c27e10a83c3b6e8b0455a18467006bd85e97c413",
+      "reason": "Block hover deletion from a hidden Edit target.",
+      "units": []
+    },
+    "deleteSelectedAtoms": {
+      "before": "55af4ef100a1df71b02a305798bcb9f44b292ea0aaf86dfa8d62d670ee90d2cb",
+      "after": "37a6ccac1e176837a311aa5c536abb3f1907be46c73cef8da9e32c4fcf979fc5",
+      "reason": "Block selection-cue deletion from a hidden Edit target.",
+      "units": []
+    },
+    "clearExternalGestureControllerState": {
+      "before": "ad052a716e6a4a119b43c5d8ab54c1539778a587dce315a3ccec1affc3e65d86",
+      "after": "908e74a87e44820fe8c839f4773d904b155df7da46108d169feea2caf12243b8",
+      "reason": "Return the gesture owner to idle after the external pointer owner finishes.",
+      "units": []
+    },
+    "optimizeActiveStructureWithUff": {
+      "before": "8977ca52a3420ede1871a264776e0e7a0066f1c0d1d6a89d53474d077e70e893",
+      "after": "ee8e6fe3d8a3209f9d8d8f42462815c4a70524608b66189ebe33cde8222ff883",
+      "reason": "Refuse the Edit optimization shortcut when the target is hidden.",
+      "units": []
+    },
+    "beginSelectionCueDrag": {
+      "before": "213b346717958d63e6349e9400acdc53da4689a698fb47283f1804dc4dee7dcf",
+      "after": "fa7c923b48617e9ce303416b730db2eb4cbdbe7c3a505453c0da463891656cbc",
+      "reason": "Keep selection cues from initiating hidden-target mutations.",
+      "units": []
+    },
+    "applyAddAtomOperatorInput": {
+      "before": "c92bd86f94c1644bb957b1a57d0b17cabf09457ee5375b16511bed185d068bda",
+      "after": "3465bc43522fcccfff04cd52cf3c5251b9358197836419d7b07a0ab3617febb8",
+      "reason": "Prevent the coordinate operator from editing a hidden molecule.",
+      "units": []
+    },
+    "applyBondCenterSelectionOrder": {
+      "before": "ca65315973adbae172a0bf588decdcd80720acc82ff319922a204bc686e22493",
+      "after": "425c0c890e8a82d7d7878ac4e58ca745b93216fe2c649a55110b8fe77ca74a47",
+      "reason": "Reject bond edits to a hidden molecule.",
+      "units": []
+    },
+    "applyAtomCoordinationChoice": {
+      "before": "c44eed6e6a01c9b172297c5cf337be9679f193c5c2499ac8cc454eacecfe4a9f",
+      "after": "05a36b4d6a13207f3abf301b8a91cee592827a5497f1cd86c868294c5306169e",
+      "reason": "Reject coordination edits to a hidden molecule.",
+      "units": []
+    },
+    "applyAtomMetalBondingChoice": {
+      "before": "d38b409dc92da07298ed6602f7485b7e8b2190921bac10560b24e4e20e9d9be3",
+      "after": "9f1ea8d5cb9cd27e80461e425ad067d795c0faff809af836865267f14ba195c8",
+      "reason": "Reject metal-bonding edits to a hidden molecule.",
+      "units": []
+    },
+    "alignActiveMoleculePrincipalAxes": {
+      "before": "e07c8f778a78907b11d66dee99ba9f9f0f3aed4d6c283488fa4a9258266c6681",
+      "after": "6860a92d6950c73d2f17ce984c1669bd5d4d5b97b41cc3802fb3169d749669ee",
+      "reason": "Reject Edit coordinate alignment when the target is hidden.",
+      "units": []
+    },
+    "applyCoordsPopoverEdit": {
+      "before": "7d0ce3dc59559fc4f9f8ef16c2a44f84f99a2719cff0809a68135a7cf0c18920",
+      "after": "ad90a3d9d0fdc70b0c591db0bd369854e1a8c3d921291a9c5c281d1b9328cd10",
+      "reason": "Keep coordinates read-only for hidden Edit targets.",
+      "units": []
+    },
+    "applyBondCenterSelectionStyle": {
+      "before": "cdac5436aac4286fcd7657f61c46618eb5de599f060f06bcba78e1fa9c0bcf38",
+      "after": "f7800e3e1b3b7c18207f71a4be9c3dfd11c12d768ce17deaa88580f690d8c2e9",
+      "reason": "Reject bond-style edits to a hidden molecule.",
+      "units": []
+    },
+    "buildEditAddControls": {
+      "before": "a92608cd0fa285af9ae86bbe0918b41b8b39cb8b17af82a29553dc244e5bf0c9",
+      "after": "70568c59366f7f224db0885494867e7813309f132282f54598bd87570d11ff41",
+      "reason": "Escape from an operator input cancels a provisional atom like Escape from the viewport.",
+      "units": []
+    },
+    "statement:selectionPositionVisibility": {
+      "before": "db177c9cc12686d15a19c2318f03006bb1d4014a5c08f8a738808bd22598b883",
+      "after": "218a3868aeef2eac1ca1a5fde2206a59637687bd7d16cd32e7579e33dd2e8e74",
+      "reason": "The selection position field refuses to write to a hidden target.",
+      "units": []
+    },
+    "statement:hydrogenShortcutVisibility": {
+      "before": "7168d520bb30f7e7c0512455a6ac515bed8450656616c8177e4d5c8fa6a7f76d",
+      "after": "e758f02b8307516d807f23c5df1a45f58de2d86ebd0762f28019b161a4cc6301",
+      "reason": "Space does not apply hydrogens to a hidden Edit target.",
+      "units": []
+    }
+  },
+  "placementChanges": {
+    "appendAtomAtWorld": {
+      "before": "3b736d6e07c2cf64b033edca86d78bcf31b054b81c64e6493bc59bf377b9b451",
+      "after": "c5469e793271183bf4e6452d04d30541c03dfe4537837085d4dd8e2e6528f4aa"
+    },
+    "beginAddAtomOperatorSession": {
+      "before": "80b6a5be29f3cc628e33bb2a8d0efad36e7bf120a7bffb7b38b948fcd3e06e59",
+      "after": "7133733ab936e7632874a3456913952d61533a64e94f364ed2ee10c37242387c"
+    },
+    "commitMoleculePlacement": {
+      "before": "1e03cd2f128ed7ee2e0feb5ca2f9a8e1622cef148dc4451ea9810e79d9336784",
+      "after": "f4365e5fc685d15fd76e3c3e91be4bb64342be409479856241d6364293020c60"
+    },
+    "finalizeAddAtomOperatorSession": {
+      "before": "9474af352ad6c9f7bbfcdd7d13dd725208e3c15663b9e2cc268e2af51cf3f483",
+      "after": "9decb5ae77977b50fa4dbc337f1f4a9cee2edc530d361553c35207bac44c0698"
+    },
+    "setAddAtomOperatorWorldPosition": {
+      "before": "61eb5ffe5303cb577dd40a51a839c65c3aadb3646f75c84178c08a1a81acc339",
+      "after": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974"
     }
   }
 }

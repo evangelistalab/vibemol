@@ -8218,7 +8218,7 @@
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
     getSnapshot: getSelectionPositionSnapshot,
-    onCommit: (axis, value) => editTransformController?.setSelectionPosition(axis, value),
+    onCommit: (axis, value) => !isEditTargetHidden() && editTransformController?.setSelectionPosition(axis, value),
   });
   cacheElement('editSelectionTranslateCueButtonEl', 'editSelectionTranslateCueButton');
   cacheElement('editSelectionRotateCueButtonEl', 'editSelectionRotateCueButton');
@@ -9630,6 +9630,8 @@
 
   function setSceneHeaderActive(scene) {
     if (!scene) return;
+    const switchingEditScene = currentMode === MODES.EDIT && getFocusedScene() !== scene;
+    const revealingEditScene = currentMode === MODES.EDIT && prepareOutlinerEditTarget(scene);
     focusScene(scene);
     scene.activeLayerId = null;
     if (sceneGraphController.getState) {
@@ -9640,6 +9642,9 @@
     }
     if (sceneGraphController.clearSelection) sceneGraphController.clearSelection();
     activateSceneFocusRecord(scene);
+    if (switchingEditScene || revealingEditScene) {
+      rebuildScene({ preserveView: !revealingEditScene, syncGraph: false });
+    }
     syncLoadedSceneControls();
     updateSidePanel();
     syncAppearanceControlsToActiveLayer();
@@ -9650,6 +9655,26 @@
     return sceneGraphController.getFocusedScene
       ? sceneGraphController.getFocusedScene()
       : (sceneGraphController.getActiveScene ? sceneGraphController.getActiveScene() : null);
+  }
+
+  function isEditTargetHidden(scene = getFocusedScene()) {
+    if (!scene) return false;
+    const molecule = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    return scene.visible === false || !!(molecule && !sceneGraphController.isLayerEffectivelyVisible(molecule));
+  }
+
+  function prepareOutlinerEditTarget(scene) {
+    if (getFocusedScene() !== scene) {
+      editGestureController?.handlePointerCancel();
+      if (moleculePlaceActive) commitMoleculePlacement();
+      if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
+      clearTransientInteractionState({ measurement: false });
+    }
+    if (!isEditTargetHidden(scene)) return false;
+    if (scene.visible === false) showOnlySceneGraphScene(scene);
+    const molecule = sceneGraphController.getLayerById(scene.moleculeLayerId);
+    if (molecule) molecule.visible = true;
+    return true;
   }
 
   function getCubeLayersInScene(scene) {
@@ -10364,6 +10389,7 @@
     const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
     const previousLayer = sceneGraphController.getActiveLayer();
     const previousActiveId = previousLayer && previousLayer.id;
+    const revealEditTarget = !!scene && currentMode === MODES.EDIT && prepareOutlinerEditTarget(scene);
     const layer = sceneGraphController.setActiveLayer(layerId);
     if (!layer) return null;
     if (layer.record && Number.isInteger(layer.moldenMoIndex)) {
@@ -10402,10 +10428,12 @@
     const record = layer.record || (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP ? getSceneFocusRecord(scene) : null);
     const recordIndex = getRecordIndex(record);
     if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, record);
-    if (recordIndex >= 0 && currentIndex !== recordIndex) {
-      currentIndex = recordIndex;
+    if (revealEditTarget || (recordIndex >= 0 && currentIndex !== recordIndex)) {
+      if (recordIndex >= 0) currentIndex = recordIndex;
       syncLoadedSceneControls();
-      if (options.rebuild !== false) rebuildScene({ preserveView: true, syncGraph: false });
+      if (revealEditTarget || options.rebuild !== false) {
+        rebuildScene({ preserveView: !revealEditTarget, syncGraph: false });
+      }
     } else {
       syncLoadedSceneControls();
       const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
@@ -11165,6 +11193,7 @@
       return;
     }
     const prevMode = currentMode;
+    if (prevMode === MODES.EDIT && moleculePlaceActive && !commitMoleculePlacement()) return;
     if (newMode === MODES.CALCULATIONS) calculationsViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
     const hadSurfaceContext = meshes.some(mesh => mesh.visible !== false) || cloudGroup.children.length > 0;
     if (newMode === MODES.MEASURE && hadSurfaceContext && !measureShowSurfaces) {
@@ -11198,6 +11227,8 @@
     }
     if (currentMode === MODES.EDIT && prevMode !== MODES.EDIT) {
       editAdvancedDrawerOpen = false;
+      const scene = getFocusedScene();
+      if (scene && prepareOutlinerEditTarget(scene)) rebuildScene({ syncGraph: false });
       syncEditSceneTool(true);
     }
     updateAxisButtons();
@@ -13524,6 +13555,7 @@
    * @returns {object|null}
    */
   function optimizeActiveStructureWithUff(options = {}) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return null;
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     if (!record || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) {
@@ -15539,6 +15571,8 @@
       placing: !!(moleculePlaceActive || addGrowActive || addFusePreviewState
         || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
       confirmable: !!(moleculePlaceActive || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
+      dragging: !!(transformActive || editTransformState.dragActive || editTransformState.rotateDragActive),
+      paletteOpen: isBuildPopoverOpen(),
       selected: !!(editAtomSelectionIndices.length || transformSelectionIndices.length || bondCenterSelectionState),
       hasAtoms: !!volumes[currentIndex]?.vol?.atoms?.length,
     };
@@ -15552,9 +15586,13 @@
 
   function chooseEditTool(tool, options = {}) {
     if (currentMode !== MODES.EDIT) return;
+    if (getEditToolState().build !== (tool === 'build')) {
+      setBuildPaletteFilterQuery('');
+      clearBuildSearchKeyboardSelection();
+    }
     if (tool === 'transform') {
-      // Explicitly leaving Build commits any accepted atom placement, as before;
-      // Escape is the separate cancellation path.
+      if (moleculePlaceActive && !commitMoleculePlacement()) return;
+      finalizePendingNewAtomOperatorSession();
       setSelectionBuildCueActive(false, { announce: false });
       setEditIntent(EDIT_INTENT.ATOM_MANIPULATION, { announce: false, preserveSelection: true, closePopovers: false });
       clearActiveVoidPlacementPreview();
@@ -15575,7 +15613,9 @@
     if (isHelpOpen() || hasVisibleEscapeModalTarget(event)) return false;
     if (action === undefined) action = window.VibeMolEditToolUi.escapeAction(getEditToolState());
     if (!action) return false;
-    if (action === 'cancel') {
+    if (action === 'cancel-drag') {
+      editGestureController?.handlePointerCancel();
+    } else if (action === 'cancel') {
       if (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection') finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
       clearMoleculePlacementPreview({ restoreCatalogPreview: false });
       clearFuseRingPreview();
@@ -15584,7 +15624,7 @@
       controls.enabled = true;
     } else if (action === 'transform') {
       chooseEditTool('transform');
-    } else {
+    } else if (action !== 'close-build') {
       // Clearing atom selection notifies its owner even when the atom list was
       // empty. That callback can clear a bond-center selection before the shared
       // helper counts it, so its changed flag is not this action's result.
@@ -15592,6 +15632,12 @@
       if (addAtomOperatorSession?.source === 'selection') finalizeAddAtomOperatorSession({ announce: false });
       clearEditSelectionsOnEmptyClick({ selection: true, transform: true, bondEdit: true });
       if (getEditToolState().selected) throw new Error('Escape selection cleanup incomplete');
+    }
+    if (action === 'transform' || action === 'close-build') {
+      if (isBuildPopoverOpen()) {
+        if (workspaceEnabled) window.VibeMolWorkbench?.close('buildPanel');
+        else hideBuildPopover();
+      }
     }
     event?.preventDefault();
     updateEditToolboxUi({ syncSearch: false });
@@ -16849,6 +16895,7 @@
     const announce = options.announce !== false;
     const syncSearch = options.syncSearch !== false;
     if (!Number.isInteger(z) || z <= 0 || !ATOM_Z_TO_DATA || !ATOM_Z_TO_DATA[z]) return false;
+    if (moleculePlaceActive && !commitMoleculePlacement()) return false;
     editAddElementZ = z;
     setEditIntent(EDIT_INTENT.ADD_ATOM, {
       announce: false,
@@ -17115,6 +17162,10 @@
     applyFilter(editMoleculeQuickEl);
     syncEditFragmentListDisclosure(q);
     syncEditMoleculeListDisclosure(q);
+    const empty = els.editAdaptiveAddAtomPopoverEl?.querySelector('.vm-build-no-matches');
+    if (empty) empty.hidden = !q || collectBuildSearchCandidates().length !== 0;
+    const alignment = editMoleculeAlignXBtn?.parentElement;
+    if (alignment) alignment.hidden = !!q || !moleculePlaceActive;
     syncBuildSearchKeyboardSelectionVisibility();
   }
 
@@ -17302,6 +17353,7 @@
     const normalizedId = normalizeFragmentId(fragmentId);
     const fragment = getCatalogEntryById(normalizedId, CATALOG_KIND.FRAGMENT) || resolveCatalogQuery(fragmentId, CATALOG_KIND.FRAGMENT);
     if (!fragment) return false;
+    if (moleculePlaceActive && !commitMoleculePlacement()) return false;
     clearFuseRingPreview();
     editAddFragmentId = fragment.id;
     editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
@@ -17330,6 +17382,7 @@
     const normalizedId = normalizeFragmentId(moleculeId);
     const molecule = getCatalogEntryById(normalizedId, CATALOG_KIND.MOLECULE) || resolveCatalogQuery(moleculeId, CATALOG_KIND.MOLECULE);
     if (!molecule) return false;
+    if (moleculePlaceActive && !commitMoleculePlacement()) return false;
     editAddMoleculeId = molecule.id;
     setEditIntent(EDIT_INTENT.ADD_MOLECULE, {
       announce: false,
@@ -17777,7 +17830,7 @@
       inputEl.addEventListener('blur', () => updateAddAtomOperatorUi());
       inputEl.addEventListener('vm-escape-offers', event => {
         event.detail.offer('draft.atom-operator', !!addAtomOperatorSession,
-          () => { finalizeAddAtomOperatorSession({ commit: false, announce: false }); });
+          () => { finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false }); });
       });
       inputEl.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -17788,7 +17841,7 @@
         }
         if (e.key === 'Escape') {
           e.preventDefault();
-          finalizeAddAtomOperatorSession({ commit: false, announce: false });
+          finalizeAddAtomOperatorSession({ commit: false, forceCancel: true, announce: false });
         }
       });
     };
@@ -18421,6 +18474,7 @@
 
   function beginSelectionCueDrag(action, buttonEl, e) {
     if (!buttonEl || !e || currentMode !== MODES.EDIT || e.button !== 0) return false;
+    if (isEditTargetHidden()) return false;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (action !== 'bondOrder') {
       setSelectionBuildCueActive(false, { announce: false, syncSearch: false, preserveSelection: true });
@@ -20619,6 +20673,10 @@
   }
 
   function handleUnifiedEditControllerPointerDown(intent, e) {
+    if (isEditTargetHidden()) return true;
+    if (addAtomOperatorSession?.source === 'selection' && addAtomOperatorSession.beforeAtoms) {
+      finalizeAddAtomOperatorSession({ announce: false });
+    }
     if (moleculePlaceActive) return handleMoleculeIntentControllerPointerDown(e);
     if (isFragmentAddIntentValue(intent)) return handleFragmentIntentControllerPointerDown(e);
     if (isMoleculeAddIntentValue(intent)) return handleMoleculeIntentControllerPointerDown(e);
@@ -20754,6 +20812,12 @@
   }
 
   function handleUnifiedEditControllerPointerMove(intent, e) {
+    if (isEditTargetHidden()) {
+      if (transformActive || editTransformState.dragActive || editTransformState.rotateDragActive) {
+        editGestureController?.handlePointerCancel();
+      }
+      return true;
+    }
     if (transformActive) {
       __editMoved = true;
       updateTransformDragFromEvent(e);
@@ -20890,12 +20954,21 @@
     if (controllerState) {
       controllerState.activePointerId = null;
       controllerState.press = null;
+      controllerState.gestureState = 'idle';
     }
   }
 
   function handleUnifiedEditControllerPointerUp(intent, e, controllerState = null) {
+    if (isEditTargetHidden()) {
+      if (transformActive || editTransformState.dragActive || editTransformState.rotateDragActive) {
+        return handleUnifiedEditControllerPointerCancel(intent, controllerState);
+      }
+      clearExternalGestureControllerState(controllerState, e?.pointerId);
+      return true;
+    }
     if (transformActive) {
       finalizeTransformDrag();
+      clearExternalGestureControllerState(controllerState, e?.pointerId);
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
@@ -20989,32 +21062,15 @@
   }
 
   function handleUnifiedEditControllerPointerCancel(intent, controllerState = null) {
-    if (transformActive) {
+    if (transformActive || editTransformState.dragActive || editTransformState.rotateDragActive) {
+      const record = volumes[currentIndex];
+      const snapshot = transformActive ? transformBeforeSnapshot : null;
+      clearExternalGestureControllerState(controllerState, gestureBondSidePress?.pointerId);
+      gestureBondSidePress = null;
       clearTransformState();
-      return true;
-    }
-    if (editTransformController && editTransformState.dragActive) {
-      editTransformController.cancelMoveDrag();
-      if (controllerState && Number.isInteger(controllerState.activePointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
-        try { canvasEl.releasePointerCapture(controllerState.activePointerId); } catch { }
-      }
-      if (controllerState) {
-        controllerState.activePointerId = null;
-        controllerState.press = null;
-      }
+      editGestureController?.clearState();
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
-      return true;
-    }
-    if (editTransformController && editTransformState.rotateDragActive) {
-      editTransformController.cancelRotateDrag();
-      if (controllerState && Number.isInteger(controllerState.activePointerId) && canvasEl && typeof canvasEl.releasePointerCapture === 'function') {
-        try { canvasEl.releasePointerCapture(controllerState.activePointerId); } catch { }
-      }
-      if (controllerState) {
-        controllerState.activePointerId = null;
-        controllerState.press = null;
-      }
-      __editDownPt = null; __editClickIdx = -1; __editMoved = false;
+      if (snapshot && record) applyStructureSnapshotToRecord(record, snapshot);
       return true;
     }
     if (moleculePlaceActive) {
@@ -21116,7 +21172,7 @@
       zEl: editAddAtomOperatorZEl,
       isVisible,
       collapsed: addAtomOperatorCollapsed,
-      labelText: `Build ${symbol}`,
+      labelText: `${addAtomOperatorSession?.source === 'selection' ? 'Move' : 'Build'} ${symbol}`,
       world,
       positionPanel: positionAddAtomOperatorPanel,
     });
@@ -21131,10 +21187,10 @@
     editPlacement.beginAddAtomOperatorSession(
       record,
       ensureAtomId(atom),
-      cloneAtomsSnapshot(vol),
-      cloneBondSnapshot(vol),
-      cloneVolumeAnnotationsSnapshot(vol),
-      `Build ${getElementSymbol((atom && atom.Z) | 0)}`,
+      null,
+      null,
+      null,
+      `Move ${getElementSymbol(atom.Z | 0)}`,
       '',
       { source: 'selection', autoAdjustHydrogensOnCommit: false, translateAttachedHydrogens: true, startCollapsed: true }
     );
@@ -21170,7 +21226,7 @@
       }
     );
     setEditAtomSelection(selectionAfter);
-    rebuildScene({ preserveView: true });
+    rebuildScene({ preserveView: beforeAtoms.length > 0 });
     updateSidePanel();
     updateSelectedHalos();
     updateEditSelectionVisuals();
@@ -21238,6 +21294,8 @@
       && getEditIntent() === EDIT_INTENT.ADD_MOLECULE
       && moleculePlaceActive
       && !!moleculePlaceTemplateData;
+    const alignment = editMoleculeAlignXBtn?.parentElement;
+    if (alignment) alignment.hidden = !isVisible || !!getBuildPaletteFilterQuery().trim();
     const rot = getMoleculePlacementEulerDegrees();
     updateAddMoleculeOperatorPanelUi({
       panelEl: editAddMoleculeOperatorPanelEl,
@@ -21328,6 +21386,7 @@
    * @param {{syncOnly?:boolean}=} options
    */
   function applyAddAtomOperatorInput(axis, inputEl, options = {}) {
+    if (isEditTargetHidden()) return;
     editPlacement.applyAddAtomOperatorInput(axis, inputEl, options);
   }
 
@@ -23279,6 +23338,7 @@
   }
 
   function applyBondCenterSelectionStyle(style) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     if (!bondEditing) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
@@ -23297,6 +23357,7 @@
   }
 
   function applyBondCenterSelectionOrder(order) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     if (!bondEditing) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
@@ -23497,6 +23558,7 @@
 
   function pickSelectedAtomDragFallback(e) {
     if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION) return null;
+    if (isEditTargetHidden()) return null;
     const selection = getEditAtomSelection();
     if (!Array.isArray(selection) || selection.length !== 1) return null;
     const idx = selection[0] | 0;
@@ -23721,6 +23783,7 @@
 
   /** Share the foremost physical hit between hover, clicks, context menus and the halo. */
   function pickMoleculeHitUncached(e) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return { atomHit: null, bondHit: null };
     setRaycasterFromEvent(e);
     const atomHit = raycaster.intersectObjects(atomGroup.children, false)
       .find(hit => isMoleculePickObjectVisible(hit.object)) || null;
@@ -24487,6 +24550,7 @@
    * @returns {boolean}
    */
   function deleteAtomAtIndex(atomIndex) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     return editPlacement.deleteAtomAtIndex(atomIndex);
   }
 
@@ -24495,6 +24559,7 @@
    * @returns {boolean}
    */
   function deleteHoveredAtom() {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     return editPlacement.deleteHoveredAtom();
   }
 
@@ -24503,6 +24568,7 @@
    * @returns {boolean}
    */
   function deleteSelectedAtoms() {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     if (!vol || !Array.isArray(vol.atoms)) return false;
@@ -24516,6 +24582,10 @@
    * @returns {boolean}
    */
   function deleteSelectedOrHoveredAtom() {
+    if (isEditTargetHidden()) {
+      setHintMessage('Show the active molecule before editing it.');
+      return false;
+    }
     clearSymmetryPreview({ restore: true, keepPopover: false, quiet: true });
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
@@ -24534,6 +24604,7 @@
    * @returns {boolean}
    */
   function applyAtomCoordinationChoice(atomIndex, geometryId) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     const idx = atomIndex | 0;
@@ -24571,6 +24642,7 @@
    * @returns {boolean}
    */
   function applyAtomMetalBondingChoice(atomIndex, mode) {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     const record = ensureEditableVolumeRecord();
     const vol = record && record.vol;
     const idx = atomIndex | 0;
@@ -24791,6 +24863,7 @@
    * @returns {boolean}
    */
   function alignActiveMoleculePrincipalAxes() {
+    if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
     if (dragActive) {
       setHintMessage('Finish moving the current atom before aligning principal axes.');
       return false;
@@ -25674,6 +25747,7 @@
   });
   bind('down', MODES.EDIT, '/', (e) => {
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
+    if (!getEditToolState().build) chooseEditTool('build');
     showBuildPopover({ focusSearch: true });
   });
   bind('down', MODES.EDIT, 'c', () => {
@@ -25683,7 +25757,7 @@
     bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
   }
   bind('down', MODES.EDIT, ' ', (e) => {
-    if (autoHydrogenController && autoHydrogenController.handleShortcut()) {
+    if (!isEditTargetHidden() && autoHydrogenController && autoHydrogenController.handleShortcut()) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
     }
   });
@@ -25777,6 +25851,7 @@
       measurements.undo(measurementRecord(), isRedo);
       updateEditSelectionVisuals(); markSessionChanged(); return true;
     }
+    if (isUndo && moleculePlaceActive && !commitMoleculePlacement()) return true;
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     if (isUndo) undoLastEditAction();
     else redoLastEditAction();
@@ -29323,7 +29398,7 @@
    */
   function applyCoordsPopoverEdit(atomIndex, field, parsedValue) {
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
-    if (currentMode !== MODES.EDIT) return buildCoordsPopoverItems(record);
+    if (currentMode !== MODES.EDIT || isEditTargetHidden()) return buildCoordsPopoverItems(record);
     const vol = record && record.vol;
     if (!record || !vol || !Array.isArray(vol.atoms) || atomIndex < 0 || atomIndex >= vol.atoms.length) {
       return buildCoordsPopoverItems(record);

@@ -544,7 +544,7 @@
       });
       clearMoleculePlacementPreview();
       clearHover();
-      rebuildScene({ preserveView: true });
+      rebuildScene({ preserveView: beforeAtoms.length > 0 });
       updateSidePanel();
       setHintMessage(`Added ${entryKind === CATALOG_KIND.FRAGMENT ? 'fragment' : 'molecule'} ${label}.`);
       return true;
@@ -761,7 +761,7 @@
       state.addAtomOperatorSession = {
         record,
         atomId: String(atomId || ''),
-        beforeAtoms: Array.isArray(beforeAtoms) ? beforeAtoms : [],
+        beforeAtoms: sessionOptions.source === 'selection' ? null : (Array.isArray(beforeAtoms) ? beforeAtoms : []),
         beforeBonds: Array.isArray(beforeBonds) ? beforeBonds : [],
         beforeAnnotations: beforeAnnotations && typeof beforeAnnotations === 'object' ? beforeAnnotations : null,
         coordinationGeometryId: String(coordinationGeometryId || '').trim(),
@@ -785,6 +785,13 @@
       const deltaWorld = previousWorld && previousWorld.isVector3
         ? worldPos.clone().sub(previousWorld)
         : new THREE.Vector3();
+      if (session?.source === 'selection' && !session.beforeAtoms) {
+        if (deltaWorld.lengthSq() === 0) return true;
+        // The coordinate operator owns only edits made through its inputs.
+        session.beforeAtoms = cloneAtomsSnapshot(resolved.vol);
+        session.beforeBonds = cloneBondSnapshot(resolved.vol);
+        session.beforeAnnotations = cloneVolumeAnnotationsSnapshot(resolved.vol);
+      }
       const coords = worldToAtomUnits(resolved.vol, worldPos);
       resolved.atom.x = Number(coords[0]) || 0;
       resolved.atom.y = Number(coords[1]) || 0;
@@ -811,10 +818,10 @@
       // Confirmation may finish while rendering is idle. Publish the cleared
       // placement state now so the hint describes the next Escape immediately.
       updateEditToolboxUi({ syncSearch: false });
-      if (!resolved) return true;
+      if (!resolved || !session.beforeAtoms) return true;
       if (!effectiveCommit) {
         options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds, session.beforeAnnotations);
-        if (announce) setHintMessage('Canceled atom add.');
+        if (announce) setHintMessage(session.source === 'selection' ? 'Canceled atom move.' : 'Canceled atom add.');
         return true;
       }
       if (session.coordinationGeometryId) {
@@ -878,7 +885,7 @@
       updateSidePanel();
       if (announce) {
         const symbol = getElementSymbol((resolved.atom && resolved.atom.Z) | 0);
-        if (session.source === 'selection') setHintMessage(`Committed Build ${symbol}.`);
+        if (session.source === 'selection') setHintMessage(`Moved ${symbol}.`);
         else setHintMessage(`Committed Add Atom ${symbol}.`);
       }
       return true;
@@ -919,7 +926,7 @@
       vol.atoms.push(atom);
       vol.natoms = vol.atoms.length;
       ensureVolumeSchema(vol, { inferMissingBonds: false });
-      rebuildScene({ preserveView: true });
+      rebuildScene({ preserveView: beforeAtoms.length > 0 });
       beginAddAtomOperatorSession(
         record,
         ensureAtomId(atom),

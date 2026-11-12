@@ -193,6 +193,7 @@
       state.dragOrigAtomUnits = null;
       state.dragBeforeAtomsSnapshot = cloneAtomsSnapshot(vol);
       state.dragBeforeBondSnapshot = cloneBondSnapshot(vol);
+      state.dragRecord = record;
       const camera = getCamera();
       const raycaster = getRaycaster();
       if (!camera || !raycaster) return false;
@@ -290,6 +291,7 @@
       state.dragOrigAtomUnits = null;
       state.dragBeforeAtomsSnapshot = null;
       state.dragBeforeBondSnapshot = null;
+      state.dragRecord = null;
       state.dragAxis = 'none';
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
@@ -300,7 +302,21 @@
       return true;
     }
 
+    function restoreDragCoordinates(record, beforeAtoms) {
+      if (!record || !beforeAtoms) return;
+      const atoms = record.vol?.atoms;
+      if (!atoms || atoms.length !== beforeAtoms.length
+          || atoms.some((atom, index) => atom.id !== beforeAtoms[index].id)) return;
+      for (const [index, before] of beforeAtoms.entries()) {
+        const atom = atoms[index];
+        Object.assign(atom, { x: before.x, y: before.y, z: before.z });
+      }
+      if (record === getActiveRecord()) rebuildScene({ preserveView: true });
+    }
+
     function cancelMoveDrag() {
+      const record = state.dragActive ? state.dragRecord : null;
+      const beforeAtoms = state.dragBeforeAtomsSnapshot;
       state.dragActive = false;
       state.dragAtomIndex = -1;
       state.dragTargetIndices = [];
@@ -315,6 +331,8 @@
       state.dragAxis = 'none';
       state.dragBeforeAtomsSnapshot = null;
       state.dragBeforeBondSnapshot = null;
+      state.dragRecord = null;
+      restoreDragCoordinates(record, beforeAtoms);
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setMoveHover('');
@@ -323,7 +341,7 @@
     }
 
     function startRotateDrag(e, indices, dragOptions = {}) {
-      const baseline = ensureRotateBaseline();
+      const baseline = resetRotateBaseline();
       const targetIndices = Array.from(new Set((Array.isArray(indices) ? indices : []).map((idx) => Number(idx) | 0).filter((idx) => idx >= 0)));
       if (!baseline || !targetIndices.length) {
         return false;
@@ -454,6 +472,7 @@
     }
 
     function cancelRotateDrag() {
+      const baseline = state.rotateDragActive ? state.rotateOperatorBaseline : null;
       state.rotateDragActive = false;
       state.rotateDragAxis = 'none';
       state.rotateDragPlane = null;
@@ -461,6 +480,7 @@
       state.rotateDragLastClientX = 0;
       state.rotateDragLastClientY = 0;
       clearRotateBaseline();
+      if (baseline) restoreDragCoordinates(baseline.record, baseline.beforeAtoms);
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setRotateHover('');
@@ -469,7 +489,6 @@
     }
 
     function clearAllTransformState() {
-      clearRotateBaseline();
       cancelMoveDrag();
       cancelRotateDrag();
       clearGizmoHover();

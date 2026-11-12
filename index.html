@@ -3178,6 +3178,7 @@
         <input id="editBuildSearch" type="text" autocomplete="off" placeholder="Type to filter..." />
         <span id="editBuildSearchShortcut" aria-hidden="true">/</span>
       </div>
+      <p class="vm-build-no-matches" role="status" hidden>No matching Build items.</p>
       <div class="editBuildPaletteSection">
         <div class="editBuildPaletteSectionTitle vm-section-label">Atoms</div>
         <div id="editBuildAtomsHost"></div>
@@ -3401,7 +3402,7 @@
         </div>
         <div id="editMoleculeQuick" class="vm-catalog-list"
           aria-label="Available molecules, alphabetical"></div>
-        <div id="editMoleculeAlign">
+        <div id="editMoleculeAlign" hidden>
           <button id="editMoleculeAlignXBtn" type="button"
             data-tooltip="Align molecule principal axis to +X during placement">Align X</button>
           <button id="editMoleculeAlignYBtn" type="button"

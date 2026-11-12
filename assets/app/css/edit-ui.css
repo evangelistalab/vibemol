@@ -1277,6 +1277,14 @@
   margin-top: 8px;
 }
 
+#editMoleculeAlign[hidden] {
+  display: none;
+}
+
+.vm-build-no-matches {
+  color: var(--vm-color-text-secondary);
+}
+
 #editMoleculeAlign button {
   appearance: none;
   border: 1px solid var(--vm-color-border-soft);
