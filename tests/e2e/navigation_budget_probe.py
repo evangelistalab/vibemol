@@ -34,8 +34,13 @@ def run(out):
                     # this release has NOT fired when the wait decides. It cannot
                     # make a hanging resource pass or supply readiness.
                     release=threading.Timer(5,gate.set)if want=='failed'else None
-                    if release is not None:release.daemon=True;release.start()
                     try:
+                        if path in ('/cpu','/network'):
+                            # Start the timed destination load in a live same-origin
+                            # renderer. A cold first load can exhaust the short
+                            # budget before the CPU task or pending subresource.
+                            page.goto(base+'/ready',wait_until='load')
+                        if release is not None:release.daemon=True;release.start()
                         rejected=False
                         try:goto_with_budget(page,base+path,out,label=label,policy=policy,site='control.navigation')
                         except TimeoutError:rejected=True
@@ -49,7 +54,21 @@ def run(out):
                             assert row['commitReached']==(path=='/network'),row
                             if path=='/network':assert row['expiredOnBudget']and row['timing']['responsiveExceeded'],row
                             else:assert row['timing']['wallElapsedMs']>=100,row
-                        if path=='/cpu':assert row['timing']['wallElapsedMs']>100 and row['timing']['discountedMs']>0,row
+                        if path=='/cpu':
+                            timing=row['timing']
+                            started=timing['wait']['startedAtMs']
+                            ended=timing['observedWaitEndAtMs']
+                            observed_cpu_task=any(
+                                interval['kind']=='longTasks' and interval['document']!=row['previousDocument']
+                                and min(ended,interval['startTime']+interval['duration'])-max(started,interval['startTime'])>100
+                                for interval in row['intervals'])
+                            actual_cpu=dict(budgetMs=timing['responsiveBudgetMs'],wallExceeded=timing['wallElapsedMs']>100,
+                                withinBudget=timing['withinBudget'],discounted=timing['discountedMs']>0,
+                                observedDestinationTask=observed_cpu_task)
+                            expected_cpu=dict(budgetMs=100,wallExceeded=True,withinBudget=True,discounted=True,
+                                observedDestinationTask=True)
+                            print('[navigation-cpu-contract] '+json.dumps(dict(actual=actual_cpu,expected=expected_cpu)),flush=True)
+                            assert actual_cpu==expected_cpu,(actual_cpu,expected_cpu,row)
                         if release is not None:release.cancel()
                         gate.set()
                         # A second ordinary navigation verifies removal of the
