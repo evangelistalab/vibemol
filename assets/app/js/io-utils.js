@@ -3,6 +3,7 @@
     const raw = String(token || '').trim();
     if (!raw) return '';
     const label = raw.toUpperCase().replace(/^([A-Z]+)\d+$/, '$1');
+    if (label === 'BQ') return 'X';
     const key = label === 'D' || label === 'T' ? 'H' : label;
     if (window.ATOM_SYMBOL_TO_Z && Object.prototype.hasOwnProperty.call(window.ATOM_SYMBOL_TO_Z, key)) {
       const z = window.ATOM_SYMBOL_TO_Z[key];
@@ -70,7 +71,7 @@
     const normalizedBlocks = [];
     while (cursor < nonEmptyLines.length) {
       const countRaw = Number(nonEmptyLines[cursor]);
-      if (!Number.isInteger(countRaw) || countRaw < 0) {
+      if (!Number.isSafeInteger(countRaw) || countRaw < 0) {
         normalizedBlocks.length = 0;
         break;
       }
@@ -78,7 +79,7 @@
         normalizedBlocks.length = 0;
         break;
       }
-      const frameAtomCount = countRaw | 0;
+      const frameAtomCount = countRaw;
       if (firstFrameAtomCount == null) firstFrameAtomCount = frameAtomCount;
       else if (frameAtomCount !== firstFrameAtomCount) {
         normalizedBlocks.length = 0;

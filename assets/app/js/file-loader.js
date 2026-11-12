@@ -44,7 +44,7 @@
       if (kind === 'molden') return deps.parseMolden(text);
       if (kind === 'two_component_cube') return deps.parseTwoComponentCube(text);
       if (kind === 'cube') return deps.parseCube(text);
-      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, or a VibeMol session file.');
+      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, VibeMol session or preset, vibration JSON (.vib.json, .vmodes.json, .modes.json), ORCA .hess with its matching XYZ, or Psi4 vibrational output (.dat, .out, .output).');
     }
 
     async function resolveXyzUnits(item) {
@@ -268,7 +268,6 @@
       if (loadedNames.length) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
       if (failures.length) {
         deps.setHintMessage(failures[0]);
-        deps.alertUser(`Could not load ${failures.length === 1 ? 'one file' : `${failures.length} files`}:\n\n${failures.map((failure, i) => `${i + 1}. ${failure}`).join('\n')}`);
       }
       return {
         ok: loadedNames.length > 0 && !failures.length,
@@ -411,7 +410,6 @@
       } catch (err) {
         const message = `Could not load ${label}: ${err && err.message || err}`;
         deps.setHintMessage(message);
-        deps.alertUser(message);
         return false;
       }
     }

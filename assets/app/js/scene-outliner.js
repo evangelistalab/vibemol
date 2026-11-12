@@ -579,9 +579,11 @@
       row.classList.toggle('is-cube-layer', !!cubeLike);
       row.classList.toggle('is-flashing', !!(options.layer && options.layer.id === outlinerFlashLayerId));
       row.classList.toggle('is-invalid', !!(options.layer && options.layer.kind === SCENE_LAYER_KIND.ARITHMETIC && options.layer.cubeDataValid === false));
+      if (!renaming) {
+        row.setAttribute('data-tooltip', [cubeLike && options.layer.labelId, options.label || 'Untitled'].filter(Boolean).join(' — '));
+      }
       if (!renaming && cubeLike) {
         row.draggable = true;
-        row.setAttribute('data-tooltip', [options.layer.labelId, options.label || 'Untitled'].filter(Boolean).join(' — '));
         row.setAttribute('aria-grabbed', 'false');
         row.addEventListener('dragstart', (event) => handleOutlinerDragStart(target, row, event));
         row.addEventListener('dragend', handleOutlinerDragEnd);

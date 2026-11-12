@@ -98,9 +98,10 @@ test('unsupported uploads report the format and keep the working scene', async (
     .map(name => new File(['Unknown format'], name)), { clearFirst: true });
   assert.equal(result.ok, false);
   assert.equal(result.failures.length, 4);
-  for (const failure of result.failures) assert.match(failure, /Unsupported file format.*Use XYZ, Cube/);
+  for (const failure of result.failures) assert.match(failure, /Unsupported file format.*Use XYZ, Cube.*\.vib\.json.*\.hess.*Psi4/);
   assert.strictEqual(getVolumes()[0], existing);
-  assert.equal(events.filter(([type]) => type === 'alertUser').length, 1);
+  assert.equal(events.filter(([type]) => type === 'alertUser').length, 0);
+  assert.deepEqual(events.find(([type]) => type === 'setHintMessage'), ['setHintMessage', result.failures[0]]);
 });
 
 test('file loader wraps coordinates-only xyz files before parsing', () => {
@@ -379,7 +380,7 @@ test('embedded append counts only new successful inputs and keeps existing files
   assert.deepEqual(Array.from(getVolumes(), record => record.name), ['a.cube', 'b.cube']);
 });
 
-test('invalid replacements preserve the current scene and report a popup', async () => {
+test('invalid replacements preserve the current scene and report the error in the hint', async () => {
   const { controller, events, getVolumes } = createController({
     volumes: [{ name: 'old.cube', vol: {} }],
     parseCube: () => { throw new Error('Malformed grid'); },
@@ -389,7 +390,8 @@ test('invalid replacements preserve the current scene and report a popup', async
   assert.equal(result.loadedCount, 0);
   assert.deepEqual(Array.from(result.loadedNames), []);
   assert.equal(getVolumes()[0].name, 'old.cube');
-  assert.equal(events.filter(event => event[0] === 'alertUser').length, 1);
+  assert.equal(events.filter(event => event[0] === 'alertUser').length, 0);
+  assert.deepEqual(events.find(([type]) => type === 'setHintMessage'), ['setHintMessage', result.error]);
   assert.match(result.error, /bad.cube: Malformed grid/);
 });
 
@@ -404,7 +406,7 @@ test('mixed scene-dispatch batches retain valid files and report each rejected i
   assert.deepEqual(dispatched, ['good.cube']);
   assert.equal(result.loadedCount, 1);
   assert.deepEqual(Array.from(result.loadedNames), ['good.cube']);
-  assert.match(events.find(event => event[0] === 'alertUser')[1], /bad.cube/);
+  assert.match(events.find(event => event[0] === 'setHintMessage')[1], /bad.cube/);
 });
 
 test('sidecars in a primary batch are attached after every primary is committed', async () => {

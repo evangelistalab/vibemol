@@ -41,6 +41,25 @@ test('XYZ uses atomic identity across numbered labels, atomic numbers and H isot
   assert.throws(() => parseXYZ('1\nBad label\nQq2 0 0 0'), /unknown element symbol/);
 });
 
+test('XYZ accepts Bq as a dummy atom and locates a too-small frame count', () => {
+  const { parseXYZ } = loadParsers();
+  assert.equal(parseXYZ('1\nGhost\nBq 0 0 0').atoms[0].Z, 0);
+  assert.throws(() => parseXYZ('1\nUnder-counted\nH 0 0 0\nBq 1 0 0'), /atom count 1 at line 1 is too small; extra atom record at line 4/);
+  assert.throws(() => parseXYZ('1\nFirst\nH 0 0 0\n1\nSecond\nH 1 0 0\n0 2 0 0'), /atom count 1 at line 4 is too small; extra atom record at line 7/);
+});
+
+test('scalar and spinor cubes reject invalid grid tokens instead of shifting the remaining values', () => {
+  const { parseCube, parseTwoComponentCube } = loadParsers();
+  const header = 'Example\nGrid\n0 0 0 0\n2 1 0 0\n2 0 1 0\n2 0 0 1\n';
+  for (const parse of [parseCube, parseTwoComponentCube]) {
+    for (const token of ['nan', '****']) {
+      assert.throws(() => parse(header + token + ' 1 2 3 4 5 6 7 8'), {
+        message: `Malformed CUBE numeric token "${token}" at line 7.`,
+      });
+    }
+  }
+});
+
 test('XYZ reads Fortran exponents in the initial structure and trajectory frames', () => {
   const { parseXYZ } = loadParsers();
   const xyz = '1\nFirst frame\nH 9.6D-01 -2.5d+00 1.0E-2\n1\nSecond frame\nH -3d-1 2D+1 4e-1\n';
@@ -166,7 +185,7 @@ test('both cube formats read Fortran exponents in headers and voxel values', () 
   assert.equal(spinor.isTwoComponent, true);
   assert.deepEqual([spinor.alphaRe[0], spinor.alphaIm[0], spinor.betaRe[0], spinor.betaIm[0]],
     [0.1, -0.2, 0.3, 0.4].map(Math.fround));
-  assert.throws(() => parseCube(header + '\n1.0D-'), /Data size mismatch\. Expected 1, got 0/);
+  assert.throws(() => parseCube(header + '\n1.0D-'), /Malformed CUBE numeric token "1.0D-"/);
 });
 
 test('parseMolden handles a compact Molden payload', () => {

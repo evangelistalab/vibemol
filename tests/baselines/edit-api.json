@@ -1010,6 +1010,37 @@
       "after": "48815b46de4c627a9c76526f7ef1d5567f96cbb42cf7cde091040ba87cf4a6f4",
       "reason": "Populate the device-appropriate navigation hint before the first file load while preserving startup notices.",
       "units": []
+    },
+    "statement:fileLoadInlineErrors": {
+      "before": "a72eb12bde3c30697b44941a5b634c120310949a55e28652709dff9e1286543c",
+      "after": "be9030a16d22dde1c8417f54cfdd06df45cd1ed2fb73c6ecd25b52a9ae9f27e7",
+      "reason": "Use the existing hint for import failures without a second browser dialog.",
+      "units": []
+    },
+    "handleClearAllLoadedFilesClick": {
+      "before": "f8e00239db1b37f34979ac70bdb2be733c4bb4fcc596d9657f4baebee061bb16",
+      "after": "8b0ccb96a68f83ec016e9bbb7f4054a26edc6e55a751b0c70db70549e24ece28",
+      "reason": "Confirm Clear files before removing data and suppress the cleared workspace autosave on reload.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "handleClearAllLoadedFilesClick",
+          "count": 11,
+          "inputs": [
+            "MODES",
+            "clearAllLoadedFiles",
+            "closeCombinePopover",
+            "closeCubeLayerContextMenu",
+            "closeEditModeTransientPopovers",
+            "currentMode",
+            "finishOutlinerRename",
+            "getSceneOutliner",
+            "sessionRecovery",
+            "setMode",
+            "updateEmptyStateVisibility"
+          ]
+        }
+      ]
     }
   }
 }

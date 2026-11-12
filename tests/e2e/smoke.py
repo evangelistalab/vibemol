@@ -33,6 +33,23 @@ def log_step(label: str) -> None:
         print(f'[smoke] {label}', flush=True)
 
 
+def confirm_clear_files(page) -> None:
+    expected = ('confirm', 'Clear all loaded files and their undo history?')
+    receipts = []
+
+    def answer(dialog):
+        actual = (dialog.type, dialog.message)
+        receipts.append(actual)
+        if actual == expected:
+            dialog.accept()
+        else:
+            dialog.dismiss()
+
+    page.once('dialog', answer)
+    page.locator('#clearBtn').click()
+    assert receipts == [expected], {'actual': receipts, 'expected': [expected]}
+
+
 def build_fixture_structure() -> str:
     payload = {
         'kind': 'vibemol.structure',
@@ -1886,7 +1903,7 @@ def main() -> int:
                     return (exported?.volume?.atoms || []).length === 0;
                 }"""
             )
-            page.locator('#clearBtn').click()
+            confirm_clear_files(page)
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
@@ -1928,7 +1945,7 @@ def main() -> int:
                       && cubes[2].hidden === true;
                 }"""
             )
-            page.locator('#clearBtn').click()
+            confirm_clear_files(page)
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
@@ -2229,7 +2246,7 @@ def main() -> int:
                       && eye?.getAttribute('aria-label') === 'Hide';
                 }"""
             )
-            page.locator('#clearBtn').click()
+            confirm_clear_files(page)
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
@@ -2461,7 +2478,7 @@ def main() -> int:
                     return cubes.length === 1 && cubes[0].labelId === 'L1' && cubes[0].visible === true;
                 }"""
             )
-            page.locator('#clearBtn').click()
+            confirm_clear_files(page)
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');
@@ -2510,7 +2527,7 @@ def main() -> int:
                       && methaneCubes.slice(1).every((row) => row.hidden === true);
                 }"""
             )
-            page.locator('#clearBtn').click()
+            confirm_clear_files(page)
             page.wait_for_function(
                 """() => {
                     const splash = document.getElementById('emptyState');

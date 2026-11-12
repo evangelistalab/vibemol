@@ -31,14 +31,12 @@ function arrayMinMax(a) {
 
 /**
  * Create a streaming numeric reader over whitespace-delimited text lines.
- * Legacy single-field input skips invalid tokens. A declared dataset stream
- * rejects them, since dropping a value would shift the following channels.
+ * Reject malformed tokens so each value stays at its declared grid position.
  * @param {string[]} lines
  * @param {number} startLine
- * @param {boolean} strict
  * @returns {() => (number|null)}
  */
-function createNumberTokenizer(lines, startLine, strict) {
+function createNumberTokenizer(lines, startLine) {
   let lineIndex = startLine | 0;
   let parts = [];
   let partIndex = 0;
@@ -69,8 +67,7 @@ function createNumberTokenizer(lines, startLine, strict) {
         let n = +token;
         if (Number.isNaN(n)) n = parseLooseNumber(token);
         if (Number.isFinite(n)) return n;
-        if (strict) throw new Error(`Malformed CUBE numeric token "${token}" at line ${lineIndex}.`);
-        continue;
+        throw new Error(`Malformed CUBE numeric token "${token}" at line ${lineIndex}.`);
       }
       if (!loadNextLine()) return null;
     }
@@ -168,7 +165,7 @@ function parseCubeHeader(text, format) {
   if (atomCount >= 0 && nval === 1 && /ORCA/i.test(title) && /^1\s+[-+]?\d+$/.test((lines[dataStart] || '').trim())) {
     dataStart++;
   }
-  const nextNumber = createNumberTokenizer(lines, dataStart, atomCount < 0 || nval > 1);
+  const nextNumber = createNumberTokenizer(lines, dataStart);
   let datasetIds = null;
   if (atomCount < 0) {
     const count = nextNumber();
@@ -277,10 +274,10 @@ function parseXYZ(text) {
     const countRaw = (lines[cursor] || '').trim();
     if (!countRaw) throw new Error(`Malformed XYZ file at line ${blockStartLine}: missing atom count.`);
     const natomsVal = Number(countRaw);
-    if (!Number.isFinite(natomsVal) || !Number.isInteger(natomsVal) || natomsVal < 0) {
+    if (!Number.isSafeInteger(natomsVal) || natomsVal < 0) {
       throw new Error(`Malformed XYZ file at line ${blockStartLine}: atom count must be a non-negative integer.`);
     }
-    const frameNatoms = natomsVal | 0;
+    const frameNatoms = natomsVal;
     if (natoms == null) natoms = frameNatoms;
     else if (frameNatoms !== natoms) {
       throw new Error(`Malformed XYZ trajectory at line ${blockStartLine}: atom count ${frameNatoms} does not match first frame count ${natoms}.`);
@@ -291,15 +288,15 @@ function parseXYZ(text) {
       throw new Error(`Malformed XYZ file: missing comment line after atom count at line ${blockStartLine}.`);
     }
     const comment = lines[commentIndex] || '';
+    if (frameNatoms > lines.length - commentIndex - 1) {
+      throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
+    }
 
     const frame = new Float32Array(frameNatoms * 3);
     const frameAtoms = [];
     for (let i = 0; i < frameNatoms; i++) {
       const rowIndex = cursor + 2 + i;
       const lineNo = rowIndex + 1;
-      if (rowIndex >= lines.length) {
-        throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
-      }
       const l = (lines[rowIndex] || '').trim();
       if (!l) throw new Error(`Malformed XYZ file at line ${lineNo}: missing atom record.`);
       const parts = l.split(/\s+/);
@@ -311,7 +308,7 @@ function parseXYZ(text) {
       const key = label === 'D' || label === 'T' ? 'H' : label;
       const table = window.ATOM_SYMBOL_TO_Z || {};
       const number = Number(sym);
-      const atomicNumber = !Number.isNaN(number) ? number : (Object.hasOwn(table, key) ? table[key] : null);
+      const atomicNumber = key === 'BQ' ? 0 : (!Number.isNaN(number) ? number : (Object.hasOwn(table, key) ? table[key] : null));
       if (atomicNumber === null) {
         throw new Error(`Malformed XYZ file at line ${lineNo}: unknown element symbol "${sym}".`);
       }
@@ -337,6 +334,13 @@ function parseXYZ(text) {
     frameComments.push(comment);
     if (!firstFrameAtoms) firstFrameAtoms = frameAtoms;
     cursor += frameNatoms + 2;
+    while (cursor < lines.length && !lines[cursor].trim()) cursor++;
+    if (cursor < lines.length) {
+      const next = lines[cursor].trim().split(/\s+/);
+      if (next.length >= 4 && next.slice(1, 4).every(token => Number.isFinite(parseLooseNumber(token)))) {
+        throw new Error(`Malformed XYZ file: atom count ${frameNatoms} at line ${blockStartLine} is too small; extra atom record at line ${cursor + 1}.`);
+      }
+    }
   }
 
   if (!firstFrameAtoms || natoms == null) throw new Error('Malformed XYZ file: no atom frame found.');

@@ -30768,7 +30768,6 @@
     setVibrationPanelOpen,
     setNavigationHint,
     setHintMessage,
-    alertUser: (message) => alert(message),
     clearEditHistory,
     clearSceneMeshes,
     HINT_START,
@@ -30993,7 +30992,8 @@
     return fileLoaderController.clearAllLoadedFiles(options);
   }
 
-  function handleClearAllLoadedFilesClick() {
+  async function handleClearAllLoadedFilesClick() {
+    if (!window.confirm('Clear all loaded files and their undo history?')) return;
     if (getSceneOutliner().isRenaming()) finishOutlinerRename({ commit: true });
     closeCubeLayerContextMenu();
     closeCombinePopover();
@@ -31001,6 +31001,7 @@
     clearAllLoadedFiles();
     if (currentMode !== MODES.DISPLAY) setMode(MODES.DISPLAY);
     else updateEmptyStateVisibility();
+    await sessionRecovery?.startFresh({ discardCurrent: true });
   }
 
   /**

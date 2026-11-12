@@ -244,6 +244,15 @@
 }
 
 @container (max-width: 245px) {
+  #toolbar .vm-outliner-row:not(.is-cube-layer) {
+    grid-template-columns: 24px 28px 16px minmax(0, 1fr);
+    row-gap: 1px;
+  }
+  #toolbar .vm-outliner-row:not(.is-cube-layer) .vm-outliner-row__meta {
+    grid-column: 4;
+    max-width: none;
+  }
+  #toolbar .vm-outliner-row:not(.is-cube-layer) .vm-outliner-row__meta:empty { display: none; }
   #toolbar .vm-outliner-row.is-cube-layer {
     grid-template-columns: 28px 16px minmax(0, 1fr);
     row-gap: 1px;

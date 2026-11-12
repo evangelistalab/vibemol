@@ -24,6 +24,7 @@
 #sessionRecoveryPrompt {
   position: fixed;
   z-index: 1000;
+  pointer-events: none;
   top: calc(env(safe-area-inset-top, 0px) + max(64px, var(--wb-top, 56px) + 8px));
   inset-inline: 12px;
   width: min(420px, calc(100% - 24px));
@@ -41,6 +42,7 @@
 }
 
 #sessionRecoveryPrompt p { margin: 0 0 8px; overflow-wrap: anywhere; }
+#sessionRecoveryPrompt button { pointer-events: auto; }
 
 #sessionBusyOverlay {
   position: fixed;

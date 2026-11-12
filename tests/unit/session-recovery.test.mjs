@@ -160,6 +160,30 @@ test('Start fresh suppresses only the declined snapshot on reload and preserves 
   newer.stop();
 });
 
+test('clearing while an autosave is in flight dismisses the completed snapshot without erasing it', async () => {
+  const {controller, create, deps, snapshots} = setup();
+  let hasWork = true;
+  deps.hasWork = () => hasWork;
+  await controller.initialize();
+  let finish;
+  deps.exportText = () => new Promise(resolve => { finish = resolve; });
+  controller.markDirty();
+  const saving = controller.flush();
+  hasWork = false;
+  const clearing = controller.startFresh({discardCurrent:true});
+  finish('cleared workspace');
+  assert.equal(await saving, true);
+  assert.equal(await clearing, true);
+  assert.equal(snapshots.latest.text, 'cleared workspace');
+  assert.equal(snapshots.declinedId, snapshots.latest.id);
+  controller.stop();
+
+  const reloaded = create(deps);
+  await reloaded.initialize();
+  assert.equal(reloaded.getState().pending, false);
+  reloaded.stop();
+});
+
 test('starting a new workspace resumes autosave after the preceding workspace exceeded its limit', async () => {
   const {controller, deps, snapshots} = setup();
   await controller.initialize(); controller.markDirty();

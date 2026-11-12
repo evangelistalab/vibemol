@@ -29,6 +29,12 @@ function loadIoUtils() {
   });
 }
 
+test('XYZ clipboard normalization maps the Bq ghost label to the dummy symbol', () => {
+  const { VibeMolIOUtils } = loadIoUtils();
+  const result = VibeMolIOUtils.detectAndNormalizeXyzText('Bq 0 0 0\nH 1 0 0');
+  assert.equal(result.xyzText, '2\nPasted XYZ\nX 0 0 0\nH 1 0 0\n');
+});
+
 test('io-utils detects full XYZ text', () => {
   const context = loadIoUtils();
   const detected = context.window.VibeMolIOUtils.detectAndNormalizeXyzText(`

@@ -99,7 +99,9 @@ def failed_imports(page, dialogs):
     mixed = load(page, [{'name':'saved.vibemol-session','text':json.dumps(saved)}, {'name':'other.cube','text':cube(1)}])
     assert not mixed['ok'] and mixed['loadedCount'] == 0
     assert snapshot(page) == before
-    assert 'one session file at a time' in dialogs[-1]
+    hint = page.locator('#hint').inner_text()
+    print(f'[mixed-import-error] actual={hint!r}, dialogs={dialogs!r}, expected an inline session error and no dialog', flush=True)
+    assert 'one session file at a time' in hint and not dialogs, (hint, dialogs)
     assert load(page, [{'name':'saved.vibemol-session','text':json.dumps(saved)}])['ok']
     assert snapshot(page) == before
 
@@ -175,6 +177,16 @@ def mobile_pending_recovery(page, dialogs):
 
 
 def declined_recovery(page, dialogs):
+    clear_message = 'Clear all loaded files and their undo history?'
+
+    def answer(dialog):
+        dialogs.append((dialog.type, dialog.message))
+        if dialogs == [('confirm', clear_message)] * 2:
+            dialog.accept()
+        else:
+            dialog.dismiss()
+
+    page.on('dialog', answer)
     page.wait_for_function('() => VibeMolRecovery.getState().ready')
     assert load(page, [{'name':'declined.xyz', 'text':'1\nOriginal\nH 0 0 0\n'}])['ok']
     assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
@@ -184,15 +196,6 @@ def declined_recovery(page, dialogs):
     page.wait_for_function('() => window.VibeMolRecovery?.getState().pending')
     page.locator('#skipRecoveryBtn').click()
     page.wait_for_function('() => !VibeMolRecovery.getState().pending')
-    # Clear the temporary work before the debounce can produce a newer snapshot.
-    result = page.evaluate('''async files => {
-      const loaded = await VibeMolEmbed.loadFiles(files, {clearFirst:true});
-      if (loaded.ok) document.getElementById('clearBtn').click();
-      return {loaded: loaded.ok, scenes: VibeMolTesting.getSceneGraphSnapshot().scenes.length};
-    }''', [{'name':'temporary.xyz', 'text':'1\nTemporary\nN 0 0 0\n'}])
-    cleared = {'loaded':True, 'scenes':0}
-    print(f'[declined-recovery-clear] actual={result}, expected={cleared}', flush=True)
-    assert result == cleared, (result, cleared)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_function('() => window.VibeMolRecovery?.getState().ready')
     saved = page.evaluate(read_store)
@@ -204,8 +207,24 @@ def declined_recovery(page, dialogs):
     assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
     page.reload(wait_until='domcontentloaded')
     page.wait_for_function('() => window.VibeMolRecovery?.getState().pending')
-    assert 'later.xyz' in page.locator('#sessionRecoveryMessage').inner_text()
-    assert not dialogs, dialogs
+    offered = page.locator('#sessionRecoveryMessage').inner_text()
+    assert 'later.xyz' in offered, offered
+    page.locator('#recoverSessionBtn').click()
+    page.wait_for_function('() => !VibeMolRecovery.getState().pending')
+    scene = snapshot(page)
+    page.locator('#clearBtn').click()
+    assert snapshot(page) == scene, (snapshot(page), scene)
+    page.locator('#clearBtn').click()
+    page.wait_for_function('''() => VibeMolTesting.getSceneGraphSnapshot().scenes.length === 0
+      && document.getElementById('sessionStatus').textContent === 'Autosave ready' ''')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolRecovery?.getState().ready')
+    saved = page.evaluate(read_store)
+    actual = (saved['latest']['name'], saved['declinedId'] == saved['latest']['id'],
+              page.locator('#sessionRecoveryPrompt').is_visible(), dialogs)
+    expected = ('later.xyz', True, False, [('confirm', clear_message)] * 2)
+    print(f'[clear-files-recovery] actual={actual}, expected={expected}', flush=True)
+    assert actual == expected, (actual, expected)
 
 
 def scoped_shortcuts(page, dialogs):
@@ -449,7 +468,8 @@ def main():
                 errors, console_errors, dialogs = [], [], []
                 page.on('pageerror', lambda error: errors.append(str(error)))
                 page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
-                page.on('dialog', lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
+                if run is not declined_recovery:
+                    page.on('dialog', lambda dialog: (dialogs.append(dialog.message), dialog.dismiss()))
                 try:
                     page.goto(url, wait_until='domcontentloaded')
                     page.wait_for_function('() => window.VibeMolSession')

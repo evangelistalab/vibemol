@@ -121,7 +121,7 @@
     }
     async function flush(options = {}) {
       clearTimer();
-      if (stopped || !ready || recovering || !deps.hasWork()) return false;
+      if (stopped || !ready || recovering || dismissing || !deps.hasWork()) return false;
       if (writing) return writing;
       if (failed && !options.force) return false;
       if (revision === savedRevision && !options.force) return false;
@@ -177,16 +177,18 @@
         status('error', `Autosave unavailable: ${error.message} Use Save session to download your work.`);
       }
     }
-    async function startFresh({ remember = true } = {}) {
+    async function startFresh({ remember = true, discardCurrent = false } = {}) {
       if (recovering || dismissing) return false;
-      if (pending && remember) {
+      if (remember && (pending || discardCurrent)) {
         dismissing = true;
         try {
-          await store.decline(candidates[0].id);
+          if (writing) await writing;
+          const id = discardCurrent || !deps.hasWork() ? expectedId : candidates[0].id;
+          if (id) await store.decline(id);
         } catch (error) {
           status('error', `Could not dismiss recovery: ${error.message}`);
           return false;
-        } finally { dismissing = false; }
+        } finally { dismissing = false; schedule(); }
       }
       pending = false;
       candidates = [];
