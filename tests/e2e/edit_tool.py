@@ -34,6 +34,57 @@ def close_build(page):
     page.locator('#editAdaptiveAddAtomPopover').get_by_role('button',name='Close Build',exact=True).click()
 
 
+def switch_tools_with_selection(page):
+    completed = 0
+
+    def compare(label, actual, expected):
+        nonlocal completed
+        check_edit_value(label, actual, expected)
+        completed += 1
+
+    page.locator('#modeDisplayBtn').click()
+    ethylene = (p.ROOT / 'assets/fragments/ethene.xyz').read_text()
+    compare('load ethylene', p.load(page, [{'name': 'ethylene.xyz', 'text': ethylene}])['ok'], True)
+    original = active_atoms(page)
+    page.locator('#modeEditBtn').click()
+    tool(page, 'transform')
+    page.mouse.click(*find_atom_click_point(page, 0))
+
+    def check(label, *, badge, card, position, translate, build_at_site, move_operator):
+        wait_for_presented_state(page, '()=>true')
+        actual = page.evaluate('''() => {
+          const visible = id => !!document.getElementById(id).getClientRects().length;
+          return {
+            selection: VibeMolTesting.getEditSelectionIndices(),
+            badge: document.querySelector('#hint .vm-tool-badge')?.textContent ?? null,
+            card: visible('editSelectionTranslateCue'),
+            position: visible('editSelectionPosition'),
+            translate: visible('editSelectionTranslateCueButton'),
+            buildAtSite: visible('editSelectionAddFragmentCueButton'),
+            moveOperator: visible('editAddAtomOperatorPanel'),
+            atoms: VibeMolStructure.exportActive().volume.atoms,
+          };
+        }''')
+        expected = dict(selection=[0], badge=badge, card=card, position=position,
+                        translate=translate, buildAtSite=build_at_site, moveOperator=move_operator,
+                        atoms=original)
+        compare(label, actual, expected)
+
+    check('ethylene selected in Transform', badge='TRANSFORM', card=True,
+          position=True, translate=True, build_at_site=True, move_operator=True)
+    page.locator('#editAdaptiveAddAtomBtn').click()
+    page.locator('#editAddQuick button[data-z="6"]').click()
+    check('Build carbon hides Transform controls', badge='BUILD', card=False,
+          position=False, translate=False, build_at_site=False, move_operator=False)
+    page.keyboard.press('Escape')
+    check('return to Transform keeps selection', badge='TRANSFORM', card=True,
+          position=True, translate=True, build_at_site=True, move_operator=False)
+    page.locator('#editSelectionAddFragmentCueButton').click()
+    check('Build at open site keeps only the Build control', badge='BUILD', card=True,
+          position=False, translate=False, build_at_site=True, move_operator=False)
+    return completed
+
+
 def editing_transactions(page):
     completed=0
 
@@ -357,7 +408,7 @@ def main():
             page.on('pageerror',lambda e:errors.append(str(e)));page.on('dialog',lambda d:d.dismiss())
             page.goto(url+'?appearanceStudy=1')
             page.wait_for_function('()=>window.VibeMolWorkbench')
-            completed=editing_transactions(page)+placement_exits(page)
+            completed=editing_transactions(page)+placement_exits(page)+switch_tools_with_selection(page)
             require_phase_counts({'edit-tool-state':completed},'tests/e2e/edit_tool.py','edit-tool-state')
             # Retire Edit before the isolated visual and Metal contexts.
             page.close()

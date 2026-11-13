@@ -1751,7 +1751,17 @@ def main() -> int:
                 """() => document.querySelector('#editAddQuick button[data-z="7"]')?.classList.contains('active') === true"""
             )
 
-            # The coordination chooser is now a cue-backed popover rather than a 2D halo menu.
+            # The palette arms Build. Return to Transform to edit the selected atom's coordination.
+            page.keyboard.press('Escape')
+            transform_state = page.evaluate("""() => ({
+                intent: VibeMolTesting.getEditBuildState().intent,
+                elementZ: VibeMolTesting.getEditBuildState().elementZ,
+                selection: VibeMolTesting.getEditSelectionIndices(),
+            })""")
+            expected_transform = {'intent': 'atom_manipulation', 'elementZ': 7, 'selection': [0]}
+            print('[smoke-coordination-tool] ' + json.dumps(
+                dict(actual=transform_state, expected=expected_transform)), flush=True)
+            assert transform_state == expected_transform, (transform_state, expected_transform)
             page.locator('#editSelectionCoordinationCueButton').click()
             page.wait_for_function(
                 """() => document.getElementById('editSelectionCoordinationCuePopover')?.getAttribute('aria-hidden') === 'false'"""

@@ -1327,6 +1327,13 @@
   color: var(--vm-color-on-tool-active); font: var(--vm-type-badge-weight) var(--vm-type-badge-size)/1.4 var(--vm-font-sans);
 }
 .vm-tool-badge[hidden] { display: none; }
+.vm-tool-badge--transform {
+  background: var(--vm-color-toolbar-tab-accent);
+  color: var(--vm-color-text-on-accent);
+}
+:root[data-theme='dark'] .vm-tool-badge--transform {
+  color: var(--vm-color-surface-control);
+}
 .vm-edit-tool-hint { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; }
 .vm-edit-tool-status { display: block; margin-top: 4px; font-size: var(--vm-type-status-size); font-weight: var(--vm-type-status-weight); line-height: var(--vm-leading-body); opacity: 0.8; }
 .vm-edit-tool-overlay {
