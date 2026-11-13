@@ -19868,7 +19868,8 @@
   }
 
   function getSelectionPositionSnapshot() {
-    if (currentMode !== MODES.EDIT || getEffectiveEditSelectionDragMode() !== 'translate'
+    if (currentMode !== MODES.EDIT || getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION
+      || getEffectiveEditSelectionDragMode() !== 'translate'
       || isSelectionBuildCueActive() || getCurrentTransformSelectionContext()?.type === 'bond') return null;
     const record = currentIndex >= 0 ? volumes[currentIndex] : null, vol = record?.vol;
     const selection = getEditAtomSelection();
@@ -19914,6 +19915,12 @@
       hideEditSelectionTranslateCue();
       return;
     }
+    const buildCueActive = isSelectionBuildCueActive();
+    const showTransformTools = getEditIntent() === EDIT_INTENT.ATOM_MANIPULATION && !buildCueActive;
+    if (!showTransformTools && !buildCueActive) {
+      hideEditSelectionTranslateCue();
+      return;
+    }
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     const selection = getEditAtomSelection();
@@ -19942,38 +19949,35 @@
     const selectionCount = Array.isArray(selection) ? selection.length : 0;
     const effectiveMode = getEffectiveEditSelectionDragMode();
     const bondSideCueMode = getEffectiveEditBondSideCueMode();
-    const buildCueActive = isSelectionBuildCueActive();
     const buildPayload = getCurrentBuildPayload();
     const buildPayloadKind = String(buildPayload && buildPayload.kind || '').trim().toLowerCase();
     const buildCueSupported = buildPayloadKind === 'atom' || buildPayloadKind === 'fragment';
-    const metalBondingCueState = getSelectionMetalBondingCueState();
+    const metalBondingCueState = showTransformTools ? getSelectionMetalBondingCueState() : null;
     if (els.editSelectionTranslateCueButtonEl) {
-      const visible = !isBondSideSelection && !isBondCenterSelection;
+      const visible = showTransformTools && !isBondSideSelection && !isBondCenterSelection;
       els.editSelectionTranslateCueButtonEl.hidden = !visible;
-      window.VibeMolEditUi.setCueState(els.editSelectionTranslateCueButtonEl, visible && !buildCueActive && effectiveMode === 'translate');
+      window.VibeMolEditUi.setCueState(els.editSelectionTranslateCueButtonEl, visible && effectiveMode === 'translate');
     }
     if (els.editSelectionRotateCueButtonEl) {
-      els.editSelectionRotateCueButtonEl.hidden = isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
-      const rotateActive = isBondSideSelection
-        ? (!buildCueActive && bondSideCueMode === 'axis')
-        : (!buildCueActive && effectiveMode === 'rotate');
+      els.editSelectionRotateCueButtonEl.hidden = !showTransformTools || isBondCenterSelection || (!isBondSideSelection && selectionCount <= 1);
+      const rotateActive = showTransformTools && (isBondSideSelection ? bondSideCueMode === 'axis' : effectiveMode === 'rotate');
       window.VibeMolEditUi.setCueState(els.editSelectionRotateCueButtonEl, rotateActive);
       const rotateTooltip = isBondSideSelection ? 'Rotate around bond axis' : 'Rotate selection';
       setTooltipText(els.editSelectionRotateCueButtonEl, rotateTooltip);
       els.editSelectionRotateCueButtonEl.setAttribute('aria-label', rotateTooltip);
     }
     if (els.editSelectionBondOrbitCueButtonEl) {
-      const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'orbit';
-      els.editSelectionBondOrbitCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      const active = showTransformTools && isBondSideSelection && bondSideCueMode === 'orbit';
+      els.editSelectionBondOrbitCueButtonEl.hidden = !showTransformTools || !isBondSideSelection || isBondCenterSelection;
       window.VibeMolEditUi.setCueState(els.editSelectionBondOrbitCueButtonEl, active);
     }
     if (els.editSelectionBondDistanceCueButtonEl) {
-      const active = !!isBondSideSelection && !buildCueActive && bondSideCueMode === 'distance';
-      els.editSelectionBondDistanceCueButtonEl.hidden = !isBondSideSelection || isBondCenterSelection;
+      const active = showTransformTools && isBondSideSelection && bondSideCueMode === 'distance';
+      els.editSelectionBondDistanceCueButtonEl.hidden = !showTransformTools || !isBondSideSelection || isBondCenterSelection;
       window.VibeMolEditUi.setCueState(els.editSelectionBondDistanceCueButtonEl, active);
     }
     if (els.editSelectionBondOrderCueButtonEl) {
-      const visible = !!isBondCenterSelection;
+      const visible = showTransformTools && isBondCenterSelection;
       const order = visible && !bondCenterSelection.metalPair ? (bondCenterSelection.order | 0) : '';
       const label = visible
         ? (bondCenterSelection.metalPair
@@ -19994,7 +19998,7 @@
       window.VibeMolEditUi.setCueState(els.editSelectionMetalBondingCueButtonEl, !!active);
       if (!visible) hideSelectionMetalBondingCuePopover();
     }
-    const coordinationCueState = getSelectionCoordinationCueState();
+    const coordinationCueState = showTransformTools ? getSelectionCoordinationCueState() : null;
     if (els.editSelectionCoordinationCueButtonEl) {
       const visible = !isBondSideSelection && !isBondCenterSelection && !!(coordinationCueState && coordinationCueState.choices.length);
       const active = visible && els.editSelectionCoordinationCuePopoverEl && els.editSelectionCoordinationCuePopoverEl.getAttribute('aria-hidden') === 'false';
@@ -20020,7 +20024,7 @@
       }
     }
     if (els.editSelectionDeleteCueButtonEl) {
-      els.editSelectionDeleteCueButtonEl.hidden = false;
+      els.editSelectionDeleteCueButtonEl.hidden = !showTransformTools;
       window.VibeMolEditUi.setCueState(els.editSelectionDeleteCueButtonEl, false);
     }
     const positionSnapshot = getSelectionPositionSnapshot();
@@ -20035,8 +20039,10 @@
       setTooltipText(els.editSelectionTranslateCueEl, bondSideCueMode === 'distance'
         ? 'Adjust bond distance'
         : (bondSideCueMode === 'orbit' ? 'Rotate fragment in 3D' : 'Rotate around bond axis'));
-    } else {
+    } else if (showTransformTools) {
       setTooltipText(els.editSelectionTranslateCueEl, effectiveMode === 'rotate' ? 'Rotate selection' : 'Translate selection');
+    } else {
+      setTooltipText(els.editSelectionTranslateCueEl, '');
     }
     els.editSelectionTranslateCueEl.setAttribute('aria-hidden', 'false');
     if (editSelectionPositionUi?.isEditing()) return;
@@ -30975,9 +30981,10 @@
     if (currentMode === MODES.EDIT && editTools) {
       const info = window.VibeMolEditToolUi.describe(getEditToolState());
       const line = document.createElement('span'); line.className = 'vm-edit-tool-hint';
-      if (info.build) {
-        const tag = document.createElement('span'); tag.className = 'vm-tool-badge'; tag.textContent = 'BUILD'; line.append(tag, document.createTextNode(' — '));
-      }
+      const tag = document.createElement('span');
+      tag.className = info.build ? 'vm-tool-badge' : 'vm-tool-badge vm-tool-badge--transform';
+      tag.textContent = info.build ? 'BUILD' : 'TRANSFORM';
+      line.append(tag, document.createTextNode(' — '));
       line.append(document.createTextNode(info.hint)); hintEl.append(line);
       // Operation feedback is still useful, but never overrides the armed-tool signal.
       if (message && message !== HINT_EDIT && !/^(Build (element|fragment|molecule):|Canceled .*placement\.|Selection cleared\.)/.test(message)) {

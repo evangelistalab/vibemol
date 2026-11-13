@@ -47,7 +47,7 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/smoke.py': {'video-activation':58, 'video-export-completion':2, 'smoke-spinor-launcher':8},
             'tests/e2e/look_references.py': {'registry-readback':500},
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},
-            'tests/e2e/edit_tool.py': {'metal-native-case':28,'edit-tool-state':54},
+            'tests/e2e/edit_tool.py': {'metal-native-case':28,'edit-tool-state':59},
             'tests/e2e/build_panel.py': {'retired-cache-case':4},
             'tests/e2e/figure.py': {'figure-runner':40, 'scientific-buffer-synchronous':17, 'scientific-buffer-worker':17, 'scientific-buffer-coordinate-owners':8, 'published-ownership':13},
             'tests/e2e/calculations.py': {'forte2-case':68, 'calculations-default':1},
@@ -58,7 +58,7 @@ class CheckpointContractTests(unittest.TestCase):
 
     def test_phase_guards_reject_zero_short_and_extra_counts(self):
         for suite,marker,count in [('look_references','registry-readback',500),('axis_gizmo','escape-native-case',62),
-                                   ('edit_tool','metal-native-case',28),('edit_tool','edit-tool-state',54),
+                                   ('edit_tool','metal-native-case',28),('edit_tool','edit-tool-state',59),
                                    ('premerge','atomic-identity-rejection',24),
                                    ('build_panel','retired-cache-case',4), ('ux_review','avas-hitbox-method',5)]:
             with contextlib.redirect_stdout(io.StringIO()):

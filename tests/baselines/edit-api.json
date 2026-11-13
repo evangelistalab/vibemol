@@ -861,6 +861,24 @@
     "bind('down', 'global', 's', () => saveBtn && saveBtn.click());": "35ce1eed30d9f523ee1c9b9b722ab3eada83ab9a450ee2d066e5279192fd76a6"
   },
   "productChanges": {
+    "getSelectionPositionSnapshot": {
+      "before": "f6897024a83d628cf69994930602101ce1d4bb911bfc9e1093d081ea69eda3e5",
+      "after": "7afc3dd398d677708e6522a4a5a42c5f4a77f460148940dc833e1004e195b913",
+      "reason": "Keep coordinate inputs owned by Transform when a selected atom is carried into Build.",
+      "units": []
+    },
+    "renderEditSelectionTranslateCue": {
+      "before": "5ce2b450094fa5c6ef1c24c78b588f7673a2dafc4e4a671009ec1db86d02433a",
+      "after": "8850c2767104a674d169405aefc9068db0f12cd9045f1e67138ce93a082b2874",
+      "reason": "Hide Transform controls in Build and keep only the active Build-at-open-site control.",
+      "units": []
+    },
+    "setHintMessage": {
+      "before": "05bce7f87a2cd06bf3b94a1c52f4b036b3ab2f96642aeb616f35810bd04bb1c8",
+      "after": "3e561e6e501683a0652591ee92df3256429f7a437630b6e249226e2c921740a6",
+      "reason": "Label both Edit tools in the persistent hint using the existing tool state.",
+      "units": []
+    },
     "updateEditSelectionVisuals": {
       "before": "f4f0995a7e9c5abd7f61eaaaa4ceb72e423db0aa34424cc807229c7cfa8544e4",
       "after": "581c674b453a3adea19e9fd97a6f6e182e64576fbc31d735965e895ae7cd6083",
