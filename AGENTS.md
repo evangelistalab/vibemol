@@ -141,6 +141,7 @@ Primary capabilities:
 - `assets/app/js/session-format.js`: versioned portable session schema, bounded buffer codec, checksums, and dependency/shape validation.
 - `assets/app/js/session.js`: durable workspace capture, staged graph/source hydration, and `window.VibeMolSession` controller.
 - `assets/app/js/session-recovery.js`: debounced IndexedDB autosave, atomic two-snapshot retention, explicit recovery, and cross-tab revision checks.
+- `agent/`: reference connector prototype with browser code, a Cloudflare relay, a shared tool schema, and tests. The loader, toolbar mount, Help section, and `window.VibeMolAgentSeam` are enabled by `?agent=1`. See `agent/README.md` for local setup.
 - `assets/app/css/session-ui.css` and `docs/sessions.md`: session/recovery controls and persistence/API documentation.
 - `assets/app/js/file-loader.js`: file ingestion, onboarding sample loads, drag/drop, embed file-loading controller, and XYZ text detection/normalization helpers.
 - `assets/app/js/bond-editing.js`: bond tool popup/create/delete controller.

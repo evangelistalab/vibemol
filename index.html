@@ -3946,6 +3946,11 @@
   <script src="./assets/app/js/workbench.js?v=0.10.8"></script>
   <!-- Characterization stays out of ordinary launches and loads after all app scripts. -->
   <script>
+    if (new URLSearchParams(location.search).get('agent') === '1') {
+      const agentScript = document.createElement('script');
+      agentScript.src = './agent/web/loader.js?v=' + encodeURIComponent(window.VibeMolAssets.version);
+      document.body.appendChild(agentScript);
+    }
     if (new URLSearchParams(location.search).get('qa') === '1') {
       const qaScript = document.createElement('script');
       qaScript.src = window.VibeMolAssets.url('./assets/app/js/qa-characterize.js');

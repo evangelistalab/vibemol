@@ -33185,6 +33185,49 @@
   // capture precedes target/document phases by DOM semantics, not registration.
   window.addEventListener('keydown', handleApplicationEscape, true);
 
+  // The reference prototype exposes its bridge only on opted-in loads.
+  if (new URLSearchParams(window.location.search).get('agent') === '1') {
+    window.VibeMolAgentSeam = Object.freeze({
+      bohrToAngstrom: BOHR_TO_ANG,
+      getRecords: () => volumes.filter(Boolean),
+      getActiveIndex: () => currentIndex,
+      getActiveRecord: () => ((currentIndex >= 0 && volumes[currentIndex] && volumes[currentIndex].vol) ? volumes[currentIndex] : null),
+      getMode: () => currentMode,
+      isDragging: () => !!dragActive,
+      isRecordingVideo: () => !!(trajectoryVideoController && trajectoryVideoController.isRecording()),
+      getCamera: () => camera,
+      getCanvas: () => renderer.domElement,
+      getRenderer: () => renderer,
+      getScene: () => scene,
+      getContentGroup: () => contentGroup,
+      getElementSymbol,
+      computeMassProperties,
+      hasVolumetricGrid,
+      cloneCoordinateSnapshot,
+      translateVolumetricGrid,
+      finalizeCoordinateSnapshotEdit,
+      centerActiveMoleculeMassAtOrigin,
+      undo: undoLastEditAction,
+      redo: redoLastEditAction,
+      setHint: message => setHintMessage(String(message || '')),
+      getAllTrajectoryInfos,
+      getTrajectorySyncMaster,
+      getTrajectoryInfoBySceneId,
+      setTrajectorySyncEnabled,
+      setTrajectoryPlayingForInfo,
+      applyMasterFrameToSyncedTrajectories,
+      applyTrajectoryFrameForInfo,
+      syncTrajectoryControls,
+      getEditAtomSelection,
+      setEditAtomSelection,
+      updateSelectedHalos,
+      deleteAtomsByIndex: indices => editPlacement.deleteAtomsByIndex(indices),
+      replaceAtomElementAtIndex: (index, z) => editPlacement.replaceAtomElementAtIndex(index, z),
+      appendAtomAtWorld: (worldPos, z) => editPlacement.appendAtomAtWorld(worldPos, z),
+      finalizeAddAtomOperatorSession: options => editPlacement.finalizeAddAtomOperatorSession(options),
+    });
+  }
+
   // Keyboard shortcuts are handled by the mode-aware router defined above.
 
 })();
