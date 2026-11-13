@@ -7,51 +7,74 @@ from navigation_budget import goto_with_budget
 
 
 CPU_PAGE = '''<script>
-let started, finished;
-const observer = new PerformanceObserver(list => {
-    const sawWork = list.getEntries().some(entry =>
-        Math.min(finished, entry.startTime + entry.duration) -
-        Math.max(started, entry.startTime) > 100);
-    if (sawWork) {
-        observer.disconnect();
-        fetch('/cpu-task-observed');
-    }
-});
-observer.observe({type: 'longtask'});
-// Isolate the workload from HTML parsing. Keep load pending until the browser
-// delivers its long-task entry, so completion cannot race that delivery.
-setTimeout(() => {
-    started = performance.now();
+// The load handler must return before the navigation helper can publish its
+// completed-load sample. The page never waits for a telemetry callback.
+addEventListener('load', () => {
+    const started = performance.now();
     const end = started + 220;
     while (performance.now() < end) {}
-    finished = performance.now();
-}, 0);
-</script><script async src="/cpu-pending.js"></script><p>ready</p>'''
+    performance.measure('navigation-cpu-work', {start: started, end: performance.now()});
+}, {once: true});
+</script><p>ready</p>'''
+
+
+def check_cpu_work(page, row, url):
+    work = page.evaluate('''() => ({
+      origin: performance.timeOrigin,
+      measures: performance.getEntriesByName('navigation-cpu-work', 'measure').map(entry => entry.toJSON()),
+    })''')
+    timing = row.get('timing', {})
+    start = timing.get('wait', {}).get('startedAtMs')
+    end = timing.get('observedWaitEndAtMs')
+    complete = next((message for message in row['messages']
+                     if message['event'] == 'completed-load'
+                     and message['document'] != row['previousDocument']), None)
+    measures = work['measures']
+    measured = measures[0] if len(measures) == 1 else None
+    work_start = work['origin'] + measured['startTime'] if measured else None
+    work_end = work_start + measured['duration'] if measured else None
+    document = complete['document'] if complete else None
+    intervals = [
+        dict(kind=interval['kind'], overlapMs=max(0,
+            min(work_end, interval['startTime'] + interval['duration']) -
+            max(work_start, interval['startTime'])))
+        for interval in row['intervals'][:timing.get('intervalCountAtDecision', 0)]
+        if measured and interval['document'] == document
+        and interval['kind'] in ('longTasks', 'heartbeatGaps')
+    ]
+    actual = dict(
+        budgetMs=timing.get('responsiveBudgetMs'),
+        wallExceeded=timing.get('wallElapsedMs', 0) > 100,
+        withinBudget=timing.get('withinBudget'),
+        discounted=timing.get('discountedMs', 0) > 0,
+        destinationCompleted=row['documents'].get(document, {}).get('href') == url,
+        workloadMeasured=bool(measured and measured['duration'] >= 220),
+        workloadBeforeCompletion=bool(measured and start is not None and end is not None
+                                      and start <= work_start <= work_end <= end),
+        observedDestinationStall=any(interval['overlapMs'] > 100 for interval in intervals),
+    )
+    expected = dict(budgetMs=100, wallExceeded=True, withinBudget=True, discounted=True,
+                    destinationCompleted=True, workloadMeasured=True, workloadBeforeCompletion=True,
+                    observedDestinationStall=True)
+    comparands = dict(actual=actual, expected=expected, work=work, intervals=intervals, timing=timing)
+    print('[navigation-cpu-contract] ' + json.dumps(comparands), flush=True)
+    return comparands
 
 
 def run(out):
     out=Path(out);out.mkdir(parents=True,exist_ok=True)
     gate=threading.Event()
-    cpu_task_observed = threading.Event()
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):
-            content_type = 'text/html'
-            if self.path == '/cpu-task-observed':
-                cpu_task_observed.set()
-                body = b''
-            elif self.path == '/cpu-pending.js':
-                cpu_task_observed.wait()
-                content_type = 'application/javascript'
-                body = b''
-            elif self.path == '/cpu':
+            if self.path == '/cpu':
                 body = CPU_PAGE.encode()
             else:
                 if self.path in ['/pending.js','/pending-main']:gate.wait()
                 body = ('<script src="/pending.js"></script>' if self.path == '/network' else '<p>ready</p>').encode()
             try:
                 self.send_response(200)
-                self.send_header('Content-Type', content_type)
+                self.send_header('Content-Type', 'text/html')
                 self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
             except (BrokenPipeError,ConnectionResetError):pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
@@ -85,26 +108,14 @@ def run(out):
                             observationErrors=row['observationErrors'],gateReleased=gate.is_set(),cleanup=all(x['passed']for x in row['cleanup']))
                         expected=dict(outcome=want,covered=True,rejected=want=='failed',observationErrors=[],gateReleased=False,cleanup=True)
                         print('[navigation-contract] '+json.dumps(dict(case=label,actual=actual,expected=expected)),flush=True)
+                        cpu = check_cpu_work(page, row, base + path) if path == '/cpu' else None
                         assert actual==expected,(label,actual,expected,row)
+                        if cpu is not None:
+                            assert cpu['actual'] == cpu['expected'], cpu
                         if want=='failed':
                             assert row['commitReached']==(path=='/network'),row
                             if path=='/network':assert row['expiredOnBudget']and row['timing']['responsiveExceeded'],row
                             else:assert row['timing']['wallElapsedMs']>=100,row
-                        if path=='/cpu':
-                            timing=row['timing']
-                            started=timing['wait']['startedAtMs']
-                            ended=timing['observedWaitEndAtMs']
-                            observed_cpu_task=any(
-                                interval['kind']=='longTasks' and interval['document']!=row['previousDocument']
-                                and min(ended,interval['startTime']+interval['duration'])-max(started,interval['startTime'])>100
-                                for interval in row['intervals'][:timing['intervalCountAtDecision']])
-                            actual_cpu=dict(budgetMs=timing['responsiveBudgetMs'],wallExceeded=timing['wallElapsedMs']>100,
-                                withinBudget=timing['withinBudget'],discounted=timing['discountedMs']>0,
-                                observedDestinationTask=observed_cpu_task)
-                            expected_cpu=dict(budgetMs=100,wallExceeded=True,withinBudget=True,discounted=True,
-                                observedDestinationTask=True)
-                            print('[navigation-cpu-contract] '+json.dumps(dict(actual=actual_cpu,expected=expected_cpu)),flush=True)
-                            assert actual_cpu==expected_cpu,(actual_cpu,expected_cpu,row)
                         if release is not None:release.cancel()
                         gate.set()
                         # A second ordinary navigation verifies removal of the
@@ -125,7 +136,6 @@ def run(out):
         result=dict(passed=True,cases=cases,allContextsRetired=True,appLoaded=False)
         (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');return result
     finally:
-        cpu_task_observed.set()
         gate.set();server.shutdown();server.server_close();thread.join()
 
 
