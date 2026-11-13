@@ -6,17 +6,53 @@ from playwright.sync_api import sync_playwright,TimeoutError
 from navigation_budget import goto_with_budget
 
 
+CPU_PAGE = '''<script>
+let started, finished;
+const observer = new PerformanceObserver(list => {
+    const sawWork = list.getEntries().some(entry =>
+        Math.min(finished, entry.startTime + entry.duration) -
+        Math.max(started, entry.startTime) > 100);
+    if (sawWork) {
+        observer.disconnect();
+        fetch('/cpu-task-observed');
+    }
+});
+observer.observe({type: 'longtask'});
+// Isolate the workload from HTML parsing. Keep load pending until the browser
+// delivers its long-task entry, so completion cannot race that delivery.
+setTimeout(() => {
+    started = performance.now();
+    const end = started + 220;
+    while (performance.now() < end) {}
+    finished = performance.now();
+}, 0);
+</script><script async src="/cpu-pending.js"></script><p>ready</p>'''
+
+
 def run(out):
     out=Path(out);out.mkdir(parents=True,exist_ok=True)
     gate=threading.Event()
+    cpu_task_observed = threading.Event()
     class Handler(BaseHTTPRequestHandler):
         def log_message(self,*args):pass
         def do_GET(self):
-            if self.path in ['/pending.js','/pending-main']:gate.wait()
-            body=('<script src="/pending.js"></script>'if self.path=='/network'else
-                  '<script>const end=performance.now()+220;while(performance.now()<end){}</script><p>ready</p>'if self.path=='/cpu'else'<p>ready</p>').encode()
+            content_type = 'text/html'
+            if self.path == '/cpu-task-observed':
+                cpu_task_observed.set()
+                body = b''
+            elif self.path == '/cpu-pending.js':
+                cpu_task_observed.wait()
+                content_type = 'application/javascript'
+                body = b''
+            elif self.path == '/cpu':
+                body = CPU_PAGE.encode()
+            else:
+                if self.path in ['/pending.js','/pending-main']:gate.wait()
+                body = ('<script src="/pending.js"></script>' if self.path == '/network' else '<p>ready</p>').encode()
             try:
-                self.send_response(200);self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
+                self.send_response(200)
+                self.send_header('Content-Type', content_type)
+                self.send_header('Content-Length',str(len(body)));self.end_headers();self.wfile.write(body)
             except (BrokenPipeError,ConnectionResetError):pass
     server=ThreadingHTTPServer(('127.0.0.1',0),Handler);thread=threading.Thread(target=server.serve_forever,daemon=True);thread.start()
     base='http://127.0.0.1:'+str(server.server_port);cases=[]
@@ -61,7 +97,7 @@ def run(out):
                             observed_cpu_task=any(
                                 interval['kind']=='longTasks' and interval['document']!=row['previousDocument']
                                 and min(ended,interval['startTime']+interval['duration'])-max(started,interval['startTime'])>100
-                                for interval in row['intervals'])
+                                for interval in row['intervals'][:timing['intervalCountAtDecision']])
                             actual_cpu=dict(budgetMs=timing['responsiveBudgetMs'],wallExceeded=timing['wallElapsedMs']>100,
                                 withinBudget=timing['withinBudget'],discounted=timing['discountedMs']>0,
                                 observedDestinationTask=observed_cpu_task)
@@ -89,6 +125,7 @@ def run(out):
         result=dict(passed=True,cases=cases,allContextsRetired=True,appLoaded=False)
         (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');return result
     finally:
+        cpu_task_observed.set()
         gate.set();server.shutdown();server.server_close();thread.join()
 
 
