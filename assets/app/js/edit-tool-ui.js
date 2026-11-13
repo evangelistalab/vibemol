@@ -14,18 +14,21 @@
     const action = kind === 'fused ring' ? 'Drag to spin around bond · Click again to place'
       : state.placement?.stage === 'catalog' ? 'Drag to rotate · Click again to place · X/Y/Z align'
       : 'Adjust location';
-    const hint = build ? state.placing
+    const hint = state.dragging ? 'Drag to transform · Esc cancels drag'
+      : build ? state.placing
       ? `${action}${state.confirmable ? ' · Enter confirms' : ''} · Esc discards ${object}`
       : `Click to place ${name} · Right-drag to rotate · Esc switches to Transform`
-      : `Left-click atoms or bonds to select · ${escape === 'clear' ? 'Esc clears selection' : 'Right-drag to rotate'} · / opens Build`;
+      : `Left-click atoms or bonds to select · ${escape === 'clear' ? 'Esc clears selection' : escape === 'close-build' ? 'Esc closes Build' : 'Right-drag to rotate'} · / opens Build`;
     return { build, name, badge, hint };
   }
 
   // Canonical Edit sub-ladder, shared by hints and the application arbiter.
   const EDIT_ESCAPE_LADDER = Object.freeze([
+    { id: 'cancel-drag', when: 'dragging', description: 'Restore coordinates from before the drag' },
     { id: 'cancel', when: 'placing', description: 'Cancel provisional placement; retain Build' },
-    { id: 'transform', when: 'build', description: 'Disarm Build; retain selection' },
+    { id: 'transform', when: 'build', description: 'Disarm Build and close its panel; retain selection' },
     { id: 'clear', when: 'selected', description: 'Clear Transform selection' },
+    { id: 'close-build', when: 'paletteOpen', description: 'Close the Build panel in Transform' },
   ].map(Object.freeze));
 
   function escapeAction(state) {

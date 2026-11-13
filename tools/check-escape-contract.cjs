@@ -24,7 +24,9 @@ const policy=vm.runInNewContext(source+'\n({levels:ESCAPE_LADDER,edit:EDIT_ESCAP
 const plain=x=>JSON.parse(JSON.stringify(x));
 const levels=plain(policy.levels),edit=plain(policy.edit);
 assert.deepEqual(levels.map(x=>[x.level,x.id]),[[1,'capture'],[2,'menu'],[3,'draft'],[4,'edit'],[5,'container'],[6,'axis'],[7,'mode']]);
-assert.deepEqual(edit.map(x=>[x.id,x.when]),[['cancel','placing'],['transform','build'],['clear','selected']]);
+assert.deepEqual(edit.map(x=>[x.id,x.when]),[
+ ['cancel-drag','dragging'],['cancel','placing'],['transform','build'],['clear','selected'],['close-build','paletteOpen'],
+]);
 assert.equal(levels[3].subLadder,'EDIT_ESCAPE_LADDER');
 const modes=['display','measurement','edit','calculations'];
 const focusContract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/escape-focus-fixtures.json'),'utf8'));
@@ -83,11 +85,11 @@ for(const row of levels)for(const mode of modes)for(const fixture of focusFixtur
 }
 // Every Edit sub-branch across every mode/origin, including empty state.
 let editCases=0;const editMatrix=[];
-for(const mode of modes)for(const fixture of focusFixtures)for(let flags=0;flags<32;flags++){
+for(const mode of modes)for(const fixture of focusFixtures)for(let flags=0;flags<128;flags++){
  const {origin}=fixture;
  const targets={atoms:!!(flags&1),transform:!!(flags&2),bondCenter:!!(flags&4)};
- const state={placing:!!(flags&16),build:!!(flags&8),selected:Object.values(targets).some(Boolean)};
- const desired=state.placing?'cancel':state.build?'transform':state.selected?'clear':null;
+ const state={dragging:!!(flags&64),paletteOpen:!!(flags&32),placing:!!(flags&16),build:!!(flags&8),selected:Object.values(targets).some(Boolean)};
+ const desired=state.dragging?'cancel-drag':state.placing?'cancel':state.build?'transform':state.selected?'clear':state.paletteOpen?'close-build':null;
  assert.equal(policy.editAction(state),desired);
  const calls=[],focus=[],drafts=[];const context={mode,origin,actions:{'edit.perform':{applicable:!!desired,detail:desired,run:()=>calls.push(desired)}}};
  if(fixture.draft)context.actions[fixture.draft]={applicable:true,run:()=>drafts.push(fixture.draft)};
@@ -97,7 +99,7 @@ for(const mode of modes)for(const fixture of focusFixtures)for(let flags=0;flags
  assert.equal(calls.length,eligible?1:0);
  assert.equal(decision?.level??null,fixture.draft?3:eligible?4:origin==='axis'?6:null);
  assert.equal(drafts.length,fixture.draft?1:0);
- editMatrix.push({mode,focus:fixture.id,focusKind:fixture.kind,origin,placing:state.placing,build:state.build,targets,winner:decision?.level??null,action:decision?.action??null});
+ editMatrix.push({mode,focus:fixture.id,focusKind:fixture.kind,origin,dragging:state.dragging,paletteOpen:state.paletteOpen,placing:state.placing,build:state.build,targets,winner:decision?.level??null,action:decision?.action??null});
  editCases++;
 }
 // Deep state is read afresh on every press. No cached decision or carried index.
@@ -107,7 +109,14 @@ function sequence(initial,n){
   const context={mode:'edit',origin:'scene',actions:{
    'help.close':{applicable:state.modal,run:()=>{state.modal=false;}},
    'menu.panels':{applicable:state.menu,run:()=>{state.menu=false;}},
-   'edit.perform':{applicable:state.placing||state.build||state.selected,detail:policy.editAction(state),run:()=>{const action=policy.editAction(state);if(action==='cancel')state.placing=false;else if(action==='transform')state.build=false;else state.selected=false;}}
+   'edit.perform':{applicable:!!policy.editAction(state),detail:policy.editAction(state),run:()=>{
+    const action=policy.editAction(state);
+    if(action==='cancel-drag')state.dragging=false;
+    else if(action==='cancel')state.placing=false;
+    else if(action==='transform'){state.build=false;state.paletteOpen=false;}
+    else if(action==='close-build')state.paletteOpen=false;
+    else state.selected=false;
+   }}
   }};
   const chosen=policy.choose(context);assert(chosen);events.push([chosen.level,chosen.detail]);policy.execute(context,chosen);
  }
@@ -116,6 +125,8 @@ function sequence(initial,n){
 assert.deepEqual(plain(sequence({modal:true,menu:true,placing:true,build:true,selected:true},2)),[[1,null],[2,null]]);
 assert.deepEqual(plain(sequence({modal:true,menu:true,placing:true,build:true,selected:true},3)),[[1,null],[2,null],[4,'cancel']]);
 assert.deepEqual(plain(sequence({modal:false,menu:false,placing:true,build:true,selected:true},3)),[[4,'cancel'],[4,'transform'],[4,'clear']]);
+assert.deepEqual(plain(sequence({dragging:true,placing:true,build:true,paletteOpen:true,selected:true},4)),[[4,'cancel-drag'],[4,'cancel'],[4,'transform'],[4,'clear']]);
+assert.deepEqual(plain(sequence({paletteOpen:true,selected:true},2)),[[4,'clear'],[4,'close-build']]);
 // Empty Edit declines to Focus, then to axis, then leaves ordinary scene unclaimed.
 for(const mode of modes){
  let calls=[];const context={mode,origin:'axis',actions:{'edit.perform':{applicable:false,run:()=>assert.fail('Inapplicable Edit action')},'focus.exit':{applicable:true,run:()=>calls.push('focus')},'axis.focus-canvas':{applicable:true,run:()=>calls.push('axis')}}};
@@ -155,7 +166,7 @@ traverse(parser.parse(fs.readFileSync(path.join(root,'assets/app/js/app.js'),'ut
  }
 });
 assert.equal(Object.keys(dependencies).length,helpers.length,'Complete helper dependency inventory');
-assert.equal(matrixCases,224);assert.equal(editCases,1024);
-const report={passed:true,hashes,dependencies,focusFixtures,focusCategories:focusContract.categories,selectionTargetKinds:focusContract.selectionTargets,totalMatrixCases:matrixCases+editCases,previousMatrixCases:300,actionProviders:Object.fromEntries(providers),logicalActions:matrixCases-declines,levels:levels.length,editBranches:edit.length,modes,origins,matrixCases,editCases,declines,actions,completions,repeatedPressSequences:3,failureDoesNotFallThrough:true,matrix,editMatrix};
+assert.equal(matrixCases,224);assert.equal(editCases,4096);
+const report={passed:true,hashes,dependencies,focusFixtures,focusCategories:focusContract.categories,selectionTargetKinds:focusContract.selectionTargets,totalMatrixCases:matrixCases+editCases,previousMatrixCases:1248,actionProviders:Object.fromEntries(providers),logicalActions:matrixCases-declines,levels:levels.length,editBranches:edit.length,modes,origins,matrixCases,editCases,declines,actions,completions,repeatedPressSequences:5,failureDoesNotFallThrough:true,matrix,editMatrix};
 const target=process.env.VIBEMOL_ESCAPE_CONTRACT_REPORT;if(target){fs.mkdirSync(path.dirname(target),{recursive:true});fs.writeFileSync(target,JSON.stringify(report,null,2)+'\n');}
 console.log('[escape-contract] '+JSON.stringify({...report,matrix:undefined,editMatrix:undefined}));

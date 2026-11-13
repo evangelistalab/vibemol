@@ -2,16 +2,20 @@
 
 Edit has two tools: **Build** (left) and **Transform** (right). The Workbench mode row still contains View, Measure, Edit, and Calculations. The first Edit entry for a scene with atoms selects Transform; an empty scene arms carbon in Build and opens the palette. Subsequent entries remember that scene’s last tool for the current browser session. The tool strip is a separate radio group; arrow keys select and focus its radios, and Tab visits only the checked tool.
 
-In Transform, left-click selects atoms, bond centers, or either bond end without changing bond order. A center selects the bond; an end selects the attached side for rotation or distance adjustment. Shift-click toggles atom selection. In both Build and Transform, right-click does nothing; right-drag (also with Shift) rotates the scene even when starting over atoms or bonds, preserving selection, geometry, and pending placement previews. With an atom loaded in Build, hovering any exposed part of a bond highlights the whole bond (including every cylinder or dash); clicking cycles its order. Fragment fusion and molecule placement retain their left-click gestures. Select an atom in Transform, then enable Build at open site (+) to choose an attachment anchor. Switching tools retains the loaded atom, fragment, or molecule. Choosing an entity in the Build palette arms Build. The Build radio also arms the current entity and opens its palette; `/` retains its existing open/focus behavior. Closing, docking, or minimizing the palette does not disarm Build. The Panels menu remains the panel-visibility control.
+In Transform, left-click selects atoms, bond centers, or either bond end without changing bond order. A center selects the bond; an end selects the attached side for rotation or distance adjustment. Shift-click toggles atom selection. In both Build and Transform, right-click does nothing; right-drag (also with Shift) rotates the scene even when starting over atoms or bonds, preserving selection, geometry, and pending placement previews. With an atom loaded in Build, hovering any exposed part of a bond highlights the whole bond (including every cylinder or dash); clicking cycles its order. Fragment fusion and molecule placement retain their left-click gestures. Select an atom in Transform, then enable Build at open site (+) to choose an attachment anchor. Switching tools retains the loaded atom, fragment, or molecule and clears the palette filter. Choosing an entity in the Build palette arms Build. The Build radio opens the palette. Press `/` to arm Build, open the palette, and focus its search field. Closing, docking, or minimizing the palette through its window controls keeps Build armed.
 
 The strip, pointer badge, viewport border, and hint derive from the existing edit intent and selection-build cue. They add no persisted tool state to presets or sessions. The old `editAdaptiveAddAtomMeta` node is removed. The strip does not use `aria-pressed` or overload its selected state to mean that the palette is open.
 
 Escape resolves creation actions before clearing selections:
 
-1. Cancel a provisional atom, fragment, molecule, fuse-ring, or grow placement; keep Build armed.
-2. Disarm Build and switch to Transform, retaining the selection.
-3. Clear the selection in Transform.
-4. With none of those active, leave the edit state unchanged. Existing dialog, panel, and Focus dismissal remain available.
+1. Cancel an active Transform drag and restore its starting coordinates.
+2. Cancel a provisional atom, fragment, molecule, fuse-ring, or grow placement and keep Build armed.
+3. Close the Build palette and switch to Transform, retaining the selection.
+4. Clear the selection in Transform.
+5. Close the Build palette if it is still open in Transform.
+6. With none of those active, leave the edit state unchanged. Existing dialog, panel, and Focus dismissal remain available.
+
+Switching to Transform, choosing a different palette item, or leaving Edit commits a dropped atom or molecule. Undo reverses that placement and Redo restores it. In Edit, selecting a hidden scene in the Outliner brings it into view before it can receive edits.
 
 Edit hints remain visible and describe the current action and next Escape. Operation feedback appears below that instruction. Native modal dialogs retain their own keyboard handling.
 

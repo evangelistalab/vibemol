@@ -1679,7 +1679,7 @@
     }
 
     function focusOutlinerContextTarget(target) {
-      if (!target) return;
+      if (!target || getCurrentMode() === MODES.EDIT) return;
       const scene = target.scene || (target.layer ? sceneGraphController.getSceneForLayer(target.layer) : null);
       if (!scene) return;
       focusScene(scene);
@@ -1698,11 +1698,15 @@
       if (outlinerRenameState) finishOutlinerRename({ commit: true });
       const layer = target.layer;
       if (isCubeLikeLayer(layer)) {
-        if (!isCubeLayerSelected(layer)) {
-          setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
-        } else {
-          const scene = sceneGraphController.getSceneForLayer(layer);
-          if (scene) focusScene(scene);
+        // Context actions already take a target. Opening the menu leaves the
+        // viewport's Edit target alone.
+        if (getCurrentMode() !== MODES.EDIT) {
+          if (!isCubeLayerSelected(layer)) {
+            setActiveSceneGraphLayer(layer.id, { rebuild: false, selection: 'replace' });
+          } else {
+            const scene = sceneGraphController.getSceneForLayer(layer);
+            if (scene) focusScene(scene);
+          }
         }
         syncAppearanceControlsToActiveLayer();
         cubeLayerContextMenuLayerId = layer.id;
