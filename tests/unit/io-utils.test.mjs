@@ -161,3 +161,9 @@ test('io-utils recognizes Psi4 harmonic output without requiring angstrom geomet
   assert.equal(api.looksLikePsi4OutputText('Psi4: An Open-Source Ab Initio Electronic Structure Package\n==> Harmonic Vibrational Analysis <=='), true);
   assert.equal(api.looksLikePsi4OutputText('unrelated output with frequencies'), false);
 });
+
+test('XYZ normalization retains the declared vector columns', () => {
+  const { VibeMolIOUtils } = loadIoUtils();
+  const xyz = '1\nVibeMolVectors=[{"name":"g","color":"#159778","scale":1}]\nO 0 0 0 -2D-1 1 0\n';
+  assert.equal(VibeMolIOUtils.detectAndNormalizeXyzText(xyz).xyzText, xyz);
+});

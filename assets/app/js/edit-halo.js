@@ -115,7 +115,7 @@
     const qx = q[0] || 0;
     const qy = q[1] || 0;
     const qz = q[2] || 0;
-    const qw = q[3] || 1;
+    const qw = q[3] ?? 1;
     const vx = v[0] || 0;
     const vy = v[1] || 0;
     const vz = v[2] || 0;
@@ -590,8 +590,7 @@
       };
     }
 
-    // Semantic sites reuse the halo mathematics without projection, hover state,
-    // cached UI orientation, or mutation of the per-record frame cache.
+    // The native drag and API draft use the same alignment from the supplied frame.
     function listBuildSites(vol, atomIndex, request) {
       const atom = vol?.atoms?.[atomIndex], env = computeLocalEnvironment(vol, atomIndex);
       if (!atom || !env) return { error: 'ANCHOR_INVALID', actual: atomIndex };
@@ -601,6 +600,11 @@
       if (request.geometryId && inference.geometryId !== request.geometryId) return { error: 'COORDINATION_UNSUPPORTED', actual: request.geometryId, expected: inference.compatibleGeometryIds };
       const template = normalizeTemplate(geometry.vertices.map(v => applyQuatToVec(v, request.frameQuaternion)));
       const aligned = alignTemplateToOccupied(template, env.occupiedDirs) || { rotatedTemplate: template, assignment: [] };
+      if (request.occupied) {
+        return { geometryId: geometry.id, occupied: env.neighborIndices.map((atomIndex, i) => ({
+          atomIndex, direction: aligned.rotatedTemplate[aligned.assignment[i]],
+        })) };
+      }
       const partition = partitionAlignedVertices(aligned.rotatedTemplate, aligned.assignment, inference.currentBonds, inference.fullBondCount, inference.lonePairs, geometry.id);
       const origin = getAtomWorld(vol, atomIndex);
       const sites = partition.ghostIndices.map(index => {

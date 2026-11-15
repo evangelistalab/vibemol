@@ -278,16 +278,17 @@
       const name = preferred || getNextUntitledFileName();
       const record = { name, vol: createEmptyEditableVolume() };
       ensureVolumeSchema(record.vol, { inferMissingBonds: false });
+      createOptions.onCreate?.(record);
       volumes.push(record);
       activateVolumeIndex(volumes.length - 1, { rebuild: false });
       return record;
     }
 
-    function ensureEditableVolumeRecord() {
+    function ensureEditableVolumeRecord(createOptions) {
       const currentIndex = getCurrentIndex();
       const volumes = getVolumes();
       if (currentIndex >= 0 && Array.isArray(volumes) && volumes[currentIndex] && volumes[currentIndex].vol) return volumes[currentIndex];
-      return createNewEditableVolumeRecord();
+      return createNewEditableVolumeRecord(createOptions);
     }
 
     return {

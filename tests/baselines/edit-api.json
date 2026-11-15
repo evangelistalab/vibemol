@@ -160,16 +160,19 @@
     },
     {
       "name": "createEditApiAttachmentGeometry",
-      "count": 7,
+      "count": 10,
       "deps": [
         "THREE",
         "atomWorld",
         "bondLength",
         "connection",
+        "coordination",
         "findHydrogen",
+        "metalPlacement",
         "terminalHydrogen"
       ],
       "closure": [
+        "defaultEditApiMetalLigandType",
         "editApiFault"
       ]
     },
@@ -695,11 +698,13 @@
     {
       "file": "app.js",
       "name": "evaluateBuilderPlacementWarnings",
-      "count": 5,
+      "count": 7,
       "inputs": [
         "buildBondAtomRecords",
         "chooseTargetValence",
+        "countsTowardAtomValence",
         "detectSevereFragmentOverlaps",
+        "getCoordinationProfile",
         "getVolumeBondEdges",
         "normalizeEditAddBondOrder"
       ]
@@ -869,8 +874,8 @@
     },
     "renderEditSelectionTranslateCue": {
       "before": "5ce2b450094fa5c6ef1c24c78b588f7673a2dafc4e4a671009ec1db86d02433a",
-      "after": "8850c2767104a674d169405aefc9068db0f12cd9045f1e67138ce93a082b2874",
-      "reason": "Hide Transform controls in Build and keep only the active Build-at-open-site control.",
+      "after": "a4b80507abf6a2c653818faf75080ad49165693a4ae449e02a489019a1f973a5",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "setHintMessage": {
@@ -1120,8 +1125,8 @@
     },
     "getEditToolState": {
       "before": "49ef7e343f64d27e50f66f1a6c5f8ccc865f000f8d2c57fca4a934deaf195f5c",
-      "after": "2d0f56683724f683d46c3c4080a6a36838cc480d4c002e6f1aed8c7c34c493e8",
-      "reason": "Supply drag and palette state to the existing Edit Escape ladder.",
+      "after": "9d83dfd7f946f7a462dc728615de62c1b04c14a3464d6d17fdde205bdd968da0",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "chooseEditTool": {
@@ -1132,8 +1137,8 @@
     },
     "handleEditToolEscape": {
       "before": "710fe6cfaf597ad32bcf528ed784be864e14528b6d96742edd9419a9a79008cc",
-      "after": "e416d7b3abc887063e4b4bbba17a2035c84758a860d3cc9b5e91dbbbe8f516bb",
-      "reason": "Cancel in-flight drags and dismiss Build from either palette or scene focus.",
+      "after": "5e623e6eaa3e479ee250ed10e19e2a652c1779ee6656b439034a0a34bf7c5299",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "setEditAddElement": {
@@ -1174,14 +1179,14 @@
     },
     "handleUnifiedEditControllerPointerUp": {
       "before": "0e94da20334ae59e0c77c7af9bbe6f73f9c6660369122f0d7e62cf5725690515",
-      "after": "d61eaa6343b4f469620d9f04c7cac7625663c4963b8ee800548a0c6d96ef7e8c",
-      "reason": "Ignore hidden-target releases and release a completed transform pointer capture.",
+      "after": "b706dd5c0420d7b03bf6e11c0f91d2e0b0819d52ae295f5bad4ac07b9e35ec6d",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "handleUnifiedEditControllerPointerCancel": {
       "before": "5a4b03c1f0ba5019586e3be6fbc318d6913a5efffed1e34869a3947399e37d71",
-      "after": "6eaabf91e154ab59e5e6eaf051a6f2b661749005147669a301629c21991324b1",
-      "reason": "Restore an interrupted drag and retire capture and gesture state.",
+      "after": "336f59cb05d8ddfb5bee18a058cd90976381c052ec29da04e63d3ca0ee0d1311",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "updateAddAtomOperatorUi": {
@@ -1288,8 +1293,8 @@
     },
     "applyAtomCoordinationChoice": {
       "before": "c44eed6e6a01c9b172297c5cf337be9679f193c5c2499ac8cc454eacecfe4a9f",
-      "after": "05a36b4d6a13207f3abf301b8a91cee592827a5497f1cd86c868294c5306169e",
-      "reason": "Reject coordination edits to a hidden molecule.",
+      "after": "1292f6b398f2a5a9a3f860dda592254899a24e72a676b821cfc0da343c5b7f5a",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
     "applyAtomMetalBondingChoice": {
@@ -1339,6 +1344,531 @@
       "after": "1eae0538275e4434e60585f8f59e0b573d957824743607784d266ea46ec83bb8",
       "reason": "Pass the initial Build framing option through the existing camera owner.",
       "units": []
+    },
+    "getDisplayedMetalBondStyle": {
+      "before": null,
+      "after": "697eef69a269297e8bba83fc58bdfd9a07b6317428fb772a2ce48be80546a2ec",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "getDisplayedMetalBondStyle",
+          "count": 5,
+          "inputs": [
+            "METAL_BOND_MODE",
+            "METAL_BOND_STYLE",
+            "getAtomMetalBondingMeta",
+            "isMetalAtomZ",
+            "normalizeVolumeBondStyle"
+          ]
+        }
+      ]
+    },
+    "buildXyzVectorArrows": {
+      "before": null,
+      "after": "d491cdb509c43dfadedfa8771d6dcb4d53262a5c2a6072dc32f41039eb72810e",
+      "reason": "Render XYZ vector fields with the molecule.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "buildXyzVectorArrows",
+          "count": 1,
+          "inputs": [
+            "THREE"
+          ]
+        }
+      ]
+    },
+    "buildAtoms": {
+      "before": "c745f98cb0213344c92caefb02d46c9c3ac911601ae48816413fedfd00767ae8",
+      "after": "d98286b3d605f70e464f7b3779c910aa4d746fc284e19488f54da4e2322ae8e9",
+      "reason": "Render XYZ vector fields with the molecule.",
+      "units": []
+    },
+    "buildBonds": {
+      "before": "fcfca25bf4b93c62730f3d4302d28128c382ca34cc45e49aacab66ee6bcf1db9",
+      "after": "183af449a17d842eb0eded8b7c99c432d14186e4d54d9318a6b74db5409d7de7",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "statement:formalChargeListener": {
+      "before": "45a62738acc305bd7b09cf5057c4e57fe42f03f2090ce61b2158154a4de65c11",
+      "after": "8aaac950add62103415204528665f5b6486856accd126d0c1c59480161d0c7a5",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "isCoordinationPreferenceCompatibleForAtom": {
+      "before": "1c789bee4787c6e9364660254ab220f6216bef51f1b14cc310cdfe18eef610cf",
+      "after": "4ec3a92f5a56b068875e0dc45012a2f97e26a1b930ba5eaf7b51129c5fd2d13d",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getVolumeBondEdges": {
+      "before": "35e55fdc33f4f40a576525b726889a121fe67e29dc3e52564bbdff5b15b7492e",
+      "after": "9e5e63186d1f4892305c1ebf7ee6b251139e252059ef0f08edb5ce1d4affd8d6",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getEditAddBondLength": {
+      "before": "ad769cb50fb184e7ec700e439793325c83e0b37fa77f0dd1657b27e0b0a8872d",
+      "after": "e92a42bac5012de376e00408c4f7370a865f5330d59953e583f6d1ee0907dbbd",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getOpenCoordinationSiteDistance": {
+      "before": "36cffb140c14702db7080de28b33d176c535eefd497b01bc676c37ea5063b6d7",
+      "after": "7f3efe4089bd95139244b2190fcd03ea3b1f95fd688a01fd4bfe948060b9af47",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getOpenMetalPlacement": {
+      "before": null,
+      "after": "63bec36747281f4ca5259eec3c8418ad12e8a22e489bca439e622912f206fe3d",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "getOpenMetalPlacement",
+          "count": 4,
+          "inputs": [
+            "THREE",
+            "editHaloController",
+            "getAtomCoordinationMeta",
+            "getCoordinationProfile"
+          ]
+        }
+      ]
+    },
+    "getActiveAddAttachSettings": {
+      "before": "57404462cc1da34cdfc7c38aa2ca0b2e76a686338f29f44869c486c47a9c1e7a",
+      "after": "70550d5ed97259fe8e45050f11b88b2e8d99bf880c0b8f48caf2683f8939488b",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "isEditHaloIntent": {
+      "before": "3cee22d19b679b2403d48b007c113cd5d8b6542b53801f6e0361125418a246ef",
+      "after": "01d695d755c48211f91f4bc8b018d2b613df26b3725aa1956cf3371f72e26a53",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getEditHaloGhostPayloadDescriptor": {
+      "before": "a48f2c8353364ed18bf071bce7223bdd22b5b67613b7f676ad7a5ca610c9472d",
+      "after": "aae8059204f27be2fd75c2a048b7defc8b7245ed99134edb1783be1949f4f028",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "refreshActiveAddGrowPreview": {
+      "before": "90a91e8e138cf2ac7c3b7a8dd19e6d52d4b5d81b99c3b80f20da1b84895d6d72",
+      "after": "4a2435d20f759802e66353e42956a71fec19076e6752e42495ebd04d13643f68",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "updateAddGrowPreviewFromEvent": {
+      "before": "22f0494a9ebf403c4dd02313f03540dd447e73318b18f6da986ba4d7a2153008",
+      "after": "92239b181043d81465ec22c62188979da595c054f6c122ca0ef44a38c832310f",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "updateAddGrowPreviewFromWorldPos": {
+      "before": "eba61b0a4abfbb42873d6abd97f185790e1e9a1648f274a395adbae39e4315d3",
+      "after": "43eb740e252d55c932b0ca604b41ea8e02691a2011ad750f5d149eafb47dfab6",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "updateGrowPlacementPreview": {
+      "before": null,
+      "after": "80681c9747900cf504e55ab09c17f424b7f94af348884cc70b4fdd16f7d84617",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "updateGrowPlacementPreview",
+          "count": 10,
+          "inputs": [
+            "addGrowAnchorIndex",
+            "addGrowAnchorPos",
+            "addGrowPreviewPos",
+            "addPreviewAtomMesh",
+            "addPreviewBondMesh",
+            "getOpenMetalPlacement",
+            "metalGrowPreview",
+            "setHintMessage",
+            "updateAddGrowAngleGuide",
+            "updateAddGrowPreviewMeshes"
+          ]
+        }
+      ]
+    },
+    "setSelectedAtomFormalCharge": {
+      "before": null,
+      "after": "3ddc085811fd55cd4c4f174f37369471a293f2ebf7c6c0a179e7caaa0d03963b",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setSelectedAtomFormalCharge",
+          "count": 11,
+          "inputs": [
+            "MODES",
+            "autoHydrogenController",
+            "cloneAtomsSnapshot",
+            "currentIndex",
+            "currentMode",
+            "getEditAtomSelection",
+            "isEditTargetHidden",
+            "pushEditHistoryEntry",
+            "setHintMessage",
+            "updateSidePanel",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "getSelectionCoordinationCueState": {
+      "before": "94888e4807e194b2ee725ed91925fdb6119c8184940bbf5fe7bc004c552f3177",
+      "after": "f40bbe16d69edfdf1466a79d8eeb44ae02ee50f55a9fc08bde524f5ddb609f37",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "renderSelectionCoordinationCuePopover": {
+      "before": "1bbea1cada06c1d1d029118a3313c0e02c6f07c1cdb0acbafb69cd263c917a8e",
+      "after": "6c245213a423ed06f2c393b06cf30e40341858c619725d8baf330a264d4c9fa8",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "showSelectionCoordinationCuePopover": {
+      "before": "8cd13eec3c6ea1df7b5f2c4d8cdb1396616c7a391d10f0a378a823875111660c",
+      "after": "2a22a6d3ab07e687c96ce9d45257e1e7960c38a6b352492495afc4356cb12b84",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getSelectionMetalBondingCueState": {
+      "before": "db43511aafe03e7ff9378339d605664d8bc9c3198afa452c8f836f83e2cb8f94",
+      "after": "0528fe3bd4ba61fe63e1040a87afa44881068a399de357f83c405de47b73e763",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "handleAtomManipulationControllerPointerDown": {
+      "before": "3652606bd272b89255ef33572d2c7b9c795c8d9c1ce7f5a3e49866871190525e",
+      "after": "86395baa2e644ba90569bd7b25a4020814bec8944bf1e5f72d78689e0a37443a",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "commitAtomAtHaloGhost": {
+      "before": null,
+      "after": "90dd2dfe5ea3c895d9adb51f892d74ed492e55367ad5dc95d71387253feb08c7",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "commitAtomAtHaloGhost",
+          "count": 7,
+          "inputs": [
+            "THREE",
+            "appendGestureAtomFromAnchor",
+            "editAddBondOrder",
+            "editAddElementZ",
+            "editHaloController",
+            "pickEditHaloGhostHit",
+            "pickEditHaloReplaceTargetHit"
+          ]
+        }
+      ]
+    },
+    "handleMoleculeIntentControllerPointerUp": {
+      "before": "719ab4e76ea2c27f1a15c60d1582713a19e6039e4e91bdac5a102d027f361a95",
+      "after": "2eae07d8a08ca1045607bcb3b5d2c2ca2b3b2fb4275762228b3f470bb02f9e25",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "attachCatalogDonorAtPointer": {
+      "before": null,
+      "after": "435efd1464d5d0c4be6a5c118c5b6d25f1af90d001ef484f11d41094b057dc98",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "attachCatalogDonorAtPointer",
+          "count": 10,
+          "inputs": [
+            "applyCatalogLigandAtMetal",
+            "atomUnitsToAng",
+            "currentIndex",
+            "editHaloController",
+            "getCoordinationProfile",
+            "getCurrentMoleculeDefinition",
+            "pickAtomHit",
+            "pickEditHaloGhostHit",
+            "selectMetalBuildAnchor",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "selectMetalBuildAnchor": {
+      "before": null,
+      "after": "014aa41938789a8e78ed374ff3059f7995534bec1f678905c54556236ea63a81",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "selectMetalBuildAnchor",
+          "count": 5,
+          "inputs": [
+            "editHaloController",
+            "setEditAtomSelection",
+            "setHintMessage",
+            "setSelectionAtomBuildCueActive",
+            "updateEditSelectionVisuals"
+          ]
+        }
+      ]
+    },
+    "collectHydrogenAdjustmentEnvironment": {
+      "before": "5c9d3a3bb41d96230b800e5b19e7666f9dba09395d3eeee33e4fb8195a067cf1",
+      "after": "8cec6eef24a964c497f7497c44db737c36409f8d65b928006488e6edd6fb5193",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getBuildMetalLigandType": {
+      "before": null,
+      "after": "22d53250f9ec80c049eb1b9e65735ff18cc446a38177d04bfe32619c0c3772c5",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "getBuildMetalLigandType",
+          "count": 2,
+          "inputs": [
+            "defaultEditApiMetalLigandType",
+            "editAddAtomPaneEl"
+          ]
+        }
+      ]
+    },
+    "appendGestureAtomFromAnchor": {
+      "before": "efe2cd3f452a357dc727f0030cd241432b0f5b24b7b8c9308c2b38756ca701ac",
+      "after": "39122f9cdaf2e36cc8668af123162164cb1a14dc4f94dcf47274d2164a5e9bf3",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "updateGestureGrowDrag": {
+      "before": "785f1668b46675d86011370c5f87f678f990951c769296dde581830e36756d40",
+      "after": "725307fb5fc29d4ef61731544706aaac1952fccf4bfa47397c49639c88a212a8",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "describeMetalLigandMoves": {
+      "before": null,
+      "after": "644eecc3c37d8fde01a9a6b683e5426fc516a92c5550abfe00d5e377e5f72a21",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "describeMetalLigandMoves",
+          "count": 5,
+          "inputs": [
+            "THREE",
+            "atomUnitsToAng",
+            "editHaloController",
+            "getCoordinationProfile",
+            "worldToAtomUnits"
+          ]
+        }
+      ]
+    },
+    "applyShadowParticipation": {
+      "before": "94fa2f91b03006d0c18b4f6c24e547631ab1c853387a884966bb0553bce149c4",
+      "after": "8834d2b30a5f0fc123abae9cc44e0c6547a313fd873186353c4366e82498d9d2",
+      "reason": "Render XYZ vector fields with the molecule.",
+      "units": []
+    },
+    "evaluateBuilderPlacementWarnings": {
+      "before": "517c112f580e30a9bb34ddc161f076c81cc6ca9e5a861a169ea886b8b8f9c894",
+      "after": "8b044af5c3fd9edf41433acc7ff6b79f08b6582c5f8965e9557518510c59886f",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "isSelectionAtomBuildCueArmed": {
+      "before": "2d4de2cd0d78efc69fb874e6e3c5a649346c2e74f9cfc970bc9ef6597ed18d35",
+      "after": "8a99ba43753d86b527bfe80efe426d55e4a30c0384a38ee6b379aa6cae1ad438",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "commitFragmentAttachAtWorld": {
+      "before": "a9361f561bf6b6f7ba8884af84b1621f610be3b0df449ca0ca2e89e18480afa6",
+      "after": "e1d42a8c43c7e74a5a76be052ecf75f0d0cfec2f4391c605ab7740857e8a6ea9",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "getEffectiveEditAddCoordinationGeometryId": {
+      "before": "a285c1e83a10805a9f72966d9e2ef1ec6ee3605a7660ea03793784465983525b",
+      "after": "4445afa7aa09026baa029f14d8e4e8fdaa768d8c0f2ceb00770b45d6c53a60dd",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "pickEditHaloGhostHit": {
+      "before": "05fd32813a08fe6a6f652a962c9280357353a4674a1ed06ed87d0cedfd98b02e",
+      "after": "4f16651ece672ead85b91a841e634fb3511edd6f8ae11c5c6de246fe0886f0fd",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "renderEditHaloGhostPreview": {
+      "before": "53ec2db16cd6f9c978a63fa8fd54d7585a62c2953564e25a3fbaa5855dfba12f",
+      "after": "3ce5c8063c512e89c7e4d62f2f878180809898b931837a1a36791cb9a68b2837",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "applyCatalogLigandAtMetal": {
+      "before": null,
+      "after": "9bd21e29395653cfd9ef7a4c32d7fbb5b55f49965316b724717f28808799847c",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyCatalogLigandAtMetal",
+          "count": 2,
+          "inputs": [
+            "finalizePendingNewAtomOperatorSession",
+            "setHintMessage"
+          ]
+        }
+      ]
+    },
+    "setSelectionBuildCueActive": {
+      "before": "d071ea883fc3dc7b3b43f04c2b61516197d95a40b2b293cf7532893737a7ac2b",
+      "after": "b0c9f0b963b128e317107ed2877eb12f727ef8174717ada5ebe261157c94246c",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "statement:metalSelectedAnchorDrag": {
+      "before": "6995c6a4949ade939a20d4bc0bcd8a9c00ddbcb301782bab58a13b921cef480d",
+      "after": "700172ef9d19248ccd80c76c2c97dafa8156a1350c58558969738bd9926c0963",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "statement:metalGrowPreview": {
+      "before": null,
+      "after": "744df07686944698c17eb777d2f8c312e0f3ec0738cd0fb0f33aa17d86a91f36",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "clearAddGrowPreview": {
+      "before": "feb225e5a48b3e374f99d71b6543e84cb4359ec3f2bc11f9ab9f337d4eb2498e",
+      "after": "78b51889f638a006571d892b953d993130473e74bbeaf595d9d546d804e7e5d6",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "handleMoleculeIntentControllerPointerDown": {
+      "before": "5d75bd87034beab4e3f8dd9e2176f234b50b79f329023e7ddb3b8b549a55924c",
+      "after": "7116315af0347ded2ec92cb249377b189fb9408c588d5d50e64c4999d3c560e6",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "beginCatalogMetalDrag": {
+      "before": null,
+      "after": "6fa783ffc4c45c20a30b45d0930995178aa4b8804fd0e2a8752a39ad4618a2be",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "beginCatalogMetalDrag",
+          "count": 7,
+          "inputs": [
+            "beginGestureGrowDrag",
+            "canvasEl",
+            "currentIndex",
+            "getCoordinationProfile",
+            "getCurrentMoleculeDefinition",
+            "pickAtomHit",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "handleMoleculeIntentControllerPointerMove": {
+      "before": "36f574b8bd2c10f7b879e55b3bdcb7c725860bb7dd298db97c63348f3b932f1b",
+      "after": "30ee25269d5a99559c6964d6df497b7ab6e1afd05b6362a005b9e81757af2daf",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "handleFragmentIntentControllerPointerUp": {
+      "before": "21e499527d385eb6841563ced8a1f9728f461db1050ec0c877b9b9d2e601c611",
+      "after": "1709bc0f8d2d379dac6ecac771e4d5069624536394dcb6d21ea591b91e986746",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "finishCatalogMetalDrag": {
+      "before": null,
+      "after": "1ad5f445943417dc6fefbe5c5b315ad815860ea5dd2721bfec3995d11de8a7fd",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "finishCatalogMetalDrag",
+          "count": 13,
+          "inputs": [
+            "__editMoved",
+            "addGrowAnchorIndex",
+            "addGrowAnchorPos",
+            "addGrowPreviewPos",
+            "applyCatalogLigandAtMetal",
+            "attachCatalogDonorAtPointer",
+            "clearAddGrowPreview",
+            "currentIndex",
+            "editHaloController",
+            "getCurrentMoleculeDefinition",
+            "selectMetalBuildAnchor",
+            "updateAddGrowPreviewFromEvent",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "placeGestureAtomAtWorld": {
+      "before": "4759a614533589c356853ece17ba223da01d935ac84df50f1c291ff2fac5ae1d",
+      "after": "7d8b3bb1d3f52b8ca663bc3ae378bc311e5f8f41d7609d120129e407bc92f313",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "beginGestureGrowDrag": {
+      "before": "58455f42a8a094dc89cebc00b9dd209d9433f02c8879f34cad5acc99b90fe57b",
+      "after": "8e3a626fac6dc5fbb0edae175be91e970c8f58d20c4a34bd4cab7ae0380791ef",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "showMetalBuildPressSites": {
+      "before": null,
+      "after": "fd4433042007e7ee8a93f05fe61c0b0bc2c7599c53303bfc79b2d9fd2149b9b5",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "showMetalBuildPressSites",
+          "count": 7,
+          "inputs": [
+            "atomUnitsToAng",
+            "currentIndex",
+            "getActiveAddAttachSettings",
+            "getCoordinationProfile",
+            "getOpenMetalPlacement",
+            "metalGrowPreview",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "handleFragmentIntentControllerPointerDown": {
+      "before": "06ed3c5d7332b457bdd4490cab4b835205d24fd878e8a64bdcd66edb6643dcd9",
+      "after": "7ec92580c94c9e4593c00fcd9b566b4e3494083adb92c4de4be1917bc5742331",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "handleFragmentIntentControllerPointerMove": {
+      "before": "ed553246200f2e603da665d26eac2d0f256a644f2f0f915499258cc58e93f8b6",
+      "after": "d6ddf37584161f485a13bfbd7082166c0ee91e2eb28aacf6b31c861a9b371d28",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
     }
   },
   "placementChanges": {
@@ -1362,5 +1892,10 @@
       "before": "61eb5ffe5303cb577dd40a51a839c65c3aadb3646f75c84178c08a1a81acc339",
       "after": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974"
     }
+  },
+  "haloChanges": {
+    "before": "395b6df54c0576233b9ef86f3748d1478311d353cff0db3507a44c995731b807",
+    "after": "cf17f21d03919bf7574e5f6587d292e2907a8f40622c2f5cb2727d80ab18b7ff",
+    "reason": "Share the aligned coordination template with atom drag and metal rearrangement."
   }
 }

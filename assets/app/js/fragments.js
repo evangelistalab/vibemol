@@ -223,6 +223,10 @@
       if (Number.isInteger(importanceRank) && importanceRank > 0) {
         normalized.importanceRank = importanceRank;
       }
+      if (Number.isInteger(raw.donorAtomIndex) && atoms[raw.donorAtomIndex]) {
+        normalized.connectionAtomIndex = raw.donorAtomIndex;
+        normalized.attachModes = Object.freeze(['coordinate']);
+      }
     }
 
     if (kind === 'fragment') {
@@ -1381,6 +1385,10 @@
       atoms: src.atoms.map((a) => ({ Z: a.Z | 0, x: Number(a.x), y: Number(a.y), z: Number(a.z) })),
       bonds: src.bonds.map((b) => ({ i: b.i | 0, j: b.j | 0, order: Math.max(1, Math.min(4, b.order | 0)) })),
     };
+    if (src.attachModes?.includes('coordinate')) {
+      instance.connectionAtomIndex = src.connectionAtomIndex;
+      instance.attachModes = src.attachModes.slice();
+    }
     if (src.kind === 'fragment') {
       instance.connectionAtomIndex = Math.max(0, Math.min(src.atoms.length - 1, src.connectionAtomIndex | 0));
       instance.preferredBondOrder = Math.max(1, Math.min(4, src.preferredBondOrder | 0));

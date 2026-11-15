@@ -55,3 +55,24 @@ Accent against the theme base is 4.24:1 in light and 11.06:1 in dark. The white/
 - `tests/e2e/smoke.py`: full legacy editing regression, with explicit arming before creation and separate disarm/selection-clear Escape assertions.
 
 The Edit tool test also renders screenshots in Emory, National, Bright, Electron, and Tableau, in both themes. **Edit normally hides orbital surfaces.** The color-comparison fixtures override that suppression only inside a routed test page; production behavior is unchanged. The test also hides the resulting View-only surface tooltip so the placement badge is unobstructed. Screenshots are written to `VIBEMOL_TEST_ARTIFACT_DIR` (or `out/test-artifacts`).
+
+## Building a transition-metal complex
+
+- Place the metal and set its coordination geometry. With an element loaded in
+  Build, press and hold on the metal to reveal its open sites. Move the pointer
+  to highlight the site the armed element or ligand will snap to. Press Escape
+  to cancel.
+- The Build palette's **Metal ligand type** lets you choose **L-type** for a
+  neutral donor or **X-type** for a singly anionic ligand. Automatic treats
+  halogens as X-type. To add a polyatomic anion, select a fragment such as
+  Cyano or Hydroxyl and attach it to a metal.
+- Water, ammonia, carbon monoxide, pyridine, phosphorus trifluoride and
+  acetonitrile attach through their catalog donor atoms. Click the metal or a
+  highlighted site to attach. Click empty space to place the molecule alone.
+- In Transform, select one atom and open the coordination button's popover
+  to edit its formal charge. Choosing a different metal geometry moves
+  monodentate ligands as units and is undoable. A geometry change that would
+  separate a chelate or bridge is refused.
+- Use **Metal bond mode → Dative** for dashed bonds. **None** hides the
+  displayed metal bonds. Explicit attachments still occupy their sites.
+  Initial metal–donor distances are estimates based on UFF parameters.

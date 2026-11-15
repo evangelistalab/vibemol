@@ -5,7 +5,7 @@ import premerge as p
 from helpers import wait_for_presented_state
 from checkpoint_contract import require_phase_counts
 from metal_popover import metal_popover_regression
-from smoke import find_atom_click_point
+from smoke import canvas_point, find_atom_click_point
 
 
 def state(page):
@@ -183,6 +183,100 @@ def check_edit_value(name, actual, expected):
 
 def active_atoms(page):
     return page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms')
+
+
+def metal_build_drag(page, url):
+    completed = 0
+
+    def check(case, actual, expected):
+        nonlocal completed
+        print('[metal-build-drag] ' + json.dumps(dict(case=case, actual=actual, expected=expected)), flush=True)
+        assert actual == expected, (case, actual, expected)
+        completed += 1
+
+    # Observe rendered meshes without adding to VibeMolTesting or changing input.
+    source = (p.ROOT / 'assets/app/js/app.js').read_text()
+    marker = 'window.VibeMolTesting = Object.freeze({'
+    assert source.count(marker) == 1, source.count(marker)
+    probe = '''window.__metalBuildDrag = () => ({
+      sites: editHaloGhostPreviewGroup.children.map(group => group.userData.haloGhostIndex).filter(Number.isInteger),
+      activeSite: addGrowActive ? metalGrowPreview.activeIndex : -1,
+      preview: addPreviewAtomMesh?.visible ? addPreviewAtomMesh.position.toArray() : null,
+    });
+    '''
+    page.route('**/assets/app/js/app.js*', lambda route: route.fulfill(
+        body=source.replace(marker, probe + marker), content_type='text/javascript'))
+    page.goto(url + '?appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolWorkbench && VibeMolEdit.listBuildCatalog().value.some(e=>e.entryId==="ammonia")')
+    page.locator('#modeEditBtn').click()
+    arm(page, 'Fe')
+    close_build(page)
+    page.mouse.click(*canvas_point(page, .56, .48))
+    iron = page.evaluate('''() => {
+      const volume = VibeMolStructure.exportActive().volume;
+      const atom = volume.atoms[0];
+      return {Z:atom.Z, armed:VibeMolTesting.getEditBuildState().payload.symbol,
+              geometry:volume.annotations.coordination.byAtomId[atom.id]?.geometryId};
+    }''')
+    check('first iron retains brush and geometry', iron, dict(Z=26, armed='Fe', geometry='octahedral'))
+    page.keyboard.press('Enter')
+
+    for name, site_count, donor_z in [('Cl', 6, 17), ('cyano', 5, 6), ('ammonia', 4, 7)]:
+        arm(page, name)
+        close_build(page)
+        before = page.evaluate('()=>VibeMolStructure.exportActive().volume')
+        x, y = find_atom_click_point(page, 0)
+        page.mouse.move(x, y)
+        page.mouse.down()
+        wait_for_presented_state(page, '()=>true')
+        held = page.evaluate('()=>({...__metalBuildDrag(), volume:VibeMolStructure.exportActive().volume})')
+        check(name + ' press shows free sites before moving',
+              dict(count=len(held['sites']), activeSite=held['activeSite'], preview=held['preview'], volume=held['volume']),
+              dict(count=site_count, activeSite=-1, preview=None, volume=before))
+        if name == 'Cl':
+            page.keyboard.press('Escape')
+            page.mouse.up()
+            wait_for_presented_state(page, '()=>true')
+            check('Escape cancels a stationary press', page.evaluate('''() => ({
+              volume:VibeMolStructure.exportActive().volume, ...__metalBuildDrag(),
+            })'''), dict(volume=before, sites=[], activeSite=-1, preview=None))
+            page.mouse.down()
+        page.mouse.move(x + 130, y - 80, steps=4)
+        wait_for_presented_state(page, '()=>true')
+        preview = page.evaluate('()=>__metalBuildDrag()')
+        check(name + ' drag renders the free sites', dict(count=len(preview['sites']),
+              activeSiteDrawn=preview['activeSite'] in preview['sites'], preview=preview['preview'] is not None),
+              dict(count=site_count, activeSiteDrawn=True, preview=True))
+        if name == 'ammonia':
+            page.keyboard.press('Escape')
+            page.mouse.up()
+            wait_for_presented_state(page, '()=>true')
+            check('Escape cancels catalog drag', page.evaluate('''() => ({
+              volume:VibeMolStructure.exportActive().volume, ...__metalBuildDrag(),
+            })'''), dict(volume=before, sites=[], activeSite=-1, preview=None))
+            continue
+        page.mouse.up()
+        after = page.evaluate('()=>VibeMolStructure.exportActive().volume')
+        prior_ids = {atom['id'] for atom in before['atoms']}
+        anchor = before['atoms'][0]['id']
+        bonded = {bond['b'] if bond['a'] == anchor else bond['a']
+                  for bond in after['bonds'] if anchor in [bond['a'], bond['b']]}
+        donors = [[atom['Z'], *[round(atom[axis], 8) for axis in 'xyz']]
+                  for atom in after['atoms'] if atom['id'] in bonded - prior_ids]
+        check(name + ' release bonds at the displayed site', donors,
+              [[donor_z, *[round(value, 8) for value in preview['preview']]]])
+        if name == 'Cl':
+            page.keyboard.press('Enter')
+    arm(page, 'Cl')
+    close_build(page)
+    before = page.evaluate('()=>VibeMolStructure.exportActive().volume')
+    page.mouse.click(*find_atom_click_point(page, 0))
+    wait_for_presented_state(page, '()=>true')
+    check('plain click selects the metal and leaves its sites open', page.evaluate('''() => ({
+      selection:VibeMolTesting.getEditSelectionIndices(), sites:__metalBuildDrag().sites.length,
+      volume:VibeMolStructure.exportActive().volume,
+    })'''), dict(selection=[0], sites=4, volume=before))
+    require_phase_counts({'metal-build-drag': completed}, 'tests/e2e/edit_tool.py', 'metal-build-drag')
 
 
 def placement_exits(page):
@@ -411,6 +505,11 @@ def main():
             completed=editing_transactions(page)+placement_exits(page)+switch_tools_with_selection(page)
             require_phase_counts({'edit-tool-state':completed},'tests/e2e/edit_tool.py','edit-tool-state')
             # Retire Edit before the isolated visual and Metal contexts.
+            page.close()
+            phase='metal-build-drag'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            metal_build_drag(page,url)
             page.close()
             visual_schemes(browser,url)
             phase='metal-popover'

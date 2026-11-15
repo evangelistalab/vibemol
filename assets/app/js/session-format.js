@@ -33,10 +33,25 @@
     return map;
   }
 
+  function validateXyzVectors(vectors, label) {
+    const sets = vectors?.sets;
+    requireValue(object(vectors) && Array.isArray(sets) && sets.length > 0 && object(vectors.byAtomId),
+      `${label}: invalid XYZ vector sets.`);
+    requireValue(sets.every(set => object(set) && typeof set.name === 'string' && set.name.trim()
+      && typeof set.color === 'string' && /^#[0-9a-f]{6}$/i.test(set.color) && finite(set.scale) && set.scale > 0)
+      && new Set(sets.map(set => set.name)).size === sets.length, `${label}: invalid XYZ vector declaration.`);
+    for (const row of Object.values(vectors.byAtomId)) {
+      requireValue(Array.isArray(row) && row.length === sets.length
+        && row.every((value, i) => vector(value) && finite(Math.hypot(...value) * sets[i].scale)),
+        `${label}: invalid XYZ vector components.`);
+    }
+  }
+
   function validateVolume(vol, label) {
     requireValue(object(vol) && Array.isArray(vol.atoms), `${label}: missing molecular data.`);
     requireValue(vol.units === 'angstrom' || vol.units === 'bohr' || vol.units == null, `${label}: unsupported units.`);
     const atoms = uniqueMap(vol.atoms, `${label} atoms`);
+    if (vol.xyzVectors !== undefined) validateXyzVectors(vol.xyzVectors, label);
     for (const atom of vol.atoms) {
       // Same bundled identity domain as file/structure import, including X/Dummy.
       requireValue(integer(atom.Z, 0) && atom.Z <= 100 && [atom.x, atom.y, atom.z].every(finite), `${label}: invalid atom identity or coordinates.`);
@@ -49,6 +64,7 @@
       requireValue(['normal', 'blocked'].includes(bond.kind), `${label}: invalid bond kind.`);
       requireValue(['explicit', 'perceived'].includes(bond.origin), `${label}: invalid bond origin.`);
       requireValue(['covalent', 'metal-strong', 'metal-dative', 'metal-metal'].includes(bond.style), `${label}: invalid bond style.`);
+      requireValue(bond.ligandType === undefined || ['L', 'X'].includes(bond.ligandType), `${label}: invalid ligand type.`);
     }
     requireValue(vector(vol.origin) && Array.isArray(vol.axes) && vol.axes.length === 3 && vol.axes.every(axis => vector(axis)), `${label}: invalid grid geometry.`);
     requireValue(Array.isArray(vol.nxyz) && vol.nxyz.length === 3 && vol.nxyz.every(n => integer(n)), `${label}: invalid grid dimensions.`);

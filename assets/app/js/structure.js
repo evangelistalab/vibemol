@@ -619,6 +619,7 @@
       kind: normalizeVolumeBondKind(raw.kind),
       origin: normalizeVolumeBondOrigin(raw.origin),
       style: normalizeVolumeBondStyle(raw.style),
+      ...(['L', 'X'].includes(raw.ligandType) ? { ligandType: raw.ligandType } : {}),
     };
   }
 
@@ -673,6 +674,13 @@
       for (const atom of vol.atoms) requireStructureAtomicNumber(atom && atom.Z);
       migrateLegacyBuilderAnnotations(vol);
       vol.atoms = vol.atoms.map((atom) => normalizeVolumeAtom(atom));
+      const vectors = vol.xyzVectors;
+      if (vectors && Array.isArray(vectors.rows)) {
+        // Bind data to atom IDs once so sorting or deleting atoms cannot
+        // transfer an arrow to a different atom. Undo reuses the same IDs.
+        vectors.byAtomId = Object.fromEntries(vol.atoms.map((atom, i) => [atom.id, vectors.rows[i]]));
+        delete vectors.rows;
+      }
       vol.natoms = vol.atoms.length;
     } else {
       vol.atoms = [];
@@ -721,6 +729,7 @@
         kind: normalizeVolumeBondKind(bond.kind),
         origin: normalizeVolumeBondOrigin(bond.origin),
         style: normalizeVolumeBondStyle(bond.style),
+        ...(bond.ligandType ? { ligandType: bond.ligandType } : {}),
       }));
   }
 
@@ -744,6 +753,7 @@
       if (normalizeVolumeBondKind(left.kind) !== normalizeVolumeBondKind(right.kind)) return false;
       if (normalizeVolumeBondOrigin(left.origin) !== normalizeVolumeBondOrigin(right.origin)) return false;
       if (normalizeVolumeBondStyle(left.style) !== normalizeVolumeBondStyle(right.style)) return false;
+      if (left.ligandType !== right.ligandType) return false;
     }
     return true;
   }
@@ -779,7 +789,7 @@
    * @param {*} [origin]
    * @returns {'created'|'updated'|'unchanged'|null}
    */
-  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal', origin, style) {
+  function upsertVolumeBond(vol, atomIdA, atomIdB, order, kind = 'normal', origin, style, ligandType) {
     if (!vol || !Array.isArray(vol.atoms)) return null;
     ensureVolumeSchema(vol, { inferMissingBonds: false });
     const a = String(atomIdA || '').trim();
@@ -799,7 +809,9 @@
       if (!existing) return null;
       const nextOrigin = origin == null ? existing.origin : normalizeVolumeBondOrigin(origin);
       const resolvedStyle = style == null ? existing.style : nextStyle;
-      if (existing.order === nextOrder && existing.kind === nextKind && existing.origin === nextOrigin && existing.style === resolvedStyle) return 'unchanged';
+      const resolvedLigandType = ligandType ?? existing.ligandType;
+      if (existing.order === nextOrder && existing.kind === nextKind && existing.origin === nextOrigin
+        && existing.style === resolvedStyle && existing.ligandType === resolvedLigandType) return 'unchanged';
       vol.bonds[index] = {
         id: existing.id,
         a: existing.a,
@@ -808,6 +820,7 @@
         kind: nextKind,
         origin: nextOrigin,
         style: resolvedStyle,
+        ...(['L', 'X'].includes(resolvedLigandType) ? { ligandType: resolvedLigandType } : {}),
       };
       return 'updated';
     }
@@ -819,6 +832,7 @@
       kind: nextKind,
       origin: normalizeVolumeBondOrigin(origin),
       style: nextStyle,
+      ...(['L', 'X'].includes(ligandType) ? { ligandType } : {}),
     });
     return 'created';
   }
@@ -935,6 +949,7 @@
           kind: normalizeVolumeBondKind(bond.kind),
           origin: normalizeVolumeBondOrigin(bond.origin),
           style: normalizeVolumeBondStyle(bond.style),
+          ...(bond.ligandType ? { ligandType: bond.ligandType } : {}),
         };
       })
       .filter(Boolean);
@@ -1008,7 +1023,8 @@
         rawBond.order || 1,
         rawBond.kind || 'normal',
         rawBond.origin,
-        rawBond.style
+        rawBond.style,
+        rawBond.ligandType
       );
       if (result === 'created' || result === 'updated') bondCount += 1;
     }

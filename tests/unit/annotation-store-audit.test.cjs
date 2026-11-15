@@ -47,7 +47,18 @@ test('the actual corpus containing bare returns inventories all three stores', (
     ['editApiHistory', 'before.annotations'], ['editApiHistory', 'after.annotations'],
     ['apply', 'vol.annotations'],
   ].sort());
-  assert.equal(result.edges.length - api.length, 112, 'The original annotation routes remain enumerated.');
+  const metalRoutes = [
+    ['appendGestureAtomFromAnchor', 'getAtomCoordinationMeta', 'read'],
+    ['appendGestureAtomFromAnchor', 'setAtomCoordinationMeta', 'write'],
+    ['getDisplayedMetalBondStyle', 'getAtomMetalBondingMeta', 'read'],
+    ['getOpenMetalPlacement', 'getAtomCoordinationMeta', 'read'],
+    ['setMetalAngleTargets', 'vol.annotations', 'direct-read'],
+  ];
+  const keys = new Set(metalRoutes.map(row => JSON.stringify(row)));
+  const metal = result.edges.map(e => [e.owner, e.route, e.operation]).filter(row => keys.has(JSON.stringify(row)));
+  console.log(JSON.stringify({actual: metal.slice().sort(), expected: metalRoutes.slice().sort()}));
+  assert.deepEqual(metal.slice().sort(), metalRoutes.slice().sort());
+  assert.equal(result.edges.length - api.length - metal.length, 112, 'The original annotation routes remain enumerated.');
 });
 test('generic remove/apply callbacks do not inherit API-specific annotation purposes', () => {
   const code = `function unrelated() { function remove(vol) { return vol.annotations; }

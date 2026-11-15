@@ -861,6 +861,7 @@
     {
       "kind": "molecule",
       "id": "water",
+      "donorAtomIndex": 0,
       "name": "Water",
       "formula": "H2O",
       "tags": [
@@ -921,6 +922,7 @@
     {
       "kind": "molecule",
       "id": "ammonia",
+      "donorAtomIndex": 0,
       "name": "Ammonia",
       "formula": "NH3",
       "tags": [
@@ -1423,6 +1425,7 @@
     {
       "kind": "molecule",
       "id": "carbon-monoxide",
+      "donorAtomIndex": 1,
       "name": "Carbon monoxide",
       "formula": "CO",
       "tags": [
@@ -1525,6 +1528,7 @@
     {
       "kind": "molecule",
       "id": "pyridine",
+      "donorAtomIndex": 1,
       "name": "Pyridine",
       "formula": "C5H5N",
       "tags": [
@@ -1596,6 +1600,7 @@
     {
       "kind": "molecule",
       "id": "acetonitrile",
+      "donorAtomIndex": 0,
       "name": "Acetonitrile",
       "formula": "C2H3N",
       "tags": [
@@ -1851,6 +1856,7 @@
     {
       "kind": "molecule",
       "id": "phosphorus-trifluoride",
+      "donorAtomIndex": 0,
       "name": "Phosphorus trifluoride",
       "formula": "PF3",
       "tags": [

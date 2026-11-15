@@ -81,7 +81,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   .map(([name,change])=>[change.after,name]));
  const appliedProductChanges=new Set();
  const preserved=[];let exposed=0;
- const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting)/;
+ const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting|defaultEditApiMetalLigandType)/;
  for(const n of statements(source)) {
   if(n.type==='FunctionDeclaration'&&(fresh.test(n.id.name)||n.id.name==='readForte2MinaoSnapshot'))continue;
   if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi'||d.id.name==='forte2ProductApi')) {
@@ -101,7 +101,13 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
    assert.equal(hash(code),change.after,name+' changed product fingerprint');
    assert(!appliedProductChanges.has(name),'Product change must occur once');appliedProductChanges.add(name);
    if(change.before===null) {
-    assert(['statement:tutorialConnection','isEditTargetHidden','prepareOutlinerEditTarget'].includes(name),
+    assert([
+      'statement:tutorialConnection','isEditTargetHidden','prepareOutlinerEditTarget',
+      'statement:metalGrowPreview','beginCatalogMetalDrag','finishCatalogMetalDrag','showMetalBuildPressSites',
+      'applyCatalogLigandAtMetal','attachCatalogDonorAtPointer','buildXyzVectorArrows','commitAtomAtHaloGhost','describeMetalLigandMoves',
+      'getBuildMetalLigandType','getDisplayedMetalBondStyle','getOpenMetalPlacement',
+      'selectMetalBuildAnchor','setSelectedAtomFormalCharge','updateGrowPlacementPreview',
+    ].includes(name),
      'Only the enumerated private product statements may be added');
     assert(!previousFunctions.has(name),'A new function may not replace a legacy statement');
    } else {
@@ -143,7 +149,7 @@ function restoreDeclaredModelDefaults(source,previous,changes=[]) {
  for(const[start,end,replacement]of edits.sort((a,b)=>b[0]-a[0]))source=source.slice(0,start)+replacement+source.slice(end);
  return source;
 }
-function additiveHelpers(root, readBase, placementChanges) {
+function additiveHelpers(root, readBase, placementChanges, haloChanges) {
  const files=['calculations-model.js','edit-halo.js','edit-placement.js'];
  for(const name of files) {
   const file='assets/app/js/'+name;let code=fs.readFileSync(path.join(root,file),'utf8');
@@ -183,6 +189,14 @@ function additiveHelpers(root, readBase, placementChanges) {
    }
    assert.equal(after.size,Object.keys(placementChanges).length,'Every placement change must be checked');
   } else {
+   if (haloChanges) {
+    const hash = value => require('node:crypto').createHash('sha256').update(value).digest('hex');
+    assert.deepEqual(Object.keys(haloChanges).sort(), ['after', 'before', 'reason']);
+    assert.equal(hash(readBase(file)), haloChanges.before, 'Original halo fingerprint');
+    assert.equal(hash(code), haloChanges.after, 'Authorized coordination halo fingerprint');
+    assert(typeof haloChanges.reason === 'string' && haloChanges.reason.trim());
+    continue;
+   }
    const edits=[];traverse(parser.parse(code),{FunctionDeclaration(p){if(p.node.id?.name==='listBuildSites')edits.push([p.node.start,p.node.end]);},ObjectProperty(p){if(p.node.key.name==='listBuildSites')edits.push([p.node.start,p.node.end+(code[p.node.end]===','?1:0)]);}});
    assert.equal(edits.length,2);for(const[a,b]of edits.sort((a,b)=>b[0]-a[0]))code=code.slice(0,a)+code.slice(b);
   }
@@ -217,7 +231,7 @@ function audit(root=path.resolve(__dirname,'..')) {
  const productUnits=Object.values(productChanges).flatMap(change=>change.units);
  assert.deepEqual(kernelInventory(root,productUnits),productUnits,'Product helper dependencies changed');
  assert(productUnits.every(r=>r.count<15),'Product helpers must remain below15 inputs');
- const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase,contract.placementChanges);
+ const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase,contract.placementChanges,contract.haloChanges);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
 if(require.main===module) {

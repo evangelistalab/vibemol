@@ -248,3 +248,18 @@ test('Psi4 geometry rejects missing units, missing analysis, and malformed coord
     assert.throws(() => parse(`Geometry (in Bohr)\n${row}\n\n==> Harmonic Vibrational Analysis <==`), /malformed geometry row/);
   }
 });
+
+test('XYZ vector declarations preserve signed components and set order', () => {
+  const { parseXYZ } = loadParsers();
+  const comment = 'VibeMolVectors=[{"name":"g","color":"#159778","scale":0.5},{"name":"h","color":"#d65d08","scale":2}]';
+  const text = `1\n${comment}\nO 0 0 0 -2D-1 1 0 0 0 0`;
+  assert.deepEqual(plain(parseXYZ(text).xyzVectors), {
+    sets: [{ name: 'g', color: '#159778', scale: 0.5 }, { name: 'h', color: '#d65d08', scale: 2 }],
+    rows: [[[-0.2, 1, 0], [0, 0, 0]]],
+  });
+  assert.equal(parseXYZ('1\nordinary\nH 0 0 0 1 2 3').xyzVectors, undefined);
+  assert.throws(() => parseXYZ(text.replace(' 0 0 0', '')), /expected 10 columns/);
+  assert.throws(() => parseXYZ(text.replace('-2D-1', 'nan')), /scaled vector lengths must be finite/);
+  assert.throws(() => parseXYZ(text.replace('#159778', 'green')), /#RRGGBB colors/);
+  assert.throws(() => parseXYZ(text + '\n1\nframe two\nO 1 0 0'), /single structure/);
+});
