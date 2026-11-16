@@ -11021,20 +11021,45 @@
    * @param {{coord:Float64Array,sq:Float64Array}} yAxis
    * @param {{coord:Float64Array,sq:Float64Array}} zAxis
    * @param {*} shell
-   * @param {Float32Array} coeffs
+   * @param {Float32Array} moCoefficients
    * @param {{d?:string,f?:string,g?:string}} angularFlags
    */
-  function accumulateMoldenShellContribution(data, nxyz, xAxis, yAxis, zAxis, shell, coeffs, angularFlags) {
+  function accumulateMoldenShellContribution(data, nxyz, xAxis, yAxis, zAxis, shell, moCoefficients, angularFlags) {
     const shellLabel = String(shell && shell.label || '').trim().toLowerCase();
+    if (shellLabel === 'g') {
+      throw new Error('Molden MO rendering does not yet support g shells.');
+    }
+    const angularMomentum = ['s', 'p', 'd', 'f'].indexOf(shellLabel === 'sp' ? 's' : shellLabel);
+    if (angularMomentum < 0) throw new Error(`Unsupported Molden shell label "${shellLabel}".`);
+    const axialMoment = [1, 1, 3, 15][angularMomentum]; // (2L - 1)!!
+    const sphericalD = angularFlags?.d === 'spherical';
+    const sphericalF = angularFlags?.f === 'spherical';
+    // Radial factors normalize the axial Cartesian primitive. Apply the
+    // remaining angular factors to the MO weights once per shell.
+    let angularFactors;
+    if (shellLabel === 'd') {
+      const sqrt3 = Math.sqrt(3);
+      angularFactors = sphericalD
+        ? [0.5, sqrt3, sqrt3, sqrt3 / 2, sqrt3]
+        : [1, 1, 1, sqrt3, sqrt3, sqrt3];
+    } else if (shellLabel === 'f') {
+      const sqrt15 = Math.sqrt(15);
+      const sqrt5 = Math.sqrt(5);
+      const f1 = Math.sqrt(6) / 4;
+      const f3 = Math.sqrt(10) / 4;
+      angularFactors = sphericalF
+        ? [0.5, f1, f1, sqrt15 / 2, sqrt15, f3, f3]
+        : [1, 1, 1, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt15];
+    }
+    const coeffs = angularFactors
+      ? Float64Array.from(moCoefficients, (value, index) => value * angularFactors[index])
+      : moCoefficients;
     const [nx, ny, nz] = nxyz;
     const exByPrimitiveX = [];
     const exByPrimitiveY = [];
     const exByPrimitiveZ = [];
     const primitiveMeta = [];
     const primitives = Array.isArray(shell && shell.primitives) ? shell.primitives : [];
-    if (shellLabel === 'g') {
-      throw new Error('Molden MO rendering does not yet support g shells.');
-    }
     for (const primitive of primitives) {
       const exponent = Number(primitive && primitive.exponent);
       if (!(Number.isFinite(exponent) && exponent > 0)) continue;
@@ -11047,9 +11072,11 @@
       exByPrimitiveX.push(exX);
       exByPrimitiveY.push(exY);
       exByPrimitiveZ.push(exZ);
+      const sNorm = Math.pow(2 * exponent / Math.PI, 0.75);
+      const axialNorm = sNorm * Math.sqrt(Math.pow(4 * exponent, angularMomentum) / axialMoment);
       primitiveMeta.push({
-        coeff0: Number(primitive.coefficients && primitive.coefficients[0]) || 0,
-        coeff1: Number(primitive.coefficients && primitive.coefficients[1]) || 0,
+        coeff0: axialNorm * (Number(primitive.coefficients?.[0]) || 0),
+        coeff1: shellLabel === 'sp' ? sNorm * Math.sqrt(4 * exponent) * (Number(primitive.coefficients?.[1]) || 0) : 0,
       });
     }
     if (primitiveMeta.length === 0) return;
@@ -11083,7 +11110,7 @@
           } else if (shellLabel === 'sp') {
             value = coeffs[0] * radial0 + radial1 * (coeffs[1] * x + coeffs[2] * y + coeffs[3] * z);
           } else if (shellLabel === 'd') {
-            if (angularFlags && angularFlags.d === 'spherical') {
+            if (sphericalD) {
               value = radial0 * (
                 coeffs[0] * (2 * zz - xx - yy) +
                 coeffs[1] * xz +
@@ -11102,7 +11129,7 @@
               );
             }
           } else if (shellLabel === 'f') {
-            if (angularFlags && angularFlags.f === 'spherical') {
+            if (sphericalF) {
               value = radial0 * (
                 coeffs[0] * (z * (2 * zz - 3 * xx - 3 * yy)) +
                 coeffs[1] * (x * (4 * zz - xx - yy)) +
@@ -11126,8 +11153,6 @@
                 coeffs[9] * xyz
               );
             }
-          } else {
-            throw new Error(`Unsupported Molden shell label "${shellLabel}".`);
           }
           data[idx(i, j, k)] += value;
         }

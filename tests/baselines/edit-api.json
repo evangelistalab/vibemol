@@ -1875,6 +1875,19 @@
       "after": "b5318b6c9afab9b8a60c7fbad42e4e8594356228dcde323e5dcc73b92e9968f0",
       "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
+    },
+    "accumulateMoldenShellContribution": {
+      "before": "368e9cedd07585e20a2ec2974b6c9f16dd917fe0c549409799c22b5aaef1622d",
+      "after": "4f79bf65eedf3be43af29ad3c220ed86814ead25167b02e2e3489dad24888d9e",
+      "reason": "Normalize Molden Gaussian primitives and angular components before evaluating molecular orbitals.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "accumulateMoldenShellContribution",
+          "count": 0,
+          "inputs": []
+        }
+      ]
     }
   },
   "placementChanges": {
