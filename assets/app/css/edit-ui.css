@@ -182,6 +182,19 @@
   color: var(--vm-color-text-secondary);
 }
 
+.editCoordinationCueCharge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 0 8px;
+  font-size: var(--vm-type-control-size);
+}
+
+.editCoordinationCueCharge input {
+  width: 5em;
+}
+
 .editCoordinationCueGrid {
   display: grid;
   gap: 10px;

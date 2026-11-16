@@ -4,6 +4,7 @@
   const uff = global.VibeMolUFF || {};
   const structureCore = global.VibeMolStructureCore || {};
   const { findSimpleCyclesOfSize } = global.VibeMolBondInference || {};
+  const { getGeometry, getCoordinationProfile, resolveAutoCoordinationChoice } = global.VibeMolCoordination || {};
   const createUFFSystem = typeof uff.createUFFSystem === 'function' ? uff.createUFFSystem : null;
   const createLocalOptimizationContext = typeof uff.createLocalOptimizationContext === 'function' ? uff.createLocalOptimizationContext : null;
   const localEnergy = typeof uff.localEnergy === 'function' ? uff.localEnergy : null;
@@ -13,6 +14,54 @@
   const assignAtomType = typeof uff.assignAtomType === 'function' ? uff.assignAtomType : null;
   const cloneBondSnapshotCore = typeof structureCore.cloneBondSnapshot === 'function' ? structureCore.cloneBondSnapshot : null;
   const ensureAtomIdCore = typeof structureCore.ensureAtomId === 'function' ? structureCore.ensureAtomId : ((atom) => String(atom && atom.id || ''));
+
+  function setMetalAngleTargets(vol, indices, bonds, coords, targets) {
+    const adjacency = indices.map(() => []);
+    for (const [i, j] of bonds) {
+      adjacency[i].push(j);
+      adjacency[j].push(i);
+    }
+    for (const [center, neighbors] of adjacency.entries()) {
+      const atom = vol.atoms[indices[center]];
+      if (neighbors.length < 2 || !getCoordinationProfile?.(atom.Z)?.isTransitionMetal) continue;
+      const stored = vol.annotations?.coordination?.byAtomId?.[atom.id]?.geometryId;
+      const inferred = resolveAutoCoordinationChoice(atom.Z, { neighborCount: neighbors.length });
+      const template = getGeometry(stored || inferred?.geometryId)?.vertices;
+      if (!template || template.length < neighbors.length) continue;
+      const dot = (left, right) => left.reduce((sum, value, axis) => sum + value * right[axis], 0);
+      const directions = neighbors.map(index => {
+        const vector = [0, 1, 2].map(axis => coords[3 * index + axis] - coords[3 * center + axis]);
+        const length = Math.hypot(...vector);
+        return length ? vector.map(value => value / length) : vector;
+      });
+      const cosines = template.map(left => template.map(right => dot(left, right)));
+      // Select one consistent assignment for all pairs, including trans pairs.
+      let best = [], score = Infinity;
+      function assign(slots, cost) {
+        if (cost >= score) return;
+        const i = slots.length;
+        if (i === neighbors.length) {
+          best = slots;
+          score = cost;
+          return;
+        }
+        for (let next = 0; next < template.length; next += 1) {
+          if (slots.includes(next)) continue;
+          const error = slots.reduce((sum, slot, j) => sum
+            + (dot(directions[i], directions[j]) - cosines[next][slot]) ** 2, 0);
+          assign([...slots, next], cost + error);
+        }
+      }
+      assign([], 0);
+      for (const [i, left] of neighbors.entries()) {
+        for (let j = i + 1; j < neighbors.length; j += 1) {
+          const right = neighbors[j];
+          const cosine = Math.max(-1, Math.min(1, cosines[best[i]][best[j]]));
+          targets.set(`${Math.min(left, right)}:${center}:${Math.max(left, right)}`, Math.acos(cosine) * 180 / Math.PI);
+        }
+      }
+    }
+  }
 
   function normalizeIndexList(indices, length) {
     const result = [];
@@ -239,9 +288,9 @@
       bonds.push(left < right ? [left, right] : [right, left]);
       bondOrders.push(normalizeBondOrder(rawBond.order));
     }
-    const angleTargets = findSimpleCyclesOfSize && bondOrders.includes(2)
-      ? assignResonantRingOrders(elements, formalCharges, bonds, bondOrders, covalentIndices)
-      : undefined;
+    const angleTargets = (findSimpleCyclesOfSize && bondOrders.includes(2)
+      ? assignResonantRingOrders(elements, formalCharges, bonds, bondOrders, covalentIndices) : null) || new Map();
+    setMetalAngleTargets(vol, supportedGlobalAtomIndices, bonds, coords, angleTargets);
 
     const system = createUFFSystem(elements, coords, bonds, {
       bondOrders,

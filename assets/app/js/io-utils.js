@@ -86,7 +86,10 @@
         break;
       }
       const atomLines = nonEmptyLines.slice(cursor + 2, cursor + 2 + frameAtomCount);
-      const normalizedAtomLines = atomLines.map(normalizeXyzCoordinateLine);
+      const comment = nonEmptyLines[cursor + 1];
+      // Leave declared vector columns for parseXYZ to validate with line numbers.
+      const normalizedAtomLines = comment.startsWith('VibeMolVectors=')
+        ? atomLines : atomLines.map(normalizeXyzCoordinateLine);
       if (atomLines.length !== frameAtomCount || !normalizedAtomLines.every(Boolean)) {
         normalizedBlocks.length = 0;
         break;

@@ -50,7 +50,8 @@
     async function resolveXyzUnits(item) {
       const vol = item.vol;
       if (item.fileKind !== 'xyz' || !vol || !Array.isArray(vol.atoms) || vol.atoms.length < 2) return;
-      if (deps.hasXyzBondCandidates(vol)) return;
+      // A vector declaration fixes the atom positions in angstroms.
+      if (vol.xyzVectors || deps.hasXyzBondCandidates(vol)) return;
       const frameNote = vol.trajectory ? ' The same conversion will apply to every trajectory frame.' : '';
       const convert = await deps.confirmUser(
         `No bonds were detected in "${item.name}" using angstrom coordinates.\n\n` +

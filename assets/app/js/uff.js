@@ -193,7 +193,7 @@
     'P': 'P_3+3', 'S': { 2: 'S_3+2', 3: 'S_3+4', 4: 'S_3+6', default: 'S_3+2' },
     'Cl': 'Cl', 'Ar': 'Ar4+4', 'K': 'K_', 'Ca': 'Ca6+2', 'Sc': 'Sc3+3',
     'Ti': { 4: 'Ti3+4', default: 'Ti6+4' }, 'V': 'V_3+5', 'Cr': 'Cr6+3', 'Mn': 'Mn6+2',
-    'Fe': { default: 'Fe3+2' }, 'Co': 'Co6+3', 'Ni': 'Ni4+2', 'Cu': 'Cu3+1', 'Zn': 'Zn3+2',
+    'Fe': { 6: 'Fe6+2', default: 'Fe3+2' }, 'Co': 'Co6+3', 'Ni': 'Ni4+2', 'Cu': 'Cu3+1', 'Zn': 'Zn3+2',
     'Ga': 'Ga3+3', 'Ge': 'Ge3', 'As': 'As3+3', 'Se': 'Se3+2', 'Br': 'Br', 'Kr': 'Kr4+4',
     'Rb': 'Rb', 'Sr': 'Sr6+2', 'Y': 'Y_3+3', 'Zr': 'Zr3+4', 'Nb': 'Nb3+5',
     'Mo': { default: 'Mo6+6' }, 'Tc': 'Tc6+5', 'Ru': 'Ru6+2', 'Rh': 'Rh6+3', 'Pd': 'Pd4+2',

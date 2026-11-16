@@ -127,17 +127,23 @@ Use `system: 'new'` only when intentionally creating a new molecule. All other
 writes require the current explicit header. Every build supplies `hydrogens`
 (`preserve`/`adjust`) and `warnings` (`reject`/`allow`); current toolbar preferences
 are never product defaults. Positions/directions/deltas are Angstrom vectors;
-`quaternion` is `[x,y,z,w]`, unit length; `spinAngle` is finite radians.
+`quaternion` is `[x,y,z,w]`, unit length. Optional `spinAngle` is measured in radians and defaults to zero.
 
 | operation | Additional fields |
 | --- | --- |
 | `placeAtom` | `element`, `position`, optional supported `coordination` geometry |
 | `placeCatalog` | exact `entryId`, `entryKind` (`fragment`/`molecule`), `position`, `quaternion` |
-| `growAtom` | `element`, one-atom `anchor` predicate, nonzero `direction`, optional exact `position`, integer `bondOrder` 1–4, `attachPolicy`, optional `coordination` |
-| `attachFragment` | fragment `entryId`, `anchor`, `direction`, `bondOrder`, `attachPolicy`, `spinAngle` |
-| `replaceHydrogen` | `anchor`, exact `hydrogen` predicate, `bondOrder`, exactly one of `element` or fragment `entryId`; fragment requires `spinAngle` |
-| `fuseFragment` | fusion-capable `entryId`, two-atom bonded `host` predicate, `bondOrder`, `spinAngle` |
+| `growAtom` | `element`, one-atom `anchor` predicate, nonzero `direction`, optional exact `position` for a nonmetal anchor, integer `bondOrder` 1–4, `attachPolicy`, optional `coordination` and `ligandType` |
+| `attachFragment` | catalog `entryId`, `anchor`, `direction`, `bondOrder`, `attachPolicy`, optional `entryKind`, `spinAngle` and `ligandType` |
+| `replaceHydrogen` | `anchor`, exact `hydrogen` predicate, `bondOrder`, exactly one of `element` or fragment `entryId`; optional `spinAngle` for a fragment |
+| `fuseFragment` | fusion-capable `entryId`, two-atom bonded `host` predicate, `bondOrder`, optional `spinAngle` |
 | `insertSelection` | complete v1 `envelope`, `position`, `quaternion` |
+
+Use `attachFragment` with `entryKind: 'molecule'` and `attachPolicy: 'append'`
+to attach a catalog molecule with the `coordinate` mode to a transition metal.
+For metal growth, direction selects the closest open coordination site.
+A full geometry returns `NO_OPEN_SITE`. The optional `ligandType` takes
+`L` (neutral donor) or `X` (a singly anionic donor).
 
 Attachment policies are `append`, `replace_h`, `smart`. Explicit replacement
 requires a supported terminal H and cannot degrade to append. Smart reports the

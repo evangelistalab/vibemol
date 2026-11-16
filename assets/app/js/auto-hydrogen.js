@@ -7,11 +7,12 @@
     getCovalentRadiusAngstrom,
     isAutoBondSupportedAtomicNumber,
     countsTowardAtomValence,
+    isMetalAtomicNumber,
     buildBondAdjacency,
     findSimpleCyclesOfSize,
     getUndirectedPairKey,
   } = global.VibeMolBondInference || {};
-  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber, countsTowardAtomValence,
+  if (![getCovalentRadiusAngstrom, isAutoBondSupportedAtomicNumber, countsTowardAtomValence, isMetalAtomicNumber,
     buildBondAdjacency, findSimpleCyclesOfSize, getUndirectedPairKey].every((fn) => typeof fn === 'function')) {
     throw new Error('VibeMolBondInference is not loaded. Ensure assets/app/js/bond-inference.js is included before assets/app/js/auto-hydrogen.js.');
   }
@@ -541,7 +542,7 @@
     }));
     const perceivedRingCandidates = [];
     for (const rawBond of bonds) {
-      if (!rawBond || typeof rawBond !== 'object') continue;
+      if (!rawBond || typeof rawBond !== 'object' || rawBond.kind === 'blocked') continue;
       const i = resolveBondIndex(structure, rawBond.a, atomIds);
       const j = resolveBondIndex(structure, rawBond.b, atomIds);
       if (!Number.isInteger(i) || !Number.isInteger(j) || i < 0 || j < 0 || i >= atoms.length || j >= atoms.length || i === j) continue;
@@ -555,13 +556,15 @@
       const order = normalizeBondOrder(rawBond.order || 1);
       const envI = envs[i];
       const envJ = envs[j];
-      if (countsTowardAtomValence(atomI, atomJ)) {
+      if (isMetalAtomicNumber(atomJ.Z)) envI.metalNeighbor = true;
+      if (isMetalAtomicNumber(atomI.Z)) envJ.metalNeighbor = true;
+      if (countsTowardAtomValence(atomI, atomJ) || rawBond.ligandType === 'X') {
         envI.bondOrderSum += order;
         envI.maxBondOrder = Math.max(envI.maxBondOrder, order);
         envI.neighborIndices.push(j);
         envI.occupiedDirs.push(vecNormalize(deltaIJ));
       }
-      if (countsTowardAtomValence(atomJ, atomI)) {
+      if (countsTowardAtomValence(atomJ, atomI) || rawBond.ligandType === 'X') {
         envJ.bondOrderSum += order;
         envJ.maxBondOrder = Math.max(envJ.maxBondOrder, order);
         envJ.neighborIndices.push(i);
@@ -585,6 +588,7 @@
   function planAtomHydrogens(atom, env, options = {}) {
     const z = Number(atom && atom.Z) | 0;
     if (!isAutoHydrogenSupportedAtomicNumber(z)) return null;
+    if (env?.metalNeighbor && (Number(atom.formalCharge) < 0 || [9, 17, 35, 53, 85, 117].includes(z))) return null;
     const rule = typeof options.resolveRule === 'function'
       ? options.resolveRule(atom, env, getAutoHydrogenRule(z))
       : getAutoHydrogenRule(z);

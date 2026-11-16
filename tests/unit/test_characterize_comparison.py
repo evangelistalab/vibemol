@@ -5,6 +5,7 @@ import unittest
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'e2e'))
 from characterize import first_difference
 from browser_suite import failure_details, matches_known_defect
+from helpers import read_app_version
 
 
 class CharacterizationComparisonTests(unittest.TestCase):
@@ -41,6 +42,12 @@ class CharacterizationComparisonTests(unittest.TestCase):
         golden = json.loads(gzip.decompress((root / 'tests/baselines/characterize.json.gz').read_bytes()))
         expected = expected_captures(golden, root)
         self.assertEqual(expected, golden['captures'])
+        release_version = read_app_version()
+        major, minor, _ = release_version.split('.', 2)
+        invalid_versions = (
+            '0.10.0', '0.10.1', '0.10.2', '0.10.3', '0.10.4',
+            '0.10.5', '0.10.6', '0.10.7', '0.10.8', f'{major}.{int(minor) + 1}.0',
+        )
         name = next(iter(expected))
         for path in [('session', 'appVersion'), ('session', 'preset', 'appVersion')]:
             with self.subTest(full_path=path):
@@ -48,8 +55,10 @@ class CharacterizationComparisonTests(unittest.TestCase):
                 owner = wrong[name]
                 for part in path[:-1]:
                     owner = owner[part]
-                self.assertEqual(owner[path[-1]], '0.10.8')
-                for invalid_version in ('0.10.0', '0.10.1', '0.10.2', '0.10.3', '0.10.4', '0.10.5', '0.10.6', '0.10.7', '0.11.0'):
+                self.assertEqual(owner[path[-1]], release_version)
+                for invalid_version in invalid_versions:
+                    if invalid_version == release_version:
+                        continue
                     with self.subTest(invalid_version=invalid_version):
                         owner[path[-1]] = invalid_version
                         actual = first_difference(expected, wrong)

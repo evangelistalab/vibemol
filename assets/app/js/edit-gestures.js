@@ -5,7 +5,9 @@
     const dragThresholdPx = Number.isFinite(options.dragThresholdPx) ? Math.max(2, Number(options.dragThresholdPx)) : 6;
     const isEnabled = typeof options.isEnabled === 'function' ? options.isEnabled : (() => false);
     const getEditIntent = typeof options.getEditIntent === 'function' ? options.getEditIntent : (() => '');
+    const canGrowFromSelectedAtom = options.canGrowFromSelectedAtom || (() => false);
     const isSelectTool = typeof options.isSelectTool === 'function' ? options.isSelectTool : (() => false);
+    const onBuildAtomPress = options.onBuildAtomPress || (() => {});
     const EDIT_INTENT = options.EDIT_INTENT || Object.freeze({
       ATOM_MANIPULATION: 'atom_manipulation',
       ADD_MOLECULE: 'add_molecule',
@@ -254,7 +256,8 @@
         updateIdleHover(e);
         return false;
       }
-      if (state.press.kind === 'selected-atom') {
+      if (state.press.kind === 'selected-atom'
+        && (isSelectTool() || !canGrowFromSelectedAtom(state.press.atomIndex))) {
         const selectionDragMode = getSelectionDragMode() === 'rotate' ? 'rotate' : 'translate';
         const resolved = resolveMoveScope(state.press.atomIndex, {
           atomOnly: selectionDragMode === 'rotate' ? false : !!state.press.altKey,
@@ -280,7 +283,7 @@
         });
         return startAndApplyMove(resolved);
       }
-      if (state.press.kind === 'atom-press-pending') {
+      if (state.press.kind === 'atom-press-pending' || state.press.kind === 'selected-atom') {
         if (isSelectTool()) return startAndApplyMove(resolveMoveScope(state.press.atomIndex, { atomOnly: true, preview: false }));
         const growAnchorIndex = Number.isInteger(state.press.growAtomIndex)
           ? (state.press.growAtomIndex | 0)
@@ -346,6 +349,7 @@
         state.voidPreviewVisible = false;
         hideVoidPlacementPreview();
         capturePointer(e.pointerId);
+        if (!isSelectTool()) onBuildAtomPress(atomIndex);
         notifyUi();
         return true;
       }

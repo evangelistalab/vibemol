@@ -236,6 +236,25 @@ function parseTwoComponentCube(text) {
   return { ...volume, alphaRe, alphaIm, betaRe, betaIm, idx, units: 'bohr', isoHint, isTwoComponent, data: alphaRe };
 }
 
+function parseXyzVectorSets(comment, line) {
+  const marker = 'VibeMolVectors=';
+  if (!comment.trimStart().startsWith(marker)) return null;
+  let sets;
+  try {
+    sets = JSON.parse(comment.trimStart().slice(marker.length));
+  } catch {
+    throw new Error(`Malformed XYZ vector declaration at line ${line}: expected JSON.`);
+  }
+  if (!Array.isArray(sets) || !sets.length
+    || sets.some(set => !set || typeof set.name !== 'string' || !set.name.trim()
+      || typeof set.color !== 'string' || !/^#[0-9a-f]{6}$/i.test(set.color)
+      || typeof set.scale !== 'number' || !Number.isFinite(set.scale) || set.scale <= 0)
+    || new Set(sets.map(set => set.name.trim())).size !== sets.length) {
+    throw new Error(`Malformed XYZ vector declaration at line ${line}: expected distinct names, #RRGGBB colors and positive finite scales.`);
+  }
+  return sets.map(({ name, color, scale }) => ({ name: name.trim(), color, scale }));
+}
+
 /**
  * Parse an XYZ file into atom-only volume metadata used by the UI/export paths.
  * XYZ coordinates are interpreted as angstrom values.
@@ -265,6 +284,7 @@ function parseXYZ(text) {
   let natoms = null;
   const atomNumbers = [];
   let firstFrameAtoms = null;
+  let xyzVectors = null;
 
   while (cursor < lines.length) {
     while (cursor < lines.length && !(lines[cursor] || '').trim()) cursor++;
@@ -288,6 +308,11 @@ function parseXYZ(text) {
       throw new Error(`Malformed XYZ file: missing comment line after atom count at line ${blockStartLine}.`);
     }
     const comment = lines[commentIndex] || '';
+    const vectorSets = parseXyzVectorSets(comment, commentIndex + 1);
+    if ((xyzVectors || vectorSets) && frames.length) {
+      throw new Error('XYZ vector sets require a single structure, with one XYZ block per file.');
+    }
+    if (vectorSets) xyzVectors = { sets: vectorSets, rows: [] };
     if (frameNatoms > lines.length - commentIndex - 1) {
       throw new Error(`Malformed XYZ file: expected ${frameNatoms} atom lines after line ${commentIndex + 1}, but file ended early.`);
     }
@@ -329,6 +354,18 @@ function parseXYZ(text) {
       frame[3 * i + 1] = y;
       frame[3 * i + 2] = z;
       frameAtoms.push({ Z, x, y, z, formalCharge: 0 });
+      if (vectorSets) {
+        const expected = 4 + 3 * vectorSets.length;
+        if (parts.length !== expected) {
+          throw new Error(`Malformed XYZ vectors at line ${lineNo}: expected ${expected} columns, found ${parts.length}.`);
+        }
+        const components = parts.slice(4).map(parseLooseNumber);
+        const row = vectorSets.map((_, index) => components.slice(3 * index, 3 * index + 3));
+        if (row.some((vector, index) => !Number.isFinite(Math.hypot(...vector) * vectorSets[index].scale))) {
+          throw new Error(`Malformed XYZ vectors at line ${lineNo}: scaled vector lengths must be finite.`);
+        }
+        xyzVectors.rows.push(row);
+      }
     }
     frames.push(frame);
     frameComments.push(comment);
@@ -354,6 +391,7 @@ function parseXYZ(text) {
    */
   const idx = (i, j, k) => 0;
   const vol = { title: 'XYZ', comment: frameComments[0] || '', natoms, origin: [0, 0, 0], nxyz: [0, 0, 0], axes: [[1, 0, 0], [0, 1, 0], [0, 0, 1]], atoms, data: new Float32Array(0), idx, units: 'angstrom', kind: 'xyz' };
+  if (xyzVectors) vol.xyzVectors = xyzVectors;
   if (frames.length > 1) {
     vol.trajectory = {
       frames,

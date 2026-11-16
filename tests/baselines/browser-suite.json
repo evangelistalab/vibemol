@@ -106,7 +106,8 @@
     },
     "tests/e2e/edit_tool.py": {
       "metal-native-case": 28,
-      "edit-tool-state": 59
+      "edit-tool-state": 59,
+      "metal-build-drag": 12
     },
     "tests/e2e/build_panel.py": {
       "retired-cache-case": 4
