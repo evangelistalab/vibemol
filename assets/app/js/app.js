@@ -15654,9 +15654,10 @@
     const vol = record && record.vol;
     const attachContext = context || getActiveFragmentAttachContext(vol, anchorIndex);
     if (!attachContext) return false;
-    const metal = vol?.atoms?.[anchorIndex];
-    const appended = metal && getCoordinationProfile(metal.Z)?.isTransitionMetal
-      ? applyCatalogLigandAtMetal(vol, anchorIndex, getCurrentFragmentDefinition(), worldPos.clone().sub(atomUnitsToAng(vol, metal)).toArray())
+    const anchor = vol?.atoms?.[anchorIndex];
+    const metalAnchorId = getCoordinationProfile(anchor?.Z)?.isTransitionMetal ? anchor.id : null;
+    const appended = metalAnchorId
+      ? applyCatalogLigandAtMetal(vol, anchorIndex, getCurrentFragmentDefinition(), worldPos.clone().sub(atomUnitsToAng(vol, anchor)).toArray())
       : appendFragmentAtWorld(anchorIndex, worldPos, {
         preserveAnchorSelection: !!attachContext.preserveAnchorSelection,
         attachPolicyOverride: options.attachPolicyOverride,
@@ -15664,13 +15665,24 @@
     if (!appended) return false;
     let cueAnchorIndex = -1;
     if (attachContext.cueArmed) {
-      setFragmentAttachCueAnchorByIndex(anchorIndex);
-      cueAnchorIndex = getPinnedFragmentAttachAnchorIndex((currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex].vol : null);
+      const currentVolume = volumes[currentIndex]?.vol;
+      if (metalAnchorId) {
+        // Applying the structural snapshot clears both the selection and the cue.
+        cueAnchorIndex = currentVolume?.atoms?.findIndex(atom => atom.id === metalAnchorId) ?? -1;
+        if (cueAnchorIndex >= 0) {
+          setEditAtomSelection([cueAnchorIndex]);
+          setSelectionFragmentCueActive(true, { announce: false });
+        }
+      } else {
+        setFragmentAttachCueAnchorByIndex(anchorIndex);
+        cueAnchorIndex = getPinnedFragmentAttachAnchorIndex(currentVolume);
+      }
     }
     clearEditHaloGhostHoverState();
     updateEditToolboxUi({ syncSearch: false });
     if (cueAnchorIndex >= 0) {
-      setEditAtomSelection([cueAnchorIndex]);
+      if (metalAnchorId) editHaloController.refresh();
+      else setEditAtomSelection([cueAnchorIndex]);
       updateSelectedHalos();
       updateEditSelectionVisuals();
       updateEditAdaptiveMenuUi();
@@ -17020,6 +17032,10 @@
 
   function syncEditAddCoordinationControl() {
     if (!editAddCoordinationEl) return;
+    const ligandTypeRow = editAddAtomPaneEl?.querySelector('[data-build-metal-ligand-row]');
+    if (ligandTypeRow) {
+      ligandTypeRow.hidden = !volumes[currentIndex]?.vol?.atoms?.some(atom => getCoordinationProfile(atom.Z)?.isTransitionMetal);
+    }
     const profile = getEditAddCoordinationProfile(editAddElementZ);
     const choices = Array.isArray(profile && profile.choices) ? profile.choices : [];
     const nextValue = getEffectiveEditAddCoordinationGeometryId(editAddElementZ);

@@ -1697,7 +1697,7 @@
     },
     "commitFragmentAttachAtWorld": {
       "before": "a9361f561bf6b6f7ba8884af84b1621f610be3b0df449ca0ca2e89e18480afa6",
-      "after": "e1d42a8c43c7e74a5a76be052ecf75f0d0cfec2f4391c605ab7740857e8a6ea9",
+      "after": "92db7d63eb2d4addb1e6fb9d87a78b757798500d63424e46caeb6334aece0a67",
       "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     },
@@ -1867,6 +1867,12 @@
     "handleFragmentIntentControllerPointerMove": {
       "before": "ed553246200f2e603da665d26eac2d0f256a644f2f0f915499258cc58e93f8b6",
       "after": "d6ddf37584161f485a13bfbd7082166c0ee91e2eb28aacf6b31c861a9b371d28",
+      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "units": []
+    },
+    "syncEditAddCoordinationControl": {
+      "before": "68b3004d1f9f1bd176bac18035df2ef2a57adeb5ec55c0ada8cebb5f7d445327",
+      "after": "b5318b6c9afab9b8a60c7fbad42e4e8594356228dcde323e5dcc73b92e9968f0",
       "reason": "Build and display transition-metal ligands using coordination sites.",
       "units": []
     }
