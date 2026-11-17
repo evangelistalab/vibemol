@@ -140,7 +140,17 @@ def coordinate_row_actions(page):
     assert rows.count() == 1
     mode(page, 'Display')
     assert page.locator('#coordsContent [data-coords-action="delete"]').count() == 0
-    page.locator('#coordsPanelClose').click()
+    close = (page.get_by_role('button', name='Close Coordinates', exact=True)
+             if page.locator('#workbenchBar').count() else page.locator('#coordsPanelClose'))
+    count = close.count()
+    actual = {'count': count, 'visible': count == 1 and close.is_visible()}
+    expected = {'count': 1, 'visible': True}
+    print('[coordinates close] ' + json.dumps({'actual': actual, 'expected': expected}), flush=True)
+    assert actual == expected, (actual, expected)
+    close.click()
+    actual = page.locator('#coordsPanel').is_hidden()
+    print('[coordinates closed] ' + json.dumps({'actual': actual, 'expected': True}), flush=True)
+    assert actual, {'actual': actual, 'expected': True}
     print('[modes] per-atom copy/paste, units, delete targeting, inline edit, Undo/Redo and keyboard: passed', flush=True)
 
 
