@@ -261,7 +261,7 @@
     if (takeFocus) {
       const floating = effectivePlace(id) === 'float';
       const target = floating ? item.header : document.getElementById('wb-tab-' + id);
-      if (!floating) target?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      if (!floating) target?.parentElement.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       target?.focus({ preventScroll: true });
     }
   }
@@ -299,7 +299,7 @@
           reveal(item.id, false);
           global.VibeMolFloatingPanels.get(item.root)?.startDrag(event, item.header);
         });
-        const tab = button(item.label, null, () => reveal(item.id, false), 'wb-tab');
+        const tab = button(item.label, null, () => reveal(item.id), 'wb-tab');
         tab.setAttribute('role', 'tab'); tab.dataset.window = item.id; tab.id = 'wb-tab-' + item.id;
         tab.setAttribute('aria-controls', item.panel); label(tab, item.label);
         const closeTab = button('Close ' + item.label, 'close', () => close(item.id, place), 'wb-dock-action wb-tab-close');
@@ -648,7 +648,9 @@
     const tabs = [...target.tabs.querySelectorAll('[role="tab"]')], index = tabs.indexOf(event.target);
     if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-    reveal(tabs[next].dataset.window, false); tabs[next].focus(); event.preventDefault(); event.stopPropagation();
+    reveal(tabs[next].dataset.window, false);
+    tabs[next].parentElement.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    tabs[next].focus({ preventScroll: true }); event.preventDefault(); event.stopPropagation();
   });
   for (const [anchor, place] of [[panelsButton, null], ...Object.entries(docks).map(([place, target]) => [target.add, place])]) {
     anchor.addEventListener('keydown', event => {

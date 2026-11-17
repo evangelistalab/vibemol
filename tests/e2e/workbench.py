@@ -189,6 +189,11 @@ def run(page):
     before=p.snapshot(page)
     open_panel(page,'Properties')
     assert orbitals.is_hidden() and page.locator('#inspector').is_visible() and coordinates.is_visible()
+    subtab_heights = page.locator('#inspector .vm-properties-tabs [role="tab"]').evaluate_all(
+        'tabs => tabs.map(tab => tab.getBoundingClientRect().height)')
+    expected_subtab_heights = [28, 28]
+    print('[workbench Properties subtabs] ' + json.dumps({'actual':subtab_heights,'expected':expected_subtab_heights}), flush=True)
+    assert subtab_heights == expected_subtab_heights, (subtab_heights, expected_subtab_heights)
     assert 'moldenInspector' in layout(page)['open']
     page.get_by_role('tab',name='Orbitals',exact=True).click()
     assert page.locator('#moldenEnergyFilter').input_value()=='0.1'
@@ -329,11 +334,19 @@ def add_panel_tab(page, place, name, existing):
         closeIconSize:getComputedStyle(active.querySelector('.wb-tab-close .material-symbols-rounded')).fontSize,
         closeTargetWidth:close.width};
     }''')
-    expected = {'height':39, 'sameRow':True, 'order':True, 'gap':8, 'activeFillMatchesMode':True,
+    expected = {'height':35, 'sameRow':True, 'order':True, 'gap':8, 'activeFillMatchesMode':True,
                 'gripWidth':'4px', 'closeIconSize':'14px', 'closeTargetWidth':28}
     print('[workbench panel tabs] ' + json.dumps({'place':place,'actual':measured,'expected':expected}), flush=True)
     assert measured == expected and more.is_visible(), (measured, expected)
+    grip_offset = '''tab => {
+      const group = tab.parentElement;
+      return group.firstElementChild.getBoundingClientRect().left - group.getBoundingClientRect().left;
+    }'''
+    selected_grip = tab.evaluate(grip_offset)
     dock.get_by_role('tab', name=existing, exact=True).click()
+    deselected_grip = tab.evaluate(grip_offset)
+    print('[workbench grip offset] ' + json.dumps({'place':place,'actual':deselected_grip,'expected':selected_grip}), flush=True)
+    assert deselected_grip == selected_grip, (deselected_grip, selected_grip)
     assert close.is_visible()
     close.click()
     assert tab.count() == 0 and dock.get_by_role('tab', name=existing, exact=True).get_attribute('aria-selected') == 'true'
