@@ -1910,7 +1910,7 @@
     },
     "resetAppOptions": {
       "before": null,
-      "after": "1cf3c17c212e37c9775f774e3963bc94cda0179a2a36331592da9b64b2fdfb87",
+      "after": "e04fa3192945debdc6d8adb5e3c80c983f56b1d6e56a99846bfad8fd39264631",
       "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
       "units": [
         {
@@ -1958,7 +1958,7 @@
     },
     "statement:defaultAppOptions": {
       "before": null,
-      "after": "8b941a2e81e97334cb34cababfe971c8ab3c42ca62168a17783d58808c5ee8bc",
+      "after": "5906921e93e5c4f7e345843615104a2041b31a3f8eaa7bc31a691023468dd61c",
       "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
       "units": []
     },

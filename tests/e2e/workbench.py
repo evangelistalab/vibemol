@@ -301,7 +301,7 @@ def reset_options(page):
     preferences = page.locator('#workbenchPreferences')
     menu = page.get_by_role('dialog', name='App settings')
     reset = menu.get_by_role('button', name='Reset all options', exact=True)
-    keys = ['view.projection', 'global.showAxes', 'global.backgroundColor', 'surface.opacity']
+    keys = ['view.projection', 'global.showAxes', 'global.backgroundColor', 'global.accentColor', 'surface.opacity']
     settings = lambda: page.evaluate('keys => Object.fromEntries(keys.map(key => [key, VibeMolPreset.export().settings[key]]))', keys)
     prefs = lambda: page.evaluate('() => [document.documentElement.dataset.theme, VibeMolPrefs.getFontPair()]')
     atoms = lambda: page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
@@ -326,9 +326,13 @@ def reset_options(page):
     page.get_by_role('textbox',name='Workspace name').fill('Saved layout')
     page.get_by_role('button',name='Save workspace',exact=True).click()
     page.keyboard.press('Escape')
-    page.evaluate('() => VibeMolPreset.import({kind:"vibemol.preset", presetVersion:1, settings:{"global.showAxes":false,"view.projection":"orthographic","global.backgroundColor":"#314159","surface.opacity":0.44}})')
+    page.evaluate('''() => VibeMolPreset.import({kind:"vibemol.preset", presetVersion:1, settings:{
+        "global.showAxes":false, "view.projection":"orthographic", "global.backgroundColor":"#314159",
+        "global.accentColor":"#197a5d", "surface.opacity":0.44,
+    }})''')
     changed = settings()
-    check('nondefault preferences and appearance', [prefs(), changed['global.backgroundColor'], changed['surface.opacity']], [['dark', 'plex'], '#314159', 0.44])
+    check('nondefault preferences and appearance', [prefs(), changed['global.backgroundColor'], changed['global.accentColor'], changed['surface.opacity']],
+          [['dark', 'plex'], '#314159', '#197a5d', 0.44])
 
     preferences.click()
     page.once('dialog', lambda dialog: dialog.dismiss())
@@ -339,6 +343,9 @@ def reset_options(page):
     check('reset applies defaults', [prefs(), settings()], [['light', 'geist'], defaults])
     check('loaded molecule and saved Look survive', [atoms(), saved_looks(), stored_default()], [original_atoms, ['Saved look'], False])
     check('default dock and focus return', [layout(page)['open'], preferences.evaluate('el => el === document.activeElement')], [[], True])
+    page.locator('#themeToggleShell').click()
+    check('accent follows dark theme again', settings()['global.accentColor'], '#6b9bff')
+    page.locator('#themeToggleShell').click()
 
     page.reload()
     page.wait_for_function('() => window.VibeMolWorkbench')

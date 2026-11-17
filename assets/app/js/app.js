@@ -28212,6 +28212,9 @@
     setFontPair('geist');
     applyUiTheme('light');
     persistUiTheme('light');
+    for (const property of ['--vm-accent', '--vm-accent-soft', '--vm-accent-outline']) {
+      document.documentElement.style.removeProperty(property);
+    }
     resetVisualizationOptions();
     looksUi.clearStartupDefault();
     looksUi.clearUndo();
@@ -28514,9 +28517,11 @@
   // Establish the default before the atomic restore; later gizmo wiring only reads it.
   window.__showAxes__ = true;
   defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
-  // Framing is fitted to the loaded scene, and the selected vibration belongs to that scene.
+  // Framing is fitted to the scene, the selected vibration belongs to that scene,
+  // and the accent follows the active theme until explicitly overridden.
   const defaultAppOptions = Object.freeze(Object.fromEntries(Object.entries(exportPresetEnvelope().settings)
-    .filter(([key]) => !key.startsWith('view.camera.') && !key.startsWith('view.target.') && key !== 'vibration.modeIndex')));
+    .filter(([key]) => !key.startsWith('view.camera.') && !key.startsWith('view.target.')
+      && key !== 'vibration.modeIndex' && key !== 'global.accentColor')));
   const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();
   switch (appearanceAutosaveRestoreResult.status) {
     case 'restored':
