@@ -490,6 +490,23 @@
       closeMenu();
       global.VibeMolPreset.download();
     }, 'Save the current visualization settings as JSON');
+    const resetStatus = document.createElement('div');
+    resetStatus.className = 'wb-status';
+    resetStatus.setAttribute('role', 'status');
+    menuAction('Reset all options', 'restart_alt', () => {
+      if (!global.confirm('Reset the theme, typeface, visualization settings, and window layout? Loaded files, measurements, and your saved looks, materials, and layouts will be kept.')) return;
+      try {
+        host.properties.resetOptions();
+      } catch (error) {
+        resetStatus.textContent = error.message;
+        return;
+      }
+      host.properties.setTab('object');
+      preset('explore');
+      host.setSidebarCollapsed(innerWidth < 760);
+      closeMenu(true);
+    }, 'Restore the app defaults');
+    menu.append(resetStatus);
     finishMenu();
   }
   function setFocus(value) {

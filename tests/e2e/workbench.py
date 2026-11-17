@@ -293,6 +293,74 @@ def run(page):
     print('[workbench] real inspectors, docks, snap preview, resizing, minimize, Focus, saved layouts, themes and mobile: passed',flush=True)
 
 
+def reset_options(page):
+    def check(label, actual, expected):
+        print('[workbench reset] ' + json.dumps({'check': label, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected, (label, actual, expected)
+
+    preferences = page.locator('#workbenchPreferences')
+    menu = page.get_by_role('dialog', name='App settings')
+    reset = menu.get_by_role('button', name='Reset all options', exact=True)
+    keys = ['view.projection', 'global.showAxes', 'global.backgroundColor', 'surface.opacity']
+    settings = lambda: page.evaluate('keys => Object.fromEntries(keys.map(key => [key, VibeMolPreset.export().settings[key]]))', keys)
+    prefs = lambda: page.evaluate('() => [document.documentElement.dataset.theme, VibeMolPrefs.getFontPair()]')
+    atoms = lambda: page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+    saved_looks = lambda: page.evaluate('() => VibeMolAppearanceLooks.snapshot().saved.map(look => look.name)')
+    stored_default = lambda: page.evaluate('() => localStorage.getItem("vibemol.defaultLook.v1") !== null')
+    defaults = settings()
+    loaded = p.load(page, [{'name':'reset.xyz', 'text':'2\nHydrogen\nH 0 0 0\nH 0.74 0 0\n'}])
+    check('load molecule', loaded['ok'], True)
+    original_atoms = atoms()
+    page.locator('#themeToggleShell').click()
+    preferences.click()
+    menu.get_by_role('radio', name='IBM Plex').click()
+    page.keyboard.press('Escape')
+    page.evaluate('() => VibeMolAppearanceLooks.openStudio()')
+    page.locator('#lookSave').click()
+    page.locator('#lookNameInput').fill('Saved look')
+    page.locator('#lookNameInput').press('Enter')
+    page.locator('#lookSaveDetails').evaluate('el => { el.open = true; }')
+    page.locator('#lookDefault').click()
+    check('saved Look and startup override', [saved_looks(), stored_default()], [['Saved look'], True])
+    page.locator('#workbenchArrange').click()
+    page.get_by_role('textbox',name='Workspace name').fill('Saved layout')
+    page.get_by_role('button',name='Save workspace',exact=True).click()
+    page.keyboard.press('Escape')
+    page.evaluate('() => VibeMolPreset.import({kind:"vibemol.preset", presetVersion:1, settings:{"global.showAxes":false,"view.projection":"orthographic","global.backgroundColor":"#314159","surface.opacity":0.44}})')
+    changed = settings()
+    check('nondefault preferences and appearance', [prefs(), changed['global.backgroundColor'], changed['surface.opacity']], [['dark', 'plex'], '#314159', 0.44])
+
+    preferences.click()
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    reset.click()
+    check('cancel keeps preferences and appearance', [prefs(), settings()], [['dark', 'plex'], changed])
+    page.once('dialog', lambda dialog: dialog.accept())
+    reset.click()
+    check('reset applies defaults', [prefs(), settings()], [['light', 'geist'], defaults])
+    check('loaded molecule and saved Look survive', [atoms(), saved_looks(), stored_default()], [original_atoms, ['Saved look'], False])
+    check('default dock and focus return', [layout(page)['open'], preferences.evaluate('el => el === document.activeElement')], [[], True])
+
+    page.reload()
+    page.wait_for_function('() => window.VibeMolWorkbench')
+    check('defaults and saved Look persist', [prefs(), settings(), saved_looks(), stored_default()], [['light', 'geist'], defaults, ['Saved look'], False])
+    page.locator('#workbenchArrange').click()
+    check('named layout survives', page.get_by_role('button', name='Saved layout', exact=True).is_visible(), True)
+    page.keyboard.press('Escape')
+
+    page.set_viewport_size({'width':390, 'height':740})
+    page.wait_for_function('() => document.body.dataset.wbCompact === "true"')
+    if preferences.is_visible():
+        preferences.click()
+    else:
+        page.locator('#workbenchOverflowBtn').click()
+        page.get_by_role('menuitem', name='App settings').click()
+    menu.get_by_role('radio', name='IBM Plex').click()
+    check('mobile setting changed', prefs(), ['light', 'plex'])
+    page.once('dialog', lambda dialog: dialog.accept())
+    reset.click()
+    check('mobile reset', [prefs(), menu.is_hidden()], [['light', 'geist'], True])
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
@@ -302,7 +370,6 @@ def main():
             page=context.new_page(); errors=[]; consoles=[]
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.on('console',lambda m:consoles.append(m.text) if m.type=='error' else None)
-            page.on('dialog',lambda d:d.dismiss())
             try:
                 page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => VibeMolAppearanceLooks')
                 assert page.evaluate('() => typeof VibeMolWorkbench')=='undefined'
@@ -312,6 +379,15 @@ def main():
                 run(page);modes(page);assert not errors,errors
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-failure',errors,consoles);raise
+            finally:context.close()
+            context=browser.new_context(viewport={'width':1600,'height':1000})
+            try:
+                page=context.new_page()
+                errors=[]; page.on('pageerror',lambda e:errors.append(str(e)))
+                page.goto(url+'?workspaceLab=1');page.wait_for_function('() => window.VibeMolWorkbench')
+                reset_options(page);assert not errors,errors
+            except Exception:
+                p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-reset-failure',errors,[]);raise
             finally:context.close()
         finally:browser.close()
 
