@@ -2,7 +2,7 @@
 """Appearance ownership, coordinate permissions, and preserved mode context."""
 import math
 import premerge as p
-from workbench import layout, window_menu, capture, open_panel
+from workbench import layout, window_menu, capture, open_panel, dock_tab_grip
 from workbench_bar import open_menu
 
 
@@ -78,7 +78,7 @@ def workspace(page):
     page.locator('#inspectorLookTab').click()
     preset=page.locator('#lookPreset');original=preset.input_value()
     preset.select_option('classic');preset.select_option(original)
-    page.locator('#inspectorClose').click()
+    page.get_by_role('button', name='Close Properties', exact=True).click()
     assert page.locator('#workbenchPanelsBtn').evaluate('el=>document.activeElement===el')
     open_panel(page,'Properties');page.locator('#inspectorObjectTab').click()
     assert page.locator('#iso').count()==1 and appearance.locator('#iso').count()==1
@@ -130,8 +130,8 @@ def workspace(page):
     mode(page,'Edit');page.locator('#editAdaptiveAddAtomBtn').click()
     build=page.locator('#editAdaptiveAddAtomPopover')
     page.locator('#editBuildSearch').fill('carbon')
-    handle=build.locator('[data-vm-drag-handle]');box=handle.bounding_box()
-    page.mouse.move(box['x']+24,box['y']+8);page.mouse.down()
+    box=dock_tab_grip(page,'Build').bounding_box()
+    page.mouse.move(box['x']+box['width']/2,box['y']+8);page.mouse.down()
     page.mouse.move(box['x']+76,box['y']+30,steps=5);page.mouse.up()
     position=page.evaluate('()=>VibeMolFloatingPanels.get(document.getElementById("editAdaptiveAddAtomPopover")).getPosition()')
     mode(page,'Measure');assert build.is_hidden()
@@ -143,8 +143,8 @@ def workspace(page):
     page.locator('#editAdaptiveSymmetryBtn').click()
     symmetry=page.locator('#editAdaptiveSymmetryPopover')
     page.locator('#editSymmetryToleranceSelect').select_option('0.100')
-    handle=symmetry.locator('[data-vm-drag-handle]');box=handle.bounding_box()
-    page.mouse.move(box['x']+24,box['y']+8);page.mouse.down()
+    box=dock_tab_grip(page,'Symmetry').bounding_box()
+    page.mouse.move(box['x']+box['width']/2,box['y']+8);page.mouse.down()
     page.mouse.move(box['x']+76,box['y']+30,steps=5);page.mouse.up()
     position=page.evaluate('()=>VibeMolFloatingPanels.get(document.getElementById("editAdaptiveSymmetryPopover")).getPosition()')
     mode(page,'Display');assert symmetry.is_hidden()

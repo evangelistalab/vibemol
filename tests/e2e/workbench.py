@@ -11,8 +11,16 @@ def layout(page):
 
 
 def window_menu(page, panel, action):
-    panel.locator('.wb-window-menu').click()
+    place = panel.get_attribute('data-wb-placement')
+    if place == 'float':
+        panel.locator('.wb-window-menu').click()
+    else:
+        page.locator(f'#workbenchDock{place.title()} .wb-dock-action[aria-haspopup="dialog"]').click()
     page.locator('#workbenchMenu').get_by_role('button', name=action, exact=True).click()
+
+
+def dock_tab_grip(page, name):
+    return page.locator('.wb-dock-tab').filter(has=page.get_by_role('tab', name=name, exact=True)).locator('.wb-tab-grip')
 
 
 def open_panel(page, name):
@@ -177,6 +185,7 @@ def run(page):
     page.locator('#coordsUnitsBtn').click()
     assert 'bohr' in page.locator('#coordsPanelTitle').inner_text()
     page.locator('#moldenEnergyFilter').fill('0.1'); page.locator('#moldenEnergyFilter').press('Tab')
+    add_panel_tab(page, 'Right', 'Camera', 'Orbitals')
     before=p.snapshot(page)
     open_panel(page,'Properties')
     assert orbitals.is_hidden() and page.locator('#inspector').is_visible() and coordinates.is_visible()
@@ -196,8 +205,8 @@ def run(page):
     assert orbitals.get_attribute('data-wb-placement')=='right'
     assert page.locator('#workbenchSnap').is_hidden()
     # Tear the docked inspector out; cancelling a subsequent snap keeps it floating.
-    header=orbitals.locator('[data-vm-drag-handle]').bounding_box()
-    page.mouse.move(header['x']+18,header['y']+15);page.mouse.down()
+    tab_grip=dock_tab_grip(page,'Orbitals').bounding_box()
+    page.mouse.move(tab_grip['x']+tab_grip['width']/2,tab_grip['y']+tab_grip['height']/2);page.mouse.down()
     page.mouse.move(760,160,steps=10);page.mouse.up()
     assert orbitals.get_attribute('data-wb-placement')=='float'
     assert layout(page)['draggingId'] is None
@@ -263,6 +272,7 @@ def run(page):
     for name in ['Orbitals','Coordinates','Properties']:
         page.get_by_role('tab',name=name,exact=True).click()
         selected=page.locator('.wb-dock .wb-tab[aria-selected="true"]'); assert selected.get_attribute('aria-label')==name
+    add_panel_tab(page, 'Bottom', 'Camera', 'Properties')
     capture(page,'mobile')
     assert page.evaluate('() => __moldenGridBuilds')==[]
     page.set_viewport_size({'width':1600,'height':1000})
@@ -291,6 +301,36 @@ def run(page):
     page.locator('#modeDisplayBtn').click()
     assert build.is_hidden()
     print('[workbench] real inspectors, docks, snap preview, resizing, minimize, Focus, saved layouts, themes and mobile: passed',flush=True)
+
+
+def add_panel_tab(page, place, name, existing):
+    dock = page.locator(f'#workbenchDock{place}')
+    add = dock.get_by_role('button', name=f'Add panel to {place.lower()} dock')
+    add.focus()
+    page.keyboard.press('ArrowDown')
+    menu = page.get_by_role('menu', name=f'Add panel to {place.lower()} dock')
+    assert menu.get_by_role('menuitem', name=existing, exact=True).count() == 0
+    menu.get_by_role('menuitem', name=name, exact=True).click()
+    tab = dock.get_by_role('tab', name=name, exact=True)
+    assert tab.get_attribute('aria-selected') == 'true'
+    close = dock.get_by_role('button', name=f'Close {name}', exact=True)
+    more = dock.get_by_role('button', name=f'Window options for {name}', exact=True)
+    measured = dock.locator('.wb-dock-row').evaluate('''row => {
+      const [tabs, add, more] = row.children;
+      const active = tabs.querySelector('[aria-selected="true"]').parentElement;
+      const [grip, title, close] = [...active.children].map(el => el.getBoundingClientRect());
+      return {height:row.getBoundingClientRect().height,
+        sameRow: Math.abs(grip.y + grip.height / 2 - (close.y + close.height / 2)) < 1,
+        order:grip.right <= title.left && title.right <= close.left && add.getBoundingClientRect().right <= more.getBoundingClientRect().left,
+        gripWidth:getComputedStyle(active.firstElementChild, '::before').width};
+    }''')
+    expected = {'height':39, 'sameRow':True, 'order':True, 'gripWidth':'4px'}
+    print('[workbench panel tabs] ' + json.dumps({'place':place,'actual':measured,'expected':expected}), flush=True)
+    assert measured == expected and more.is_visible(), (measured, expected)
+    dock.get_by_role('tab', name=existing, exact=True).click()
+    assert close.is_visible()
+    close.click()
+    assert tab.count() == 0 and dock.get_by_role('tab', name=existing, exact=True).get_attribute('aria-selected') == 'true'
 
 
 def reset_options(page):
