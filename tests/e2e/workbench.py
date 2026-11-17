@@ -318,13 +318,19 @@ def add_panel_tab(page, place, name, existing):
     measured = dock.evaluate('''dock => {
       const [tabs, add, more, slot] = dock.children;
       const active = tabs.querySelector('[aria-selected="true"]').parentElement;
+      const groups = [...tabs.children].map(tab => [...tab.children].map(el => el.getBoundingClientRect()));
       const [grip, title, close] = [...active.children].map(el => el.getBoundingClientRect());
       return {height:slot.getBoundingClientRect().top - dock.getBoundingClientRect().top - dock.clientTop,
         sameRow: Math.abs(grip.y + grip.height / 2 - (close.y + close.height / 2)) < 1,
         order:grip.right <= title.left && title.right <= close.left && add.getBoundingClientRect().right <= more.getBoundingClientRect().left,
-        gripWidth:getComputedStyle(active.firstElementChild, '::before').width};
+        gap:Math.min(...groups.slice(1).map(([nextGrip], i) => nextGrip.left - groups[i][2].right)),
+        activeFillMatchesMode:getComputedStyle(active).backgroundColor === getComputedStyle(document.querySelector('.wb-mode-highlight')).backgroundColor,
+        gripWidth:getComputedStyle(active.firstElementChild, '::before').width,
+        closeIconSize:getComputedStyle(active.querySelector('.wb-tab-close .material-symbols-rounded')).fontSize,
+        closeTargetWidth:close.width};
     }''')
-    expected = {'height':39, 'sameRow':True, 'order':True, 'gripWidth':'4px'}
+    expected = {'height':39, 'sameRow':True, 'order':True, 'gap':8, 'activeFillMatchesMode':True,
+                'gripWidth':'4px', 'closeIconSize':'14px', 'closeTargetWidth':28}
     print('[workbench panel tabs] ' + json.dumps({'place':place,'actual':measured,'expected':expected}), flush=True)
     assert measured == expected and more.is_visible(), (measured, expected)
     dock.get_by_role('tab', name=existing, exact=True).click()

@@ -91,15 +91,28 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--vm-color-text-secondary); font: var(--vm-type-compact-control-weight) var(--vm-type-compact-control-size) var(--vm-font-sans); box-shadow: none; }
 .wb-tab[aria-selected='true'] { border-bottom-color: var(--vm-color-toolbar-tab-accent); color: var(--vm-color-text-primary); }
 .wb-tab:hover { background: var(--vm-color-surface-chip); }
-.wb-dock-tabs { min-width: 0; align-items: center; padding: 0; border: 0; overflow: auto hidden; scrollbar-width: none; }
-.wb-dock-tab { display: flex; flex: 0 0 auto; align-items: center; height: 100%; }
-.wb-dock-tab .wb-tab { align-self: stretch; padding: 0 4px; white-space: nowrap; }
+.wb-dock-tabs {
+  min-width: 0; height: 36px; box-sizing: border-box; align-items: center; gap: 4px;
+  margin-right: 4px; padding: 2px; border: 0; border-radius: var(--vm-radius-md);
+  overflow: auto hidden; scrollbar-width: none; background: var(--vm-color-surface-base);
+}
+.wb-dock-tab { display: flex; flex: 0 0 auto; align-items: center; height: 32px; padding: 0 2px; border-radius: var(--vm-radius-md); }
+.wb-dock-tab:has(.wb-tab[aria-selected='true']) { background: var(--vm-color-surface-panel); box-shadow: var(--vm-shadow-sm); }
+.wb-dock-tab .wb-tab {
+  align-self: stretch; padding: 0 3px; border: 0; border-radius: var(--vm-radius-md); white-space: nowrap;
+  color: var(--vm-color-toolbar-tab-fg); font-weight: var(--vm-type-data-emphasis-weight); background: transparent;
+}
+.wb-dock-tab .wb-tab[aria-selected='true'] { color: var(--vm-color-toolbar-tab-fg-active); }
+.wb-dock-tab .wb-tab:hover { color: var(--vm-color-toolbar-tab-fg-hover); }
 .wb-tab-grip { display: grid; flex: 0 0 24px; height: 100%; place-items: center; cursor: grab; touch-action: none; }
 .wb-tab-grip::before, .vm-workbench [data-wb-placement='float'] > .wb-window-header::before {
   content: ''; width: 4px; height: 16px; flex-shrink: 0; border-radius: 2px; background: var(--vm-color-text-secondary);
 }
 .vm-workbench[data-wb-compact='true'] .wb-tab-grip { flex-basis: 12px; cursor: default; touch-action: pan-x; }
 .wb-dock-action.vm-btn { width: 28px; height: 28px; min-width: 28px; flex: 0 0 28px; padding: 0; }
+.wb-dock-tab .wb-tab-close.vm-btn { border: 0; background: transparent; color: var(--vm-color-text-secondary); }
+.wb-dock-tab .wb-tab-close.vm-btn:hover { background: var(--vm-color-surface-chip); color: var(--vm-color-text-primary); }
+.wb-dock-tab .wb-tab-close .material-symbols-rounded { font-size: 14px; }
 .wb-dock-action:focus-visible, .wb-dock-tab .wb-tab:focus-visible { outline: 2px solid var(--vm-color-toolbar-tab-accent); outline-offset: -2px; }
 .wb-slot { position: absolute; top: 39px; left: 1px; right: 0; bottom: 0; }
 .wb-resize { position: absolute; touch-action: none; z-index: 2; background: transparent; }
