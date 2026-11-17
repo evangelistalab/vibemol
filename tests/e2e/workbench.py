@@ -315,11 +315,11 @@ def add_panel_tab(page, place, name, existing):
     assert tab.get_attribute('aria-selected') == 'true'
     close = dock.get_by_role('button', name=f'Close {name}', exact=True)
     more = dock.get_by_role('button', name=f'Window options for {name}', exact=True)
-    measured = dock.locator('.wb-dock-row').evaluate('''row => {
-      const [tabs, add, more] = row.children;
+    measured = dock.evaluate('''dock => {
+      const [tabs, add, more, slot] = dock.children;
       const active = tabs.querySelector('[aria-selected="true"]').parentElement;
       const [grip, title, close] = [...active.children].map(el => el.getBoundingClientRect());
-      return {height:row.getBoundingClientRect().height,
+      return {height:slot.getBoundingClientRect().top - dock.getBoundingClientRect().top - dock.clientTop,
         sameRow: Math.abs(grip.y + grip.height / 2 - (close.y + close.height / 2)) < 1,
         order:grip.right <= title.left && title.right <= close.left && add.getBoundingClientRect().right <= more.getBoundingClientRect().left,
         gripWidth:getComputedStyle(active.firstElementChild, '::before').width};

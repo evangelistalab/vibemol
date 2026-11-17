@@ -12,6 +12,8 @@
     .slice(0, 8).map(item => ({ name: item.name.slice(0, 48), layout: model.normalize(item.layout) })) : [];
   let focus = false, compactBeforeFocus = false, sidebarBeforeFocus = false, scheduled = false, saving = 0, lastRegionKey = '';
   let menuReturn = null, snapPlace = null, draggingId = null, narrow = global.innerWidth < 760;
+  let panelMenuAnchor = null, panelMenuDock = null;
+  const noPanels = document.createElement('p');
   const pending = new Set(state.open);
   const restorePositions = new Set(Object.keys(state.positions));
   const previousOpen = new Set();
@@ -174,23 +176,21 @@
   function dock(place, title) {
     const el = document.createElement('section'); el.className = 'wb-dock wb-dock--' + place;
     el.id = 'workbenchDock' + (place === 'right' ? 'Right' : 'Bottom'); el.setAttribute('aria-label', title); el.hidden = true;
-    const row = document.createElement('div'); row.className = 'wb-dock-row';
     const tabs = document.createElement('div'); tabs.className = 'wb-tabs wb-dock-tabs'; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', title);
-    const add = button('Add panel to ' + title.toLowerCase(), 'add', () => togglePanelsMenu(false, add, place), 'wb-dock-action');
+    const add = button('Add panel to ' + title.toLowerCase(), 'add', event => togglePanelsMenu(false, event.currentTarget, place), 'wb-dock-action');
     add.setAttribute('aria-haspopup', 'menu'); add.setAttribute('aria-controls', 'workbenchPanelsMenu'); add.setAttribute('aria-expanded', 'false');
     add.setAttribute('data-tooltip', 'Add panel');
-    const more = button('Panel options', 'more_horiz', () => {
+    const more = button('Panel options', 'more_horiz', event => {
       const id = tabs.querySelector('[aria-selected="true"]')?.dataset.window;
-      if (id) openWindowMenu(byId.get(id), more);
+      if (id) openWindowMenu(byId.get(id), event.currentTarget);
     }, 'wb-dock-action');
     more.setAttribute('aria-haspopup', 'dialog'); more.setAttribute('data-tooltip', 'Panel options');
-    row.append(tabs, add, more);
     const slot = document.createElement('div'); slot.className = 'wb-slot';
     const grip = document.createElement('div'); grip.className = 'wb-resize'; grip.tabIndex = 0;
     grip.setAttribute('role', 'separator'); grip.setAttribute('aria-label', 'Resize ' + title.toLowerCase());
     grip.setAttribute('aria-orientation', place === 'right' ? 'vertical' : 'horizontal');
     grip.setAttribute('aria-valuemin', place === 'right' ? '300' : '180'); grip.setAttribute('aria-valuemax', place === 'right' ? '680' : '480');
-    el.append(row, slot, grip); body.append(el); installResize(grip, place);
+    el.append(tabs, add, more, slot, grip); body.append(el); installResize(grip, place);
     return { el, tabs, add, more, slot, grip, key: '' };
   }
   const docks = { right: dock('right', 'Right dock'), bottom: dock('bottom', 'Bottom dock') };
@@ -202,7 +202,6 @@
   const panelsMenu = document.createElement('div'); panelsMenu.id = 'workbenchPanelsMenu';
   panelsMenu.className = 'vm-popover wb-menu wb-panels-menu'; panelsMenu.hidden = true;
   panelsMenu.setAttribute('role', 'menu'); panelsMenu.setAttribute('aria-label', panelsButton.ariaLabel); body.append(panelsMenu);
-  let panelMenuAnchor = panelsButton, panelMenuDock = null;
   for (const item of entries) {
     const row = button(item.label, 'check', () => {
       const dockPlace = panelMenuDock;
@@ -215,7 +214,7 @@
     label(row, item.label); const detail = label(row, '', 'wb-panel-location'); detail.id = 'wb-location-' + item.id;
     row.setAttribute('aria-describedby', detail.id); panelsMenu.append(row); item.menuRow = row; item.menuDetail = detail;
   }
-  const noPanels = document.createElement('p'); noPanels.className = 'wb-status'; noPanels.setAttribute('role', 'status');
+  noPanels.className = 'wb-status'; noPanels.setAttribute('role', 'status');
   noPanels.textContent = 'All available panels are open.'; noPanels.hidden = true; panelsMenu.append(noPanels);
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
@@ -429,9 +428,9 @@
   }
   function closePanelsMenu(restoreFocus = false) {
     const anchor = panelMenuAnchor;
-    panelsMenu.hidden = true; anchor.setAttribute('aria-expanded', 'false');
-    panelMenuAnchor = panelsButton; panelMenuDock = null;
-    if (restoreFocus) anchor.focus({ preventScroll: true });
+    panelsMenu.hidden = true; anchor?.setAttribute('aria-expanded', 'false');
+    panelMenuAnchor = null; panelMenuDock = null;
+    if (restoreFocus) anchor?.focus({ preventScroll: true });
   }
   function togglePanelsMenu(last = false, anchor = panelsButton, dockPlace = null) {
     const toggling = !panelsMenu.hidden && panelMenuAnchor === anchor;

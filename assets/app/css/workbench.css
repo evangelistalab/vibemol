@@ -82,7 +82,8 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .vm-workbench #toolbarShowBtn { position: static; inset: auto; flex-shrink: 0; box-shadow: none; }
 .wb-bar button:hover, .wb-menu button:hover { background: var(--vm-color-surface-chip); }
 .wb-bar button:focus-visible, .wb-menu button:focus-visible, .wb-tab:focus-visible { outline: none; box-shadow: var(--vm-shadow-focus-ring); }
-.wb-dock { position: fixed; z-index: 40; background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); box-sizing: border-box; }
+.wb-dock { position: fixed; z-index: 40; background: var(--vm-color-surface-panel); color: var(--vm-color-text-primary); box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 38px; align-items: center; padding-inline: 4px; }
+.wb-dock::before { content: ''; position: absolute; top: 38px; left: 0; right: 0; border-bottom: 1px solid var(--vm-color-border); pointer-events: none; }
 .wb-dock[hidden] { display: none; }
 .wb-dock--right { top: var(--wb-top); right: 0; bottom: 0; width: var(--wb-right); border-left: 1px solid var(--vm-color-border); }
 .wb-dock--bottom { left: var(--wb-left); right: var(--wb-right); bottom: 0; height: var(--wb-bottom); border-top: 1px solid var(--vm-color-border); }
@@ -90,8 +91,7 @@ body.vm-workbench { --wb-left: 0px; --wb-right: 0px; --wb-bottom: 0px; --wb-top:
 .wb-tab { flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border: 0; border-radius: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--vm-color-text-secondary); font: var(--vm-type-compact-control-weight) var(--vm-type-compact-control-size) var(--vm-font-sans); box-shadow: none; }
 .wb-tab[aria-selected='true'] { border-bottom-color: var(--vm-color-toolbar-tab-accent); color: var(--vm-color-text-primary); }
 .wb-tab:hover { background: var(--vm-color-surface-chip); }
-.wb-dock-row { display: flex; align-items: center; height: 38px; padding: 0 4px; border-bottom: 1px solid var(--vm-color-border); }
-.wb-dock-tabs { flex: 1; min-width: 0; align-items: center; padding: 0; border: 0; overflow: auto hidden; scrollbar-width: none; }
+.wb-dock-tabs { min-width: 0; align-items: center; padding: 0; border: 0; overflow: auto hidden; scrollbar-width: none; }
 .wb-dock-tab { display: flex; flex: 0 0 auto; align-items: center; height: 100%; }
 .wb-dock-tab .wb-tab { align-self: stretch; padding: 0 4px; white-space: nowrap; }
 .wb-tab-grip { display: grid; flex: 0 0 24px; height: 100%; place-items: center; cursor: grab; touch-action: none; }
