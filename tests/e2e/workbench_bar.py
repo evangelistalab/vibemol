@@ -173,7 +173,7 @@ def run(page):
     assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
     assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-haspopup') is None
     assert page.locator('#editAdaptiveAddAtomPopover').get_attribute('role') == 'tabpanel'
-    page.locator('#editAdaptiveAddAtomPopover').get_by_role('button', name='Close Build', exact=True).click()
+    page.get_by_role('button', name='Close Build', exact=True).click()
     assert page.locator('#editAdaptiveAddAtomBtn').get_attribute('aria-checked') == 'true'
     page.locator('#editTransformToolBtn').click()
 

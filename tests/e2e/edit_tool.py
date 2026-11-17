@@ -31,7 +31,7 @@ def tool(page, name):
 
 
 def close_build(page):
-    page.locator('#editAdaptiveAddAtomPopover').get_by_role('button',name='Close Build',exact=True).click()
+    page.get_by_role('button',name='Close Build',exact=True).click()
 
 
 def switch_tools_with_selection(page):
