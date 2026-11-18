@@ -94,8 +94,8 @@ body.vm-workbench {
   grid-template-rows: var(--wb-dock-tab-row); align-items: center; padding-inline: 4px;
 }
 .wb-dock::before { content: ''; position: absolute; top: var(--wb-dock-tab-row); left: 0; right: 0; border-bottom: 1px solid var(--vm-color-border); pointer-events: none; }
-.wb-dock::after {
-  content: ''; position: absolute; top: 1px; inset-inline: 4px; height: var(--wb-dock-rail-height); z-index: -1;
+.wb-dock-rail {
+  position: absolute; top: 1px; inset-inline: 4px; height: var(--wb-dock-rail-height); z-index: -1;
   border-radius: var(--vm-radius-md); background: var(--vm-color-surface-base); pointer-events: none;
 }
 .wb-dock[hidden] { display: none; }
@@ -113,7 +113,7 @@ body.vm-workbench {
 .wb-dock-tab {
   /* Reserve space for the grip, title, and close control in every state. */
   display: grid; grid-template-columns: 14px minmax(0, max-content) var(--wb-tab-height);
-  flex: 0 0 auto; align-items: center; box-sizing: border-box;
+  flex: 0 0 auto; align-items: center; box-sizing: border-box; isolation: isolate;
   height: var(--wb-tab-height); max-width: 100%; padding-inline: var(--wb-tab-inset); border-radius: var(--vm-radius-md);
 }
 .wb-dock-tab:has(> .wb-tab[aria-selected='true']) { background: var(--vm-color-surface-panel); }

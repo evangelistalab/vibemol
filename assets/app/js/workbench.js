@@ -190,7 +190,8 @@
     grip.setAttribute('role', 'separator'); grip.setAttribute('aria-label', 'Resize ' + title.toLowerCase());
     grip.setAttribute('aria-orientation', place === 'right' ? 'vertical' : 'horizontal');
     grip.setAttribute('aria-valuemin', place === 'right' ? '300' : '180'); grip.setAttribute('aria-valuemax', place === 'right' ? '680' : '480');
-    el.append(tabs, add, more, slot, grip); body.append(el); installResize(grip, place);
+    const rail = document.createElement('span'); rail.className = 'wb-dock-rail'; rail.setAttribute('aria-hidden', 'true');
+    el.append(tabs, add, more, slot, grip, rail); body.append(el); installResize(grip, place);
     return { el, tabs, add, more, slot, grip, key: '' };
   }
   const docks = { right: dock('right', 'Right dock'), bottom: dock('bottom', 'Bottom dock') };
