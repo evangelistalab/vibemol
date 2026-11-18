@@ -1,7 +1,7 @@
 # VibeMol
 
 Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client.
-It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes.json`, ORCA `.hess`, and Psi4 `.dat/.out` frequency outputs).
+It also accepts vibrational data from sidecar JSON (`.vib.json`, `.vmodes.json`, `.modes.json`), ORCA `.hess`, Psi4 `.dat/.out`, and CFOUR `.freq` files.
 
 ## Features
 - Surface rendering and cloud rendering modes
@@ -16,7 +16,7 @@ It also accepts vibrational sidecar inputs (`.vib.json`, `.vmodes.json`, `.modes
 - Portable preset save/load in the web UI
 - Complete session save/open, with browser autosave and recovery
 - Shared preset model with CLI (`window.VibeMolPreset` + Python client)
-- Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), and Psi4 vibration outputs (`.dat`, `.out`)
+- Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), Psi4 vibration outputs (`.dat`, `.out`), and CFOUR frequency files (`.freq`)
 - Click a scene's **Orbitals** header to edit all its surfaces together in Appearance: colors, iso value, Auto-iso, opacity, material, and surface/cloud mode. Hidden and uncomputed orbitals receive the settings too; Molden grids are still computed only when needed. Click an individual orbital to adjust it separately. Differing settings are marked **(mixed)**.
 
 ## Web Quick Start
@@ -30,6 +30,8 @@ Startup now shows the empty onboarding card. Use `Choose files` or `Open sample 
 XYZ files and pasted coordinates share the same import checks. If a structure has at least two atoms but no plausible bonds at angstrom distances, a popup offers conversion from bohr to angstroms. Choose **OK** to convert or **Cancel** to keep the original coordinates as angstroms. For trajectories, the check uses the first frame and conversion applies to every frame.
 
 The element column accepts symbols, atomic numbers, and numbered labels such as `C1` or `Cl2`. `D` and `T` import as hydrogen and use the standard hydrogen mass. `Bq` imports as a dummy atom (`X`, atomic number 0).
+
+Open or drop `cfour.freq` to load the molecule and animate its modes in **Frequencies**. The file contains a title, a `Coordinates (in bohr)` section with one `symbol nuclear-charge x y z` row per atom, and a `Normal Coordinates` section. Each mode block has one to three columns, with rows for symmetry labels, frequencies in cm⁻¹, and a `VIBRATION` entry per column. The atom rows that follow use the same order as the geometry, with one element symbol and a Cartesian displacement triplet in bohr for each column. Adjacent signed displacement values can touch, as in fixed-width CFOUR output. Imaginary frequencies can use a trailing `i` or a negative value. See the [example file](tests/fixtures/cfour.freq).
 
 ## Controls
 - **Scenes → +**: create an empty editable scene or create scenes from XYZ, Cube, or Molden files

@@ -128,13 +128,14 @@
    * Detect one high-level file kind by name/content.
    * @param {string} name
    * @param {string=} text
-   * @returns {'xyz'|'cube'|'two_component_cube'|'molden'|'vibration_payload'|'orca_hess'|'psi4_output'|'json'|'session'|'unknown'}
+   * @returns {'xyz'|'cube'|'two_component_cube'|'molden'|'vibration_payload'|'orca_hess'|'psi4_output'|'cfour_freq'|'json'|'session'|'unknown'}
    */
   function detectInputFileKind(name, text) {
     const lower = String(name || '').trim().toLowerCase();
     const body = String(text || '');
     if (lower.endsWith('.vibemol-session')) return 'session';
     if (lower.endsWith('.xyz')) return 'xyz';
+    if (lower.endsWith('.freq')) return 'cfour_freq';
     if (lower.endsWith('.molden') || /^\s*\[molden format\]/im.test(body)) return 'molden';
     if (lower.endsWith('.2ccube')) return 'two_component_cube';
     if (lower.endsWith('.cube') || lower.endsWith('.cub')) return 'cube';

@@ -1,6 +1,103 @@
 (function (global) {
   'use strict';
 
+  function parseCfourNumber(token) {
+    return /^[+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[de][+-]?\d+)?$/i.test(token)
+      ? Number(token.replace(/d/i, 'e')) : NaN;
+  }
+
+  function parseCfourFrequencyBundle(text, parseXYZ, bohrToAngstrom) {
+    const lines = text.split(/\r?\n/)
+      .map((line, index) => ({ text: line.trim(), number: index + 1 }))
+      .filter(line => line.text);
+    let cursor = 0;
+    function fail(line, message) {
+      const location = line ? 'line ' + line.number : 'end of file';
+      throw new Error('CFOUR integration at ' + location + ': ' + message);
+    }
+
+    const title = lines[cursor++];
+    const coordinateHeader = lines[cursor++];
+    if (!/^Coordinates\s*\(in bohr\)$/i.test(coordinateHeader?.text)) {
+      fail(coordinateHeader, 'expected "Coordinates (in bohr)" after the title.');
+    }
+    const atomRows = [];
+    while (cursor < lines.length && !/^Normal\s+Coordinates$/i.test(lines[cursor].text)) {
+      const line = lines[cursor++];
+      const [symbol, chargeToken, ...position] = line.text.split(/\s+/);
+      const nuclearCharge = parseCfourNumber(chargeToken);
+      const coords = position.map(token => parseCfourNumber(token) * bohrToAngstrom);
+      if (!/^[a-z]{1,2}$/i.test(symbol) || !Number.isInteger(nuclearCharge)
+          || coords.length !== 3 || !coords.every(Number.isFinite)) {
+        fail(line, 'expected an element symbol, nuclear charge, and three coordinates in bohr.');
+      }
+      atomRows.push({ line, symbol, nuclearCharge, coords });
+    }
+    if (!lines[cursor]) fail(null, 'missing "Normal Coordinates" header.');
+    if (!atomRows.length) fail(lines[cursor], 'no atoms in the geometry.');
+    cursor++;
+
+    // Reuse the atom-only volume and element validation, with known units.
+    const atomCount = atomRows.length;
+    const xyzRows = atomRows.map(({ symbol, coords }) => symbol + ' ' + coords.join(' '));
+    let vol;
+    try {
+      vol = parseXYZ([atomCount, 'CFOUR frequencies', ...xyzRows].join('\n'));
+    } catch (error) {
+      throw new Error('CFOUR integration: invalid reference geometry. ' + error.message);
+    }
+    vol.title = title.text;
+    vol.comment = title.text;
+    atomRows.forEach(({ line, symbol, nuclearCharge }, index) => {
+      const expected = vol.atoms[index].Z;
+      if (expected !== nuclearCharge) {
+        fail(line, 'nuclear charge ' + nuclearCharge + ' does not match ' + symbol + ' (expected ' + expected + ').');
+      }
+    });
+
+    const modes = [];
+    while (cursor < lines.length) {
+      const symmetry = lines[cursor++];
+      const labels = symmetry.text.split(/\s+/);
+      if (labels.length > 3) fail(symmetry, 'expected one to three symmetry labels.');
+      const frequencies = lines[cursor++];
+      const values = (frequencies?.text.split(/\s+/) || []).map(token => /i$/i.test(token)
+        ? -Math.abs(parseCfourNumber(token.slice(0, -1))) : parseCfourNumber(token));
+      if (values.length !== labels.length || !values.every(Number.isFinite)) {
+        fail(frequencies, 'expected ' + labels.length + ' frequencies in cm⁻¹.');
+      }
+      const description = lines[cursor++];
+      const types = description?.text.split(/\s+/) || [];
+      if (types.length !== labels.length || !types.every(type => /^vibration$/i.test(type))) {
+        fail(description, 'expected ' + labels.length + ' VIBRATION entries.');
+      }
+
+      const block = labels.map((label, index) => ({
+        label, frequencyCm1: values[index], displacements: new Float32Array(3 * atomCount),
+      }));
+      for (const [atomIndex, { symbol: expected }] of atomRows.entries()) {
+        const line = lines[cursor++];
+        if (!line) fail(null, 'missing displacements for atom ' + (atomIndex + 1) + ' (' + expected + ').');
+        // A full-width signed field can touch the previous value. Exponent signs
+        // follow D or E, so only signs after a digit or decimal point start a field.
+        const [symbol, ...components] = line.text.replace(/([\d.])([+-])/g, '$1 $2').split(/\s+/);
+        const coords = components.map(token => Math.fround(parseCfourNumber(token) * bohrToAngstrom));
+        if (symbol.toUpperCase() !== expected.toUpperCase()) {
+          fail(line, 'expected ' + expected + ' for atom ' + (atomIndex + 1) + ', found ' + symbol + '.');
+        }
+        if (coords.length !== 3 * block.length || !coords.every(Number.isFinite)) {
+          fail(line, 'expected ' + 3 * block.length + ' numeric displacement components for ' + symbol + '.');
+        }
+        block.forEach((mode, index) => {
+          mode.displacements.set(coords.slice(3 * index, 3 * index + 3), 3 * atomIndex);
+        });
+      }
+      modes.push(...block);
+    }
+    if (!modes.length) fail(null, 'no vibrational modes found.');
+    return { vol, payload: { atomCount, units: 'angstrom', modes } };
+  }
+
   function createFileLoader(deps) {
     const fetchImpl = deps.fetchImpl || (typeof fetch === 'function' ? fetch.bind(global) : null);
     function isCubeDebugLoggingEnabled() {
@@ -44,7 +141,7 @@
       if (kind === 'molden') return deps.parseMolden(text);
       if (kind === 'two_component_cube') return deps.parseTwoComponentCube(text);
       if (kind === 'cube') return deps.parseCube(text);
-      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, VibeMol session or preset, vibration JSON (.vib.json, .vmodes.json, .modes.json), ORCA .hess with its matching XYZ, or Psi4 vibrational output (.dat, .out, .output).');
+      throw new Error('Unsupported file format. Use XYZ, Cube (.cube, .cub, .2ccube), Molden, VibeMol session or preset, vibration JSON (.vib.json, .vmodes.json, .modes.json), ORCA .hess with its matching XYZ, Psi4 vibrational output (.dat, .out, .output), or CFOUR .freq.');
     }
 
     async function resolveXyzUnits(item) {
@@ -147,6 +244,9 @@
           if (fileKind === 'session' || (json && json.kind === 'vibemol.session')) {
             plan.sessions.push(Object.assign(item, { text }));
             continue;
+          } else if (fileKind === 'cfour_freq') {
+            const bundle = parseCfourFrequencyBundle(text, deps.parseXYZ, deps.BOHR_TO_ANG);
+            Object.assign(item, { vol: bundle.vol, vibrationPayload: bundle.payload, forceNewScene: true });
           } else if (fileKind === 'psi4_output' || deps.looksLikePsi4OutputText(text)) {
             const bundle = deps.parsePsi4OutputVibrationBundle(text, inputName);
             Object.assign(item, { vol: bundle.vol, vibrationPayload: bundle.payload, forceNewScene: true });
@@ -249,12 +349,13 @@
       const payloads = sidecars.concat(primaries.filter(item => successful.has(item) && item.vibrationPayload));
       let attached = 0;
       for (const item of payloads) {
-        // A Psi4 file contributes one successful input, including its modes.
+        // A standalone frequency file contributes one successful input, including its modes.
         successful.delete(item);
         await attempt(item, () => {
           const result = deps.attachVibrationPayloadToBestVolume(item.name, item.payload || item.vibrationPayload, {
             preferredIndex: item.recordIndex,
-            sourceStem: item.sourceStem,
+            // CFOUR includes its own geometry; an older same-name scene must not take its modes.
+            sourceStem: item.fileKind === 'cfour_freq' ? undefined : item.sourceStem,
           });
           if (!result.ok) throw new Error(result.error || 'Could not attach vibration payload.');
           attached++;
