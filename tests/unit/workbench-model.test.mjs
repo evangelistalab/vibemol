@@ -3,6 +3,28 @@ import assert from 'node:assert/strict';
 import { loadGlobalModule } from './load-global-module.mjs';
 const { VibeMolWorkbenchModel: model } = loadGlobalModule('assets/app/js/workbench-model.js');
 
+test('every panel defaults right and a saved placement takes precedence for that panel', () => {
+  const defaults = model.normalize().placements;
+  assert.deepEqual(JSON.parse(JSON.stringify(defaults)), {
+    subspacePanel: 'right', buildPanel: 'right', symmetryPanel: 'right',
+    moldenInspector: 'right', measurementsPanel: 'right', coordsPanel: 'right',
+    inspector: 'right', viewPanel: 'right', figurePanel: 'right',
+    trajectoryPanel: 'right', vibrationPanel: 'right', spinorInfo: 'right',
+  });
+  for (const id of Object.keys(defaults)) {
+    for (const placement of ['right', 'bottom', 'float']) {
+      const input = { placements: { [id]: placement } };
+      const normalized = model.normalize(input);
+      assert.equal(normalized.placements[id], placement);
+      for (const other of Object.keys(defaults).filter(key => key !== id)) {
+        assert.equal(normalized.placements[other], 'right');
+      }
+      assert.equal(JSON.stringify(model.normalize(normalized)), JSON.stringify(normalized));
+      assert.deepEqual(input, { placements: { [id]: placement } });
+    }
+  }
+});
+
 test('legacy inspectors merge into the active placement without duplicating or minimizing a visible panel', () => {
   const value = model.normalize({ open: ['displayInspector', 'styleStudio'], parked: ['displayInspector'],
     activeBottom: 'styleStudio', placements: { displayInspector: 'right', styleStudio: 'float' },
