@@ -78,7 +78,9 @@
       for (const [atomIndex, { symbol: expected }] of atomRows.entries()) {
         const line = lines[cursor++];
         if (!line) fail(null, 'missing displacements for atom ' + (atomIndex + 1) + ' (' + expected + ').');
-        const [symbol, ...components] = line.text.split(/\s+/);
+        // A full-width signed field can touch the previous value. Exponent signs
+        // follow D or E, so only signs after a digit or decimal point start a field.
+        const [symbol, ...components] = line.text.replace(/([\d.])([+-])/g, '$1 $2').split(/\s+/);
         const coords = components.map(token => Math.fround(parseCfourNumber(token) * bohrToAngstrom));
         if (symbol.toUpperCase() !== expected.toUpperCase()) {
           fail(line, 'expected ' + expected + ' for atom ' + (atomIndex + 1) + ', found ' + symbol + '.');

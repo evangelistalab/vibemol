@@ -116,7 +116,8 @@ test('CFOUR accepts a single-mode block, Fortran exponents, and imaginary freque
     },
   });
   const name = 'water.FREQ';
-  const result = await controller.handleFiles([new File([cfourText], name)]);
+  const text = cfourText.replace('O 0 0.07 0', 'O 0 7d-2+0');
+  const result = await controller.handleFiles([new File([text], name)]);
   assert.equal(result.ok, true, result.error);
   assert.deepEqual(Array.from(result.loadedNames), [name]);
   assert.equal(getVolumes().length, 1);
@@ -150,7 +151,8 @@ test('malformed CFOUR input preserves the working scene', async () => {
     [cfourText.replace('VIBRATION', 'ROTATION'), /expected 1 VIBRATION entries/],
     [cfourText.replace('O 0 0.07 0', 'H 0 0.07 0'), /expected O for atom 1, found H/],
     [cfourText.replace('O 0 0.07 0', 'O 0 NaN 0'), /expected 3 numeric displacement components/],
-    [cfourText.replace('O 0 0.07 0', 'O 0 0.07 0 1'), /expected 3 numeric displacement components/],
+    [cfourText.replace('O 0 0.07 0', 'O 0 0.07+0+1'), /expected 3 numeric displacement components/],
+    [cfourText.replace('O 0 0.07 0', 'O 0 0.07.0'), /expected 3 numeric displacement components/],
     [cfourText.slice(0, cfourText.lastIndexOf('\r\n')), /missing displacements for atom 3/],
   ];
   for (const [input, expectedError] of cases) {

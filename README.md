@@ -31,7 +31,7 @@ XYZ files and pasted coordinates share the same import checks. If a structure ha
 
 The element column accepts symbols, atomic numbers, and numbered labels such as `C1` or `Cl2`. `D` and `T` import as hydrogen and use the standard hydrogen mass. `Bq` imports as a dummy atom (`X`, atomic number 0).
 
-Open or drop `cfour.freq` to load the molecule and animate its modes in **Frequencies**. The file contains a title, a `Coordinates (in bohr)` section with one `symbol nuclear-charge x y z` row per atom, and a `Normal Coordinates` section. Each mode block has one to three columns, with rows for symmetry labels, frequencies in cm⁻¹, and a `VIBRATION` entry per column. The atom rows that follow use the same order as the geometry, with one element symbol and a Cartesian displacement triplet in bohr for each column. Imaginary frequencies can use a trailing `i` or a negative value. See the [example file](tests/fixtures/cfour.freq).
+Open or drop `cfour.freq` to load the molecule and animate its modes in **Frequencies**. The file contains a title, a `Coordinates (in bohr)` section with one `symbol nuclear-charge x y z` row per atom, and a `Normal Coordinates` section. Each mode block has one to three columns, with rows for symmetry labels, frequencies in cm⁻¹, and a `VIBRATION` entry per column. The atom rows that follow use the same order as the geometry, with one element symbol and a Cartesian displacement triplet in bohr for each column. Adjacent signed displacement values can touch, as in fixed-width CFOUR output. Imaginary frequencies can use a trailing `i` or a negative value. See the [example file](tests/fixtures/cfour.freq).
 
 ## Controls
 - **Scenes → +**: create an empty editable scene or create scenes from XYZ, Cube, or Molden files

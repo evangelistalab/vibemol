@@ -362,6 +362,7 @@ def cfour_frequencies(page, dialogs):
         'labels': ['A1', 'A1', 'B2'],
         'frequencies': [1659.6203, 3834.8942, 3958.1028],
         'firstHydrogenY': 1.43 * 0.529177210903,
+        'firstModeHydrogenY': -0.24 * 0.529177210903,
         'lastModeOxygenY': -0.07 * 0.529177210903,
     }
     actual = {
@@ -370,11 +371,13 @@ def cfour_frequencies(page, dialogs):
         'labels': [mode['label'] for mode in modes],
         'frequencies': [mode['frequencyCm1'] for mode in modes],
         'firstHydrogenY': volume['atoms'][1]['y'],
+        'firstModeHydrogenY': modes[0]['displacements'][4],
         'lastModeOxygenY': modes[2]['displacements'][1],
     }
     print(f'[CFOUR import] expected={expected} actual={actual}', flush=True)
     assert all(actual[key] == expected[key] for key in ('units', 'atomicNumbers', 'labels', 'frequencies'))
     assert math.isclose(actual['firstHydrogenY'], expected['firstHydrogenY'], abs_tol=1e-6)
+    assert math.isclose(actual['firstModeHydrogenY'], expected['firstModeHydrogenY'], abs_tol=1e-6)
     assert math.isclose(actual['lastModeOxygenY'], expected['lastModeOxygenY'], abs_tol=1e-6)
 
     if page.locator('#vibrationPanel').get_attribute('aria-hidden') != 'false':
