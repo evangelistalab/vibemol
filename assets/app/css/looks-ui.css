@@ -75,7 +75,7 @@
 #inspector.open { display: flex; }
 #inspector [hidden] { display: none !important; }
 #inspector .vm-properties-tabs { flex: none; }
-#inspector .vm-properties-tabs .wb-tab { flex: 1; justify-content: center; min-height: 38px; }
+#inspector .vm-properties-tabs .wb-tab { flex: 1; justify-content: center; }
 #inspector .vm-properties-body { min-height: 0; flex: 1; overflow: auto; padding: 14px; overscroll-behavior: contain; }
 #inspector #inspectorLook { padding: 0; }
 #inspector .vm-properties-scope { padding: 10px 14px; margin: 0; border-bottom: 1px solid var(--vm-color-border); }

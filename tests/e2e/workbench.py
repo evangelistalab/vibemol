@@ -11,8 +11,16 @@ def layout(page):
 
 
 def window_menu(page, panel, action):
-    panel.locator('.wb-window-menu').click()
+    place = panel.get_attribute('data-wb-placement')
+    if place == 'float':
+        panel.locator('.wb-window-menu').click()
+    else:
+        page.locator(f'#workbenchDock{place.title()} .wb-dock-action[aria-haspopup="dialog"]').click()
     page.locator('#workbenchMenu').get_by_role('button', name=action, exact=True).click()
+
+
+def dock_tab_grip(page, name):
+    return page.locator('.wb-dock-tab').filter(has=page.get_by_role('tab', name=name, exact=True)).locator('.wb-tab-grip')
 
 
 def open_panel(page, name):
@@ -177,9 +185,15 @@ def run(page):
     page.locator('#coordsUnitsBtn').click()
     assert 'bohr' in page.locator('#coordsPanelTitle').inner_text()
     page.locator('#moldenEnergyFilter').fill('0.1'); page.locator('#moldenEnergyFilter').press('Tab')
+    add_panel_tab(page, 'Right', 'Camera', 'Orbitals')
     before=p.snapshot(page)
     open_panel(page,'Properties')
     assert orbitals.is_hidden() and page.locator('#inspector').is_visible() and coordinates.is_visible()
+    subtab_heights = page.locator('#inspector .vm-properties-tabs [role="tab"]').evaluate_all(
+        'tabs => tabs.map(tab => tab.getBoundingClientRect().height)')
+    expected_subtab_heights = [28, 28]
+    print('[workbench Properties subtabs] ' + json.dumps({'actual':subtab_heights,'expected':expected_subtab_heights}), flush=True)
+    assert subtab_heights == expected_subtab_heights, (subtab_heights, expected_subtab_heights)
     assert 'moldenInspector' in layout(page)['open']
     page.get_by_role('tab',name='Orbitals',exact=True).click()
     assert page.locator('#moldenEnergyFilter').input_value()=='0.1'
@@ -196,8 +210,8 @@ def run(page):
     assert orbitals.get_attribute('data-wb-placement')=='right'
     assert page.locator('#workbenchSnap').is_hidden()
     # Tear the docked inspector out; cancelling a subsequent snap keeps it floating.
-    header=orbitals.locator('[data-vm-drag-handle]').bounding_box()
-    page.mouse.move(header['x']+18,header['y']+15);page.mouse.down()
+    tab_grip=dock_tab_grip(page,'Orbitals').bounding_box()
+    page.mouse.move(tab_grip['x']+tab_grip['width']/2,tab_grip['y']+tab_grip['height']/2);page.mouse.down()
     page.mouse.move(760,160,steps=10);page.mouse.up()
     assert orbitals.get_attribute('data-wb-placement')=='float'
     assert layout(page)['draggingId'] is None
@@ -263,6 +277,7 @@ def run(page):
     for name in ['Orbitals','Coordinates','Properties']:
         page.get_by_role('tab',name=name,exact=True).click()
         selected=page.locator('.wb-dock .wb-tab[aria-selected="true"]'); assert selected.get_attribute('aria-label')==name
+    add_panel_tab(page, 'Bottom', 'Camera', 'Properties')
     capture(page,'mobile')
     assert page.evaluate('() => __moldenGridBuilds')==[]
     page.set_viewport_size({'width':1600,'height':1000})
@@ -293,6 +308,125 @@ def run(page):
     print('[workbench] real inspectors, docks, snap preview, resizing, minimize, Focus, saved layouts, themes and mobile: passed',flush=True)
 
 
+def add_panel_tab(page, place, name, existing):
+    dock = page.locator(f'#workbenchDock{place}')
+    add = dock.get_by_role('button', name=f'Add panel to {place.lower()} dock')
+    add.focus()
+    page.keyboard.press('ArrowDown')
+    menu = page.get_by_role('menu', name=f'Add panel to {place.lower()} dock')
+    assert menu.get_by_role('menuitem', name=existing, exact=True).count() == 0
+    menu.get_by_role('menuitem', name=name, exact=True).click()
+    tab = dock.get_by_role('tab', name=name, exact=True)
+    assert tab.get_attribute('aria-selected') == 'true'
+    close = dock.get_by_role('button', name=f'Close {name}', exact=True)
+    more = dock.get_by_role('button', name=f'Window options for {name}', exact=True)
+    measured = dock.evaluate('''dock => {
+      const [tabs, add, more, slot] = dock.children;
+      const active = tabs.querySelector('[aria-selected="true"]').parentElement;
+      const groups = [...tabs.children].map(tab => [...tab.children].map(el => el.getBoundingClientRect()));
+      const [grip, title, close] = [...active.children].map(el => el.getBoundingClientRect());
+      return {height:slot.getBoundingClientRect().top - dock.getBoundingClientRect().top - dock.clientTop,
+        sameRow: Math.abs(grip.y + grip.height / 2 - (close.y + close.height / 2)) < 1,
+        order:grip.right <= title.left && title.right <= close.left && add.getBoundingClientRect().right <= more.getBoundingClientRect().left,
+        gap:Math.min(...groups.slice(1).map(([nextGrip], i) => nextGrip.left - groups[i][2].right)),
+        activeFillMatchesMode:getComputedStyle(active).backgroundColor === getComputedStyle(document.querySelector('.wb-mode-highlight')).backgroundColor,
+        gripWidth:getComputedStyle(active.firstElementChild, '::before').width,
+        closeIconSize:getComputedStyle(active.querySelector('.wb-tab-close .material-symbols-rounded')).fontSize,
+        closeTargetWidth:close.width};
+    }''')
+    expected = {'height':35, 'sameRow':True, 'order':True, 'gap':8, 'activeFillMatchesMode':True,
+                'gripWidth':'4px', 'closeIconSize':'14px', 'closeTargetWidth':28}
+    print('[workbench panel tabs] ' + json.dumps({'place':place,'actual':measured,'expected':expected}), flush=True)
+    assert measured == expected and more.is_visible(), (measured, expected)
+    grip_offset = '''tab => {
+      const group = tab.parentElement;
+      return group.firstElementChild.getBoundingClientRect().left - group.getBoundingClientRect().left;
+    }'''
+    selected_grip = tab.evaluate(grip_offset)
+    dock.get_by_role('tab', name=existing, exact=True).click()
+    deselected_grip = tab.evaluate(grip_offset)
+    print('[workbench grip offset] ' + json.dumps({'place':place,'actual':deselected_grip,'expected':selected_grip}), flush=True)
+    assert deselected_grip == selected_grip, (deselected_grip, selected_grip)
+    assert close.is_visible()
+    close.click()
+    assert tab.count() == 0 and dock.get_by_role('tab', name=existing, exact=True).get_attribute('aria-selected') == 'true'
+
+
+def reset_options(page):
+    def check(label, actual, expected):
+        print('[workbench reset] ' + json.dumps({'check': label, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected, (label, actual, expected)
+
+    preferences = page.locator('#workbenchPreferences')
+    menu = page.get_by_role('dialog', name='App settings')
+    reset = menu.get_by_role('button', name='Reset all options', exact=True)
+    keys = ['view.projection', 'global.showAxes', 'global.backgroundColor', 'global.accentColor', 'surface.opacity']
+    settings = lambda: page.evaluate('keys => Object.fromEntries(keys.map(key => [key, VibeMolPreset.export().settings[key]]))', keys)
+    prefs = lambda: page.evaluate('() => [document.documentElement.dataset.theme, VibeMolPrefs.getFontPair()]')
+    atoms = lambda: page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+    saved_looks = lambda: page.evaluate('() => VibeMolAppearanceLooks.snapshot().saved.map(look => look.name)')
+    stored_default = lambda: page.evaluate('() => localStorage.getItem("vibemol.defaultLook.v1") !== null')
+    defaults = settings()
+    loaded = p.load(page, [{'name':'reset.xyz', 'text':'2\nHydrogen\nH 0 0 0\nH 0.74 0 0\n'}])
+    check('load molecule', loaded['ok'], True)
+    original_atoms = atoms()
+    page.locator('#themeToggleShell').click()
+    preferences.click()
+    menu.get_by_role('radio', name='IBM Plex').click()
+    page.keyboard.press('Escape')
+    page.evaluate('() => VibeMolAppearanceLooks.openStudio()')
+    page.locator('#lookSave').click()
+    page.locator('#lookNameInput').fill('Saved look')
+    page.locator('#lookNameInput').press('Enter')
+    page.locator('#lookSaveDetails').evaluate('el => { el.open = true; }')
+    page.locator('#lookDefault').click()
+    check('saved Look and startup override', [saved_looks(), stored_default()], [['Saved look'], True])
+    page.locator('#workbenchArrange').click()
+    page.get_by_role('textbox',name='Workspace name').fill('Saved layout')
+    page.get_by_role('button',name='Save workspace',exact=True).click()
+    page.keyboard.press('Escape')
+    page.evaluate('''() => VibeMolPreset.import({kind:"vibemol.preset", presetVersion:1, settings:{
+        "global.showAxes":false, "view.projection":"orthographic", "global.backgroundColor":"#314159",
+        "global.accentColor":"#197a5d", "surface.opacity":0.44,
+    }})''')
+    changed = settings()
+    check('nondefault preferences and appearance', [prefs(), changed['global.backgroundColor'], changed['global.accentColor'], changed['surface.opacity']],
+          [['dark', 'plex'], '#314159', '#197a5d', 0.44])
+
+    preferences.click()
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    reset.click()
+    check('cancel keeps preferences and appearance', [prefs(), settings()], [['dark', 'plex'], changed])
+    page.once('dialog', lambda dialog: dialog.accept())
+    reset.click()
+    check('reset applies defaults', [prefs(), settings()], [['light', 'geist'], defaults])
+    check('loaded molecule and saved Look survive', [atoms(), saved_looks(), stored_default()], [original_atoms, ['Saved look'], False])
+    check('default dock and focus return', [layout(page)['open'], preferences.evaluate('el => el === document.activeElement')], [[], True])
+    page.locator('#themeToggleShell').click()
+    check('accent follows dark theme again', settings()['global.accentColor'], '#6b9bff')
+    page.locator('#themeToggleShell').click()
+
+    page.reload()
+    page.wait_for_function('() => window.VibeMolWorkbench')
+    check('defaults and saved Look persist', [prefs(), settings(), saved_looks(), stored_default()], [['light', 'geist'], defaults, ['Saved look'], False])
+    page.locator('#workbenchArrange').click()
+    check('named layout survives', page.get_by_role('button', name='Saved layout', exact=True).is_visible(), True)
+    page.keyboard.press('Escape')
+
+    page.set_viewport_size({'width':390, 'height':740})
+    page.wait_for_function('() => document.body.dataset.wbCompact === "true"')
+    if preferences.is_visible():
+        preferences.click()
+    else:
+        page.locator('#workbenchOverflowBtn').click()
+        page.get_by_role('menuitem', name='App settings').click()
+    menu.get_by_role('radio', name='IBM Plex').click()
+    check('mobile setting changed', prefs(), ['light', 'plex'])
+    page.once('dialog', lambda dialog: dialog.accept())
+    reset.click()
+    check('mobile reset', [prefs(), menu.is_hidden()], [['light', 'geist'], True])
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True)
@@ -302,7 +436,6 @@ def main():
             page=context.new_page(); errors=[]; consoles=[]
             page.on('pageerror',lambda e:errors.append(str(e)))
             page.on('console',lambda m:consoles.append(m.text) if m.type=='error' else None)
-            page.on('dialog',lambda d:d.dismiss())
             try:
                 page.goto(url+'?workspaceLab=0&appearanceStudy=1');page.wait_for_function('() => VibeMolAppearanceLooks')
                 assert page.evaluate('() => typeof VibeMolWorkbench')=='undefined'
@@ -312,6 +445,15 @@ def main():
                 run(page);modes(page);assert not errors,errors
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-failure',errors,consoles);raise
+            finally:context.close()
+            context=browser.new_context(viewport={'width':1600,'height':1000})
+            try:
+                page=context.new_page()
+                errors=[]; page.on('pageerror',lambda e:errors.append(str(e)))
+                page.goto(url+'?workspaceLab=1');page.wait_for_function('() => window.VibeMolWorkbench')
+                reset_options(page);assert not errors,errors
+            except Exception:
+                p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-reset-failure',errors,[]);raise
             finally:context.close()
         finally:browser.close()
 

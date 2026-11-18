@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Walk the water tutorial through native desktop and mobile controls."""
 import json
+import math
 
 import premerge as p
 from checkpoint_contract import require_phase_counts
@@ -76,6 +77,67 @@ def practice_clipboard(page, guide, mobile):
     assert p.snapshot(page) == before, {'actual': p.snapshot(page), 'expected': before}
     page.screenshot(path=str(p.ARTIFACTS / ('tutorial-clipboard-mobile.png' if mobile else 'tutorial-clipboard-desktop.png')))
     guide.get_by_role('button', name='Continue', exact=True).click()
+
+
+def practice_orientation(page, guide, mobile):
+    def action(selector):
+        button = page.locator(selector)
+        if button.is_visible():
+            check_target(page, selector)
+            button.tap() if mobile else button.click()
+        else:
+            check_target(page, '#workbenchOverflowBtn')
+            page.locator('#workbenchOverflowBtn').tap() if mobile else page.locator('#workbenchOverflowBtn').click()
+            label = button.get_attribute('aria-label')
+            check_target(page, f'#workbenchOverflowMenu button[aria-label="{label}"]')
+            row = page.get_by_role('menuitem', name=label, exact=True)
+            row.tap() if mobile else row.click()
+
+    def atoms():
+        return page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+
+    def distances(data):
+        points = [tuple(atom[axis] for axis in 'xyz') for atom in data]
+        return [math.dist(points[i], points[j]) for i, j in ((0, 1), (0, 2), (1, 2))]
+
+    expect(guide.get_by_role('heading')).to_have_text('Position the molecule')
+    original = atoms()
+    action('#centerMassBtn')
+    expect(guide.get_by_text('Choose Align Principal Axes', exact=False)).to_be_visible()
+    centered = atoms()
+    masses = [15.9994, 1.00784, 1.00784]
+    center = [sum(mass * atom[axis] for mass, atom in zip(masses, centered)) / sum(masses) for axis in 'xyz']
+    action('#alignInertiaBtn')
+    expect(guide.get_by_role('heading')).to_have_text('Use the axis gizmo')
+    aligned = atoms()
+    cross_terms = [sum(mass * atom[i] * atom[j] for mass, atom in zip(masses, aligned)) for i, j in ('xy', 'xz', 'yz')]
+    original_distances = distances(original)
+    assert max(map(abs, center)) < 1e-6, {'actual': center, 'expected': [0, 0, 0], 'mobile': mobile}
+    assert aligned != centered, {'actual': aligned, 'before': centered, 'mobile': mobile}
+    assert max(map(abs, cross_terms)) < 1e-6, {'actual': cross_terms, 'expected': [0, 0, 0], 'mobile': mobile}
+    for result in (centered, aligned):
+        actual_distances = distances(result)
+        assert all(math.isclose(a, b, abs_tol=1e-8) for a, b in zip(actual_distances, original_distances)), {
+            'actual': actual_distances, 'expected': original_distances, 'mobile': mobile}
+
+    if not mobile:
+        axes = panel_control(page, 'viewPanel', '#showAxes')
+        axes.uncheck()
+        expect(guide.get_by_text('Turn on Axes in Camera', exact=False)).to_be_visible()
+        check_target(page, '#showAxes')
+        axes.check()
+    check_target(page, '#viewAxisZBtn')
+    z = page.get_by_role('button', name='View from +Z', exact=True)
+    z.tap() if mobile else z.click()
+    expect(guide.get_by_text('return to an angled view', exact=False)).to_be_visible()
+    camera = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+    direction = [camera['camera'][axis] - camera['target'][axis] for axis in 'xyz']
+    length = math.hypot(*direction)
+    direction = [value / length for value in direction]
+    assert math.dist(direction, [0, 0, 1]) < 1e-5, {'actual': direction, 'expected': [0, 0, 1], 'mobile': mobile}
+    assert atoms() == aligned, {'actual': atoms(), 'expected': aligned, 'mobile': mobile}
+    panel_control(page, 'viewPanel', '#viewReset').click()
+    return {'centerOfMass': center, 'inertiaCrossTerms': cross_terms, 'cameraDirection': direction}
 
 
 def lesson(page, url, mobile):
@@ -164,6 +226,7 @@ def lesson(page, url, mobile):
     expect(guide.get_by_text('Switch the coordinate units back.')).to_be_visible()
     units.click()
     practice_clipboard(page, guide, mobile)
+    orientation = practice_orientation(page, guide, mobile)
     expect(guide.get_by_role('heading')).to_have_text('Measure a distance')
 
     page.locator('#modeMeasureBtn').click()
@@ -198,7 +261,8 @@ def lesson(page, url, mobile):
     expect(guide).to_have_count(0)
     assert page.evaluate('VibeMolTesting.getMeasurementSnapshot().rows') == measurement
     return {'mobile': mobile, 'lookControl': 'style dropdown' if mobile else 'preview tile',
-            'lookRestored': restored == before, 'xyzClipboardRows': 3, 'actual': actual, 'expected': expected}
+            'lookRestored': restored == before, 'xyzClipboardRows': 3, 'orientation': orientation,
+            'actual': actual, 'expected': expected}
 
 
 def run(browser, url):

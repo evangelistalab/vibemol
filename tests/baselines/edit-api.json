@@ -1888,6 +1888,85 @@
           "inputs": []
         }
       ]
+    },
+    "resetSceneDisplayOptions": {
+      "before": null,
+      "after": "49c371a8684a8174789c9e745b40c18b29db07963741624c58a2bf4d54f5d6bf",
+      "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "resetSceneDisplayOptions",
+          "count": 5,
+          "inputs": [
+            "createCubeAppearance",
+            "getAllLookLayers",
+            "getSurfaceDefaultsForNewLayer",
+            "persistActiveCubeLayerState",
+            "sceneGraphController"
+          ]
+        }
+      ]
+    },
+    "resetAppOptions": {
+      "before": null,
+      "after": "e04fa3192945debdc6d8adb5e3c80c983f56b1d6e56a99846bfad8fd39264631",
+      "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "resetAppOptions",
+          "count": 10,
+          "inputs": [
+            "applyUiTheme",
+            "clearAppearancePresetAutosaveStorage",
+            "fileLoaderController",
+            "getSessionBusyReason",
+            "looksUi",
+            "markSessionChanged",
+            "persistUiTheme",
+            "resetVisualizationOptions",
+            "sessionController",
+            "setFontPair"
+          ]
+        }
+      ]
+    },
+    "resetVisualizationOptions": {
+      "before": null,
+      "after": "62e9a702315d2c51e5bb7d096050932154431c5cfb06d6e85ed90793ccfcec6f",
+      "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "resetVisualizationOptions",
+          "count": 10,
+          "inputs": [
+            "PRESET_MODE",
+            "applyMoleculeStyleUiState",
+            "defaultAppOptions",
+            "presetController",
+            "rebuildScene",
+            "refreshViewUI",
+            "resetSceneDisplayOptions",
+            "syncAppearancePersistenceUi",
+            "updateRenderModeUI",
+            "updateSurfBtn"
+          ]
+        }
+      ]
+    },
+    "statement:defaultAppOptions": {
+      "before": null,
+      "after": "5906921e93e5c4f7e345843615104a2041b31a3f8eaa7bc31a691023468dd61c",
+      "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": []
+    },
+    "statement:workbenchHostResetOptions": {
+      "before": "77ec5152fb005ea9a6fc488c7a9ac40ec7d4096293f4c2f0b2a3e7bc4c94ae43",
+      "after": "8d2aca1c22432b8d231727c1918bbb7de5dcb1c787c0e0390f67abd2caf2ac07",
+      "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": []
     }
   },
   "placementChanges": {

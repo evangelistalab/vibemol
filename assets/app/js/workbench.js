@@ -12,6 +12,8 @@
     .slice(0, 8).map(item => ({ name: item.name.slice(0, 48), layout: model.normalize(item.layout) })) : [];
   let focus = false, compactBeforeFocus = false, sidebarBeforeFocus = false, scheduled = false, saving = 0, lastRegionKey = '';
   let menuReturn = null, snapPlace = null, draggingId = null, narrow = global.innerWidth < 760;
+  let panelMenuAnchor = null, panelMenuDock = null;
+  const noPanels = document.createElement('p');
   const pending = new Set(state.open);
   const restorePositions = new Set(Object.keys(state.positions));
   const previousOpen = new Set();
@@ -174,14 +176,23 @@
   function dock(place, title) {
     const el = document.createElement('section'); el.className = 'wb-dock wb-dock--' + place;
     el.id = 'workbenchDock' + (place === 'right' ? 'Right' : 'Bottom'); el.setAttribute('aria-label', title); el.hidden = true;
-    const tabs = document.createElement('div'); tabs.className = 'wb-tabs'; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', title);
+    const tabs = document.createElement('div'); tabs.className = 'wb-tabs wb-dock-tabs'; tabs.setAttribute('role', 'tablist'); tabs.setAttribute('aria-label', title);
+    const add = button('Add panel to ' + title.toLowerCase(), 'add', event => togglePanelsMenu(false, event.currentTarget, place), 'wb-dock-action');
+    add.setAttribute('aria-haspopup', 'menu'); add.setAttribute('aria-controls', 'workbenchPanelsMenu'); add.setAttribute('aria-expanded', 'false');
+    add.setAttribute('data-tooltip', 'Add panel');
+    const more = button('Panel options', 'more_horiz', event => {
+      const id = tabs.querySelector('[aria-selected="true"]')?.dataset.window;
+      if (id) openWindowMenu(byId.get(id), event.currentTarget);
+    }, 'wb-dock-action');
+    more.setAttribute('aria-haspopup', 'dialog'); more.setAttribute('data-tooltip', 'Panel options');
     const slot = document.createElement('div'); slot.className = 'wb-slot';
     const grip = document.createElement('div'); grip.className = 'wb-resize'; grip.tabIndex = 0;
     grip.setAttribute('role', 'separator'); grip.setAttribute('aria-label', 'Resize ' + title.toLowerCase());
     grip.setAttribute('aria-orientation', place === 'right' ? 'vertical' : 'horizontal');
     grip.setAttribute('aria-valuemin', place === 'right' ? '300' : '180'); grip.setAttribute('aria-valuemax', place === 'right' ? '680' : '480');
-    el.append(tabs, slot, grip); body.append(el); installResize(grip, place);
-    return { el, tabs, slot, grip, key: '' };
+    const rail = document.createElement('span'); rail.className = 'wb-dock-rail'; rail.setAttribute('aria-hidden', 'true');
+    el.append(tabs, add, more, slot, grip, rail); body.append(el); installResize(grip, place);
+    return { el, tabs, add, more, slot, grip, key: '' };
   }
   const docks = { right: dock('right', 'Right dock'), bottom: dock('bottom', 'Bottom dock') };
   const menu = document.createElement('section'); menu.id = 'workbenchMenu'; menu.className = 'vm-popover wb-menu';
@@ -191,16 +202,21 @@
   // shell with menu keyboard behavior instead of introducing table semantics.
   const panelsMenu = document.createElement('div'); panelsMenu.id = 'workbenchPanelsMenu';
   panelsMenu.className = 'vm-popover wb-menu wb-panels-menu'; panelsMenu.hidden = true;
-  panelsMenu.setAttribute('role', 'menu'); panelsMenu.setAttribute('aria-labelledby', panelsButton.id); body.append(panelsMenu);
+  panelsMenu.setAttribute('role', 'menu'); panelsMenu.setAttribute('aria-label', panelsButton.ariaLabel); body.append(panelsMenu);
   for (const item of entries) {
     const row = button(item.label, 'check', () => {
+      const dockPlace = panelMenuDock;
       closePanelsMenu();
-      if (windowStates.get(item.id).open) close(item.id); else reveal(item.id);
+      if (dockPlace) { place(item.id, dockPlace); reveal(item.id); }
+      else if (windowStates.get(item.id).open) close(item.id);
+      else reveal(item.id);
     }, 'wb-panel-option');
     row.setAttribute('role', 'menuitemcheckbox'); row.dataset.window = item.id; row.tabIndex = -1;
     label(row, item.label); const detail = label(row, '', 'wb-panel-location'); detail.id = 'wb-location-' + item.id;
     row.setAttribute('aria-describedby', detail.id); panelsMenu.append(row); item.menuRow = row; item.menuDetail = detail;
   }
+  noPanels.className = 'wb-status'; noPanels.setAttribute('role', 'status');
+  noPanels.textContent = 'All available panels are open.'; noPanels.hidden = true; panelsMenu.append(noPanels);
   const snap = document.createElement('div'); snap.className = 'wb-snap'; snap.id = 'workbenchSnap'; snap.hidden = true;
   const snapLabel = label(snap, ''); body.append(snap);
 
@@ -244,11 +260,18 @@
     state.parked = state.parked.filter(value => value !== id); pending.delete(id);
     item.entry.setOpen(true); activate(id); sync();
     if (takeFocus) {
-      const target = effectivePlace(id) === 'float' ? item.root.querySelector('[data-vm-drag-handle]') : document.getElementById('wb-tab-' + id);
+      const floating = effectivePlace(id) === 'float';
+      const target = floating ? item.header : document.getElementById('wb-tab-' + id);
+      if (!floating) target?.parentElement.scrollIntoView({ block: 'nearest', inline: 'nearest' });
       target?.focus({ preventScroll: true });
     }
   }
-  function close(id) { id = model.resolveId(id); pending.delete(id); byId.get(id)?.entry.setOpen(false); state.parked = state.parked.filter(value => value !== id); sync(); panelsButton.focus({ preventScroll: true }); }
+  function close(id, returnDock) {
+    id = model.resolveId(id); pending.delete(id); byId.get(id)?.entry.setOpen(false);
+    state.parked = state.parked.filter(value => value !== id); sync();
+    const next = returnDock && docks[returnDock].tabs.querySelector('[aria-selected="true"]');
+    (next || panelsButton).focus({ preventScroll: true });
+  }
   function park(id) {
     id = model.resolveId(id); if (!isParked(id)) state.parked.push(id); closeMenu(); sync(); panelsButton.focus({ preventScroll: true }); }
   function place(id, placement, { drag = false } = {}) {
@@ -269,13 +292,25 @@
     if (key !== target.key) {
       target.tabs.replaceChildren(); target.key = key;
       for (const item of items) {
-        const tab = button(item.label, item.icon, () => reveal(item.id, false), 'wb-tab');
+        const entry = document.createElement('div'); entry.className = 'wb-dock-tab'; entry.setAttribute('role', 'presentation');
+        const grip = document.createElement('span'); grip.className = 'wb-tab-grip'; grip.setAttribute('aria-hidden', 'true');
+        grip.setAttribute('data-tooltip', 'Drag to move ' + item.label);
+        grip.addEventListener('pointerdown', event => {
+          if (compact() || event.button !== 0 || !event.isPrimary) return;
+          reveal(item.id, false);
+          global.VibeMolFloatingPanels.get(item.root)?.startDrag(event, item.header);
+        });
+        const tab = button(item.label, null, () => reveal(item.id), 'wb-tab');
         tab.setAttribute('role', 'tab'); tab.dataset.window = item.id; tab.id = 'wb-tab-' + item.id;
-        tab.setAttribute('aria-controls', item.panel); label(tab, item.label); target.tabs.append(tab);
+        tab.setAttribute('aria-controls', item.panel); label(tab, item.label);
+        const closeTab = button('Close ' + item.label, 'close', () => close(item.id, place), 'wb-dock-action wb-tab-close');
+        closeTab.setAttribute('data-tooltip', 'Close ' + item.label);
+        entry.append(grip, tab, closeTab); target.tabs.append(entry);
       }
     }
-    for (const tab of target.tabs.children) {
+    for (const tab of target.tabs.querySelectorAll('[role="tab"]')) {
       const selected = windowStates.get(tab.dataset.window).active; tab.setAttribute('aria-selected', String(selected)); tab.tabIndex = selected ? 0 : -1;
+      if (selected) target.more.setAttribute('aria-label', 'Window options for ' + byId.get(tab.dataset.window).label);
     }
   }
   function sync() {
@@ -339,9 +374,14 @@
       item.root.dataset.wbHidden = String(hidden); item.root.dataset.wbPlacement = placement;
       item.root.toggleAttribute('data-vm-floating-docked', placement !== 'float');
       item.root.toggleAttribute('data-vm-floating-drag-disabled', isCompact);
-      const handle = item.root.querySelector('[data-vm-drag-handle]');
-      handle?.setAttribute('aria-label', isCompact ? item.label + ' window' : 'Move ' + item.label);
-      handle?.setAttribute('data-tooltip', isCompact ? 'Use window options to minimize or close.' : 'Drag to move. Release near the right or bottom edge to dock.');
+      const handle = item.header;
+      if (handle) {
+        const floating = placement === 'float';
+        handle.tabIndex = floating ? 0 : -1;
+        handle.setAttribute('aria-label', floating ? 'Move ' + item.label : item.label + ' controls');
+        if (floating) handle.setAttribute('data-tooltip', 'Drag to move. Release near the right or bottom edge to dock.');
+        else handle.removeAttribute('data-tooltip');
+      }
       if (placement !== 'float') {
         item.root.setAttribute('role', 'tabpanel'); item.root.setAttribute('aria-labelledby', 'wb-tab-' + item.id);
       } else {
@@ -365,7 +405,7 @@
     persist();
   }
 
-  function panelRows() { return entries.filter(available).map(item => item.menuRow); }
+  function panelRows() { return entries.map(item => item.menuRow).filter(row => !row.hidden); }
   function focusPanelRow(row) {
     for (const item of entries) item.menuRow.tabIndex = item.menuRow === row ? 0 : -1;
     row?.focus({ preventScroll: true }); row?.scrollIntoView({ block: 'nearest' });
@@ -374,27 +414,38 @@
     let count = 0;
     for (const item of entries) {
       const value = windowStates.get(item.id), visible = available(item);
-      item.menuRow.hidden = !visible;
-      item.menuRow.setAttribute('aria-checked', String(value.open));
+      item.menuRow.hidden = !visible || !!(panelMenuDock && value.open);
+      item.menuRow.setAttribute('role', panelMenuDock ? 'menuitem' : 'menuitemcheckbox');
+      if (panelMenuDock) item.menuRow.removeAttribute('aria-checked');
+      else item.menuRow.setAttribute('aria-checked', String(value.open));
       item.menuDetail.textContent = value.open ? '· ' + (value.dock === 'right' ? 'Right' : value.dock === 'bottom' ? 'Bottom' : 'Floating')
         : isParked(item.id) ? '· Minimized' : '';
       if (visible && value.open) count++;
     }
     panelsCount.textContent = count; panelsCount.hidden = !count;
     panelsCount.setAttribute('aria-label', count + (count === 1 ? ' panel open' : ' panels open'));
+    noPanels.hidden = !panelMenuDock || !!panelRows().length;
     if (!panelsMenu.hidden && document.activeElement?.hidden && panelsMenu.contains(document.activeElement)) focusPanelRow(panelRows()[0]);
   }
   function closePanelsMenu(restoreFocus = false) {
-    panelsMenu.hidden = true; panelsButton.setAttribute('aria-expanded', 'false');
-    if (restoreFocus) panelsButton.focus({ preventScroll: true });
+    const anchor = panelMenuAnchor;
+    panelsMenu.hidden = true; anchor?.setAttribute('aria-expanded', 'false');
+    panelMenuAnchor = null; panelMenuDock = null;
+    if (restoreFocus) anchor?.focus({ preventScroll: true });
   }
-  function togglePanelsMenu(last = false) {
-    if (!panelsMenu.hidden) { closePanelsMenu(true); return; }
-    closeOverflow(); closeMenu(); syncPanelsMenu(); panelsMenu.hidden = false; panelsButton.setAttribute('aria-expanded', 'true');
-    const trigger = panelsButton.getBoundingClientRect();
+  function togglePanelsMenu(last = false, anchor = panelsButton, dockPlace = null) {
+    const toggling = !panelsMenu.hidden && panelMenuAnchor === anchor;
+    closePanelsMenu(toggling);
+    if (toggling) return;
+    closeOverflow(); closeMenu(); panelMenuAnchor = anchor; panelMenuDock = dockPlace;
+    panelsMenu.setAttribute('aria-label', anchor.ariaLabel);
+    syncPanelsMenu(); panelsMenu.hidden = false; anchor.setAttribute('aria-expanded', 'true');
+    const trigger = anchor.getBoundingClientRect();
     panelsMenu.style.left = Math.max(12, Math.min(innerWidth - panelsMenu.offsetWidth - 12, trigger.left)) + 'px';
-    panelsMenu.style.top = trigger.bottom + 8 + 'px';
-    panelsMenu.style.maxHeight = Math.max(80, innerHeight - trigger.bottom - 20) + 'px';
+    const below = innerHeight - trigger.bottom - 20;
+    const above = dockPlace && below < Math.min(panelsMenu.scrollHeight, trigger.top - 20);
+    panelsMenu.style.maxHeight = Math.max(80, above ? trigger.top - 20 : below) + 'px';
+    panelsMenu.style.top = (above ? trigger.top - panelsMenu.offsetHeight - 8 : trigger.bottom + 8) + 'px';
     const rows = panelRows(); focusPanelRow(last ? rows[rows.length - 1] : rows[0]);
   }
   function closeMenu(restoreFocus = false) {
@@ -490,6 +541,23 @@
       closeMenu();
       global.VibeMolPreset.download();
     }, 'Save the current visualization settings as JSON');
+    const resetStatus = document.createElement('div');
+    resetStatus.className = 'wb-status';
+    resetStatus.setAttribute('role', 'status');
+    menuAction('Reset all options', 'restart_alt', () => {
+      if (!global.confirm('Reset the theme, typeface, visualization settings, and window layout? Loaded files, measurements, and your saved looks, materials, and layouts will be kept.')) return;
+      try {
+        host.properties.resetOptions();
+      } catch (error) {
+        resetStatus.textContent = error.message;
+        return;
+      }
+      host.properties.setTab('object');
+      preset('explore');
+      host.setSidebarCollapsed(innerWidth < 760);
+      closeMenu(true);
+    }, 'Restore the app defaults');
+    menu.append(resetStatus);
     finishMenu();
   }
   function setFocus(value) {
@@ -526,7 +594,7 @@
   for (const item of entries) {
     item.role = item.root.getAttribute('role'); item.labelledBy = item.root.getAttribute('aria-labelledby');
     item.root.dataset.wbPanel = item.id;
-    const header = item.root.querySelector('[data-vm-drag-handle]');
+    const header = item.header = item.root.querySelector('[data-vm-drag-handle]');
     if (item.mode === 'edit') {
       item.role = 'dialog'; item.root.setAttribute('aria-label', item.label);
       if (item.id === 'symmetryPanel') {
@@ -544,8 +612,11 @@
     const windowMenu = button('Window options for ' + item.label, 'more_horiz', () => openWindowMenu(item, windowMenu), 'wb-window-menu');
     windowMenu.setAttribute('aria-haspopup', 'dialog'); windowMenu.setAttribute('data-tooltip', 'Dock, float, or minimize');
     const actionGroup = header?.querySelector('.vm-list-popover__actions, .motionPanelHeaderActions, .vm-popover__actions, .actions');
-    if (actionGroup) actionGroup.prepend(windowMenu);
-    else if (header) header.insertBefore(windowMenu, header.querySelector('.wb-window-close'));
+    const closeSelector = 'button:is(.wb-window-close, .motionPanelClose, [aria-label="Close"], [aria-label^="Close "])';
+    for (const control of header?.querySelectorAll(closeSelector) || []) control.classList.add('wb-panel-chrome');
+    if (header?.querySelector('button:not(.wb-panel-chrome), input, select')) header.classList.add('wb-panel-toolbar');
+    (actionGroup || header)?.append(windowMenu);
+    windowMenu.classList.add('wb-panel-chrome');
     header?.setAttribute('data-tooltip', 'Drag to move. Release near the right or bottom edge to dock. Use window options for other placements.');
     const observer = new MutationObserver(schedule);
     observer.observe(item.root, { attributes: true, attributeFilter: ['class', 'aria-hidden'] });
@@ -575,16 +646,20 @@
   });
   barObserver?.observe(bar);
   for (const target of Object.values(docks)) target.tabs.addEventListener('keydown', event => {
-    const tabs = [...target.tabs.children], index = tabs.indexOf(event.target);
+    const tabs = [...target.tabs.querySelectorAll('[role="tab"]')], index = tabs.indexOf(event.target);
     if (index < 0 || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length;
-    reveal(tabs[next].dataset.window, false); tabs[next].focus(); event.preventDefault(); event.stopPropagation();
+    reveal(tabs[next].dataset.window, false);
+    tabs[next].parentElement.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    tabs[next].focus({ preventScroll: true }); event.preventDefault(); event.stopPropagation();
   });
-  panelsButton.addEventListener('keydown', event => {
-    if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
-    event.preventDefault(); event.stopPropagation();
-    if (panelsMenu.hidden) togglePanelsMenu(event.key === 'ArrowUp');
-  });
+  for (const [anchor, place] of [[panelsButton, null], ...Object.entries(docks).map(([place, target]) => [target.add, place])]) {
+    anchor.addEventListener('keydown', event => {
+      if (!['ArrowDown', 'ArrowUp'].includes(event.key)) return;
+      event.preventDefault(); event.stopPropagation();
+      if (panelsMenu.hidden) togglePanelsMenu(event.key === 'ArrowUp', anchor, place);
+    });
+  }
   let menuSearch = '', menuSearchTime = 0;
   panelsMenu.addEventListener('keydown', event => {
     event.stopPropagation();
@@ -602,12 +677,12 @@
     }
   });
   panelsMenu.addEventListener('focusout', event => {
-    if (event.relatedTarget && !panelsMenu.contains(event.relatedTarget) && event.relatedTarget !== panelsButton) closePanelsMenu();
+    if (event.relatedTarget && !panelsMenu.contains(event.relatedTarget) && event.relatedTarget !== panelMenuAnchor) closePanelsMenu();
   });
   document.addEventListener('pointerdown', event => {
     if (!overflowMenu.hidden && !overflowMenu.contains(event.target) && !overflowButton.contains(event.target)) closeOverflow();
     if (!menu.hidden && !menu.contains(event.target) && !menuReturn?.contains(event.target)) closeMenu();
-    if (!panelsMenu.hidden && !panelsMenu.contains(event.target) && !panelsButton.contains(event.target)) closePanelsMenu();
+    if (!panelsMenu.hidden && !panelsMenu.contains(event.target) && !panelMenuAnchor.contains(event.target)) closePanelsMenu();
   });
   document.addEventListener('vm-escape-offers', event => {
     const context = event.detail;

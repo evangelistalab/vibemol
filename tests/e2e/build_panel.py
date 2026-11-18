@@ -27,7 +27,7 @@ def run(page, url):
     # panel open and moves keyboard control back to molecular placement.
     search.fill('oxygen')
     before=page.evaluate('()=>VibeMolTesting.getEditBuildState().elementZ')
-    build.locator('[data-vm-drag-handle]').focus()
+    page.get_by_role('tab', name='Build', exact=True).focus()
     assert page.evaluate('()=>VibeMolTesting.getEditBuildState().elementZ')==before
     search.press('Enter')
     assert page.evaluate('()=>VibeMolTesting.getEditBuildState().elementZ')==8

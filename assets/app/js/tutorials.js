@@ -121,6 +121,43 @@
         }],
       },
       {
+        title: 'Position the molecule',
+        phases: [
+          {
+            text: 'Choose COM → Origin to move the molecule’s center of mass to (0, 0, 0). Find it in Quick actions.',
+            target: { quickAction: '#centerMassBtn' },
+            mode: 'viewing',
+            events: [click('#centerMassBtn')],
+          },
+          {
+            text: 'Choose Align Principal Axes to rotate the molecule so its principal axes of inertia line up with X, Y and Z.',
+            target: { quickAction: '#alignInertiaBtn' },
+            mode: 'viewing',
+            events: [click('#alignInertiaBtn')],
+          },
+        ],
+      },
+      {
+        title: 'Use the axis gizmo',
+        phases: [
+          {
+            text: 'Select the Z circle on the axis gizmo to look along the Z axis. This changes your view of the molecule.',
+            target: { axis: '#viewAxisZBtn' },
+            mode: 'viewing',
+            events: [click('#viewAxisZBtn')],
+            accepted: app => {
+              const [x, y] = app.pose().rotation;
+              return Math.hypot(x, y) < 1e-4;
+            },
+          },
+          {
+            text: 'Choose Reset View in Camera to return to an angled view for measuring.',
+            target: panel('viewPanel', '#viewReset'),
+            events: [click('#viewReset')],
+          },
+        ],
+      },
+      {
         title: 'Measure a distance',
         phases: [
           {
@@ -159,12 +196,14 @@
     return { element, rect, region: visibleBounds(region) || rect };
   }
 
+  function focusTarget() {
+    const focus = targetElement(document.getElementById('workbenchFocus')) ||
+      targetElement(document.getElementById('workbenchOverflowBtn'));
+    return { ...focus, hint: 'Turn off Focus to show your tools and panels.' };
+  }
+
   function panelTarget({ panel: id, control, tab }) {
-    if (document.body.dataset.wbFocus === 'true') {
-      const focus = targetElement(document.getElementById('workbenchFocus')) ||
-        targetElement(document.getElementById('workbenchOverflowBtn'));
-      return { ...focus, hint: 'Turn off Focus to show your panels.' };
-    }
+    if (document.body.dataset.wbFocus === 'true') return focusTarget();
     const item = window.VibeMolWorkbenchModel.catalog.find(entry => entry.id === id);
     const root = document.getElementById(item.panel);
     const region = visibleBounds(root);
@@ -196,10 +235,31 @@
     return targetElement(row) || targetElement(document.getElementById('toolbarShowBtn'));
   }
 
+  function quickActionTarget(selector) {
+    if (document.body.dataset.wbFocus === 'true') return focusTarget();
+    const action = document.querySelector(selector);
+    if (!action) return null;
+    if (!action.closest('.wb-overflowed')) return targetElement(action);
+    const menu = document.getElementById('workbenchOverflowMenu');
+    const row = Array.from(menu.children).find(item => item.ariaLabel === action.ariaLabel);
+    return targetElement(row, menu) || {
+      ...targetElement(document.getElementById('workbenchOverflowBtn')),
+      hint: 'Open More actions to find this command.',
+    };
+  }
+
   function resolveTarget(target, scene, app, lesson) {
     if (!target) return null;
     if (target.panel) return panelTarget(target);
     if (target.molecule) return sceneTarget(scene.moleculeId || scene.id);
+    if (target.quickAction) return quickActionTarget(target.quickAction);
+    if (target.axis) {
+      if (!document.getElementById('showAxes').checked) {
+        const axes = panelTarget(panel('viewPanel', '#showAxes'));
+        return { ...axes, hint: [axes?.hint, 'Turn on Axes in Camera to show the gizmo.'].filter(Boolean).join(' ') };
+      }
+      return targetElement(document.querySelector(target.axis));
+    }
     const surface = document.getElementById('canvas');
     if (target.control === '#canvas') {
       const rect = visibleBounds(surface);
@@ -435,7 +495,7 @@
       // Observe the state after the native event and its app handlers finish.
       requestAnimationFrame(() => {
         if (signal.aborted || event.defaultPrevented || current !== phase() || !acceptsInput()) return;
-        if (current.accepted && !current.accepted()) return;
+        if (current.accepted && !current.accepted(app)) return;
         if (!axis || cameraChanged('orbit', before, app.pose())) next();
       });
     }

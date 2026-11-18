@@ -17,6 +17,14 @@
         storageMessage = ''; return true;
       } catch { storageMessage = 'Browser storage is unavailable. Export your look or material to keep it.'; return false; }
     }
+    function clearStartupDefault() {
+      defaultLook = null;
+      try {
+        global.localStorage.removeItem(DEFAULT_KEY);
+        storageMessage = '';
+      } catch { storageMessage = 'Browser storage is unavailable. The startup look could not be cleared in this browser.'; }
+      sync();
+    }
     const userId = () => `user-${global.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`}`;
     const name = value => { const result = String(value || '').trim(); if (!result || result.length > 60) throw new Error('Enter a name of 1–60 characters.'); return result; };
     const filename = value => value.replace(/[^a-z0-9-]/gi, '-').toLowerCase();
@@ -214,7 +222,7 @@
       defaultLook = look && L.equal(live, look.settings) ? clone(look) : snapshotLook(view.label.slice(0, 60));
       persist(); sync(); status('Default saved for new sessions.');
     });
-    $('lookClearDefault').onclick = () => { defaultLook = null; persist(); sync(); status('New sessions will use your last appearance.'); };
+    $('lookClearDefault').onclick = () => { clearStartupDefault(); status('New sessions will use your last appearance.'); };
     $('lookExport').onclick = () => run(() => {
       const view = state(), look = snapshotLook(view.label.slice(0, 60), L.sameReference(view.styleRef, view.colorsRef) ? view.styleRef.id : userId());
       deps.download(L.exportLook(look), `${filename(look.name)}.look.json`); status('Look exported.');
@@ -272,7 +280,7 @@
     });
     document.addEventListener('change', scheduleSync);
     sync(); if (defaultLook && deps.applyStartupDefault !== false) run(() => { deps.applyLook(defaultLook); sync(); });
-    return Object.freeze({ sync, scheduleSync, choose, chooseColors, importLook, edit, getLibrary: () => clone(library), clearUndo: () => { undoState = null; transaction = null; scheduleSync(); } });
+    return Object.freeze({ sync, scheduleSync, choose, chooseColors, importLook, edit, clearStartupDefault, getLibrary: () => clone(library), clearUndo: () => { undoState = null; transaction = null; scheduleSync(); } });
   }
   global.VibeMolLooksUi = Object.freeze({ createController });
 })(window);

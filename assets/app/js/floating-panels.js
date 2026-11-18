@@ -109,23 +109,23 @@
       refresh();
     }
     function handleFor(event) {
-      if (panel.hasAttribute('data-vm-floating-drag-disabled')) return null;
+      if (panel.hasAttribute('data-vm-floating-drag-disabled') || panel.hasAttribute('data-vm-floating-docked')) return null;
       const handle = event.target.closest?.('[data-vm-drag-handle]');
       if (!handle || handle.closest('[data-vm-floating-panel]') !== panel) return null;
       const control = event.target.closest(interactive);
       return control && control !== handle ? null : handle;
     }
-    panel.addEventListener('pointerdown', event => {
+    function startDrag(event, handle) {
       suppressClick = false;
-      const handle = handleFor(event);
-      if (!handle || event.button !== 0 || !event.isPrimary || !visible()) return;
+      if (!handle || panel.hasAttribute('data-vm-floating-drag-disabled') || event.button !== 0 || !event.isPrimary || !visible()) return;
       const box = panel.getBoundingClientRect();
       drag = { id: event.pointerId, handle, x: event.clientX, y: event.clientY, left: box.left, top: box.top, moved: false };
       handle.setPointerCapture(event.pointerId);
       handle.focus({ preventScroll: true });
       // Stop scene gestures, while leaving an operator header's ordinary click intact.
       event.preventDefault(); event.stopPropagation();
-    });
+    }
+    panel.addEventListener('pointerdown', event => startDrag(event, handleFor(event)));
     panel.addEventListener('pointermove', event => {
       if (!drag || drag.id !== event.pointerId) return;
       const dx = event.clientX - drag.x, dy = event.clientY - drag.y;
@@ -167,7 +167,7 @@
     // A centered dialog may be opened by changing its backdrop rather than itself.
     const backdrop = panel.closest('#helpOverlay, #elementColorOverlay, .vm-canvas-video-export__overlay');
     if (backdrop) observer.observe(backdrop, { attributes: true, attributeFilter: ['aria-hidden', 'class', 'hidden'] });
-    const api = Object.freeze({ refresh, cancelDrag, reset, moveTo: move, getPosition: () => position && { ...position } });
+    const api = Object.freeze({ refresh, cancelDrag, reset, startDrag, moveTo: move, getPosition: () => position && { ...position } });
     entries.set(panel, { api, baseZ });
     refresh();
     return api;

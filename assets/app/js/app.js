@@ -28193,6 +28193,46 @@
     setAppearanceResetPopoverOpen(false);
   }
 
+  function resetSceneDisplayOptions() {
+    for (const scene of sceneGraphController.getScenes()) {
+      const molecule = sceneGraphController.getLayerById(scene.moleculeLayerId);
+      if (molecule) molecule.moleculeDisplay = {};
+    }
+    const defaults = getSurfaceDefaultsForNewLayer();
+    for (const layer of getAllLookLayers()) {
+      Object.assign(layer, createCubeAppearance(defaults));
+      persistActiveCubeLayerState(layer, { render: false });
+    }
+  }
+
+  function resetAppOptions() {
+    if (sessionController.isOpening() || fileLoaderController.isLoading() || getSessionBusyReason()) {
+      throw new Error('Finish the current load, export, or edit before resetting options.');
+    }
+    setFontPair('geist');
+    applyUiTheme('light');
+    persistUiTheme('light');
+    for (const property of ['--vm-accent', '--vm-accent-soft', '--vm-accent-outline']) {
+      document.documentElement.style.removeProperty(property);
+    }
+    resetVisualizationOptions();
+    looksUi.clearStartupDefault();
+    looksUi.clearUndo();
+    clearAppearancePresetAutosaveStorage();
+    markSessionChanged();
+  }
+
+  function resetVisualizationOptions() {
+    presetController.applySettings(defaultAppOptions, { mode: PRESET_MODE.STRICT, afterApply: false, preserveUnknown: true });
+    resetSceneDisplayOptions();
+    applyMoleculeStyleUiState();
+    updateRenderModeUI();
+    updateSurfBtn();
+    rebuildScene();
+    refreshViewUI();
+    syncAppearancePersistenceUi();
+  }
+
   const importPresetFromText = (text, sourceLabel = 'preset') => {
     const result = importPresetFromTextRaw(text, sourceLabel);
     scheduleAppearancePresetAutosave();
@@ -28477,6 +28517,11 @@
   // Establish the default before the atomic restore; later gizmo wiring only reads it.
   window.__showAxes__ = true;
   defaultAppearancePresetEnvelope = cloneJsonLike(exportAppearancePresetEnvelope('Defaults'));
+  // Framing is fitted to the scene, the selected vibration belongs to that scene,
+  // and the accent follows the active theme until explicitly overridden.
+  const defaultAppOptions = Object.freeze(Object.fromEntries(Object.entries(exportPresetEnvelope().settings)
+    .filter(([key]) => !key.startsWith('view.camera.') && !key.startsWith('view.target.')
+      && key !== 'vibration.modeIndex' && key !== 'global.accentColor')));
   const appearanceAutosaveRestoreResult = restoreAppearancePresetAutosave();
   switch (appearanceAutosaveRestoreResult.status) {
     case 'restored':
@@ -33212,7 +33257,7 @@
   window.VibeMolWorkbenchHost = Object.freeze({
     enabled: workspaceEnabled,
     windows: displayWindowsController,
-    properties: propertiesInspector,
+    properties: propertiesInspector && Object.freeze({ ...propertiesInspector, resetOptions: resetAppOptions }),
     editTool: editToolUi,
     editToolEscape: handleEditToolEscape,
     awaitingRecovery: () => {
