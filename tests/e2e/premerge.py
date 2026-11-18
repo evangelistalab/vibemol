@@ -349,6 +349,52 @@ def psi4_frequencies(page, dialogs):
     assert 'CUBE' not in result['error'] and snapshot(page) == before
 
 
+def cfour_frequencies(page, dialogs):
+    fixture = ROOT / 'tests' / 'fixtures' / 'cfour.freq'
+    page.locator('#fileInput').set_input_files(fixture)
+    rows = page.locator('#vibrationModeTableBody tr[data-mode-index]')
+    expect(rows).to_have_count(3)
+    volume = page.evaluate('() => VibeMolStructure.exportActive().volume')
+    modes = volume['vibration']['modes']
+    expected = {
+        'units': 'angstrom',
+        'atomicNumbers': [8, 1, 1],
+        'labels': ['A1', 'A1', 'B2'],
+        'frequencies': [1659.6203, 3834.8942, 3958.1028],
+        'firstHydrogenY': 1.43 * 0.529177210903,
+        'lastModeOxygenY': -0.07 * 0.529177210903,
+    }
+    actual = {
+        'units': volume['units'],
+        'atomicNumbers': [atom['Z'] for atom in volume['atoms']],
+        'labels': [mode['label'] for mode in modes],
+        'frequencies': [mode['frequencyCm1'] for mode in modes],
+        'firstHydrogenY': volume['atoms'][1]['y'],
+        'lastModeOxygenY': modes[2]['displacements'][1],
+    }
+    print(f'[CFOUR import] expected={expected} actual={actual}', flush=True)
+    assert all(actual[key] == expected[key] for key in ('units', 'atomicNumbers', 'labels', 'frequencies'))
+    assert math.isclose(actual['firstHydrogenY'], expected['firstHydrogenY'], abs_tol=1e-6)
+    assert math.isclose(actual['lastModeOxygenY'], expected['lastModeOxygenY'], abs_tol=1e-6)
+
+    if page.locator('#vibrationPanel').get_attribute('aria-hidden') != 'false':
+        page.locator('#vibrationPanelBtn').click()
+    rows.nth(2).click()
+    page.wait_for_function('''() => {
+        const volume = VibeMolStructure.exportActive().volume;
+        return volume.vibration.modeIndex === 2 && Math.abs(volume.atoms[0].y) > 0.001;
+    }''')
+    page.locator('#vibrationPlayBtn').click()
+
+    # Reopening a file of the same name must attach its modes to the new scene.
+    text = fixture.read_text().replace('1659.6203', '1670.0')
+    result = load(page, [{'name': fixture.name, 'text': text}], clear_first=False)
+    assert result['ok'] and result['loadedNames'] == [fixture.name], result
+    frequency = page.evaluate('() => VibeMolStructure.exportActive().volume.vibration?.modes[0].frequencyCm1')
+    assert frequency == 1670.0, {'expected': 1670.0, 'actual': frequency}
+    assert not dialogs, dialogs
+
+
 def focus_clipboard_page(page):
     page.bring_to_front()
     page.evaluate('() => { document.activeElement?.blur(); window.getSelection()?.removeAllRanges(); }')
@@ -988,7 +1034,8 @@ def main():
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         try:
-            for run in (atomic_identity, scene_creation, molecule_styles, orbital_reference_presets, imports, psi4_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
+            for run in (atomic_identity, scene_creation, molecule_styles, orbital_reference_presets, imports, psi4_frequencies,
+                        cfour_frequencies, xyz_units, clipboard_roundtrip, clipboard_edit_selection,
                         persistence, batch_export, orbital_group_appearance, molden_group_appearance,
                         molden_browsing, arithmetic, synchronized_trajectories):
                 context = browser.new_context(viewport={'width': 1440, 'height': 1000})

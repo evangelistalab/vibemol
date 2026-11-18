@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { loadGlobalModule } from './load-global-module.mjs';
+import { loadGlobalModule, loadGlobalModules } from './load-global-module.mjs';
 
 function createController(options = {}) {
   const context = loadGlobalModule('assets/app/js/file-loader.js', {
@@ -86,6 +86,79 @@ test('file loader routes volume parsing by detected kind', () => {
   assert.equal(controller.parseVolumeByName('sample.molden', 'x').kind, 'molden');
   assert.equal(controller.parseVolumeByName('sample.2ccube', 'x').kind, 'two_component_cube');
   assert.equal(controller.parseVolumeByName('sample.cube', 'x').kind, 'cube');
+});
+
+const cfourText = [
+  'Water', '', 'Coordinates (in bohr)', '',
+  'O 8.0 0 0 0', 'H 1 0 1.43D+0 1.11', 'H 1 0 -1.43 1.11', '',
+  'Normal Coordinates', '',
+  'B2', '1.25d+2i', 'VIBRATION',
+  'O 0 0.07 0', 'H 0 -0.56 0.42', 'H 0 -0.56 -0.42',
+].join('\r\n');
+
+function createCfourController(options) {
+  const { VibeMolIOUtils, VibeMolParsers } = loadGlobalModules(
+    ['assets/app/js/io-utils.js', 'assets/app/js/parsers.js'], { globals: { ATOM_SYMBOL_TO_Z: { H: 1, O: 8 } } },
+  );
+  return createController({
+    detectInputFileKind: VibeMolIOUtils.detectInputFileKind,
+    parseXYZ: VibeMolParsers.parseXYZ,
+    ...options,
+  });
+}
+
+test('CFOUR accepts a single-mode block, Fortran exponents, and imaginary frequencies', async () => {
+  const attached = [];
+  const { controller, getVolumes } = createCfourController({
+    attachVibrationPayloadToBestVolume: (name, payload, target) => {
+      attached.push({ name, payload, target });
+      return { ok: true };
+    },
+  });
+  const name = 'water.FREQ';
+  const result = await controller.handleFiles([new File([cfourText], name)]);
+  assert.equal(result.ok, true, result.error);
+  assert.deepEqual(Array.from(result.loadedNames), [name]);
+  assert.equal(getVolumes().length, 1);
+  const { vol } = getVolumes()[0];
+  const bohrToAngstrom = 0.529177210903;
+  assert.equal(vol.title, 'Water');
+  assert.equal(vol.units, 'angstrom');
+  assert.equal(vol.atoms[1].y, 1.43 * bohrToAngstrom);
+  assert.equal(vol.atoms[0].formalCharge, 0);
+  assert.equal(attached.length, 1);
+  const [{ payload, target }] = attached;
+  assert.equal(target.preferredIndex, 0);
+  assert.equal(target.sourceStem, undefined);
+  assert.equal(payload.atomCount, 3);
+  assert.equal(payload.units, 'angstrom');
+  assert.equal(payload.modes.length, 1);
+  const [mode] = payload.modes;
+  assert.equal(mode.label, 'B2');
+  assert.equal(mode.frequencyCm1, -125);
+  assert.deepEqual(Array.from(mode.displacements),
+    [0, 0.07, 0, 0, -0.56, 0.42, 0, -0.56, -0.42].map(value => Math.fround(value * bohrToAngstrom)));
+});
+
+test('malformed CFOUR input preserves the working scene', async () => {
+  const existing = { name: 'open.xyz', vol: { atoms: [] } };
+  const { controller, getVolumes } = createCfourController({ volumes: [existing] });
+  const cases = [
+    [cfourText.replace('Coordinates (in bohr)', 'Coordinates (in angstrom)'), /expected "Coordinates \(in bohr\)"/],
+    [cfourText.replace('O 8.0', 'O 7.0'), /nuclear charge 7 does not match O/],
+    [cfourText.replace('1.25d+2i', '1.25d+i'), /expected 1 frequencies in cm/],
+    [cfourText.replace('VIBRATION', 'ROTATION'), /expected 1 VIBRATION entries/],
+    [cfourText.replace('O 0 0.07 0', 'H 0 0.07 0'), /expected O for atom 1, found H/],
+    [cfourText.replace('O 0 0.07 0', 'O 0 NaN 0'), /expected 3 numeric displacement components/],
+    [cfourText.replace('O 0 0.07 0', 'O 0 0.07 0 1'), /expected 3 numeric displacement components/],
+    [cfourText.slice(0, cfourText.lastIndexOf('\r\n')), /missing displacements for atom 3/],
+  ];
+  for (const [input, expectedError] of cases) {
+    const result = await controller.handleFiles([new File([input], 'bad.freq')], { clearFirst: true });
+    assert.equal(result.ok, false);
+    assert.match(result.error, expectedError);
+    assert.strictEqual(getVolumes()[0], existing);
+  }
 });
 
 test('unsupported uploads report the format and keep the working scene', async () => {

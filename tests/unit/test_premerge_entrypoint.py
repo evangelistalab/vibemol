@@ -19,7 +19,8 @@ class PremergeEntrypointTests(unittest.TestCase):
         playwright = MagicMock()
         playwright.chromium.launch.return_value = browser
         original_names = ('scene_creation', 'molecule_styles', 'orbital_reference_presets', 'imports',
-                          'psi4_frequencies', 'xyz_units', 'clipboard_roundtrip', 'clipboard_edit_selection',
+                          'psi4_frequencies', 'cfour_frequencies', 'xyz_units', 'clipboard_roundtrip',
+                          'clipboard_edit_selection',
                           'persistence', 'batch_export', 'orbital_group_appearance', 'molden_group_appearance',
                           'molden_browsing', 'arithmetic', 'synchronized_trajectories')
         calls = []
@@ -44,7 +45,7 @@ class PremergeEntrypointTests(unittest.TestCase):
             stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
         self.assertEqual(calls, ['matrix', 'bridges'])
-        self.assertEqual(browser.new_context.call_count, 16)
+        self.assertEqual(browser.new_context.call_count, 17)
 
 
 if __name__ == '__main__':
