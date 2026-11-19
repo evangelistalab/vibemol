@@ -157,13 +157,7 @@ These affect geometry-based metal inference only. Explicit user-authored bonds r
 
 ### Ligand-side valence rule
 
-Metal-ligand bonds count toward the metal-side coordination budget, but do not count against the nonmetal ligand-side valence in:
-
-- geometry inference
-- auto-hydrogen planning
-- edit halo open-site reasoning
-
-This prevents ligands such as ammonia from losing their normal valence accounting when coordinated to a metal center.
+Metal-ligand bonds count toward the metal-side coordination budget. Ordinary L-type coordination does not consume the donor's ordinary covalent valence, allowing ammine/aqua hydrogens. Auto-hydrogen planning explicitly counts a stored `ligandType: 'X'` bond toward ligand valence instead; this prevents protonating a chloride as Fe–Cl–H. Preserve the stored X/L annotation rather than inferring all ligand chemistry from a rendering style. Geometry inference and halo logic have their own coordination rules; the blanket claim that every metal bond is excluded from hydrogen valence is obsolete.
 
 ## 3. Bond Provenance and Persistence
 
@@ -196,6 +190,10 @@ Rules:
 ## 4. Imported Bond-Order Promotion
 
 Imported molecules can promote nonmetal covalent single-bond connectivity to higher bond order where `inferBondOrders(...)` supports it.
+
+Before the remaining distance-ranked greedy promotions, `inferConjugatedRingOrders` identifies supported planar five/six-member conjugated rings, including supported N/O/S donors, groups connected ring components and finds a perfect matching among their one-electron sites. A complete matching writes stored Kekulé double bonds. This fixes the equal-length edge-order trap that left intact PubChem aromatics under-valent. Unsupported/no-matching components are not forcibly assigned. Builder bonds remain explicit, as scoped below.
+
+This stored-order step is distinct from the carbon-only render overlay in section 6. UFF separately recognizes supported resonant environments; its uniform resonant typing is approximate and can equalize real five-ring bond alternation.
 
 Examples:
 

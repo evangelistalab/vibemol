@@ -1,9 +1,64 @@
 # AGENTS.md
 
+## Current handoff — 2026-11-19
+
+Read [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md), [VIBEMOL_CONTEXT.md](VIBEMOL_CONTEXT.md)
+and [the roadmap](docs/roadmap.md) before selecting work. The historical receipts
+below preserve their actual counts and rejected candidates; their old “next”
+instructions do not select a new task. **No next product increment is selected.**
+
+- Latest deployed runtime: **0.10.11**, PR #107 merge
+  `297e608fa88038151fa73edc10362281fc6103db`. Documentation-only commits may follow.
+  Tested head `042a319a2cbf8378e96288c9e0a9085f0081c893` passed the complete
+  [44562324565](https://github.com/evangelistalab/vibemol/actions/runs/44562324565)
+  checks at **37/0/37**, accepted set intentionally empty, both exporters and
+  both Looks material-family paths. Pages
+  [44569217520](https://github.com/evangelistalab/vibemol/actions/runs/44569217520)
+  published the identical merge tree. The separate post-push main run
+  [44569217313](https://github.com/evangelistalab/vibemol/actions/runs/44569217313)
+  was still running at handoff preparation; check its actual result, never retry
+  a failure on the strength of this note.
+- `v0.10.11` remains at the original release `2d594bb6be90fd2893e3df8abbaf11c422616962`.
+  The right-panel update was explicitly approved as a same-version patch; its
+  model script uses `?patch=right-dock&v=0.10.11`. Do not move tags.
+- CFOUR `.freq` geometry/mode import is shipped, including adjacent signed
+  displacement fields. Both coordinates and Cartesian mode vectors convert
+  bohr to Å once; no extra mass-unweighting. See README and the fixture.
+- All 12 desktop panel types default right. Saved per-panel placements win;
+  do not migrate existing saved layouts, whose automatic/user provenance is
+  unknown. Compact screens still present a bottom dock and preserve desktop
+  choices. Select the actual visible tab before native row actions: Measure
+  activates Measurements in the shared right dock.
+- The authorized panel recording changed exactly **1,214 values in 102 captures**
+  (844 DOM/control, 268 viewport dimensions, 102 projection entries), zero other
+  differences. [44555184151](https://github.com/evangelistalab/vibemol/actions/runs/44555184151)
+  reproduced it four times. Original failure **44402656735 stays failed**.
+  This is completed evidence, not authorization to record another delta.
+- Sessions/recovery, persistent measurements, Figure runner, private scientific
+  buffers, validated Edit API, forte2 export/CAS default, water tutorial,
+  reset-to-defaults, live formula/electron counts, metal editing and vector
+  arrows are implemented. The roadmap's old missing-feature list is superseded.
+- **AI connector paused and reverted from production.** Preserve designs and
+  local prototype refs. Never merge the prototype into main or widen the Edit
+  API allowance for it. `docs/connector-consent.md` describes historical design.
+- **0.11 controls program stopped at its zero-divergence gate.** No Phase 0 or
+  command bus. General undo stays design-only. Testing wrappers 2+, native-suite
+  API conversions, browser sharding, #55 placement policy and #81 migration
+  remain held/unscheduled. Do not infer authorization from an old work list.
+- Product candidates still require classic scripts/fixed order/no bundler,
+  units below 15 dependencies, construction-order audit, every local audit
+  before pushing, and the complete **37/0/37** conjunction. The app.js ratchet
+  caps **260 AST variable-let bindings**; fresh measurement is 260/260.
+  Keep all mandatory completion counts, 102 captures twice/exact repeat, cache
+  identities/eight contexts/minima, units and WebKit. Accepted failures are
+  intentionally empty. Preserve failures, log comparands and report without
+  retries or relaxed expectations unless separately authorized.
+
 ## API matrix completion and unreachable-code checks
 
-PR87's API-only scope remains twelve methods,42 Testing members unchanged,
-zero wrappers and zero retirements. The rejected first run41384810185 had37/0/37
+PR87's historical API-only scope was twelve methods,42 Testing members unchanged,
+zero wrappers and zero retirements; the later first risk batch is recorded below.
+The rejected first run41384810185 had37/0/37
 but omitted the new matrix after an early return; it is not complete acceptance.
 Premerge must run the matrix after original browser retirement and before return.
 The manifest/worker/join require exactly115 API comparisons and26 atomic-rejection
@@ -23,7 +78,7 @@ construction gate and all existing native-input contracts remain unchanged.
 
 ## Refactor and 0.10.0 release status
 
-**Current post-release gate — #52/#53 repaired:** exactly **37 passing /0 failing /37**. The accepted set is **intentionally empty**; matcher/join machinery stays. Remove only Coordinates after accepted52; no additional workflow is accepted. Any failure, omission, repetition or other arithmetic stops. Smoke must complete BOTH exporters and all activation paths. Require102 goldens twice/exact repeat,48 slots/eight contexts/all minima, units/WebKit/construction. Diagnostics never supply acceptance. #42 stays open/unclassified/not carried/not accepted; #43 responsive budget is directly human-authorized, including heartbeat gaps; own complete gate remains required. Latent surface-pair allowances are a separate category, never accepted ordinary failures. Historical observations below retain their actual values.
+**Current post-release gate — #52/#53 repaired:** exactly **37 passing /0 failing /37**. The accepted set is **intentionally empty**; matcher/join machinery stays. Both repaired Axis and Coordinates workflows are must-pass; no workflow is accepted. Any failure, omission, repetition or other arithmetic stops. Smoke must complete BOTH exporters and all activation paths. Require102 goldens twice/exact repeat,48 slots/eight contexts/all minima, units/WebKit/construction. Diagnostics never supply acceptance. #42 stays open/unclassified/not carried/not accepted; #43 responsive budget is directly human-authorized, including heartbeat gaps; own complete gate remains required. Latent surface-pair allowances are a separate category, never accepted ordinary failures. Historical observations below retain their actual values.
 
 Post-release projection #3 is fixed by PR41, merged as `9a038a99` from tested head `981386f`/run `39442788498`: complete34/3/37,102x2/exact repeat,52 slots/eight contexts/all minima,433JS/60Python,WebKit/construction; tracked lets251 unchanged. Direct human review excludes the historical Figure timeout as a PR41 effect from the three-source zero normal-owner matrix readbacks while paused and the existing render-loop return during Figure capture. **#42 remains open and unclassified, carried:false, acceptedCiFailure:false.** Do not rerun Figure diagnostics to classify it or close it through the separate deadline repair. The suite now records prelude/wait long tasks, a scheduled deadline image snapshot with its actual timestamp/lateness, image history and readback elapsed time. A delayed snapshot must never be presented as the exact deadline state. Direct human authorization released the budget half of#43 after PR72 measured a24.681s poll gap against18.5s longtask time, with correct final viewport values; #50 measured correct arrivals and42 later had a blob. This does not classify or close42. The authorized diagnostic half observes long-task overlap at all six former short-deadline sites through their shared owners; it logs raw entries, overlap duration, deadline crossings, actual timestamps/lateness and missing observations, without changing any budget or tolerance. Direct human#50 authorization separately releases measured-arrival Smoke budget repairs and the six-site shared-helper consolidation; measure before changing600ms. Its proposed shared numeric/timing assertion helper would discount the union of wait-overlapping long tasks and monotonic-heartbeat interval gaps, retain nominal responsive accounting and an independent hard wall ceiling (the later confirmed limitation below means this is not a performance detector), and expose missing observations. A blob that genuinely never arrives requires a product diagnosis, not a more tolerant deadline. The initial evidence collector preserves the original30000ms ceiling and exact blob predicate, with no accepted-failure change. The collector PR uses its first automatic run only: merge on the complete standing conjunction including Figure; on a Figure timeout read the new evidence and report, without retrying or adding it to the accepted set.
 
@@ -63,6 +118,7 @@ Supported molecular file types:
 - `.molden`
 - `.vib.json` / `.vmodes.json` / `.modes.json` (vibrational mode sidecar data)
 - `.hess` (ORCA Hessian vibrational mode source)
+- `.freq` (CFOUR geometry and normal modes)
 - `.dat` / `.out` / `.output` (Psi4 text output with harmonic analysis)
 - `.vibemol-session` (complete saved workspace)
 
@@ -355,8 +411,8 @@ Preset automation contract exposed globally:
 
 ## Key Behavior Notes
 - A pending session-recovery choice defers automatic restoration of saved Workbench windows. It never hides panels opened in the current workspace (including Subspace on entering Calculations); menu checkmarks and dock visibility use the same live panel state. Opening a panel does not accept/dismiss recovery or overwrite its snapshot. `tests/e2e/measurements.py` covers this with new work loaded while recovery remains pending.
-- Calculations is Workbench's fourth mode. It temporarily hides ordinary surfaces/clouds, frames atoms, pauses playback, and offers Subspace / π planes / Clear. Shared inspectors remain available; other analysis panels suspend. Selections use stable atom IDs, live per structure, and persist in sessions/recovery. Shell and component states are mutually exclusive; p/d expose CCA components, f/higher whole shells only. Planes require whole p shells, at least three non-collinear atoms and RMS ≤0.100 Å; shared normals are averaged. Cached/instanced contracted cc-pvtz-minao previews use Look phase colors and include camera-depth bounds. GHF doubles generated counts once. No SCF or AVAS runs in the browser. Legacy launch keeps three modes.
-- Calculations' Total active count defaults to the selected spin-free subspace dimension after π-plane constraints. Editing it pins a manual value; Use selection count resumes automatic updates. Sessions retain this choice, and older explicit totals remain manual. `VibeMolCalculations.configure({total: n})` pins the count; `{totalFollowsSelection: true}` resets it. Occupied/virtual split remains explicit, and cumulative remains the default selection method.
+- Calculations is Workbench's fourth mode. It temporarily hides ordinary surfaces/clouds, frames atoms, pauses playback, and offers Subspace / π planes / Clear. Shared inspectors remain available; other analysis panels suspend. Selections use stable atom IDs, live per structure, and persist in sessions/recovery. Shell and component states are mutually exclusive; p/d expose CCA components, f/higher whole shells only. Planes require whole p shells, at least three non-collinear atoms and RMS ≤0.100 Å; shared normals are averaged. Cached/instanced contracted cc-pvtz-minao previews use Look phase colors and include camera-depth bounds. GHF CAS counts spinors directly, without doubling; other methods retain their spatial-pair convention. No SCF or AVAS runs in the browser. Legacy launch keeps three modes.
+- Calculations' Total active count defaults to the selected spin-free subspace dimension after π-plane constraints. Editing it pins a manual value; Use selection count resumes automatic updates. Sessions retain this choice, and older explicit totals remain manual. `VibeMolCalculations.configure({total: n})` pins the count; `{totalFollowsSelection: true}` resets it. Occupied/virtual split remains explicit. **CAS is the default selection method**; explicit saved methods are preserved.
 - AVAS shell menus expose occupied/core shells, complete outer s/p and next s/p shells; occupied 3d adds 4d. C offers 1s/2s/2p/3s/3p; S adds 3s/3p/4s/4p to the Ne core; Fe offers 1s/2s/2p/3s/3p/4s/3d/4p/5s/4d/5p in filling order. This supersedes the earlier d-only transition-metal restriction. Menus use full cc-pVTZ and group intersections. Existing cc-pvtz-minao choices remain until an unavailable shell is selected, which switches that record to cc-pvtz; preview coefficients, cache keys, counts, basis field, input and session state stay consistent. Explicit incompatible basis changes block input instead of dropping assignments. Raw catalogs retain legacy assignments outside the new menu limits. Bundled coverage remains H–Ar and Ca–Kr.
 - Calculations supports RHF, ROHF, and GHF. Spin projection `ms` is enabled only for ROHF, retained per structure/session, and validated for half-integer steps, electron parity, and `|ms| ≤ nel/2`. ROHF input targets the matching high-spin CI state (`S = |ms|`, multiplicity `2|ms|+1`). AVAS counts remain spatial and are additional to the automatically included singly occupied orbitals; the panel labels/explains this. Current forte2 PR283 accepts separate counts for either sign of ms, using the absolute singly occupied count. CAS totals include that sector; GHF CAS counts are spinors without doubling. See docs/forte2-interchange.md. See `docs/calculations.md`.
 - Calculations atom focus is separate from AVAS assignments: clicks never assign or remove shells. `calculations-picker.js` provides the movable Atomic orbitals popup for one atom or a same-period group, using the intersection of supported MINAO shells. Group edits show mixed states and enforce whole-shell/component exclusivity. Its compact shell toolbar anchors near the focused atoms, follows camera changes unless manually moved, and resets anchoring for a new selection. Selecting p/d opens a component dropdown beneath that shell; the caret opens it without assigning orbitals. There is no lower information card or deselect button; empty-space clicks clear focus. The toolbar exposes π-plane fitting for at least three eligible atoms. Mixed-period focus suppresses the popup and explains the restriction in Subspace. Assigned AO rows/planes persist in sessions; focused atom IDs and popup layout are transient. Subspace Edit focuses one assigned atom; Remove explicitly removes its orbitals. `VibeMolCalculations.state().selectedAtomIds` reports transient focus; `selections` reports persistent assignments.
@@ -536,7 +592,7 @@ Implemented:
 
 Remaining work and priorities are tracked in [the product roadmap](docs/roadmap.md).
 
-- Complete session save/open and browser autosave/recovery are implemented on `codex/session-save-recovery`, pending merge review. The next product improvement after that merge is bounded local heavy-atom relaxation and builder reliability. Appearance autosave, preset builder logs, and single-record structure export remain complementary tools.
+- Complete session save/open and browser autosave/recovery are shipped on main. Appearance autosave, preset builder logs, and single-record structure export remain complementary tools. Bounded local heavy-atom relaxation is an unscheduled candidate, not the next authorized task.
 - Catalog fragment/molecule kinds, atom/fragment/molecule placement, append/replace-H attachment, supported ring fusion, builder group metadata, and group-aware transforms are implemented. Remaining builder work is chemistry validation, clearer scope/pivot/placement feedback, and broader fusion cases.
 - Local heavy-atom relaxation after attachment/substitution remains open. Reviewed bond cleanup, hydrogen repair/local hydrogen-only UFF relaxation, and whole-structure UFF optimization are implemented.
 - Complete workspace restoration and replay of builder operations are separate tasks; restoring stored operation logs does not replay them.
@@ -584,7 +640,7 @@ Persistent imported topology is now **connectivity-first with metal-aware coordi
 - Bond-tool edits always create/upgrade bonds to `origin: 'explicit'`
 
 5. Imported bond-order promotion:
-- Imported molecules can promote nonmetal covalent single-bond connectivity to higher bond order where `inferBondOrders(...)` supports it (for example carbonyl-style double bonds).
+- Imported molecules can promote nonmetal covalent single-bond connectivity to higher bond order where `inferBondOrders(...)` supports it (for example carbonyl-style double bonds). Supported conjugated five/six-member ring components use perfect matching of one-electron sites before remaining greedy promotions; this writes stored Kekulé orders and includes supported heteroatoms. It is separate from the carbon-only render overlay below.
 - Builder-created/edit-session bonds are not globally reinterpreted this way; they remain under explicit edit control.
 
 6. Metal override behavior:
@@ -593,7 +649,7 @@ Persistent imported topology is now **connectivity-first with metal-aware coordi
   - `force_covalent`
   - `force_dative`
   - `no_bonds`
-- Metal-ligand bonds count toward the metal-side coordination budget but do not count against the nonmetal ligand-side valence in geometry and auto-hydrogen planning.
+- Metal-ligand bonds count toward the metal-side coordination budget. Auto-hydrogen planning counts an explicit `ligandType: 'X'` bond toward ligand valence; ordinary L-type metal coordination does not consume that valence. Do not erase the X/L distinction when changing geometry inference or halo logic.
 
 7. Cleanup workflow (`classifyBondCleanupDiff`):
 - Computes a reviewed diff between the current graph and the current geometry.
@@ -776,7 +832,7 @@ After non-trivial changes:
 
 ## Issue-backed cache inventory amendment
 
-Current completed Colors result: PR #23, CI 39039061120 attempt 1, **34/3/37** once, unchanged **102 × 2** captures/exact serialized repeat, zero diagnostic pixel changes, **52 slots × eight contexts** with every minimum, checks **433 JS/29 Python** and WebKit passed. #11 fired at **trajectory after the second download**; vibration export was not reached in Smoke. Looks completed both material paths in **1,951.74 s / 32.53 min**, no material-preset timeout; the risk remains open. Whole CI **2,018 s / 33.6333 min**, **74.70% less / 3.952×** against 132.93 min, eight cold-cache misses, critical Looks. App metrics **33,070 lines / 1,181 top-level function declarations / 265 tracked let declaration lines**; periodic factory **11 inputs**, all ten non-DOM inputs used. One subsequent whole-stage soak passed; source/test/golden bytes stay equal to the tested candidate during documentation-only final bookkeeping.
+Historical completed Colors result: PR #23, CI 39039061120 attempt 1, **34/3/37** once, unchanged **102 × 2** captures/exact serialized repeat, zero diagnostic pixel changes, **52 slots × eight contexts** with every minimum, checks **433 JS/29 Python** and WebKit passed. #11 fired at **trajectory after the second download**; vibration export was not reached in Smoke. Looks completed both material paths in **1,951.74 s / 32.53 min**, no material-preset timeout; the risk remains open. Whole CI **2,018 s / 33.6333 min**, **74.70% less / 3.952×** against 132.93 min, eight cold-cache misses, critical Looks. App metrics **33,070 lines / 1,181 top-level function declarations / 265 tracked let declaration lines**; periodic factory **11 inputs**, all ten non-DOM inputs used. One subsequent whole-stage soak passed; source/test/golden bytes stay equal to the tested candidate during documentation-only final bookkeeping.
 
 Before its ordinary CI, Colors local verification completed: checks 433 JS/29 Python, four native layout/theme editor entry cases, 36 tagged/proposed direct periodic captures per source exactly equal, and 102 unchanged captures twice with exact serialized repeat and zero diagnostic pixel changes (1,033.61 s). All 52 slots in eight contexts met the fixed composition and current minima; actual presented 39/32, mode 408/9 (404/6 observer checks), panel 669–1064, DOM 2967–5430, restore 1 each. Its subsequent complete first-pass CI conjunction passed before the exact-head merge; the current completed result above is authoritative. Evidence: tests/baselines/evidence/stage3/colors/validation.json.
 
@@ -918,7 +974,7 @@ feature, command bus or Undo implementation is released by that reconnaissance.
 
 ## Risk-first Testing bridge batch
 
-The human releases only the first risk batch after the additive Edit API: strict whole-request `setEditSelectionIndices`, rejection of terminal-H `options.selectionAfter`, and the occupied-direction Smoke caller/projection fallback correction. Three Testing members change, two validated adapters, no retirements; the other39 members including performSelectionMoveDrag remain byte-identical. The product API stays12 methods. Empty selection clearing remains explicit native cross-mode cleanup, with readback. Nonempty requests validate completely before native pending-operator cleanup, preserve atom identities and use the product resolution token. Native hydrogen replacement keeps its pending operator; it is not rewritten as a completed API commit. All input comparands are logged before any failure. The new serial native matrix requires84 completion records in matrix, worker and join; every original suite remains native and unchanged except the specifically authorized projection caller/logging. Smoke requires three projection calls/zero substitutions and reports counts on both outcomes. The remaining wrapper batches are held; fragment-cue remains isolated. Undo stays design-only. Forte2 interchange needs a scope report before implementation.
+The human releases only the first risk batch after the additive Edit API: strict whole-request `setEditSelectionIndices`, rejection of terminal-H `options.selectionAfter`, and the occupied-direction Smoke caller/projection fallback correction. Three Testing members change, two validated adapters, no retirements; the other39 members including performSelectionMoveDrag remain byte-identical. The product API stays12 methods. Empty selection clearing remains explicit native cross-mode cleanup, with readback. Nonempty requests validate completely before native pending-operator cleanup, preserve atom identities and use the product resolution token. Native hydrogen replacement keeps its pending operator; it is not rewritten as a completed API commit. All input comparands are logged before any failure. The new serial native matrix requires84 completion records in matrix, worker and join; every original suite remains native and unchanged except the specifically authorized projection caller/logging. Smoke requires three projection calls/zero substitutions and reports counts on both outcomes. The remaining wrapper batches are held; fragment-cue remains isolated. Undo stays design-only. The subsequently approved forte2 export-only implementation is recorded below; no import is authorized.
 
 ## forte2 export-only interchange and CAS
 

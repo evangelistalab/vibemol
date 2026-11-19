@@ -1,13 +1,20 @@
-# Connector consent
+# Connector consent — paused design
 
-`connector-consent.html` and the existing browser adapter implement the initial
-approval exchange. The shipped adapter has no consent authority. The page stays
-unavailable even if a browser message, URL or global supplies a candidate key.
-The Workbench launcher retains its enable and release behavior.
+**Status, 2026-11-19:** connector work is paused. PRs #92 (shell), #93 (adapter)
+and #95 (consent) were reverted from main; PR #94's state ratchet and independent
+UI changes were retained. Production has no connector button, adapter or consent
+page. This document preserves the PR #95 design, not current runtime behavior.
+Local prototypes remain preserved and must not be merged into main.
+See [current context](../VIBEMOL_CONTEXT.md) before restarting connector work.
+
+In the reviewed consent-only implementation, the page and adapter performed the
+initial approval exchange. Without an authority pin the page refused browser
+messages, URL/global candidate keys and offer release. That fail-closed property
+remains a requirement for any future implementation.
 
 ## Authority and browser exchange
 
-The adapter pins an issuer origin, canonical MCP audience, and ECDSA P-256 SPKI
+The design pins an issuer origin, canonical MCP audience, and ECDSA P-256 SPKI
 verification key in its source. Rotation requires a site deploy and a fresh
 load of the script in open tabs. The test supplies an ephemeral pin by
 substituting the single configuration literal in the served fixture script.
@@ -42,7 +49,12 @@ The trusted-event requirement applies inside the adapter. Page-privileged
 scripts can affect that trust boundary, including Google Analytics today and
 any future extension scripts unless isolated from the approval UI and signer.
 
-## Boundaries for the next cuts
+## Requirements for a separately authorized restart
+
+Intended clients include Claude, ChatGPT and Codex; measure compatibility per
+client rather than assuming it. Relay, OAuth, grant state and the six pilot tools
+were deferred. The local reference prototype does not satisfy this reviewed
+contract. This document does not authorize resuming those cuts.
 
 The authority must consume the challenge atomically with registration. The
 consent page accepts one verified proof, and the enabled tab declines a replay

@@ -1,310 +1,90 @@
-# VibeMol — Context for the next agent
+# VibeMol — current handoff
 
-This document is the institutional memory for VibeMol's development. It captures what's been built, what's been decided, what's open, and what to do next. Read this end-to-end before touching code.
+Reviewed **2026-11-19**. This replaces the old v0.8.7t handoff, whose pending-feature list and ES-module instructions were obsolete. [AGENTS.md](AGENTS.md) holds standing instructions and historical evidence; [the roadmap](docs/roadmap.md) separates shipped work from candidates.
 
----
+## Release and verification state
 
-## What VibeMol is
+| Item | Verified reference |
+| --- | --- |
+| Latest deployed runtime | **0.10.11**, `297e608fa88038151fa73edc10362281fc6103db`, PR #107 |
+| Tested source head | `042a319a2cbf8378e96288c9e0a9085f0081c893`; local merge tree matched exactly |
+| Complete pre-merge checks | [44562324565](https://github.com/evangelistalab/vibemol/actions/runs/44562324565): **37 passing / 0 failing / 37**, intentionally empty accepted set; both exporters and both Looks material-family paths completed |
+| Pages publication | [44569217520](https://github.com/evangelistalab/vibemol/actions/runs/44569217520): build, deploy and report-build-status succeeded; published the merge commit above |
+| Separate post-push main checks | [44569217313](https://github.com/evangelistalab/vibemol/actions/runs/44569217313), same merge commit; **still running when this handoff was prepared**. Read the actual result before claiming it passed; do not retry a failure. |
+| Existing `v0.10.11` tag | `2d594bb6be90fd2893e3df8abbaf11c422616962`, the original CFOUR release, before the approved same-version patch |
 
-VibeMol is a browser-based molecular visualization and editing tool. Vanilla JavaScript, Three.js r160, WebGL2. Served via a local Python HTTP server during development; deployed to **vibemol.org**. Built by Francesco Evangelista (Emory University, computational chemist, DSRG/UCC/selected-CI research). Tightly aligned with the Forte/QForte quantum chemistry stack the group develops.
+Documentation-only commits can follow the runtime commit. Check refs rather than resetting to a SHA in a handoff. The tag and current deployed tree deliberately differ for this patch; do not move the tag. `v0.9.5-pre-refactor` remains the immutable anchor at `1c609b33`; older tags also stay put.
 
-The product has reached genuine capability after Phase 1 (per-scene scoping and core data model) and Phase 2 (arithmetic combinations, multi-trajectory, drag gestures, polish). It's no longer "a viewer" — it's a tool you can do real work in.
+The failed first panel-patch run [44402656735](https://github.com/evangelistalab/vibemol/actions/runs/44402656735) remains failed at 36/1/37. Measure activates Measurements in the shared right dock, so the test's Coordinates Copy target was hidden. The repair selects Coordinates through its native tab and logs visibility before unchanged row-action assertions. No timeout or assertion was relaxed.
 
-Current version: **v0.8.7t** (or whichever was latest at the time of compaction).
+The approved capture delta was exactly **1,214 changed values across 102 captures**: 844 DOM/control values, 268 viewport dimensions and 102 aspect-related projection entries. Zero added/removed leaves or unrelated differences; scientific settings and sessions stayed exact. [Recording 44555184151](https://github.com/evangelistalab/vibemol/actions/runs/44555184151) reproduced it on two workers, twice each. Its scoped recorder remains on `codex/record-right-panel-defaults-0.10.11`; only generated comparisons were merged. This is historical authorization, not permission for another recording.
 
-### What it can do today
+Local logs are under `out/test-artifacts/right-panel-defaults-0.10.11/` and `out/test-artifacts/cfour-0.10.11/`. Ignored artifacts are not portable documentation; linked CI runs and committed comparisons are the durable references.
 
-- Load any combination of cube files, trajectories, molecule files. Auto-dispatch them into appropriately scoped scenes (per Phase 1's "different molecule = new scene" rule).
-- Render orbitals with multiple material presets (Emissive, Matte, Satin, Lacquer, Metal — the Solid material system that replaced the failed Glass approach), color schemes, render modes.
-- Compose orbitals via arithmetic — Linear combinations, Products, Abs — with auto-resampled grids when operands have mismatched grids.
-- Edit existing arithmetic combinations in place with downstream auto-recompute.
-- Multi-select layers, multi-edit appearance, cascade-delete with full dependency tracking.
-- Play multiple trajectories simultaneously, frame-locked sync optional, with master/follower clock model.
-- Reorder layers via drag, merge between scenes via drag, duplicate via shift-drag.
-- Inline rename anything renameable; right-click any kind for kind-appropriate actions.
-- `+` button next to SCENES opens an "Add cube file..." menu.
-- Auto-focus newest item on add (the just-added thing becomes active/visible/focused).
-- Auto-hide other scenes on add (only the focused scene renders; user can re-enable manually but next add resets).
+## Current product choices
 
-### What it can't do yet
+**Panels.** All 12 catalog panel types default right on desktop, including Coordinates, Trajectory and Frequencies. Valid saved right/bottom/floating placements win. Storage does not distinguish automatic persistence from a deliberate placement, so existing layouts are preserved without migration. Compact screens present panels at the bottom while retaining desktop choices. Tabs contain the vertical grip, title and small close control in one selected surface, followed by add-panel/options controls on the same rail. See [Workbench](docs/experiments/workbench/README.md).
 
-- Persist anything across reloads. Every refresh starts from zero. (Phase 3 territory.)
-- Measure anything (distances, angles, integrals, plots along trajectories). Measurements group is a placeholder. (Phase 3.)
-- Export figure-quality output (high-res screenshots, video, POV-Ray). (Phase 3.)
-- Integrate with QC backends (Forte/QForte direct hooks, job submission, cloud QC). (Phase 3, most ambitious.)
-- Be properly tested or documented. Test coverage hasn't kept pace with feature shipping. (Phase 3 stabilization.)
-- Multi-user / collaborative anything. (Deferred indefinitely.)
+**CFOUR frequencies.** `.freq` imports geometry and Cartesian mode vectors from one file. Both convert bohr to Å once; no extra mass-unweighting. One to three modes per block, D exponents, imaginary frequencies and touching signed displacement fields are supported. Symmetry labels survive. Malformed input fails before replacing a scene. See [the format](README.md#web-quick-start) and [sample](tests/fixtures/cfour.freq).
 
----
+**Settings/tutorial.** App settings includes reset-to-defaults, preserving loaded data and saved named libraries/layouts. The reusable water tutorial follows panel positions and covers loading, navigation/panning, Properties Object/Look, Coordinates, measurement, XYZ copy/paste, COM, principal-axis alignment and the camera gizmo. COM/alignment changes geometry; gizmo clicks change the camera.
 
-## Architecture & key invariants
+**Edit and chemistry.** Build and Transform are tools within Edit. Transform-only floating controls disappear in Build; hint labels distinguish the tools. The edit target must be visible. Atom drags create one appropriately named undo action; Escape cancels an active drag. Metal building exposes and snaps to open coordination sites, respects capacity, and supports donor attachment, X/L ligand choices, formal charges and metal-bond styles. UFF is approximate: resonant typing avoids gross aromatic distortion but can equalize five-membered heteroaromatic bonds by about 0.05 Å. Do not promise quantum-geometry accuracy.
 
-These are load-bearing decisions. Don't violate them without explicit conversation.
+**Scientific input.** Cube parsing separates datasets, honors signed voxel units, rejects invalid tokens and accepts D exponents. XYZ accepts atomic numbers, D/T as ordinary hydrogen, numbered labels and Bq as dummy. Molden normalization was corrected using independent diffuse-basis cube comparisons; retain those tests for AO evaluation. XYZ supports [vector arrows](docs/xyz-vectors.md). Properties → Object → Structure shows a live subscript formula and electron count, with “neutral assumed” when charge is absent.
 
-### Bond orders are the sole ground truth
+**Shortcuts.** `V` selects View, `E` Edit and `M` Measure. In View/Measure, `C` opens Coordinates and `Q` Quick actions; Camera is a panel, not the V shortcut. The old global bare S/B/I/A bindings were retired. In Edit, `Shift+R` moves COM to origin, `P` aligns principal axes, `O` optimizes, `S` opens Symmetry, `/` selects Build/focuses search, and Space previews/applies hydrogen adjustment. Text-entry and clipboard guards take precedence. Live Help is the detailed reference.
 
-Hybridization, geometry, and coordination are always derived. Formula:
-```
-adjustedVE = ve − formalCharge
-lonePairs = (adjustedVE − projectedBV) / 2
-stericNumber = fullBondCount + lonePairs   → VSEPR lookup
-```
+## Already delivered — do not schedule as new features
 
-Coordination geometry rules: general `min(ve, 8−ve)` for main-group base valence; step-of-2 hypervalent extensions for period ≥ 3; hardcoded exception tables for groups 13–14 and transition metals. 11 geometries from CN=1 through CN=8 fully implemented with passing test suites (`coordination.js`: 155 tests; `geometry-inference.js`: 92 tests).
+- Portable [sessions/recovery](docs/sessions.md), retained sources and validate-before-commit restoration with requested/applied readbacks. Presets and single-structure exports are narrower formats.
+- Persistent [measurements](docs/measurements.md), undo, CSV and trajectory-linked updates.
+- Publication [Figure grids](docs/figure-composer.md) and a supported [headless runner](api/README.md). Explicit readiness waits for a stable presented view including depth limits; jobs pin/record browser, viewport, scale, theme and typeface. One teardown owner and an explicit completion boundary are required.
+- Private scientific-buffer ownership and standing write traps, including [session-capture independence](docs/maintenance/private-scientific-buffers.md).
+- Twelve-method validated [Edit API](docs/api/edit-build-api.md). Selection writes validate the whole request; builds reject unsupported sources. Testing functions were requirements evidence, not an API to expose wholesale.
+- Export-only [forte2 interchange](docs/forte2-interchange.md); **CAS is default**. ROHF includes singly occupied orbitals in both CAS totals for either sign of ms. GHF CAS counts spinors directly; other methods retain spatial-pair counting. GHF input uses `System(x2c=X2CParams(x2c_type="so"))`. Francesco signed off these conventions. No execution or interchange import.
+- Native trajectory/vibration WebM export, PNG/XYZ and batch images. Both video completion paths are mandatory in Smoke.
 
-### Per-scene scoping is non-negotiable
+## Architecture and checks
 
-Each scene wraps one molecule and its associated cubes/trajectories. Selection, multi-edit, arithmetic operands, and the trajectory popover all scope per-scene. The "different molecule = new scene" dispatch rule is what enables this. Don't break it without rewriting the data model.
+- **Classic scripts in fixed order, no bundler or ES modules.** Globals are deliberate contracts; inspect `index.html` before moving scripts.
+- Source/scene/layer identity is stable, not filename-based. Per-layer grid keys include source/orbital/geometry/settings. Stored topology/annotations remain authoritative after import; perception is explicit, not a render-loop operation. Stored conjugated matching is separate from decorative aromatic-ring detection.
+- Keep selection, editing and playback per scene. Trajectories synchronize to the scene master frame with loop/clamp policy, not normalized time fractions. Update drag targets in place rather than rebuilding controls mid-gesture.
+- Scientific buffers use private copy boundaries, transfer/detach sealing and shared-buffer rejection. Session capture owns buffers and metadata before returning.
+- Keep units **below 15 dependencies**, counted from their actual inputs. Audit earliest callback activation and construction order on extraction; a null guard does not repair initialization order.
+- Do not introduce a second setting owner or revive rejected Glass/composable-Abs proposals.
 
-### Bonds are first-class data; perception is a utility service
+The complete requirement is **37 passing / 0 failing / 37**, accepted set **intentionally empty**: all suites once, both exporters, both Looks paths, 102 captures twice/exact repeat, cache identities in eight contexts/all minima, units, WebKit and construction. Suite/worker/join enforce completion counts; exit zero with missing work fails. Native-click suites stay native unless separately authorized.
 
-Bond orders and connectivity are stored explicitly in the molecule's data, not re-derived on every render. Bond perception (auto-detect from atom positions) is a utility for new molecules; once a bond is in the data, it stays.
+The app.js ratchet gates **260 AST variable-let bindings**, not regex lines or declaration statements. A fresh measurement at the deployed tree passed 260/260. The legacy statement audit keeps its original base and exact fingerprinted removal list. The overlap baseline is separate from accepted ordinary failures.
 
-### Frame-locked sync over time-normalized
+Run `make check`, relevant units and **every local audit** before pushing a product candidate. [Makefile](Makefile), [CI](.github/workflows/ci.yml), [checkpoint notes](docs/maintenance/checkpoint-counts.md) and AGENTS define the contracts. Log actual/expected comparands before assertions on both outcomes. Preserve failures; do not retry or relax them without permission. Diagnostics do not replace acceptance.
 
-When trajectories of different lengths are sync'd, master.frame is monotonic and each trajectory shows `master.frame % traj.length` (with optional clamp if loop is off). Time-normalized sync (mapping all trajectories to [0,1]) was rejected as confusing UX.
+Capture recording requires prior approval of exact changes, post-record verification and zero residual difference. Version updates normally change 204 saved fields across 102 captures; each update needs its own approval. No version tolerance/mapping remains.
 
-### Build-once, update-in-place for the trajectory popover
+Pushing `main` publishes **vibemol.org** through Pages independently of ordinary CI. Beta is retired. Merge the tested tree into local main, verify it and local checks, then push only when authorized and green. Verify publication/status jobs. Do not move tags. See [asset versions](docs/asset-versioning.md) for the approved same-version patch URL.
 
-The trajectory popover was rewritten to build its DOM once and update only attributes/values on tick or state change. NEVER rebuild children on every frame. This was a major performance and correctness fix; verified zero `childList` mutations during 3-second playback. Don't regress this.
+## Paused and unscheduled work
 
-When the user is actively editing an input (`document.activeElement === fpsInput`, or slider `:active`), don't overwrite their value from the tick. Their edit is the source of truth until blur/release.
+No next product increment is selected. These are boundaries, not a work queue:
 
-### Cube data binding is per-layer, not per-label
+| Work | Disposition |
+| --- | --- |
+| AI connector | **Paused/reverted from production.** Preserve designs/prototypes; do not restore shell, adapter, consent, relay or tools incidentally. [Consent document](docs/connector-consent.md) is historical. |
+| 0.11 controls/command bus | **Stopped at the measurement gate:** zero same-scope divergences across nine pairs/12 cases; four orbital/default distinctions are explicit. Keep the [invariant](docs/maintenance/paired-controls-invariant.md), no Phase 0/bus. |
+| General undo | **Design-only.** Existing Edit/measurement undo stays; ownership landing does not authorize general history. |
+| Testing wrappers 2+ | Held, including separate fragment-cue review. Keep `performSelectionMoveDrag`; no native-suite API conversions. |
+| Browser profiling/sharding | Measurements exist; no new sharding work selected. Looks duration varies too much to allocate from one sample. |
+| Placement #55 | Justified, not scheduled. Guard covers 18 contexts/112 signatures, twelve exact latent pairs; coverage incomplete. Shrinks freely, grows only with permission. Floating UI experiment closed without execution: no obstacle avoidance. [Audit](docs/maintenance/coordinates-placement-policy.md). |
+| Runner #81 | Keep Ubuntu 24.04 pin. OS-key caches **before** unpinning; centralize pin in that pass. Recheck Figure's four CDP message strings on a Chrome bump; it fails closed. |
+| Clamp/relocations | Preserve held clamp branch. `adaptivePopoverController` and `addGrowNeighborDirs` belong with the first authorized relocation using the exact-removal allowance. |
 
-Cube volume data must be keyed on the layer's stable ID (or scene + layer position), never on label like "L0". Earlier bug: the second scene's L0 was rendering the first scene's L0 data because of a label-keyed cache. Fixed in commit `08bce69` (v0.8.7r). Record-backed cube layers resolve render data from `record.vol`, not stale `layer.cubeData`. Layer-owned data is retained only for arithmetic layers and duplicates.
+[Carried findings](tests/baselines/carried-defects.json) retain their classifications: **#42 and #70 open/unclassified, not carried/accepted; #71 carried, unaccepted**. Its inaccurate clear-result flag affects a hint; its mock omitted the callback side effect. Later passes do not classify these findings. Historical `relativeBatchPriority` text for closed #53 is not a new work order.
 
-### Session-only state
+## Local material and starting point
 
-Per-layer state (iso, preset, color scheme, name, visibility) is intentionally session-only. No persistence across reloads. This matches Phase 1's data model and keeps things simple. Persistence is Phase 3 territory and needs its own design (schema versioning, IndexedDB, conflict resolution).
+At review, repo-root main had unrelated `.gitignore` edits and untracked `COMMANDS_AND_CONTROLS_PLAN.md`, `docs/connector-pilot/`, `out/connector-reference/`. Preserve them; this update does not publish them. The contract bundle is not guaranteed in a fresh clone.
 
-### Material system: Solid, not Glass
+Preserved branches include `prototype` (`9e909f65`), `codex/connector-prototype` (`2ee3daf5`), `codex/finite-clamp-contract` (`8e69a99b`), `codex/browser-test-profiling` (`281317c7`) and `feat/palette-close-on-select` (`9a962d5c`). These are snapshots, not prune/reset instructions. **Never merge the prototype into main**: its broad AgentSeam bypasses the product audit. A connector restart needs new scope; intended clients include Claude, ChatGPT and Codex, with empirical compatibility checks.
 
-Glass material was abandoned after repeated failures. Root cause: Beer-Lambert absorption asymmetry between bright gold (`#f2a900`) and very dark navy (`#0033a0`, brightness ≈ 0.18, not the assumed 0.37). Replaced with a Solid material system (Emissive / Matte / Satin / Lacquer / Metal, plus Gel and Ceramic candidates).
-
-### Design tokens
-
-Emory brand colors: gold `#f2a900`, navy `#0033a0`. Geist/Geist Mono is the default font pair; Inter and IBM Plex alternatives are supported app preferences. Use the shared font and color tokens for consistent UI styling.
-
-### Tech stack constraints
-
-- Vanilla JavaScript, no bundler.
-- Three.js r160 (NOT r142+). Don't use `THREE.CapsuleGeometry` (r142+) or `THREE.OrbitControls` (unavailable). Use `CylinderGeometry`, `SphereGeometry`, or custom geometries instead.
-- WebGL2.
-- Local Python HTTP server during dev.
-
-### Testing infrastructure
-
-- All code targets ES modules with explicit exports.
-- Inline test suites where they exist (coordination.js, geometry-inference.js).
-- E2E smoke test: `tests/e2e/smoke.py`. Run with `VIBEMOL_SMOKE_VERBOSE=1`.
-- `make check` and `make test-unit` are the standard commands.
-- No comprehensive UI/visual regression test coverage yet — this is a known gap.
-
-### Browser automation for QA
-
-Claude in Chrome MCP can drive the browser for live testing, but it's intermittently flaky in long sessions. Patterns that work:
-- Load methane sample via "Open methane valence orbitals" link
-- Inject synthetic cube files via `document.getElementById('fileInput').files = dataTransfer.files; fi.dispatchEvent(new Event('change'))` to simulate file drops
-- Track DOM mutations via MutationObserver to verify build-once architecture
-- A `window.__vmqa` test harness pattern: `{ snap(), rowByLabel(label), errors[] }` is consistently set up by the agent at session start
-
-Source line numbers shift as code changes — always re-search by function name rather than using cached line numbers.
-
-When app.js logs are scrubbed by the classifier, return character-code arrays (`charCodeAt`) instead of raw strings.
-
----
-
-## Phase 1 — Done
-
-Per-scene scoping, the dispatcher rule (different molecule = new scene), the core scene-graph data model, the outliner with its kind-aware rows. This is the foundation everything else sits on. Don't second-guess Phase 1 invariants.
-
----
-
-## Phase 2 — Done
-
-Five sub-clusters all shipped:
-
-### 2a — Layered cubes
-- **2a-1**: Per-cube-layer properties + Duplicate gesture
-- **2a-2**: Multi-select infrastructure + multi-edit + multi-delete
-- **2a-3**: Arithmetic combine layers (Linear combination, Product, Abs)
-- **2a-4**: Auto-resample for mismatched grids (trilinear interpolation, finest-bounding-box target, zero-extrapolation outside operand grids)
-- **2a-5**: Edit existing arithmetic + auto-recompute downstream
-
-### 2b — Multi-trajectory + sync
-Two-clock model: per-scene independent vs sync master. Frame-locked sync with modulo wrap. RAF tick loop. Sync controls disable on sync'd rows. Master Reset button. Header Play/Reset are global. Build-once update-in-place architecture for the popover (the major rewrite — see Architecture section).
-
-### 2c-1 — Inline rename + `+` button + right-click on all kinds
-Double-click to rename; rename works on cubes, arithmetic layers, scenes, trajectory scenes, molecules. Group rows are NOT renameable. `+` button next to SCENES opens "Add cube file..." menu. Right-click extended to Molecule rows, Orbitals group headers, scene wrappers, trajectory scenes — each with kind-appropriate items.
-
-### 2c-2 — Drag gestures
-Drag-reorder within a group (with label renumbering). Drag-merge between scenes (rejected on molecule mismatch with toast). Shift-drag duplicate. Multi-select drag preserves order. Eye icons and rename inputs have `draggable="false"` to prevent accidental drag from interactive children.
-
-### Polish bundles
-Multiple polish PRs shipped along the way:
-- Sync controls disable correctly when row is sync'd
-- Trajectory popover widened (Sync label no longer clipped)
-- `[CUBE]` debug logs guarded behind `window.VIBEMOL_DEBUG_CUBE` flag
-- Scene wrapper names stable across active-layer changes and graph rebuilds; also preserve user-renamed names
-- Trajectory scene meta shows "N frames" not "N atoms"
-- Cube data leakage between scenes fixed (commit `08bce69`, v0.8.7r)
-- Auto-focus newest item on add
-- Auto-hide other scenes on add (every add cascades)
-
----
-
-## What's open RIGHT NOW (the live thread when this context was captured)
-
-The user (Francesco) was working through the "Add file" toolbar button. Conversation arc:
-
-1. Francesco asked: when adding a file, only the newest should be visible; he was getting accumulation. → Drafted "auto-hide other scenes on add" prompt; agent shipped it.
-2. Francesco tested; reported it didn't work consistently. → I tested at v0.8.7t and found the cascade DID work for new-scene loads and duplicates. Then I started testing same-molecule append.
-3. Francesco redirected: he was actually pointing at the "Add file" toolbar button (icon `note_add`, file-with-plus glyph at toolbar coord ~50,127, distinct from the "Open file" `upload_file` button at ~14,127 and the SCENES `+` at ~301,164).
-4. I drafted a "force new scene" interpretation. Francesco corrected me: the actual intent is **"Create new molecule"** — start a brand-new empty scene for editing, switch to Edit mode, render nothing.
-5. I drafted a complete prompt for that interpretation. **The prompt was finalized but NOT yet sent to the agent.** It's the immediate next action item.
-
-The full final prompt is in the conversation transcript; I'll summarize it inline below in "Next concrete actions."
-
----
-
-## Phase 3 — The strategic conversation (parked)
-
-Phase 2 is done. Phase 3 is "what kind of product VibeMol becomes." Five candidate directions discussed extensively but not yet committed:
-
-### Direction A — Persistent state
-Autosave per-layer state, named sessions, IndexedDB-backed sessions, JSON export/import, URL-hash state for simple cases. Most foundational. Affects everyone. Requires schema versioning. Estimated couple months of focused work.
-
-### Direction B — Measurements and analysis
-Distances, angles, dihedrals, isosurface integrals, difference-density integrals, plot panel along trajectory frames, CSV export. Most aligned with chemistry research workflows. Less flashy than rendering features, more useful for paper-writing.
-
-### Direction C — Rendering quality and export
-High-res screenshot, video/GIF export, POV-Ray/Blender export, camera bookmarks, animation paths, better materials (subsurface scattering, more transparency). Best for publication figures.
-
-### Direction D — QC integration
-Direct integration with Forte/QForte. Submit jobs from VibeMol. Pull from cloud QC. Templates for NTOs, EDA, IBO, etc. Maybe a Python kernel for custom analysis. Most ambitious; multi-quarter; transforms the product. Forces architectural decisions that propagate everywhere.
-
-### Direction E — Polish/stabilization
-Stop adding features for a quarter. Comprehensive test coverage, accessibility, performance (large molecules, long trajectories), documentation, browser compat (only Chrome tested currently). Unsexy but the right call before D.
-
-### Direction F — Collaboration
-Multi-user, sharing, comments, real-time co-viewing. Adds backend infrastructure VibeMol doesn't currently need. Actively deferred.
-
-### My read
-- **A is the most natural next step.** Phase 2 made VibeMol capable; without persistence, users can't keep what they make.
-- **E is the most responsible next step.** Phase 2 shipped fast and bug surface needs hardening before real research use.
-- **A and E together** would be the strongest combination if pursuing two.
-- **D is the strategic long-term direction** if VibeMol's role is the visualization layer of the Evangelista group's research stack.
-
-Three questions that decide:
-1. Who's actually using VibeMol right now and for what?
-2. Is there a near-term external event (conference, paper, demo)?
-3. What's the loudest user complaint?
-
-Francesco hasn't picked a direction yet. Don't start Phase 3 work until he does.
-
----
-
-## Open items (discussed but never implemented)
-
-Things that came up across the conversations but were deferred or never made it into a prompt:
-
-### "Create new molecule" button — DRAFTED, NOT SENT
-The next concrete action when Francesco resumes. See "Next concrete actions" below.
-
-### Phase 2c-3 — Arithmetic ergonomics (deferred indefinitely)
-- Visual indicator for arithmetic dependencies (hover an arithmetic layer, briefly highlight its inputs)
-- Keyboard shortcut for Combine popover (Cmd+K)
-
-Both are nice-to-have. Defer until users complain.
-
-### Composable Abs (dropped permanently)
-Abs as a unary operation works. Composable Abs (e.g., `|L0 + L1| − |L2 + L3|`) was discussed and explicitly dropped. Don't re-add without conversation.
-
-### FPS clamp-to-max-on-blur (minor, not critical)
-The FPS input doesn't clamp to max=120 on blur; values like 999 stick. Spec mentioned this as a suggestion. Not critical.
-
-### Draft Operand reordering in Combine popover (deferred)
-For non-commutative operations. Phase 2c-2 didn't include this; it's listed in 2c-3 territory.
-
-### Scene-creation menu beyond "Add cube file..." (deferred)
-The `+` button's menu currently has just one item. Future expansions discussed: "New combined layer...", "Add measurement", etc. Wait until users have a clear need.
-
-### Persistent dismissal of trajectory popover (session-only by design)
-The flag tracking "user closed the trajectory popover" is session-only. Persistence across reloads is part of Phase 3 / Direction A.
-
-### Manual reopen of closed trajectory popover via toolbar (lightly handled)
-There's a toolbar Trajectory toggle. The auto-open-on-first-trajectory and auto-close-on-last-removed behaviors cover the common case. If improvements are needed, they're polish-level.
-
----
-
-## Working patterns Francesco prefers
-
-After many sessions:
-
-- **Deep technical analysis with concrete recommendations**, not high-level options menus. Don't ask 5 questions; pick a direction and explain the trade-offs.
-- **Visual/iterative validation**: screenshots and demos before committing to implementation. Show, don't just describe.
-- **Diagnose root causes via source inspection**, don't guess. When a bug surfaces, the expected workflow is: search source for the relevant function, read it, identify what's wrong, prescribe a fix.
-- **Direct unambiguous feedback** is normal. Push back on ideas with reasons.
-- **"Dream big" on interaction design** is welcomed, but proposals must survive critical UX scrutiny. Don't propose gesture-based editing as a real plan (rejected once already as too hard to learn).
-- **Inline test suites** for new modules with non-trivial logic. Match the pattern in coordination.js / geometry-inference.js.
-- **Verification via QA harness** at end of each shipped feature: load methane sample, exercise the new path, confirm via DOM inspection or visual check, report what passes and what fails.
-
----
-
-## Next concrete actions (in order)
-
-### 1. Send the "Create new molecule" prompt (it's drafted, ready)
-
-The toolbar button currently labeled "Add file" (icon `note_add`, file-with-plus glyph at toolbar coord ~50,127, near the "Open file" button) should be repurposed. Click does NOT open a file picker. Instead:
-
-1. Creates a new empty scene immediately, in-process. Default name "New molecule" (or auto-incrementing "Molecule N"). The scene contains an empty Molecule child (zero atoms) and an empty Orbitals group (zero cube layers).
-2. The new scene's wrapper visibility is OFF (eye-crossed) — nothing renders.
-3. Other scenes auto-hide per the existing cascade rule.
-4. The new scene becomes focused.
-5. Side panel auto-switches to Edit mode (whatever the existing Edit tab offers — atom palette, fragment library, etc.).
-6. Rename the button: aria-label and tooltip become "Create new molecule" (or "New molecule" if shorter is preferred). Icon stays `note_add` or change to `science`/`add_circle`.
-
-The full prompt with verification steps is in the conversation transcript right before the compaction request. If you can't find it, ping Francesco — but the summary above covers the load-bearing pieces.
-
-### 2. After "Create new molecule" ships, ask Francesco about Phase 3 direction
-
-Phase 2 will be fully complete after this small button rewire. Then it's time for the Phase 3 strategic conversation. Walk Francesco through directions A–E, ask the three triage questions, recommend a starting direction.
-
-### 3. Don't start Phase 3 work until Francesco picks a direction
-
-He hasn't committed yet. Don't draft a Phase 3a prompt unprompted.
-
----
-
-## Things to NOT do without explicit conversation
-
-- Add backend infrastructure (collaboration, server-side rendering, anything that's not static-site).
-- Switch tech stacks. Keep vanilla JS, Three.js r160, Python local server.
-- Modify the data model invariants (per-scene scoping, bond-order ground truth, frame-locked sync).
-- Re-add Glass material (failed; Solid replaced it for good reasons).
-- Re-add composable Abs.
-- Implement persistence (IndexedDB, localStorage, anything across reloads) — that's a Phase 3 design conversation, not a small PR.
-- Use synthetic shift-drag tests to verify "shift-drag duplicate" — the Chrome MCP `left_click_drag` modifier parameter doesn't reliably hold shift through the drop. Verify by hand instead.
-- Decide on Phase 3 direction without Francesco. He's the product owner.
-
----
-
-## Files and locations to know
-
-- `assets/app/js/app.js` — main application code (large file, search by function name)
-- `assets/app/js/arithmetic-grid.js` — arithmetic compute (added in Phase 2a-4)
-- `assets/app/js/coordination.js` — VSEPR/coordination geometry (155 tests, all passing)
-- `assets/app/js/geometry-inference.js` — geometry inference (92 tests, all passing)
-- `tests/e2e/smoke.py` — E2E smoke test
-- `Makefile` — `make check`, `make test-unit`
-- Sample cubes: `/assets/data/methane/canonical_1.cube` etc.
-- Test cubes (when you generate them for QA): `/mnt/user-data/outputs/test_cubes/`
-
----
-
-## Closing note
-
-VibeMol is in genuinely good shape. Phase 2 delivered a coherent, capable product. The architecture is sound. The bug rate is low. The remaining work is choosing what kind of product it becomes next, and that's Francesco's call.
-
-When in doubt: ask, then act. Francesco's feedback is direct and worth listening to closely.
+Read `git status`, refs and the post-push run above, then follow Francesco's next request. Use plain language, report mechanisms before code, and let him review visual iterations before lengthy tests when asked. Create new molecule, sessions, measurements and the other formerly proposed foundations have shipped.
