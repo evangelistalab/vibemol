@@ -47,6 +47,13 @@ def coordinate_row_actions(page):
     copy_h = page.locator('#coordsContent [data-atom-index="1"] [data-coords-action="copy"]')
     for name in ['Display', 'Measure']:
         mode(page, name)
+        if page.evaluate('() => !!window.VibeMolWorkbench'):
+            page.get_by_role('tab', name='Coordinates', exact=True).click()
+        actual = {'panelVisible': page.locator('#coordsPanel').is_visible(),
+                  'copyVisible': copy_h.is_visible()}
+        expected = {'panelVisible': True, 'copyVisible': True}
+        print('[coordinates row action] ' + json.dumps({'mode': name, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected, (name, actual, expected)
         assert page.locator('#coordsContent [data-coords-action="delete"]').count() == 0
         copy_h.click()
         assert page.evaluate('()=>navigator.clipboard.readText()') == 'H 0.950000 0.000000 0.000000'
