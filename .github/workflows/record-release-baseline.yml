@@ -11,7 +11,7 @@ on:
         description: Recording contract
         type: choice
         default: release-0.10.1
-        options: [release-0.10.1, release-0.10.2, release-0.10.3, release-0.10.4, release-0.10.5, declared-api-removal, declared-api-delta, cas-default]
+        options: [release-0.10.1, release-0.10.2, release-0.10.3, release-0.10.4, release-0.10.5, declared-api-removal, declared-api-delta, cas-default, layout-defaults]
 
 permissions:
   contents: read
@@ -19,6 +19,7 @@ permissions:
 jobs:
   record:
     if: >-
+      (inputs.mode == 'layout-defaults' && github.ref == 'refs/heads/codex/record-right-panel-defaults-0.10.11') ||
       (inputs.mode == 'cas-default' && github.ref == 'refs/heads/codex/pr90-cas-default-recording') ||
       (inputs.mode == 'declared-api-removal' || inputs.mode == 'declared-api-delta') ||
       (inputs.mode == 'release-0.10.1' && github.ref == 'refs/heads/codex/release-0-10-1-ci') ||
@@ -49,6 +50,9 @@ jobs:
         run: |
           python -m unittest discover -s tests/unit -p 'test_cas_default_recording.py'
           python -m unittest discover -s tests/unit -p 'test_api_surface_recording.py'
+      - name: Exact layout-delta negative controls
+        if: inputs.mode == 'layout-defaults'
+        run: python -m unittest discover -s tests/unit -p 'test_layout_default_recording.py'
       - name: Resolve Playwright version
         id: playwright
         run: echo "version=$(python -c 'from importlib.metadata import version; print(version("playwright"))')" >> "$GITHUB_OUTPUT"
@@ -73,11 +77,17 @@ jobs:
           VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
           VIBEMOL_RECORDING_WORKER: ${{ matrix.capture }}
         run: |
-          test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          if [ "$VIBEMOL_RECORDING_MODE" = layout-defaults ]; then
+            test "$(git rev-parse HEAD^)" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          else
+            test "$GITHUB_SHA" = "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          fi
           source_root="$RUNNER_TEMP/release-source"
           mkdir -p "$source_root" "$VIBEMOL_TEST_ARTIFACT_DIR"
           git archive "$VIBEMOL_EXPECTED_SOURCE_COMMIT" | tar -x -C "$source_root"
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = layout-defaults ]; then
+            python tests/e2e/characterize.py --source-root "$source_root" --record-layout-delta --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
+          elif [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/characterize.py --source-root "$source_root" --record-api-delta tests/baselines/api-surface-delta.json --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
           elif [ "$VIBEMOL_RECORDING_MODE" = cas-default ]; then
             python tests/e2e/characterize.py --source-root "$source_root" --record-cas-default --record-source-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT" --update-baseline --runs 2
@@ -111,7 +121,9 @@ jobs:
           VIBEMOL_EXPECTED_SOURCE_COMMIT: ${{ inputs.source_commit }}
           VIBEMOL_RECORDING_MODE: ${{ inputs.mode }}
         run: |
-          if [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
+          if [ "$VIBEMOL_RECORDING_MODE" = layout-defaults ]; then
+            python tests/e2e/layout_default_recording.py out/test-artifacts/release-baselines --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
+          elif [ "$VIBEMOL_RECORDING_MODE" = declared-api-removal ] || [ "$VIBEMOL_RECORDING_MODE" = declared-api-delta ]; then
             python tests/e2e/api_surface_recording.py out/test-artifacts/release-baselines --declaration tests/baselines/api-surface-delta.json --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
           elif [ "$VIBEMOL_RECORDING_MODE" = cas-default ]; then
             python tests/e2e/cas_default_recording.py out/test-artifacts/release-baselines --expected-commit "$VIBEMOL_EXPECTED_SOURCE_COMMIT"
