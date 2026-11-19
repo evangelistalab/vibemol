@@ -52,8 +52,53 @@ def bounded_build(page, panel):
     assert box['x']>=canvas['x']+canvas['width']-1 or box['y']>=canvas['y']+canvas['height']-1
 
 
+def default_panel_positions(page):
+    cases = [
+        ('motion.xyz', p.trajectory_text(3), 'trajectoryPanel'),
+        ('water.freq', (p.ROOT/'tests/fixtures/cfour.freq').read_text(), 'vibrationPanel'),
+    ]
+    for name, text, panel_id in cases:
+        result = p.load(page, [{'name': name, 'text': text}])
+        assert result['ok'], result
+        panel = page.locator('#' + panel_id)
+        p.expect(panel).to_have_attribute('data-wb-placement', 'right')
+        actual = {'visible': panel.is_visible(), 'bottomDock': page.locator('#workbenchDockBottom').is_visible()}
+        expected = {'visible': True, 'bottomDock': False}
+        print('[workbench default] ' + json.dumps({'panel': panel_id, 'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected
+
+    open_panel(page, 'Coordinates')
+    coordinates = page.locator('#coordsPanel')
+    p.expect(coordinates).to_have_attribute('data-wb-placement', 'right')
+    page.set_viewport_size({'width':390, 'height':740})
+    p.expect(coordinates).to_have_attribute('data-wb-placement', 'bottom')
+    assert layout(page)['placements']['coordsPanel'] == 'right'
+    page.set_viewport_size({'width':1600, 'height':1000})
+    p.expect(coordinates).to_have_attribute('data-wb-placement', 'right')
+    if page.locator('body').evaluate('el => el.classList.contains("sidebar-collapsed")'):
+        page.locator('#toolbarShowBtn').click()
+
+    for placement, action in [('bottom', 'Dock below'), ('float', 'Float window')]:
+        window_menu(page, coordinates, action)
+        p.expect(coordinates).to_have_attribute('data-wb-placement', placement)
+        page.wait_for_function('''place => {
+            const stored = JSON.parse(localStorage.getItem('vibemol.workbench.lab.v1'));
+            return stored?.last?.placements?.coordsPanel === place;
+        }''', arg=placement)
+        page.reload()
+        page.wait_for_function('() => window.VibeMolWorkbench')
+        assert p.load(page, [{'name':'water.freq', 'text':cases[1][1]}])['ok']
+        open_panel(page, 'Coordinates')
+        actual = {key: layout(page)['placements'][key] for key in
+                  ['coordsPanel', 'trajectoryPanel', 'vibrationPanel']}
+        expected = {'coordsPanel': placement, 'trajectoryPanel': 'right', 'vibrationPanel': 'right'}
+        print('[workbench saved placement] ' + json.dumps({'actual': actual, 'expected': expected}), flush=True)
+        assert actual == expected
+        p.expect(coordinates).to_have_attribute('data-wb-placement', placement)
+
+
 def modes(page):
-    page.evaluate('() => VibeMolWorkbench.applyLayout({})')
+    page.evaluate('() => VibeMolWorkbench.applyLayout({placements:{coordsPanel:"bottom"}})')
     assert p.load(page,[{'name':'modes.molden','text':p.MOLDEN}])['ok']
     page.locator('#modeMeasureBtn').click()
     assert page.locator('#measurementsPanel').is_visible()
@@ -171,6 +216,8 @@ def modes(page):
 
 
 def run(page):
+    # Exercise the user's two-dock arrangement independently of default placement.
+    page.evaluate('() => VibeMolWorkbench.applyLayout({placements:{coordsPanel:"bottom"}})')
     assert p.load(page,[{'name':'orbitals.molden','text':p.MOLDEN}])['ok']
     orbitals=page.locator('#moldenInspector'); coordinates=page.locator('#coordsPanel')
     page.wait_for_function('() => document.getElementById("moldenInspector").dataset.wbPlacement==="right"')
@@ -442,7 +489,7 @@ def main():
                 assert page.locator('#workbenchBar').count()==0
                 assert page.locator('#toolbar #toolbarModeRow').count()==1
                 page.goto(url+'?workspaceLab=1&appearanceStudy=1');page.wait_for_function('() => window.VibeMolWorkbench')
-                run(page);modes(page);assert not errors,errors
+                default_panel_positions(page);run(page);modes(page);assert not errors,errors
             except Exception:
                 p.write_failure_artifacts(page,p.ARTIFACTS,'workbench-failure',errors,consoles);raise
             finally:context.close()
