@@ -1,6 +1,7 @@
 """Validated product Edit API matrix; no existing native-click test is converted."""
 import json
 from collections import Counter
+from math import dist
 from pathlib import Path
 import premerge as p
 from surface_shadows import settle
@@ -25,9 +26,9 @@ XYZ='3\nAPI\nC 0 0 0\nC 1.5 0 0\nH -1 0 0\n'
 CARBON='1\nAPI\nC 0 0 0\n'
 METHANE='5\nAPI\nC 0 0 0\nH 1 0 0\nH -1 0 0\nH 0 1 0\nH 0 0 1\n'
 
-def compare(label,actual,expected):
- print('[edit-api] '+json.dumps(dict(case=label,actual=actual,expected=expected)),flush=True)
- COVERAGE['edit-api'] += 1
+def compare(label,actual,expected,*,phase='edit-api'):
+ print(f'[{phase}] '+json.dumps(dict(case=label,actual=actual,expected=expected)),flush=True)
+ COVERAGE[phase] += 1
  assert actual==expected,dict(case=label,actual=actual,expected=expected)
 
 def result(page,expression):
@@ -35,6 +36,87 @@ def result(page,expression):
  print('[edit-api-result] '+json.dumps(row),flush=True)
  compare('result-ok',row['ok'],True)
  return row
+
+def catalog_molecule_sites(page):
+ def check(label, actual, expected):
+  compare(label, actual, expected, phase='edit-api-catalog-site')
+
+ def call(method, request):
+  return page.evaluate('([method, request]) => VibeMolEdit[method](request)', [method, request])
+
+ def volume():
+  return page.evaluate('()=>VibeMolStructure.exportActive().volume')
+
+ ready(page, '''()=>VibeMolEdit.listBuildCatalog().value.some(entry =>
+  entry.entryId === 'carbon-monoxide' && entry.attachModes.includes('coordinate'))''', site='co-catalog')
+ assert p.load(page, [{'name':'iron.xyz', 'text':'1\nIron\nFe 0 0 0\n'}])['ok']
+ assert call('enter', {'tool':'build'})['ok']
+ context = page.evaluate('()=>VibeMolEdit.context().value')
+ iron_id = context['atoms'][0]['id']
+ catalog = page.evaluate('''()=>VibeMolEdit.listBuildCatalog().value
+  .find(({entryId}) => entryId === 'carbon-monoxide')''')
+ entry = {key:catalog[key] for key in ('entryId','entryKind')}
+ target = dict(system={key:context[key] for key in ('systemId','fingerprint')},
+               anchor=dict(kind='ids', ids=[iron_id]), bondOrder=1)
+ initial = volume()
+ query = call('listBuildSites', {**target, **entry})
+ value = query.get('value', {})
+ sites = value.get('sites', [])
+ check('CO lists six octahedral Fe sites', dict(ok=query['ok'], kind=entry['entryKind'],
+       geometry=value.get('geometryId'), anchor=value.get('anchorId'), indices=[site['index'] for site in sites],
+       uniqueSiteIds=len({site['siteId'] for site in sites})),
+       dict(ok=True, kind='molecule', geometry='octahedral', anchor=iron_id, indices=list(range(6)), uniqueSiteIds=6))
+
+ fragment = {**target, 'entryId':'methyl'}
+ implicit = call('listBuildSites', fragment)
+ explicit = call('listBuildSites', {**fragment, 'entryKind':'fragment'})
+ check('Fragments keep their default catalog kind', dict(ok=implicit['ok'], equal=implicit==explicit),
+       dict(ok=True, equal=True))
+ invalid = [
+  ({**target, 'entryId':entry['entryId']}, 'CATALOG_NOT_FOUND'),
+  ({**target, **entry, 'entryKind':'unknown'}, 'CATALOG_KIND'),
+  ({**target, **entry, 'entryId':'benzene'}, 'ATTACH_POLICY_UNSUPPORTED'),
+  ({**target, 'element':'C', 'entryKind':'molecule'}, 'INVALID_REQUEST'),
+ ]
+ rejected = [call('listBuildSites', request) for request, _ in invalid]
+ check('Catalog site query rejects invalid payloads without mutations',
+       dict(errors=[(result.get('error', {}).get('code'), result.get('mutation', {}).get('state')) for result in rejected],
+            unchanged=volume()==initial),
+       dict(errors=[(code, 'none') for _, code in invalid], unchanged=True))
+
+ chosen = sites[4]
+ request = {**target, **entry, 'direction':chosen['direction'], 'operation':'attachFragment',
+            'attachPolicy':'append', 'hydrogens':'preserve', 'warnings':'reject'}
+ preview = call('validateBuild', request)
+ check('CO validation prepares two atoms and changes nothing', dict(ok=preview['ok'],
+       mutation=preview['mutation']['state'], created=len(preview.get('value', {}).get('created', [])),
+       removed=preview.get('value', {}).get('removed'), unchanged=volume()==initial),
+       dict(ok=True, mutation='none', created=2, removed=[], unchanged=True))
+ applied = call('applyBuild', request)
+ after = volume()
+ elements = {atom['id']:atom['Z'] for atom in after['atoms']}
+ donor = next((atom for atom in after['atoms'] if atom['Z']==6), None)
+ bonds = sorted((sorted([elements[bond['a']], elements[bond['b']]]), bond['order'], bond['style'])
+                for bond in after['bonds'])
+ operation = after['fragmentOps'][-1] if after['fragmentOps'] else {}
+ check('CO attaches through carbon at the chosen site', dict(ok=applied['ok'],
+       mutation=applied['mutation']['state'], matched=applied.get('requested')==applied.get('applied'),
+       elements=sorted(elements.values()), bonds=bonds,
+       donorAtSite=bool(donor and dist([donor[axis] for axis in 'xyz'], chosen['position']) < 1e-8),
+       catalog={key:operation.get(key) for key in entry}, ironUnchanged=after['atoms'][0]==initial['atoms'][0]),
+       dict(ok=True, mutation='applied', matched=True, elements=[6,8,26],
+            bonds=[([6,8],3,'covalent'),([6,26],1,'metal-dative')], donorAtSite=True,
+            catalog=entry, ironUnchanged=True))
+ fresh = {key:applied['context'][key] for key in ('systemId','fingerprint')}
+ updated = call('listBuildSites', {**target, **entry, 'system':fresh})
+ open_sites = updated.get('value', {}).get('sites', [])
+ check('CO occupies exactly the chosen site', dict(ok=updated['ok'], open=len(open_sites),
+       chosenOpen=any(dist(site['position'], chosen['position']) < 1e-8 for site in open_sites)),
+       dict(ok=True, open=5, chosenOpen=False))
+ page.locator('#canvas').focus()
+ page.keyboard.press('ControlOrMeta+z')
+ check('Undo restores the pre-attachment structure', volume(), initial)
+
 
 def run(page,url):
  page.add_init_script(Path(__file__).with_name('edit_api_probe.js').read_text())
@@ -139,6 +221,7 @@ def run(page,url):
   row=page.evaluate('()=>{const before=VibeMolStructure.exportActive(),c=VibeMolEdit.context().value;const resolved=VibeMolEdit.resolveSelection({kind:"all"});const rejected=VibeMolEdit.applyBuild({system:{systemId:c.systemId,fingerprint:c.fingerprint},operation:"placeAtom",element:"C",position:[2,0,0],hydrogens:"preserve",warnings:"allow"});return {before,after:VibeMolStructure.exportActive(),resolved,rejected}}')
   compare(name+'-resolution',row['resolved']['ok'],True);compare(name+'-write',dict(code=row['rejected']['error']['code'],mutation=row['rejected']['mutation']['state']),dict(code='SOURCE_NOT_EDITABLE',mutation='none'));compare(name+'-unchanged',row['after']['volume'],row['before']['volume'])
  compare('write-counter-controls',all(v>0 for k,v in page.evaluate('()=>__editApiEffects()').items() if k in ('atom','group','operation','history','apply')),True)
+ catalog_molecule_sites(page)
  compare('page-errors',errors,[])
 
 
@@ -157,7 +240,7 @@ def run_matrix(output):
     finally:context.close()
     compare('residual-contexts-'+name,len(browser.contexts),0)
   finally:browser.close()
- require_phase_counts(dict(COVERAGE),'tests/e2e/premerge.py','edit-api','edit-api-rejection')
+ require_phase_counts(dict(COVERAGE),'tests/e2e/premerge.py','edit-api','edit-api-rejection','edit-api-catalog-site')
  (output/'summary.json').write_text(json.dumps(dict(passed=True,residualContexts=0,checkpointCounts=dict(COVERAGE))))
 
 if __name__=='__main__':

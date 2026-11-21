@@ -588,6 +588,9 @@
   function planAtomHydrogens(atom, env, options = {}) {
     const z = Number(atom && atom.Z) | 0;
     if (!isAutoHydrogenSupportedAtomicNumber(z)) return null;
+    // Only the neutral oxygen specified by Build can receive H while bound solely to metal.
+    if (z === 8 && env?.metalNeighbor && env.neighborCount === 0
+        && (!options.metalOxygenDonorId || options.metalOxygenDonorId !== atom.id)) return null;
     if (env?.metalNeighbor && (Number(atom.formalCharge) < 0 || [9, 17, 35, 53, 85, 117].includes(z))) return null;
     const rule = typeof options.resolveRule === 'function'
       ? options.resolveRule(atom, env, getAutoHydrogenRule(z))
@@ -675,6 +678,7 @@
         resolveRule: options.resolveRule,
         resolveGeometry: options.resolveGeometry,
         bondLengthScale: options.bondLengthScale,
+        metalOxygenDonorId: options.metalOxygenDonorId,
       });
       if (!plan) {
         skipped.push({ atomIndex, atomId: String(atom.id || ''), reason: 'unsupported' });
@@ -789,7 +793,7 @@
       const parentCount = Number(plan && plan.stats && plan.stats.parentCount) || 0;
       const hydrogenLabel = hydrogenCount === 1 ? 'hydrogen' : 'hydrogens';
       const atomLabel = parentCount === 1 ? 'atom' : 'atoms';
-      return `Hydrogen preview: ${hydrogenCount} ${hydrogenLabel} on ${parentCount} ${atomLabel} • Press Space again to apply.`;
+      return `Hydrogen preview: ${hydrogenCount} ${hydrogenLabel} on ${parentCount} ${atomLabel} • Press \`space\` again to apply.`;
     }
 
     function buildPlanForRecord(record, options = {}) {

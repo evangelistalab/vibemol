@@ -176,8 +176,8 @@ def editing_transactions(page):
     return completed
 
 
-def check_edit_value(name, actual, expected):
-    print('[edit-tool-state] '+json.dumps({'case':name,'actual':actual,'expected':expected},sort_keys=True),flush=True)
+def check_edit_value(name, actual, expected, *, phase='edit-tool-state'):
+    print(f'[{phase}] '+json.dumps({'case':name,'actual':actual,'expected':expected},sort_keys=True),flush=True)
     assert actual==expected,(name,actual,expected)
 
 
@@ -322,10 +322,18 @@ def run(page, url):
     page.locator('#modeEditBtn').click();tool(page,'build')
     assert 'Click to place carbon' in state(page)['hint']
     assert page.locator('#editToolStrip [role="radio"]').evaluate_all('(els)=>els.map(e=>e.id)') == ['editAdaptiveAddAtomBtn', 'editTransformToolBtn']
-    assert page.locator('#editTransformToolBtn').inner_text() == 'Transform'
+    transform_button = page.get_by_role('radio', name='Transform', exact=True)
+    transform_shortcut = transform_button.locator('kbd')
+    assert transform_button.get_attribute('aria-keyshortcuts') == 'w'
+    assert transform_shortcut.is_visible() and transform_shortcut.inner_text() == 'w'
+    build_button = page.locator('#editAdaptiveAddAtomBtn')
+    build_shortcut = build_button.locator('kbd')
+    assert build_button.get_attribute('aria-keyshortcuts') == '/'
+    assert build_shortcut.is_visible() and build_shortcut.inner_text() == '/'
     page.mouse.move(900,340)
     page.wait_for_function('()=>VibeMolTesting.getEditBuildState().gestureVoidPreviewVisible')
-    page.locator('#editTransformToolBtn').click();tool(page,'transform')
+    page.locator('#canvas').focus();page.keyboard.press('w');tool(page,'transform')
+    assert build_shortcut.is_visible()
     assert '/ opens Build' in state(page)['hint'] and 'Select atoms to edit' not in state(page)['hint']
     page.mouse.click(900,340)
     assert not p.snapshot(page)['scenes'], 'Transform unexpectedly created a structure'
@@ -338,6 +346,9 @@ def run(page, url):
     page.locator('#canvas').focus();page.keyboard.press('/')
     tool(page,'build')
     search=page.locator('#editBuildSearch')
+    assert search.evaluate('el => el === document.activeElement')
+    page.keyboard.press('w')
+    assert search.input_value() == 'w' and build_button.get_attribute('aria-checked') == 'true'
     search.fill('zzz')
     actual={'empty':page.get_by_text('No matching Build items.').is_visible(),
             'alignment':page.locator('#editMoleculeAlign').is_visible()}
@@ -360,11 +371,11 @@ def run(page, url):
     page.mouse.click(900,340)
     page.wait_for_function('()=>VibeMolStructure.exportActive().volume.atoms.length>0')
     # Atom operator cancellation removes the provisional atom, stays armed.
-    assert state(page)['hint']=='BUILD — Adjust location · Enter confirms · Esc discards this atom',state(page)['hint']
+    assert state(page)['hint']=='BUILD — Adjust location · return confirms · esc discards this atom',state(page)['hint']
     assert page.locator('.vm-edit-tool-hint .vm-tool-badge').inner_text()=='BUILD'
     page.keyboard.press('Escape');tool(page,'build')
     assert not page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms.length')
-    assert 'Esc switches to Transform' in state(page)['hint']
+    assert 'esc switches to Transform' in state(page)['hint']
     page.keyboard.press('Escape');tool(page,'transform')
     assert page.locator('#editToolOverlay').is_hidden()
     assert page.locator('.vm-build-cursor').is_hidden()
@@ -375,7 +386,7 @@ def run(page, url):
         arm(page);close_build(page)
         page.mouse.click(900,340)
         page.wait_for_function('()=>VibeMolStructure.exportActive().volume.atoms.length>0')
-        assert 'Esc discards this atom' in state(page)['hint']
+        assert 'esc discards this atom' in state(page)['hint']
         if coordinate_entry:
             page.locator('#editAddAtomOperatorHeader').click()
         confirmed=page.evaluate('''coordinateEntry=>{
@@ -384,7 +395,7 @@ def run(page, url):
           target.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true,cancelable:true}));
           return {hint:VibeMolTesting.getEditBuildState().hint,structure:VibeMolStructure.exportActive().volume};
         }''',coordinate_entry)
-        assert confirmed['hint']=='BUILD — Click to place carbon · Right-drag to rotate · Esc switches to Transform',confirmed['hint']
+        assert confirmed['hint']=='BUILD — Click to place carbon · Right-drag to rotate · esc switches to Transform',confirmed['hint']
         page.locator('#canvas').focus();page.keyboard.press('Escape');tool(page,'transform')
         assert page.evaluate('()=>VibeMolStructure.exportActive().volume')==confirmed['structure'],'Esc removed committed atoms or hydrogens'
         page.locator('#newFileBtn').click();tool(page,'build')
@@ -397,7 +408,7 @@ def run(page, url):
     page.mouse.click(x,y)
     page.wait_for_function('()=>VibeMolTesting.getEditSelectionCount()===1')
     assert page.evaluate('()=>VibeMolStructure.exportActive().volume.atoms[0].Z')==8
-    assert 'Esc clears selection' in state(page)['hint']
+    assert 'esc clears selection' in state(page)['hint']
     # Escape in an editable coordinate retains its native draft cancellation.
     page.wait_for_function('()=>document.querySelector(\'[data-selection-axis="x"]\').value==="0.0000"')
     coordinate=page.locator('[data-selection-axis="x"]');original=coordinate.input_value()
@@ -413,8 +424,8 @@ def run(page, url):
         page.wait_for_function('()=>VibeMolTesting.getEditBuildState().moleculePlacementActive')
         assert state(page)['moleculePlacementKind']==kind
         hint=state(page)['hint']
-        assert hint.startswith('BUILD — ') and f'Esc discards this {kind}' in hint,hint
-        assert name.lower() in hint.lower() and 'Enter confirms' in hint and '•' not in hint,hint
+        assert hint.startswith('BUILD — ') and f'esc discards this {kind}' in hint,hint
+        assert name.lower() in hint.lower() and 'return confirms' in hint and '•' not in hint,hint
         page.keyboard.press('Escape');tool(page,'build')
         assert not state(page)['moleculePlacementActive'] and state(page)['payload']['kind']==kind
         page.keyboard.press('Escape');tool(page,'transform')
@@ -443,6 +454,7 @@ def run(page, url):
                     'expected': 'true',
                 }, sort_keys=True), flush=True)
         wait_for_presented_state(page, '() => true')
+        assert build_shortcut.is_visible() and transform_shortcut.is_visible(), width
         tool_widths = page.locator('.wb-tools').evaluate('el=>({scrollWidth:el.scrollWidth,clientWidth:el.clientWidth})')
         print('[edit-tool-layout] '+json.dumps({
             'viewportWidth': width, 'actual': tool_widths,
@@ -489,6 +501,291 @@ def visual_schemes(browser, url):
     page.close();print('[edit tool] both themes × five orbital schemes rendered (QA-only surface visibility): passed',flush=True)
 
 
+def atom_settings(page, url):
+    completed = 0
+
+    def check(name, actual, expected):
+        nonlocal completed
+        check_edit_value(name, actual, expected, phase='atom-settings')
+        completed += 1
+
+    page.goto(url+'?appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolWorkbench')
+    assert p.load(page,[{'name':'iron.xyz','text':'1\nIron atom\nFe 0 0 0\n'}])['ok']
+    page.locator('#modeEditBtn').click()
+    tool(page, 'transform')
+    wait_for_presented_state(page, '()=>true')
+    page.mouse.click(*find_atom_click_point(page,0))
+
+    trigger = page.get_by_role('button', name='Atom settings', exact=True)
+    trigger.hover()
+    tooltip = page.get_by_role('tooltip').filter(has_text='Formal charge and coordination')
+    tooltip.wait_for()
+    check('Atom settings tooltip', tooltip.inner_text(), 'Formal charge and coordination')
+    trigger.click()
+    popup = page.locator('#editSelectionCoordinationCuePopover')
+    charge = popup.get_by_role('spinbutton', name='Formal charge', exact=True)
+    check('Formal charge field visible', charge.is_visible(), True)
+    check('Geometry in Atom settings', popup.locator('[data-coordination-choice="octahedral"]').is_visible(), True)
+    check('Initial Fe charge', active_atoms(page)[0]['formalCharge'], 0)
+
+    charge.fill('2')
+    charge.press('Tab')
+    check('Fe charge after commit', active_atoms(page)[0]['formalCharge'], 2)
+    page.keyboard.press('Escape')
+    page.locator('#canvas').focus()
+    page.keyboard.press('ControlOrMeta+z')
+    check('Charge undo action', page.locator('#hint').inner_text().splitlines()[-1], 'Undo: Set formal charge')
+    check('Fe charge after undo', active_atoms(page)[0]['formalCharge'], 0)
+    require_phase_counts({'atom-settings':completed},'tests/e2e/edit_tool.py','atom-settings')
+
+
+def halo_placement_hint(page, url):
+    completed = 0
+
+    def check(name, actual, expected):
+        nonlocal completed
+        check_edit_value(name, actual, expected, phase='halo-placement-hint')
+        completed += 1
+
+    page.goto(url+'?appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolWorkbench')
+    page.locator('#modeMeasureBtn').click()
+    measure_key = page.locator('#hint kbd')
+    check('Measure Escape key name', [measure_key.inner_text(), measure_key.get_attribute('aria-label')], ['esc', 'Escape'])
+
+    read_hint = '''key => {
+      const canvas = document.getElementById('canvas');
+      if (key) canvas.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles:true, cancelable:true}));
+      const hint = document.querySelector('.vm-edit-tool-hint');
+      return {hint:hint.textContent, keys:Array.from(hint.querySelectorAll('kbd'), k=>[k.textContent,k.getAttribute('aria-label')]),
+              elements:VibeMolStructure.exportActive().volume.atoms.map(atom=>atom.Z)};
+    }'''
+    expected_pending = dict(hint='BUILD — Chlorine placement pending · Adjust location · return confirms · esc discards',
+                            keys=[['return', 'Return'], ['esc', 'Escape']], elements=[26, 17])
+    for native in (True, False):
+        assert p.load(page,[{'name':'iron.xyz','text':'1\nIron atom\nFe 0 0 0\n'}])['ok']
+        page.locator('#modeEditBtn').click()
+        arm(page, 'Cl')
+        close_build(page)
+        wait_for_presented_state(page, '()=>true')
+        page.mouse.move(*find_atom_click_point(page, 0))
+        page.mouse.wheel(0, 480)
+        wait_for_presented_state(page, '()=>true')
+        for key, elements in [('Escape', [26]), ('Enter', [26, 17])]:
+            anchor = find_atom_click_point(page, 0)
+            page.mouse.click(*anchor)
+            wait_for_presented_state(page, '()=>VibeMolTesting.getHaloGhostWorlds().length>0')
+            site = page.evaluate('''([x,y])=>{
+              const points = VibeMolTesting.getHaloGhostWorlds().map(g=>VibeMolTesting.projectHaloGhostToClient(g.index));
+              const distance = p=>Math.hypot(p.x-x,p.y-y);
+              return points.filter(p=>p?.visible && document.elementFromPoint(p.x,p.y)?.id==='canvas' && distance(p)>24)
+                .sort((a,b)=>distance(b)-distance(a))[0] ?? null;
+            }''', anchor)
+            assert site, 'No open halo site is reachable on the canvas'
+            page.mouse.click(site['x'], site['y'])
+            check(f'{key} pending before {"native" if native else "same-event"} check', page.evaluate(read_hint), expected_pending)
+            page.locator('#canvas').focus()
+            if native:
+                page.keyboard.press(key)
+            actual = page.evaluate(read_hint, None if native else key)
+            # The same-event check reads after the handler, before a render frame can refresh the hint.
+            expected = dict(hint='BUILD — Click to place chlorine · Right-drag to rotate · esc switches to Transform',
+                            keys=[['esc', 'Escape']], elements=elements)
+            check(f'{key} {"native" if native else "same-event"} result', actual, expected)
+        page.locator('#modeDisplayBtn').click()
+    require_phase_counts({'halo-placement-hint':completed}, 'tests/e2e/edit_tool.py', 'halo-placement-hint')
+
+
+def halo_hook_sites(page, url):
+    completed = 0
+
+    def check(name, actual, expected):
+        nonlocal completed
+        check_edit_value(name, actual, expected, phase='halo-hook-site')
+        completed += 1
+
+    page.goto(url + '?appearanceStudy=1')
+    page.wait_for_function('()=>window.VibeMolWorkbench')
+    assert p.load(page, [{'name':'iron.xyz', 'text':'1\nIron atom\nFe 0 0 0\n'}])['ok']
+    page.locator('#modeEditBtn').click()
+    arm(page, 'Cl')
+    close_build(page)
+    wait_for_presented_state(page, '()=>true')
+    page.mouse.click(*find_atom_click_point(page, 0))
+    wait_for_presented_state(page, '()=>VibeMolTesting.getHaloGhostWorlds().length === 6')
+
+    # Run every request and readback in one turn so a frame cannot repair stale sites.
+    result = page.evaluate('''() => {
+      const testing = VibeMolTesting;
+      const volume = () => VibeMolStructure.exportActive().volume;
+      const reject = index => {
+        const before = JSON.stringify(volume());
+        const {attached} = testing.triggerHaloGhostByIndex(index);
+        return {attached, unchanged: before === JSON.stringify(volume())};
+      };
+      const ironId = volume().atoms[0].id;
+      const invalid = reject(String(testing.getHaloGhostWorlds()[0].index));
+      const placements = [];
+      let repeated;
+      for (let i = 0; i < 6; i += 1) {
+        const site = testing.getHaloGhostWorlds()[0];
+        if (!site) break;
+        const receipt = testing.triggerHaloGhostByIndex(site.index);
+        const {atoms, bonds} = volume();
+        const atom = atoms.at(-1);
+        placements.push({index:site.index, receipt, elements:atoms.map(a => a.Z), bondCount:bonds.length,
+          bondedToIron:bonds.some(b => (b.a === ironId && b.b === atom.id) || (b.b === ironId && b.a === atom.id)),
+          atSite:Math.hypot(atom.x - site.x, atom.y - site.y, atom.z - site.z) < 1e-8,
+          remaining:testing.getHaloGhostWorlds().map(ghost => ghost.index)});
+        if (i === 0) repeated = reject(site.index);
+      }
+      return {invalid, placements, repeated, seventh:reject(5), finalVolume:volume()};
+    }''')
+    unchanged = dict(attached=False, unchanged=True)
+    check('Site ID must be an integer', result['invalid'], unchanged)
+    check('Immediate repeat on an occupied site', result['repeated'], unchanged)
+    for index, actual in enumerate(result['placements']):
+        check(f'Ligand {index + 1} fills its site immediately', actual, dict(
+            index=index, receipt=dict(attached=True, anchorIndex=0, ghostIndex=index, kind='atom'),
+            elements=[26] + [17] * (index + 1), bondCount=index + 1, bondedToIron=True,
+            atSite=True, remaining=list(range(index + 1, 6)),
+        ))
+    check('Seventh attempt on a saturated metal', result['seventh'], unchanged)
+    page.locator('#canvas').focus()
+    page.keyboard.press('Enter')
+    check('Enter commits the complete structure',
+          page.evaluate('()=>VibeMolStructure.exportActive().volume'), result['finalVolume'])
+    require_phase_counts({'halo-hook-site':completed}, 'tests/e2e/edit_tool.py', 'halo-hook-site')
+
+
+def ammonia_halo_cue(page, url):
+    completed = 0
+
+    def check(name, actual, expected):
+        nonlocal completed
+        check_edit_value(name, actual, expected, phase='ammonia-halo-cue')
+        completed += 1
+
+    page.goto(url + '?appearanceStudy=1')
+    page.wait_for_function('''() => window.VibeMolEdit?.listBuildCatalog().value.some(entry =>
+      entry.entryId === 'ammonia' && entry.attachModes.includes('coordinate'))''')
+    assert p.load(page, [{'name':'iron.xyz', 'text':'1\nIron atom\nFe 0 0 0\n'}])['ok']
+    page.locator('#modeEditBtn').click()
+    arm(page, 'Ammonia')
+    close_build(page)
+    page.locator('#editTransformToolBtn').click()
+    page.mouse.move(*find_atom_click_point(page, 0))
+    page.mouse.wheel(0, 1050)
+    wait_for_presented_state(page, '()=>true')
+    anchor = find_atom_click_point(page, 0)
+    page.mouse.click(*anchor)
+    initial = page.evaluate('()=>VibeMolStructure.exportActive().volume')
+    check('Select Fe in Transform', page.evaluate('''() => ({
+      selected:VibeMolTesting.getEditSelectionIndices(),
+      atoms:VibeMolStructure.exportActive().volume.atoms.map(atom => atom.Z),
+      sites:VibeMolTesting.getHaloGhostWorlds().length,
+    })'''), dict(selected=[0], atoms=[26], sites=0))
+
+    cue = page.get_by_role('button', name='Build Ammonia at open site', exact=True)
+    # The app's listener runs first. This read happens before a frame can refresh the halo.
+    cue.evaluate('''el => el.addEventListener('click', event => {
+      window.ammoniaCueClick = {trusted:event.isTrusted, pointer:event.pointerType,
+        sites:VibeMolTesting.getHaloGhostWorlds().map(site => site.index),
+        volume:VibeMolStructure.exportActive().volume};
+    }, {once:true})''')
+    cue.click()
+    check('Trusted cue click publishes all six sites immediately', page.evaluate('()=>window.ammoniaCueClick'),
+          dict(trusted=True, pointer='mouse', sites=list(range(6)), volume=initial))
+
+    wait_for_presented_state(page, '()=>true')
+    sites = page.evaluate('''([x,y]) => VibeMolTesting.getHaloGhostWorlds().map(site => {
+      const point = VibeMolTesting.projectHaloGhostToClient(site.index);
+      return {site, point, onCanvas:point?.visible && document.elementFromPoint(point.x,point.y)?.id === 'canvas',
+        distance:Math.hypot(point.x-x, point.y-y)};
+    })''', anchor)
+    check('All six site targets are visible on the canvas', [site['onCanvas'] for site in sites], [True]*6)
+    chosen = max(sites, key=lambda item: item['distance'])
+    page.mouse.click(chosen['point']['x'], chosen['point']['y'])
+    wait_for_presented_state(page, '()=>true')
+    attached = page.evaluate('''site => {
+      const volume = VibeMolStructure.exportActive().volume;
+      const [fe, nitrogen] = volume.atoms;
+      const bonds = volume.bonds.map(bond => [bond.a,bond.b]
+        .map(id => volume.atoms.find(atom => atom.id === id).Z).sort((a,b) => a-b)).sort();
+      const dative = volume.bonds.some(bond => bond.style === 'metal-dative'
+        && [bond.a,bond.b].includes(fe.id) && [bond.a,bond.b].includes(nitrogen?.id));
+      return {volume, bonds, dative,
+        nitrogenAtSite:!!nitrogen && Math.hypot(nitrogen.x-site.x, nitrogen.y-site.y, nitrogen.z-site.z) < 1e-8,
+        openSites:VibeMolTesting.getHaloGhostWorlds().length};
+    }''', chosen['site'])
+    after = attached.pop('volume')
+    check('Clicking a target adds intact NH3 through N and leaves five sites', attached,
+          dict(bonds=[[1,7],[1,7],[1,7],[7,26]], dative=True, nitrogenAtSite=True, openSites=5))
+    check('The plus button stays pressed with sites open', cue.get_attribute('aria-pressed'), 'true')
+    cue.click()
+    check('Clicking plus again hides the sites and preserves NH3', page.evaluate('''() => ({
+      volume:VibeMolStructure.exportActive().volume, sites:VibeMolTesting.getHaloGhostWorlds().length,
+      payload:VibeMolTesting.getEditBuildState().payload.id,
+    })'''), dict(volume=after, sites=0, payload='ammonia'))
+    require_phase_counts({'ammonia-halo-cue':completed}, 'tests/e2e/edit_tool.py', 'ammonia-halo-cue')
+
+
+def metal_oxygen_hydrogens(page, url):
+    completed = 0
+    page.goto(url + '?appearanceStudy=1')
+    page.wait_for_function('''() => window.VibeMolEdit?.listBuildCatalog().value.some(entry =>
+      entry.entryId === 'water' && entry.attachModes.includes('coordinate'))''')
+    for payload, ligand_type, adjust, atomic_number, charge, hydrogens, style in (
+        ('O', 'auto', True, 8, 0, 2, 'metal-dative'),
+        ('O', 'L', True, 8, 0, 2, 'metal-dative'),
+        ('O', 'L', False, 8, 0, 0, 'metal-dative'),
+        ('O', 'X', True, 8, -1, 0, 'metal-strong'),
+        ('N', 'auto', True, 7, 0, 3, 'metal-dative'),
+        ('Water', None, True, 8, 0, 2, 'metal-dative'),
+    ):
+        assert p.load(page, [{'name':'iron.xyz', 'text':'1\nIron atom\nFe 0 0 0\n'}])['ok']
+        page.locator('#modeEditBtn').click()
+        arm(page, payload)
+        if ligand_type:
+            page.locator('#editAddAdjustHydrogens').set_checked(adjust)
+            page.get_by_role('combobox', name='Metal ligand type').select_option(ligand_type)
+        close_build(page)
+        wait_for_presented_state(page, '()=>true')
+        page.mouse.move(*find_atom_click_point(page, 0))
+        page.mouse.wheel(0, 1050)
+        wait_for_presented_state(page, '()=>true')
+        x, y = find_atom_click_point(page, 0)
+        if ligand_type:
+            page.mouse.move(x, y)
+            page.mouse.down()
+            page.mouse.move(x + 135, y - 85, steps=4)
+            wait_for_presented_state(page, '()=>true')
+            page.mouse.up()
+            page.locator('#canvas').focus()
+            page.keyboard.press('Enter')
+        else:
+            page.mouse.click(x, y)
+        actual = page.evaluate('''() => {
+          const {atoms, bonds} = VibeMolStructure.exportActive().volume;
+          const iron = atoms[0];
+          const link = bonds.find(bond => bond.a === iron.id || bond.b === iron.id);
+          const other = (bond, id) => bond.a === id ? bond.b : bond.b === id ? bond.a : null;
+          const donor = link && atoms.find(atom => atom.id === other(link, iron.id));
+          const attachedHydrogens = donor ? bonds.filter(bond => bond.order === 1 &&
+            atoms.some(atom => atom.Z === 1 && atom.id === other(bond, donor.id))).length : 0;
+          return {iron:iron.Z, elements:atoms.map(atom => atom.Z).sort((a,b) => a-b),
+            donor:donor?.Z ?? null, charge:donor?.formalCharge ?? null,
+            coordinationBond:link ? [link.order, link.style] : null, hydrogens:attachedHydrogens};
+        }''')
+        check_edit_value(f'{payload}, type {ligand_type}, adjust {adjust}', actual, dict(
+            iron=26, elements=[1]*hydrogens + [atomic_number, 26], donor=atomic_number, charge=charge,
+            coordinationBond=[1, style], hydrogens=hydrogens), phase='metal-oxygen-hydrogens')
+        completed += 1
+        page.locator('#modeDisplayBtn').click()
+    require_phase_counts({'metal-oxygen-hydrogens':completed}, 'tests/e2e/edit_tool.py', 'metal-oxygen-hydrogens')
+
+
 def main():
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as pw:
         browser=pw.chromium.launch(headless=True,args=['--use-angle=swiftshader'])
@@ -520,7 +817,32 @@ def main():
             isolation={'actualContextCount':len(browser.contexts),'expectedContextCount':0}
             print('[metal-isolation] '+json.dumps(isolation,sort_keys=True),flush=True)
             assert isolation['actualContextCount']==isolation['expectedContextCount'],isolation
-            metal_popover_regression(browser,url);assert not errors,errors
+            metal_popover_regression(browser,url)
+            phase='atom-settings'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            atom_settings(page,url)
+            page.close()
+            phase='halo-placement-hint'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            halo_placement_hint(page,url)
+            page.close()
+            phase='halo-hook-site'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            halo_hook_sites(page,url)
+            page.close()
+            phase='ammonia-halo-cue'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            ammonia_halo_cue(page,url)
+            page.close()
+            phase='metal-oxygen-hydrogens'
+            page=browser.new_page(viewport={'width':1440,'height':1000})
+            page.on('pageerror',lambda e:errors.append(str(e)))
+            metal_oxygen_hydrogens(page,url)
+            assert not errors,errors
         except Exception:
             print('[edit-tool-phase] '+json.dumps({'phase':phase,'status':'failed','artifactPrefix':phase+'-failure'},sort_keys=True),flush=True)
             p.write_failure_artifacts(page,p.ARTIFACTS,phase+'-failure',errors,[]);raise

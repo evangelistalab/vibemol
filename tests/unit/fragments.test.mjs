@@ -125,6 +125,41 @@ test('capped fragment fallbacks match their XYZ geometries and attachment conven
   }
 });
 
+test('Oxo is a single oxygen with the same metal-only attachment in both catalogs', async () => {
+  const manifest = JSON.parse(fs.readFileSync(path.resolve(REPO_ROOT, 'assets/fragments/library.json'), 'utf8'));
+  const entry = manifest.entries.find(({ id }) => id === 'oxo');
+  assert.ok(entry);
+  const { VibeMolFragments: fragments } = loadGlobalModule('assets/app/js/fragments.js', {
+    globals: {
+      URL,
+      ATOM_SYMBOL_TO_Z: { O: 8 },
+      fetch: async (url) => ({
+        ok: true,
+        url,
+        json: async () => ({ entries: [entry] }),
+        text: async () => fs.readFileSync(path.resolve(REPO_ROOT, 'assets/fragments', entry.xyz), 'utf8'),
+      }),
+    },
+  });
+  function inspect() {
+    const oxo = fragments.buildCatalogInstance('oxo', 'fragment');
+    assert.ok(oxo);
+    return {
+      formula: oxo.formula,
+      atoms: Array.from(oxo.atoms, ({ Z }) => Z),
+      bonds: Array.from(oxo.bonds),
+      modes: Array.from(oxo.attachModes),
+      connection: oxo.connectionAtomIndex,
+      order: oxo.preferredBondOrder,
+      charge: oxo.metalDonorCharge,
+    };
+  }
+  const expected = { formula: 'O²⁻', atoms: [8], bonds: [], modes: ['coordinate'], connection: 0, order: 2, charge: -2 };
+  assert.deepEqual(inspect(), expected);
+  await fragments.loadFragmentLibraryFromManifest('https://test.invalid/assets/fragments/library.json');
+  assert.deepEqual(inspect(), expected);
+});
+
 test('DFT-expanded molecule templates have complete compositions and topologies', () => {
   const context = loadGlobalModule('assets/app/js/fragments.js');
   const expected = {

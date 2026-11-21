@@ -43,11 +43,14 @@ class CheckpointContractTests(unittest.TestCase):
     def test_current_manifest_declares_new_api_and_existing_exporter_coverage(self):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
         self.assertEqual(manifest['checkpointCounts'], {
-            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'atomic-identity-rejection':24, 'edit-testing-case':84},
+            'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'edit-api-catalog-site':7,
+                                      'atomic-identity-rejection':24, 'edit-testing-case':84},
             'tests/e2e/smoke.py': {'video-activation':58, 'video-export-completion':2, 'smoke-spinor-launcher':8},
             'tests/e2e/look_references.py': {'registry-readback':500},
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},
-            'tests/e2e/edit_tool.py': {'metal-native-case':28,'edit-tool-state':59,'metal-build-drag':12},
+            'tests/e2e/edit_tool.py': {'metal-native-case':28,'edit-tool-state':59,'atom-settings':7,
+                                      'halo-placement-hint':9,'halo-hook-site':10,'ammonia-halo-cue':6,
+                                      'metal-oxygen-hydrogens':6,'metal-build-drag':12},
             'tests/e2e/build_panel.py': {'retired-cache-case':4},
             'tests/e2e/figure.py': {'figure-runner':40, 'scientific-buffer-synchronous':17, 'scientific-buffer-worker':17, 'scientific-buffer-coordinate-owners':8, 'published-ownership':13},
             'tests/e2e/calculations.py': {'forte2-case':68, 'calculations-default':1},
@@ -58,7 +61,13 @@ class CheckpointContractTests(unittest.TestCase):
 
     def test_phase_guards_reject_zero_short_and_extra_counts(self):
         for suite,marker,count in [('look_references','registry-readback',500),('axis_gizmo','escape-native-case',62),
-                                   ('edit_tool','metal-native-case',28),('edit_tool','edit-tool-state',59),('edit_tool','metal-build-drag',12),
+                                   ('edit_tool','metal-native-case',28),('edit_tool','edit-tool-state',59),
+                                   ('edit_tool','atom-settings',7),('edit_tool','halo-placement-hint',9),
+                                   ('edit_tool','halo-hook-site',10),
+                                   ('edit_tool','ammonia-halo-cue',6),
+                                   ('edit_tool','metal-oxygen-hydrogens',6),
+                                   ('edit_tool','metal-build-drag',12),
+                                   ('premerge','edit-api-catalog-site',7),
                                    ('premerge','atomic-identity-rejection',24),
                                    ('build_panel','retired-cache-case',4), ('ux_review','avas-hitbox-method',5)]:
             with contextlib.redirect_stdout(io.StringIO()):

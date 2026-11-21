@@ -90,6 +90,7 @@
     "tests/e2e/premerge.py": {
       "edit-api": 115,
       "edit-api-rejection": 26,
+      "edit-api-catalog-site": 7,
       "atomic-identity-rejection": 24,
       "edit-testing-case": 84
     },
@@ -107,6 +108,11 @@
     "tests/e2e/edit_tool.py": {
       "metal-native-case": 28,
       "edit-tool-state": 59,
+      "atom-settings": 7,
+      "halo-placement-hint": 9,
+      "halo-hook-site": 10,
+      "ammonia-halo-cue": 6,
+      "metal-oxygen-hydrogens": 6,
       "metal-build-drag": 12
     },
     "tests/e2e/build_panel.py": {

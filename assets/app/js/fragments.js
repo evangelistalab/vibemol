@@ -139,7 +139,7 @@
     const seen = new Set();
     const add = (value) => {
       const key = String(value || '').trim().toLowerCase();
-      if (key !== 'append' && key !== 'replace_h' && key !== 'fuse_ring') return;
+      if (key !== 'append' && key !== 'replace_h' && key !== 'fuse_ring' && key !== 'coordinate') return;
       if (seen.has(key)) return;
       seen.add(key);
       out.push(key);
@@ -241,6 +241,10 @@
       const linkBondDirection = normalizeDirectionVector(raw.linkBondDirection || raw.linkDirection || raw.connectionDirection);
       if (linkBondDirection) normalized.linkBondDirection = Object.freeze(linkBondDirection.slice(0, 3));
       normalized.attachModes = Object.freeze(normalizeAttachModes(raw.attachModes, kind));
+      if (normalized.attachModes.includes('coordinate')) {
+        if (normalized.attachModes.length !== 1 || !Number.isSafeInteger(raw.metalDonorCharge) || raw.metalDonorCharge >= 0) return null;
+        normalized.metalDonorCharge = raw.metalDonorCharge;
+      }
       const fusePair = normalizeFuseBondLocalPair(raw.fuseBondLocalPair, atoms.length);
       if (fusePair && normalized.attachModes.includes('fuse_ring')) {
         normalized.fuseBondLocalPair = Object.freeze(fusePair.slice(0, 2));
@@ -305,6 +309,18 @@
       connectionAtomIndex: 0,
       preferredBondOrder: 1,
       attachModes: ['append', 'replace_h'],
+    },
+    {
+      id: 'oxo',
+      kind: 'fragment',
+      name: 'Oxo',
+      formula: 'O²⁻',
+      tags: ['oxido', 'oxide'],
+      atoms: [{ Z: 8, x: 0, y: 0, z: 0 }],
+      connectionAtomIndex: 0,
+      preferredBondOrder: 2,
+      attachModes: ['coordinate'],
+      metalDonorCharge: -2,
     },
     {
       id: 'amino',
@@ -1393,6 +1409,7 @@
       instance.connectionAtomIndex = Math.max(0, Math.min(src.atoms.length - 1, src.connectionAtomIndex | 0));
       instance.preferredBondOrder = Math.max(1, Math.min(4, src.preferredBondOrder | 0));
       instance.attachModes = Array.isArray(src.attachModes) ? src.attachModes.slice() : ['append', 'replace_h'];
+      if (src.metalDonorCharge !== undefined) instance.metalDonorCharge = src.metalDonorCharge;
       if (Array.isArray(src.linkBondDirection) && src.linkBondDirection.length >= 3) {
         instance.linkBondDirection = [
           Number(src.linkBondDirection[0]) || 0,

@@ -232,6 +232,26 @@ test('auto-hydrogen ignores metal-ligand bonds on the nonmetal ligand side', () 
   assert.equal(result.parent.targetValence, 3);
 });
 
+test('auto-hydrogen adds H only to the designated neutral oxygen donor at a metal site', () => {
+  const { VibeMolAutoHydrogen: hydrogen } = loadAutoHydrogen();
+  const oxygen = { id: 'o', Z: 8, x: 0, y: 0, z: 0 };
+  const copper = { id: 'cu', Z: 29, x: 1.9, y: 0, z: 0 };
+  const link = { a: 'o', b: 'cu', kind: 'normal', origin: 'explicit' };
+  const cases = [
+    { charge: 0, order: 1, style: 'metal-dative', ligandType: 'L' },
+    { charge: -1, order: 1, style: 'metal-strong', ligandType: 'X' },
+    { charge: -2, order: 2, style: 'covalent' },
+  ];
+  const hydrogenCounts = metalOxygenDonorId => cases.map(({ charge, ...bond }) => hydrogen.buildAutoHydrogenPlan({
+    atoms: [{ ...oxygen, formalCharge: charge }, copper],
+    bonds: [{ ...link, ...bond }],
+  }, { focusAtomIndices: [0], metalOxygenDonorId }).stats.hydrogenCount);
+  assert.deepEqual(hydrogenCounts(), [0, 0, 0]);
+  assert.deepEqual(hydrogenCounts('another-oxygen'), [0, 0, 0]);
+  assert.deepEqual(hydrogenCounts('o'), [2, 0, 0]);
+  assert.equal(hydrogen.buildAutoHydrogenPlan({ atoms: [oxygen], bonds: [] }).stats.hydrogenCount, 2);
+});
+
 test('auto-hydrogen controller previews on first shortcut and applies on second shortcut', () => {
   const context = loadAutoHydrogen({
     THREE: {
@@ -309,7 +329,7 @@ test('auto-hydrogen controller previews on first shortcut and applies on second 
   assert.equal(result.afterPreview.atomCount, 1);
   assert.equal(result.afterPreview.bondCount, 0);
   assert.equal(result.afterPreview.hasPreview, true);
-  assert.match(result.afterPreview.lastHint, /Press Space again to apply/);
+  assert.match(result.afterPreview.lastHint, /Press `space` again to apply/);
   assert.deepEqual(result.afterPreview.previewCalls, [4]);
 
   assert.equal(result.afterApply.atomCount, 5);

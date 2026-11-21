@@ -8,8 +8,8 @@
   // Shared by UI/export metadata and every bundled asset URL.
   const APP_VERSION = window.VibeMolAssets.version;
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
-  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • Esc starts a new selection • saved values remain in Measurements';
-  const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · / opens Build';
+  const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • `esc` starts a new selection • saved values remain in Measurements';
+  const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · `/` opens Build';
   const HINT_START = '';
   const { VIBRATION_KIND, VIBRATION_DEFAULT_AMPLITUDE, VIBRATION_DEFAULT_SPEED, VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1, VIBRATION_IR_MIN_FREQ_CM1, VIBRATION_IR_DEFAULT_SIGMA_CM1, CM_INV_TEXT, CM_INV_HTML } = window.VibeMolVibration;
   const AUTO_ISO_TARGET_FRACTION = 0.85;
@@ -928,7 +928,11 @@
         if (request.hydrogens === 'adjust') deps.adjustHydrogens(draft.vol, [draft.vol.atoms.indexOf(atom)], { enabled: true, allocateAtomId: draft.nextAtomId });
         return { label: 'API add atom', warnings: deps.warnings(draft.vol, draft.vol.atoms.map((_,i)=>i).filter(i => i >= request.originalAtomCount), new Set(Array.from({ length: request.originalAtomCount }, (_, i) => i))) };
       }
-      const entry = deps.catalog(request.entryId, request.entryKind), template = deps.template(entry, request.entryKind);
+      const entry = deps.catalog(request.entryId, request.entryKind);
+      if (entry.metalDonorCharge !== undefined) {
+        editApiFault('ATTACH_POLICY_UNSUPPORTED', 'entryId', entry.id, 'attachment to a transition metal');
+      }
+      const template = deps.template(entry, request.entryKind);
       if (!template?.atoms?.length) editApiFault('CATALOG_NOT_FOUND', 'entryId', request.entryId, 'available catalog geometry');
       const group = draft.group(entry.id, request.entryKind), quaternion = new deps.THREE.Quaternion(...request.quaternion);
       const position = new deps.THREE.Vector3(...request.position), ids = [], worlds = [];
@@ -944,15 +948,24 @@
       return { label: 'API place catalog', warnings: deps.warnings(draft.vol, allAdded.map(id => draft.vol.atoms.findIndex(a => a.id === id)), new Set(Array.from({ length: request.originalAtomCount }, (_,i)=>i))) };
     };
   }
+  function editApiCheckMetalDonorSite(entry, metal, order) {
+    if (!metal) editApiFault('ATTACH_POLICY_UNSUPPORTED', 'entryId', entry.id, 'attachment to a transition metal');
+    if (order !== entry.preferredBondOrder) editApiFault('INVALID_BOND_ORDER', 'bondOrder', order, entry.preferredBondOrder);
+  }
   function createEditApiAttachmentGeometry(deps) {
     return (vol, request, fragment) => {
       const anchorIndex = vol.atoms.findIndex(a => a.id === request.anchorId), anchor = vol.atoms[anchorIndex];
       if (!anchor) editApiFault('ANCHOR_INVALID', 'anchor', request.anchorId, 'existing anchor');
       const anchorWorld = deps.atomWorld(vol, anchor);
-      const molecularDonor = fragment?.attachModes?.includes('coordinate');
+      const coordinateDonor = fragment?.attachModes?.includes('coordinate');
       const metal = deps.coordination(anchor.Z)?.isTransitionMetal;
-      if (fragment?.kind === 'molecule' && (!molecularDonor || !metal)) {
+      if (fragment?.kind === 'molecule' && (!coordinateDonor || !metal)) {
         editApiFault('ATTACH_POLICY_UNSUPPORTED', 'entryId', request.entryId, 'donor molecule on a transition metal');
+      }
+      if (fragment?.metalDonorCharge !== undefined) {
+        editApiCheckMetalDonorSite(fragment, metal, request.bondOrder);
+        if (request.attachPolicy !== 'append') editApiFault('ATTACH_POLICY_UNSUPPORTED', 'attachPolicy', request.attachPolicy, 'append');
+        if (request.ligandType !== undefined) editApiFault('INVALID_REQUEST', 'ligandType', request.ligandType, 'catalog entry defines the donor charge');
       }
       let direction = new deps.THREE.Vector3(...request.direction).normalize(), replacement = null;
       if (request.hydrogenId) {
@@ -964,7 +977,7 @@
       }
       const supported = !fragment || (fragment.attachModes || []).includes('replace_h');
       if (request.attachPolicy === 'replace_h' && (!supported || !replacement)) editApiFault(!supported ? 'ATTACH_POLICY_UNSUPPORTED' : 'NO_REPLACEABLE_H', 'attachPolicy', request.attachPolicy, { supported, replaceableHydrogen: !!replacement });
-      if (fragment && request.attachPolicy === 'append' && !molecularDonor && !(fragment.attachModes || []).includes('append')) editApiFault('ATTACH_POLICY_UNSUPPORTED', 'attachPolicy', request.attachPolicy, fragment.attachModes);
+      if (fragment && request.attachPolicy === 'append' && !coordinateDonor && !(fragment.attachModes || []).includes('append')) editApiFault('ATTACH_POLICY_UNSUPPORTED', 'attachPolicy', request.attachPolicy, fragment.attachModes);
       const replace = request.attachPolicy === 'replace_h' || (request.attachPolicy === 'smart' && supported && replacement);
       if (replace && replacement?.direction) direction = replacement.direction.clone().normalize();
       const connection = fragment ? deps.connection(fragment) : { Z: request.Z };
@@ -978,8 +991,8 @@
         direction = placement.position.clone().sub(anchorWorld).normalize();
       }
       const connectionWorld = metal && !replace ? placement.position : anchorWorld.clone().addScaledVector(direction, length);
-      const ligandType = metal && !deps.coordination(connection.Z)?.isTransitionMetal
-        ? request.ligandType ?? (molecularDonor ? 'L' : defaultEditApiMetalLigandType(connection.Z, fragment?.id)) : undefined;
+      const ligandType = metal && fragment?.metalDonorCharge === undefined && !deps.coordination(connection.Z)?.isTransitionMetal
+        ? request.ligandType ?? (coordinateDonor ? 'L' : defaultEditApiMetalLigandType(connection.Z, fragment?.id)) : undefined;
       return { ligandType, geometryId: placement.geometryId, anchorId: anchor.id, anchorWorld, direction, connection, connectionWorld, bondLength: length, order,
         removedId: replace && replacement ? String(replacement.targetAtom?.id || vol.atoms[replacement.index]?.id || '') : '', policy: replace ? 'replace_h' : 'append' };
     };
@@ -1009,13 +1022,14 @@
           return draft.add(atom.Z, [world.x, world.y, world.z], group);
         });
         const indices = added.map(atom => draft.vol.atoms.indexOf(atom));
-        if (fragment.kind === 'fragment') deps.postprocess(draft.vol, fragment, indices, geometry, oldSet);
+        if (fragment.kind === 'fragment' && fragment.metalDonorCharge === undefined) deps.postprocess(draft.vol, fragment, indices, geometry, oldSet);
         deps.topology(draft.vol, fragment.atoms, fragment.bonds, new Map(indices.map((global,local)=>[local,global])));
       }
       const donorId = added[fragment ? geometry.connection.index : 0].id;
       // Building template bonds can normalize and replace the draft atoms.
       const donor = draft.vol.atoms.find(atom => atom.id === donorId);
-      if (geometry.ligandType === 'X') donor.formalCharge = -1;
+      if (fragment?.metalDonorCharge !== undefined) donor.formalCharge = fragment.metalDonorCharge;
+      else if (geometry.ligandType === 'X') donor.formalCharge = -1;
       const style = geometry.ligandType === 'L' ? 'metal-dative' : geometry.ligandType === 'X' ? 'metal-strong' : 'covalent';
       draft.bond(anchor.id, donor.id, geometry.order, 'normal', style, 'explicit', geometry.ligandType);
       const focus = [anchorIndex, ...added.map(atom => draft.vol.atoms.indexOf(atom))];
@@ -1246,15 +1260,17 @@
   function createEditApiBuildQueries(deps){
     return Object.freeze({
       listBuildSites:request=>editApiCall(()=>{
-        editApiData(request);editApiShape(request,['system','anchor','element','entryId','bondOrder','geometryId','frameQuaternion'],'request',['system','anchor','bondOrder']);
+        editApiData(request);editApiShape(request,['system','anchor','element','entryId','entryKind','bondOrder','geometryId','frameQuaternion'],'request',['system','anchor','bondOrder']);
         const snapshot=deps.readSystem();editApiTarget(snapshot,request.system);const selected=deps.resolve(snapshot,request.anchor);
         if(selected.indices.length!==1)editApiFault('ANCHOR_INVALID','anchor',selected.atomIds,'one anchor');
-        if(Object.hasOwn(request,'element')===Object.hasOwn(request,'entryId'))editApiFault('INVALID_REQUEST','payload',request,'exactly one of element or entryId');
+        const hasEntry = Object.hasOwn(request, 'entryId');
+        if (Object.hasOwn(request, 'element') === hasEntry) editApiFault('INVALID_REQUEST', 'payload', request, 'exactly one of element or entryId');
+        if (!hasEntry && Object.hasOwn(request, 'entryKind')) editApiFault('INVALID_REQUEST', 'entryKind', request.entryKind, 'entryId present');
         if(!Number.isSafeInteger(request.bondOrder)||request.bondOrder<1||request.bondOrder>4)editApiFault('INVALID_BOND_ORDER','bondOrder',request.bondOrder,[1,2,3,4]);
-        const fragment=request.entryId?deps.catalog(request.entryId,'fragment'):null;
-        const Z=fragment?deps.connection(fragment)?.Z:editApiElement(request.element,deps.elements);
-        if(!Number.isInteger(Z))editApiFault('CATALOG_KIND','entryId',request.entryId,'fragment connection atom');
-        const anchor=snapshot.context.atoms[selected.indices[0]],frame=editApiQuaternion(request.frameQuaternion===undefined?[0,0,0,1]:request.frameQuaternion,'frameQuaternion');
+        const anchor=snapshot.context.atoms[selected.indices[0]];
+        const Z = hasEntry ? deps.catalogSiteElement(request.entryId, anchor.Z, request.bondOrder, request.entryKind)
+          : editApiElement(request.element, deps.elements);
+        const frame=editApiQuaternion(request.frameQuaternion===undefined?[0,0,0,1]:request.frameQuaternion,'frameQuaternion');
         if(request.geometryId!==undefined&&typeof request.geometryId!=='string')editApiFault('INVALID_REQUEST','geometryId',request.geometryId,'geometry ID');
         const result=deps.sites(snapshot.snapshot,anchor.index,{geometryId:request.geometryId,frameQuaternion:frame,distance:deps.bondLength(anchor.Z,Z,request.bondOrder)});
         if(result.error)editApiFault(result.error,'sites',result.actual,result.expected);
@@ -8437,7 +8453,9 @@
       if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
       hideSelectionCoordinationCuePopover();
       hideSelectionMetalBondingCuePopover();
-      setSelectionBuildCueActive(!isSelectionBuildCueActive(), { announce: true, syncSearch: false, preserveSelection: true });
+      if (setSelectionBuildCueActive(!isSelectionBuildCueActive(), { announce: true, syncSearch: false, preserveSelection: true })) {
+        editHaloController?.refresh();
+      }
     });
   }
   if (els.editSelectionDeleteCueButtonEl) {
@@ -12618,7 +12636,7 @@
   const EDIT_QUICK_FRAGMENTS = [
     'methyl', 'methylene', 'hydroxyl', 'amino', 'carbonyl', 'amide', 'phenyl',
     'ethyl', 'methoxy', 'fluoro', 'chloro', 'bromo', 'cyano', 'nitro',
-    'carboxyl', 'isopropyl', 'tert-butyl',
+    'carboxyl', 'isopropyl', 'oxo', 'tert-butyl',
   ];
   const EDIT_CATALOG_COMPACT_COUNT = 6;
   let editFragmentListExpanded = false;
@@ -13488,6 +13506,7 @@
 
   function buildFragmentAttachUiHint(fragment, policy = editAddFragmentAttachPolicy) {
     const label = fragment ? `${fragment.name} (${fragment.formula})` : 'fragment';
+    if (fragment?.metalDonorCharge !== undefined) return `${label} · Click a metal to reveal open sites or drag from it to attach.`;
     const parts = [`Build fragment: ${label}`, `Policy ${getEditFragmentAttachPolicyLabel(policy)}`];
     if (fragmentSupportsFuseRing(fragment)) parts.push('Click bond to fuse ring');
     parts.push('Click atom to attach or void to place');
@@ -15378,7 +15397,7 @@
       transformRotateLastClientY = Number(e.clientY) || 0;
       transformRotateAccumulatedQuaternion.identity();
       transformRotateSphericalState = buildTransformBondSphericalState(vol, transformBondContext);
-      setHintMessage('Bond side: Shift-drag to rotate freely in 3D around the opposite atom');
+      setHintMessage('Bond side: `shift`+drag to rotate freely in 3D around the opposite atom');
     } else if (transformBondContext && editTransformMode === EDIT_TRANSFORM_MODE.ROTATE_BOND) {
       transformRotateGesture = 'bondQuaternion';
       transformRotateLastClientX = Number(e.clientX) || 0;
@@ -15751,13 +15770,14 @@
   }
 
   function getEditToolState() {
+    const haloAtom = addAtomOperatorSession?.source === 'halo-atom' ? resolveAddAtomOperatorSession()?.atom : null;
     return {
       edit: currentMode === MODES.EDIT,
       build: getEditIntent() !== EDIT_INTENT.ATOM_MANIPULATION || isSelectionBuildCueActive(),
       payload: getCurrentBuildPayload(),
       placement: addFusePreviewState ? { kind: 'fused ring', name: addFusePreviewState.fragment?.name }
         : moleculePlaceActive ? { stage: 'catalog', kind: moleculePlaceTemplateData?.entryKind, name: moleculePlaceTemplateData?.name }
-        : null,
+        : haloAtom ? { stage: 'halo', kind: 'atom', name: getElementName(haloAtom.Z) } : null,
       placing: !!(moleculePlaceActive || addGrowActive || metalGrowPreview.anchorWorld || addFusePreviewState
         || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
       confirmable: !!(moleculePlaceActive || (addAtomOperatorSession && addAtomOperatorSession.source !== 'selection')),
@@ -15953,9 +15973,9 @@
     refreshActiveAddPreview();
     updateEditToolboxUi({ syncSearch: false });
     if (announce && editMode) {
-      if (isFragmentPayloadLoaded()) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      if (isFragmentPayloadLoaded()) setHintMessage(`Fragment attach bond order: ${editAddBondOrder} (keys \`1\`, \`2\`, \`3\`, or \`4\`)`);
       else if (getEditIntent() === EDIT_INTENT.ADD_MOLECULE) setHintMessage('Standalone placement ignores bond-order hotkeys.');
-      else setHintMessage(`Build bond order: ${editAddBondOrder} (keys 1/2/3/4)`);
+      else setHintMessage(`Build bond order: ${editAddBondOrder} (keys \`1\`, \`2\`, \`3\`, or \`4\`)`);
     }
   }
 
@@ -16493,7 +16513,7 @@
    * @returns {{id:string,name:string,formula:string,atoms:Array<{Z:number,local:THREE.Vector3}>,bonds:Array<{i:number,j:number,order:number}>,principalAxis:THREE.Vector3}|null}
    */
   function buildMoleculePlacementData(molecule, entryKind = CATALOG_KIND.MOLECULE) {
-    if (!molecule || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) return null;
+    if (!molecule || molecule.metalDonorCharge !== undefined || !Array.isArray(molecule.atoms) || molecule.atoms.length === 0) return null;
     const massProps = computeMassPropertiesFromAtoms(molecule.atoms, getAtomicMass);
     const com = massProps
       ? new THREE.Vector3(massProps.comX, massProps.comY, massProps.comZ)
@@ -17496,12 +17516,13 @@
   function matchesBuildPaletteTerms(terms, query = '') {
     const q = String(query || '').trim().toLowerCase();
     if (!q) return true;
+    const queryWords = q.split(/\s+/);
     const tokens = String(terms || '')
       .toLowerCase()
       .split(/[^a-z0-9.+-]+/)
       .map((token) => token.trim())
       .filter(Boolean);
-    return tokens.some((token) => token.startsWith(q));
+    return queryWords.every((word) => tokens.some((token) => token.startsWith(word)));
   }
 
   function renderBuildAtomQuickButtons(query = '') {
@@ -17574,7 +17595,9 @@
     if (moleculePlaceActive && !commitMoleculePlacement()) return false;
     clearFuseRingPreview();
     editAddFragmentId = fragment.id;
-    editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
+    if (fragment.metalDonorCharge === undefined) {
+      editAddBondOrder = normalizeEditAddBondOrder(fragment.preferredBondOrder || editAddBondOrder);
+    }
     setEditIntent(EDIT_INTENT.ADD_FRAGMENT, {
       announce: false,
       syncSearch,
@@ -18685,6 +18708,11 @@
       const donor = payloadKind === 'molecule' && getCurrentMoleculeDefinition()?.attachModes?.includes('coordinate');
       const anchor = volumes[currentIndex]?.vol?.atoms?.[selection[0]];
       const canCoordinate = donor && selection.length === 1 && anchor && getCoordinationProfile(anchor.Z)?.isTransitionMetal;
+      if (payloadKind === 'fragment' && getCurrentFragmentDefinition()?.metalDonorCharge !== undefined
+        && (selection.length !== 1 || !anchor || !getCoordinationProfile(anchor.Z)?.isTransitionMetal)) {
+        if (announce) setHintMessage('Select one transition metal to attach this ligand.');
+        return false;
+      }
       if ((payloadKind === 'fragment' || payloadKind === 'atom' || canCoordinate) && !getEditToolState().build) {
         setEditIntent(getBuildEditIntent(), { announce: false, syncSearch: false, preserveSelection: true, closePopovers: false });
       }
@@ -20780,6 +20808,7 @@
       elementZ: editAddElementZ,
       bondOrder: editAddBondOrder,
       selectionAfter: [anchorIndex],
+      source: 'halo-atom',
     });
     e.preventDefault();
     return true;
@@ -20869,6 +20898,11 @@
       const idx = resolvedAnchorHit ? (resolvedAnchorHit.anchorIndex | 0) : -1;
       const attachContext = getActiveFragmentAttachContext(vol, idx);
       if (attachContext && Array.isArray(vol.atoms) && idx >= 0 && idx < vol.atoms.length) {
+        if (fragment?.metalDonorCharge !== undefined && !getCoordinationProfile(vol.atoms[idx].Z)?.isTransitionMetal) {
+          setHintMessage(`${fragment.name} attaches to an open metal site.`);
+          e.preventDefault();
+          return true;
+        }
         if (attachContext.cueArmed && attachContext.pinnedAnchorIndex >= 0 && idx !== attachContext.pinnedAnchorIndex) {
           if (typeof e.preventDefault === 'function') e.preventDefault();
           return true;
@@ -21154,6 +21188,7 @@
       __editDownPt = null; __editClickIdx = -1; __editMoved = false;
       return true;
     }
+    const fragment = getCurrentFragmentDefinition();
     if (addGrowActive) {
       const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
       const vol = record && record.vol;
@@ -21167,11 +21202,15 @@
       const attachContext = getActiveFragmentAttachContext(vol, anchorIdx);
       clearAddGrowPreview();
       controls.enabled = true;
-      if (terminalHydrogenReplacement && attachContext) {
+      if (!__editMoved && fragment?.metalDonorCharge !== undefined) {
+        selectMetalBuildAnchor(anchorIdx);
+      } else if (terminalHydrogenReplacement && attachContext) {
         commitFragmentAttachAtWorld(anchorIdx, terminalHydrogenReplacement.targetPos.clone(), attachContext);
       } else if (__editMoved && addPos && attachContext) {
         commitFragmentAttachAtWorld(anchorIdx, addPos, attachContext);
       }
+    } else if (__editDownPt && !__editMoved && fragment?.metalDonorCharge !== undefined) {
+      setHintMessage(`${fragment.name} attaches to an open metal site.`);
     } else if (__editDownPt && !__editMoved && isSelectionFragmentCueActive()) {
       setHintMessage('Fragment attach: click a ghost or drag from the pinned atom.');
     } else if (__editDownPt && !__editMoved && isBuildFragmentLoaded()) {
@@ -21270,7 +21309,8 @@
     const result = api.applyBuild({
       operation: 'attachFragment', entryKind: entry.kind, entryId: entry.id,
       system: { systemId, fingerprint }, anchor: { kind: 'ids', ids: [vol.atoms[anchorIndex].id] },
-      direction, bondOrder: 1, attachPolicy: 'append', hydrogens: 'preserve', warnings: 'reject',
+      direction, bondOrder: entry.metalDonorCharge === undefined ? 1 : entry.preferredBondOrder,
+      attachPolicy: 'append', hydrogens: 'preserve', warnings: 'reject',
     });
     if (!result.ok) {
       setHintMessage(result.error.message);
@@ -21281,7 +21321,8 @@
 
   function selectMetalBuildAnchor(atomIndex, prefix = '') {
     setEditAtomSelection([atomIndex]);
-    setSelectionAtomBuildCueActive(true, { announce: false });
+    if (isFragmentPayloadLoaded()) setSelectionFragmentCueActive(true, { announce: false });
+    else setSelectionAtomBuildCueActive(true, { announce: false });
     editHaloController.refresh();
     updateEditSelectionVisuals();
     const openCount = editHaloController.getUiState().ghosts.length;
@@ -21574,7 +21615,7 @@
       String(options.label || `Add ${symbol}`),
       String(options.coordinationGeometryId || '').trim(),
       {
-        source: 'new-atom',
+        source: options.source || 'new-atom',
         cancelCommits: !!options.cancelCommits,
         autoAdjustHydrogensOnCommit: !!options.autoAdjustHydrogensOnCommit,
         translateAttachedHydrogens: options.translateAttachedHydrogens !== false,
@@ -23685,7 +23726,7 @@
       const symbolB = getElementSymbol(vol.atoms[j].Z | 0);
       const resolved = getBondCenterSelectionResolved(vol);
       if (resolved && resolved.metalPair) {
-        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Style ${getMetalBondStyleLabel(resolved.style)} • Click the bond cue or use 1/2/3/0.`);
+        setHintMessage(`Selected ${symbolA}-${symbolB} bond • Style ${getMetalBondStyleLabel(resolved.style)} • Click the bond cue or use \`1\`, \`2\`, \`3\`, or \`0\`.`);
       } else {
         const order = resolved ? resolved.order : 0;
         const maxOrder = (vol.atoms[i].Z | 0) === 1 || (vol.atoms[j].Z | 0) === 1 ? 1 : 4;
@@ -24216,6 +24257,11 @@
    * @returns {boolean}
    */
   function appendFragmentAtWorld(anchorIndex, worldPos, options = {}) {
+    const fragment = getCurrentFragmentDefinition();
+    if (fragment?.metalDonorCharge !== undefined) {
+      setHintMessage(`${fragment.name} attaches to an open metal site.`);
+      return false;
+    }
     finalizePendingNewAtomOperatorSession();
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     const preserveAnchorSelection = !!options.preserveAnchorSelection;
@@ -24578,6 +24624,7 @@
     }, {
       focusAtomIndices: focusIndices,
       resolveGeometry: geometryResolver,
+      metalOxygenDonorId: options.metalOxygenDonorId,
     });
     const added = applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId);
     const relaxedFocusIndices = focusIds
@@ -24697,11 +24744,15 @@
       preferredDirByAtomId.set(anchorId, newPos.clone().sub(anchorPos));
       preferredDirByAtomId.set(newAtomId, anchorPos.clone().sub(newPos));
     }
-    applyAutomaticHydrogenAdjustmentToVolume(vol, [anchor, newIndex], { preferredDirByAtomId });
+    applyAutomaticHydrogenAdjustmentToVolume(vol, [anchor, newIndex], {
+      preferredDirByAtomId,
+      metalOxygenDonorId: z === 8 && ligandType === 'L' ? newAtomId : undefined,
+    });
     const finalIndex = vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === newAtomId);
     beginGestureAddedAtomOperatorSession(record, vol, atom, beforeAtoms, beforeBonds, beforeAnnotations, {
       label: `Grow ${getElementSymbol(z)}`,
       coordinationGeometryId: ligandType === 'X' ? '' : getEffectiveEditAddCoordinationGeometryId(editAddElementZ),
+      source: options.source,
       focusAtomIds: [anchorId, newAtomId],
       anchorAtomId: anchorId,
       selectionAfter: Array.isArray(options.selectionAfter) ? options.selectionAfter : [],
@@ -26169,6 +26220,11 @@
     if (e && typeof e.preventDefault === 'function') e.preventDefault();
     if (!getEditToolState().build) chooseEditTool('build');
     showBuildPopover({ focusSearch: true });
+  });
+  bind('down', MODES.EDIT, 'w', (e) => {
+    if (e.shiftKey || !getEditToolState().build) return;
+    e.preventDefault();
+    chooseEditTool('transform');
   });
   bind('down', MODES.EDIT, 'c', () => {
     toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.COORDS_PANEL);
@@ -29080,16 +29136,19 @@
       return result;
     },
     triggerHaloGhostByIndex: (ghostIndex) => {
-      const uiState = editHaloController ? editHaloController.getUiState() : editHaloUiState;
+      const validIndex = Number.isSafeInteger(ghostIndex) && ghostIndex >= 0;
       const result = {
         attached: false,
         anchorIndex: -1,
-        ghostIndex: ghostIndex | 0,
+        ghostIndex: validIndex ? ghostIndex : -1,
         kind: '',
       };
-      if (!(uiState && Array.isArray(uiState.ghosts) && uiState.ghosts.length)) return result;
-      const ghost = uiState.ghosts.find((item) => (item.index | 0) === (ghostIndex | 0));
-      const anchorIndex = uiState ? (uiState.atomIndex | 0) : -1;
+      if (!validIndex) return result;
+      // The hook can run again before the next render frame.
+      const uiState = editHaloController?.refresh() ?? editHaloUiState;
+      if (!uiState?.ghosts.length) return result;
+      const ghost = uiState.ghosts.find((item) => item.index === ghostIndex);
+      const anchorIndex = uiState.atomIndex;
       result.anchorIndex = anchorIndex;
       if (!(ghost && ghost.world) || anchorIndex < 0) return result;
       const world = new THREE.Vector3(
@@ -29106,14 +29165,15 @@
         result.attached = !!commitFragmentAttachAtWorld(attachContext.anchorIndex, world, attachContext, {
           attachPolicyOverride: { policy: EDIT_FRAGMENT_ATTACH_POLICY.APPEND, reason: 'open_site' },
         });
-        return result;
+      } else {
+        result.kind = 'atom';
+        result.attached = !!appendGestureAtomFromAnchor(anchorIndex, world, {
+          elementZ: editAddElementZ,
+          bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
+          selectionAfter: [anchorIndex],
+        });
       }
-      result.kind = 'atom';
-      result.attached = !!appendGestureAtomFromAnchor(anchorIndex, world, {
-        elementZ: editAddElementZ,
-        bondOrder: normalizeEditAddBondOrder(editAddBondOrder || 1),
-        selectionAfter: [anchorIndex],
-      });
+      if (result.attached) editHaloController?.refresh();
       return result;
     },
     triggerHaloReplaceTargetByAtomIndex: (atomIndex) => {
@@ -31432,19 +31492,43 @@
     hintMessageSticky = options.sticky === true || (message === lastHintMessage && hintMessageSticky);
     lastHintMessage = message;
     hintEl.textContent = '';
+    const keyNames = new Map([['return', 'Return'], ['esc', 'Escape'], ['space', 'Space'], ['shift', 'Shift']]);
+    function appendHintText(target, text) {
+      // Backticks identify shortcuts without treating prose like "empty space" as a key.
+      const parts = String(text ?? '').split(/`(return|esc|space|shift|[/xyz0-4])`/u);
+      for (const [index, part] of parts.entries()) {
+        if (!part) continue;
+        if (index % 2 === 0) {
+          target.append(document.createTextNode(part));
+          continue;
+        }
+        const key = document.createElement('kbd');
+        const name = keyNames.get(part);
+        if (name) {
+          key.setAttribute('role', 'img');
+          key.setAttribute('aria-label', name);
+        }
+        key.textContent = part;
+        target.append(key);
+      }
+    }
     if (currentMode === MODES.EDIT && editTools) {
       const info = window.VibeMolEditToolUi.describe(getEditToolState());
       const line = document.createElement('span'); line.className = 'vm-edit-tool-hint';
       const tag = document.createElement('span');
       tag.className = info.build ? 'vm-tool-badge' : 'vm-tool-badge vm-tool-badge--transform';
       tag.textContent = info.build ? 'BUILD' : 'TRANSFORM';
-      line.append(tag, document.createTextNode(' — '));
-      line.append(document.createTextNode(info.hint)); hintEl.append(line);
+      const instructions = document.createElement('span');
+      appendHintText(instructions, info.hint);
+      line.append(tag, document.createTextNode(' — '), instructions);
+      hintEl.append(line);
       // Operation feedback is still useful, but never overrides the armed-tool signal.
       if (message && message !== HINT_EDIT && !/^(Build (element|fragment|molecule):|Canceled .*placement\.|Selection cleared\.)/.test(message)) {
-        const status = document.createElement('span'); status.className = 'vm-edit-tool-status'; status.textContent = String(message).replaceAll(' • ', ' · '); hintEl.append(status);
+        const status = document.createElement('span'); status.className = 'vm-edit-tool-status';
+        appendHintText(status, String(message).replaceAll(' • ', ' · '));
+        hintEl.append(status);
       }
-    } else hintEl.textContent = message;
+    } else appendHintText(hintEl, message);
     const hasHint = hintEl.textContent.trim().length > 0;
     if (hasHint) {
       revealHintTemporarily();
@@ -33579,8 +33663,21 @@
     place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});
   const editApiBuild = createEditApiBuildService({prepare:editApiPrepare,readSystem:editApiReadSystem,makeDraft:editApiMakeDraft,validateCandidate:editApiValidateCandidate,commit:editApiCommit,inspectResolution:editApiSelection.inspectResolution});
   const editApiCatalog = createEditApiBuildCatalog({entries:getCatalogEntries});
-  const editApiQueries = createEditApiBuildQueries({readSystem:editApiReadSystem,resolve:editApiResolver.resolve,catalog:editApiValidator.catalog,
-    connection:getFragmentConnectionAtom,elements:ATOM_Z_TO_DATA,sites:(...args)=>editHaloController.listBuildSites(...args),bondLength:getEditAddBondLength});
+  function editApiCatalogSiteElement(entryId, anchorZ, bondOrder, entryKind = 'fragment') {
+    const entry = editApiValidator.catalog(entryId, entryKind);
+    const metal = getCoordinationProfile(anchorZ)?.isTransitionMetal;
+    if (entry.kind === 'molecule' && (!entry.attachModes?.includes('coordinate') || !metal)) {
+      editApiFault('ATTACH_POLICY_UNSUPPORTED', 'entryId', entryId, 'donor molecule on a transition metal');
+    }
+    if (entry.metalDonorCharge !== undefined) {
+      editApiCheckMetalDonorSite(entry, metal, bondOrder);
+    }
+    const connection = getFragmentConnectionAtom(entry);
+    if (!connection) editApiFault('CATALOG_KIND', 'entryId', entryId, 'catalog connection atom');
+    return connection.Z;
+  }
+  const editApiQueries = createEditApiBuildQueries({readSystem:editApiReadSystem,resolve:editApiResolver.resolve,catalogSiteElement:editApiCatalogSiteElement,
+    elements:ATOM_Z_TO_DATA,sites:(...args)=>editHaloController.listBuildSites(...args),bondLength:getEditAddBondLength});
   function enterEditApi(options={}) {
     return editApiCall(()=>{
       editApiData(options);editApiShape(options,['tool'],'options');

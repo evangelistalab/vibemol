@@ -19,12 +19,15 @@ Switching to Transform, choosing a different palette item, or leaving Edit commi
 
 Edit hints remain visible and describe the current action and next Escape. Operation feedback appears below that instruction. Native modal dialogs retain their own keyboard handling.
 
-Placement hints use that same state projection and BUILD badge, with `·`
-separators. Atom placement reads `BUILD — Adjust location · Enter confirms ·
-Esc discards this atom`. Fragment/molecule previews include the catalog name,
-rotation/confirmation controls, and `Esc discards this fragment/molecule (…)`;
-fused rings say `Esc discards this fused ring (…)`. Placement controllers only
-request a hint refresh; they do not supply a second set of transient instructions.
+Placement hints use that same state projection and BUILD badge. The hint banner
+uses lowercase key names such as `return` (Enter), `esc`, `space`, and `shift`.
+A `+` indicates a key held during another input, as in `shift+drag`.
+[Adobe FrameMaker shortcut notation](https://help.adobe.com/en_US/framemaker/using/using-framemaker/user-guide/WSd817046a44e105e21e63e3d11ab7f7862b-7ff0_ver12.0.html)
+
+After an atom snaps into a halo site, the hint names the pending atom. For
+chlorine it reads `BUILD — Chlorine placement pending · Adjust location ·
+return confirms · esc discards`. Fragment and molecule
+previews show the catalog name and their rotation and confirmation controls.
 Ending an atom operator session synchronizes the tool UI immediately after
 clearing that session, including silent Enter confirmation from the viewport
 or coordinate fields. The hint returns to Build's placement prompt without
@@ -64,15 +67,23 @@ The Edit tool test also renders screenshots in Emory, National, Bright, Electron
   to cancel.
 - The Build palette's **Metal ligand type** lets you choose **L-type** for a
   neutral donor or **X-type** for a singly anionic ligand. Automatic treats
-  halogens as X-type. To add a polyatomic anion, select a fragment such as
-  Cyano or Hydroxyl and attach it to a metal.
+  halogens as X-type. With **Adjust hydrogens** on, growing oxygen at a metal
+  site in Automatic or L-type adds two hydrogens to form a water ligand. Turn
+  **Adjust hydrogens** off to grow bare oxygen.
+- Choose **Hydroxyl (OH)** to place a hydroxo ligand. For a terminal oxo,
+  search Build for **Oxo (O²⁻)**. Click the metal to reveal its open sites,
+  then click a site. Oxo places one oxygen with formal charge −2 and an M=O
+  bond at a single coordination site. It can also be dragged from the metal.
 - Water, ammonia, carbon monoxide, pyridine, phosphorus trifluoride and
   acetonitrile attach through their catalog donor atoms. Click the metal or a
-  highlighted site to attach. Click empty space to place the molecule alone.
-- In Transform, select one atom and open the coordination button's popover
-  to edit its formal charge. Choosing a different metal geometry moves
-  monodentate ligands as units and is undoable. A geometry change that would
-  separate a chelate or bridge is refused.
+  highlighted site to attach. To choose a site first, select the metal in
+  Transform and click **+** to show the open sites. After attachment, click
+  another site to add a ligand or use **+** to hide the sites. Click empty
+  space to place the molecule alone.
+- In Transform, select one atom and open **Atom settings** to edit its
+  **Formal charge** or choose a coordination geometry. Changing the metal
+  geometry moves monodentate ligands as units and is undoable. A geometry
+  change that would separate a chelate or bridge is refused.
 - Use **Metal bond mode → Dative** for dashed bonds. **None** hides the
   displayed metal bonds. Explicit attachments still occupy their sites.
   Initial metal–donor distances are estimates based on UFF parameters.
