@@ -1,8 +1,10 @@
 {
   "baseline": {
-    "commit": "d0eac338a07a33552e5b9bfc99826ce2fbf0d510",
-    "tag": "layout-defaults",
-    "appSha256": "83d6b40853a855c8dc5a2ae31ba1230441cfa0c7c198023899d086d81c14b1dd",
+    "commit": "50c9e3efd7812d307c794ecd26882bfc757d07cb",
+    "tag": "v0.10.12",
+    "recordingMode": "candidate",
+    "sourceRefAtCapture": "refs/heads/codex/record-0.10.12",
+    "appSha256": "c8a314e21ab7dadeaa0e76bc977190daa02f59af7cb474bb55592f7847d5f3a2",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -18,20 +20,20 @@
       0
     ],
     "metrics": {
-      "lines": 33651,
-      "functionDeclarations": 1255,
+      "lines": 33748,
+      "functionDeclarations": 1257,
       "letDeclarations": 249,
       "constDeclarations": 594
     },
     "captureProvenance": {
       "os": "Linux",
-      "osRelease": "7.0.0-1017-azure",
+      "osRelease": "7.0.0-1014-aws",
       "architecture": "x86_64",
       "browserName": "chromium",
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/44555184151",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/44959620647",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -60,8 +62,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "ae9421b3642ad323de16a2f1438f671b096abd58b892c793d4a55394a0ff739b",
-      "ae9421b3642ad323de16a2f1438f671b096abd58b892c793d4a55394a0ff739b"
+      "4728897f35176e52474d2e70b4589cc21010537b424fb9a70b846bf900bd996f",
+      "4728897f35176e52474d2e70b4589cc21010537b424fb9a70b846bf900bd996f"
     ]
   },
   "api": {
@@ -841,7 +843,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "2d583944f8ccfb5f3962f76c9e39e829e3012a3b34ece129a2f93130f8bacc87",
+  "goldenSha256": "fce2f9519ec2440317b59d2315e93d75783a4ff37ff31c2b23c1a5cdfa56c3c3",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
