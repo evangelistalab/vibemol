@@ -15,6 +15,8 @@ A session contains the data needed to reopen offline. Original source files do n
 
 Sessions reopen in View mode with trajectory, vibration, and camera auto-rotation paused. Undo history, active drags/placement previews, temporary atom selections, and floating-window layout are not part of the format. Builder logs are restored with the edited structure; they are not replayed.
 
+When the atom order saved with a vibration differs from its structure, the session opens with a warning and playback for that structure is disabled. The saved modes are retained separately, including in autosaves. Load a vibration file that lists its atoms in the structure's order to restore playback.
+
 Camera depth limits are recomputed from the restored visible geometry with orbital padding. This preserves the saved camera pose and zoom while preventing large structures from reopening with clipped atoms or surfaces.
 
 Appearance settings include independent Style and Color scheme references in `appearance.references`, plus the original definitions of referenced user looks. A session can reopen in a fresh browser with the same names, per-axis modified flags, and Revert baselines without adding entries to that browser's My looks library. Live settings still determine rendering. Legacy sessions carrying `appearance.look` migrate once at load; see [Appearance components and looks](appearance-looks.md#saving-and-preservation). Explicit null references stay null even if their colors or materials match an existing recipe.
@@ -59,7 +61,7 @@ await VibeMolSession.importText(text);
 await VibeMolSession.import(envelope);
 ```
 
-`kind` and `version` describe the supported format. Successful imports return `{ ok, name, sceneCount, sourceCount }`; failures reject with an error. Session opening and ordinary file imports share a queue. Existing `VibeMolPreset` and `VibeMolStructure` contracts remain available for narrower exports.
+`kind` and `version` describe the supported format. Successful imports return `{ ok, name, sceneCount, sourceCount }`, with an optional `vibrationWarning` when playback was disabled. Failures reject with an error. Session opening and ordinary file imports share a queue. Existing `VibeMolPreset` and `VibeMolStructure` contracts remain available for narrower exports.
 
 `VibeMolRecovery` exposes `getState()`, `flush({ force? })`, `recover()`, and `startFresh()`. Storage failure is reported through state/UI and a `false` flush result. Recovery controls are intentionally outside presets because they describe browser-local storage.
 

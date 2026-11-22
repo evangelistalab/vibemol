@@ -84,13 +84,17 @@
       requireValue(integer(traj.frameIndex) && traj.frameIndex < traj.frames.length, `${label}: invalid trajectory frame.`);
       requireValue(finite(traj.fps) && traj.fps >= 1 && traj.fps <= 120, `${label}: invalid trajectory FPS.`);
     }
-    if (vol.vibration) {
-      const vib = vol.vibration;
+    if (vol.vibration || vol.disabledVibration) {
+      requireValue(!(vol.vibration && vol.disabledVibration), `${label}: both active and disabled vibrations are present.`);
+      const vib = vol.vibration || vol.disabledVibration;
+      const vibrationCoordinates = vol.vibration ? coordinates : vib.atomCount * 3;
+      requireValue(vol.vibration || (integer(vib.atomCount, 1) && integer(vibrationCoordinates)),
+        `${label}: invalid disabled vibration atom count.`);
       requireValue(Array.isArray(vib.modes) && vib.modes.length > 0, `${label}: missing vibrational modes.`);
-      numericArray(vib.equilibrium, coordinates, 'vibrational equilibrium');
+      numericArray(vib.equilibrium, vibrationCoordinates, 'vibrational equilibrium');
       for (const mode of vib.modes) {
         requireValue(object(mode) && finite(mode.frequencyCm1), `${label}: invalid vibration frequency.`);
-        numericArray(mode.displacements, coordinates, 'vibrational displacement');
+        numericArray(mode.displacements, vibrationCoordinates, 'vibrational displacement');
       }
       requireValue(integer(vib.modeIndex) && vib.modeIndex < vib.modes.length, `${label}: invalid vibration mode.`);
       requireValue(finite(vib.phase) && finite(vib.amplitude) && vib.amplitude >= 0 && vib.amplitude <= 8

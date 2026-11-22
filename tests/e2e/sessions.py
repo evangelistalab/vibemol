@@ -394,6 +394,71 @@ def vibration_sidecar_atom_order(page, _dialogs):
     assert export(page)['sources'][0]['volume']['vibration'] == before
 
 
+def legacy_session_vibration_order(page, _dialogs):
+    xyz = '3\nWater\nO 0 0 0\nH 1 0 0\nH 0 1 0\n'
+    payload = {'kind': 'vibemol.vibrations', 'version': 1, 'units': 'angstrom', 'atomCount': 3,
+               'atomSymbols': ['O', 'H', 'H'], 'modes': [
+                   {'frequencyCm1': 250, 'displacements': [0,0,0, 0.125,0,0, 0,0,0]},
+               ]}
+
+    def load_modes():
+        return load(page, [{'name': 'water.vib.json', 'text': json.dumps(payload)}], clear_first=False)
+
+    assert load(page, [{'name': 'water.xyz', 'text': xyz}])['ok']
+    assert load_modes()['ok']
+    legacy = export(page)
+    before = legacy['sources'][0]['volume']
+    # Older builds attached these displacement rows by atom count alone when
+    # the symbol lists contained the same elements in a different order.
+    before['vibration']['atomSymbols'] = ['H', 'O', 'H']
+    page.locator('#sessionFileInput').set_input_files({
+        'name': 'legacy-water.vibemol-session', 'mimeType': 'application/json',
+        'buffer': json.dumps(legacy).encode(),
+    })
+    warning = page.locator('#sessionVibrationWarning')
+    warning.wait_for(state='visible')
+    assert 'saved atom order differs' in warning.inner_text()
+    assert 'saved atom order differs' in page.locator('#hint').inner_text()
+
+    def check_disabled():
+        actual = export(page)['sources'][0]['volume']
+        assert actual['atoms'] == before['atoms'] and actual['bonds'] == before['bonds'], actual
+        assert actual.get('vibration') is None
+        assert actual['disabledVibration'] == before['vibration']
+        assert not page.locator('#vibrationPlayBtn').is_visible()
+
+    check_disabled()
+    assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_function('() => VibeMolRecovery.getState().pending')
+    page.locator('#recoverSessionBtn').click()
+    warning.wait_for(state='visible')
+    check_disabled()
+
+    payload['atomSymbols'] = ['H', 'O', 'H']
+    wrong = load_modes()
+    assert not wrong['ok'] and 'same order' in wrong['error'], wrong
+    del payload['atomSymbols']
+    unlabeled = load_modes()
+    assert not unlabeled['ok'] and 'lists the atom symbols' in unlabeled['error'], unlabeled
+    check_disabled()
+
+    payload['atomSymbols'] = ['O', 'H', 'H']
+    payload['modes'][0]['displacements'] = [0.125,0,0, 0,0,0, 0,0,0]
+    assert load_modes()['ok']
+    warning.wait_for(state='hidden')
+    restored = export(page)['sources'][0]['volume']
+    assert restored['vibration']['atomSymbols'] == ['O', 'H', 'H']
+    assert 'disabledVibration' not in restored
+    page.locator('#vibrationPlayBtn').click()
+    page.wait_for_function('''() => {
+        const {atoms} = VibeMolStructure.exportActive().volume;
+        return Math.abs(atoms[0].x) > 0.0001;
+    }''')
+    atoms = page.evaluate('() => VibeMolStructure.exportActive().volume.atoms')
+    assert atoms[1:] == before['atoms'][1:], atoms
+
+
 def recovery_and_quota(page, dialogs):
     page.wait_for_function('() => VibeMolRecovery.getState().ready')
     assert load(page, [{'name':'recover.cube','text':cube(0)}])['ok']
@@ -519,7 +584,7 @@ def main():
         browser = playwright.chromium.launch(headless=True)
         try:
             for run in (portable_round_trip, failed_imports, multi_dataset_cubes, arithmetic_and_lazy_orbitals,
-                        vibration_and_topology, trajectory_edit_protection, vibration_sidecar_atom_order,
+                        vibration_and_topology, trajectory_edit_protection, vibration_sidecar_atom_order, legacy_session_vibration_order,
                         recovery_and_quota, mobile_pending_recovery, declined_recovery, spinor_and_download,
                         retained_source, autosave_and_tab_conflict, scoped_shortcuts):
                 context = browser.new_context(viewport={'width':1440,'height':1000})

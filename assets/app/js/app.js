@@ -30056,6 +30056,11 @@
     syncEditSceneTool();
     measurementsPanel?.sync();
     syncCalculations();
+    const vibrationWarning = document.getElementById('sessionVibrationWarning');
+    if (vibrationWarning) {
+      const message = sessionController?.getVibrationOrderWarning(volumes) || '';
+      if (vibrationWarning.textContent !== message) vibrationWarning.textContent = message;
+    }
     const record = currentIndex >= 0 ? volumes[currentIndex] : null;
     ensureListPopovers();
     if (coordsListPopover) coordsListPopover.cancelInlineEdit({ focusButton: false });
@@ -31127,6 +31132,9 @@
       || candidates.find((c) => c.index === currentIndex)
       || candidates[0];
     const vol = target.vol;
+    if (!payload.atomSymbols?.length && sessionController?.hasDisabledVibration(vol)) {
+      return { ok: false, error: 'To restore vibration playback, load a vibration file that lists the atom symbols in the same order as the structure.' };
+    }
     const prev = vol.vibration || {};
     const convertFactor = (payload.units === 'angstrom' && vol.units !== 'angstrom')
       ? ANG_TO_BOHR
@@ -31163,6 +31171,7 @@
       equilibrium: snapshotAtomCoordinates(vol, atomCount),
       frameBuffer: new Float32Array(atomCount * 3),
     };
+    sessionController?.clearDisabledVibration(vol);
 
     if (target.index === currentIndex) {
       vibrationRuntimeController.setPlaybackState({ playing: false });
@@ -33142,7 +33151,8 @@
       if (looksUi) looksUi.clearUndo();
       if (sessionStatusEl) sessionStatusEl.textContent = `Opened ${staged.name || 'session'}`;
       if (sessionRecovery) { void sessionRecovery.startFresh({ remember: false }); sessionRecovery.markDirty(); }
-      setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
+      if (staged.vibrationWarning) setHintMessage(staged.vibrationWarning, { sticky: true });
+      else setHintMessage('Session opened in View. Playback and auto-rotate are paused.');
     },
   });
   window.VibeMolSession = Object.freeze({

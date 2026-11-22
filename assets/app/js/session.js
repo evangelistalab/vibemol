@@ -10,6 +10,9 @@
     'moleculeLayerId', 'orbitalsGroupId', 'measurementsGroupId', 'activeLayerId'];
   const LAYER_FIELDS = ['id', 'sceneId', 'parentId', 'kind', 'name', 'visible', 'expanded', 'labelId',
     'moldenMoIndex', 'isSceneGraphDuplicate', 'atomCount', 'operation', 'inputs', 'nameUserEdited', 'cubeDataValid', 'moleculeDisplay'];
+  const VIBRATION_FIELDS = ['kind', 'sourceName', 'units', 'atomCount', 'atomSymbols', 'modes',
+    'modeIndex', 'amplitude', 'speed', 'phase', 'equilibrium'];
+  const disabledVibrations = new WeakMap();
 
   function pick(value, keys) {
     const out = {};
@@ -43,10 +46,8 @@
         playing: false,
       });
     }
-    if (vol.vibration) {
-      out.vibration = pick(vol.vibration, ['kind', 'sourceName', 'units', 'atomCount', 'atomSymbols', 'modes',
-        'modeIndex', 'amplitude', 'speed', 'phase', 'equilibrium']);
-    }
+    if (vol.vibration) out.vibration = pick(vol.vibration, VIBRATION_FIELDS);
+    else if (disabledVibrations.has(vol)) out.disabledVibration = disabledVibrations.get(vol);
     if (vol.kind === 'molden') {
       out.molden = pick(vol.molden, ['atomUnit', 'angularFlags', 'basis', 'basisCount', 'moCount', 'mos']);
       // The selected orbital's compatibility grid is a disposable cache.
@@ -140,13 +141,41 @@
     return global.VibeMolStructureCore.cloneStructuredData(captured, copiedVolumes);
   }
 
+  function restoreVolume(vol, prepareVolume) {
+    const { vibration, disabledVibration, ...structure } = vol;
+    const symbols = vibration?.atomSymbols;
+    const atomOrderMismatch = Array.isArray(symbols) && symbols.length > 0 && (
+      symbols.length !== vol.atoms.length || vol.atoms.some((atom, i) => {
+        const symbol = global.VibeMolElementUtils.getElementSymbol(atom.Z, global.ATOM_Z_TO_DATA);
+        return symbol.toUpperCase() !== String(symbols[i]).trim().toUpperCase();
+      })
+    );
+    const affected = atomOrderMismatch || disabledVibration;
+    const restored = affected ? structure : vol;
+    restored.idx = (i, j, k) => (i * restored.nxyz[1] + j) * restored.nxyz[2] + k;
+    const prepared = prepareVolume(restored);
+    if (affected) {
+      // Keep the saved modes out of the live volume and its playback paths.
+      const savedModes = disabledVibration || { ...vibration, atomCount: vol.atoms.length };
+      const retained = global.VibeMolStructureCore.cloneStructuredData(pick(savedModes, VIBRATION_FIELDS));
+      disabledVibrations.set(prepared, retained);
+    }
+    return prepared;
+  }
+
+  function getVibrationOrderWarning(records) {
+    const affected = records.filter(record => disabledVibrations.has(record.vol));
+    if (!affected.length) return '';
+    const subject = affected.length === 1 ? `Vibration playback for ${affected[0].name}` : `Vibration playback for ${affected.length} structures`;
+    return `${subject} is disabled because the saved atom order differs from the structure. Load a vibration file with matching atom order to restore playback.`;
+  }
+
   function hydrate(session, { prepareVolume = value => value } = {}) {
     FORMAT.validate(session);
     const sources = session.sources.map(source => {
       const vol = source.volume;
-      vol.idx = (i, j, k) => (i * vol.nxyz[1] + j) * vol.nxyz[2] + k;
       if (vol.trajectory) Object.assign(vol.trajectory, { currentFrame: vol.trajectory.frameIndex, playing: false, _lastStepMs: 0 });
-      const record = Object.assign({}, normalizeRecordSurfaceState(source.recordState), { name: source.name, vol: prepareVolume(vol), _sceneGraphSceneKey: source.sceneKey });
+      const record = Object.assign({}, normalizeRecordSurfaceState(source.recordState), { name: source.name, vol: restoreVolume(vol, prepareVolume), _sceneGraphSceneKey: source.sceneKey });
       if (record.measurements) record.measurements = global.VibeMolMeasurements.normalize(record.measurements);
       if (record.calculations && global.VibeMolCalculationsModel) record.calculations = global.VibeMolCalculationsModel.normalize(record.calculations);
       return { id: source.id, record };
@@ -160,10 +189,7 @@
         const { volume, ...fields } = entry;
         const record = byId.get(entry.sourceId) || null;
         let cubeData = volume || (record && record.vol.kind !== 'molden' && entry.kind === 'cube' ? record.vol : null);
-        if (volume) {
-          volume.idx = (i, j, k) => (i * volume.nxyz[1] + j) * volume.nxyz[2] + k;
-          cubeData = prepareVolume(volume);
-        }
+        if (volume) cubeData = restoreVolume(volume, prepareVolume);
         graph.addLayer(scene, Object.assign({}, fields, { record, cubeData, surfaceMetricCache: new Map() }));
       }
       graph.addScene(scene);
@@ -179,7 +205,8 @@
     }
     if (context.scene && context.record) context.scene.moleculeRecord = context.record;
     return { graph: graph.getState(), sources, records: session.records.map(key => byId.get(key)),
-      activeRecord: context.record || byId.get(session.activeSourceId) || null, preset: session.preset, view: session.view, name: session.name };
+      activeRecord: context.record || byId.get(session.activeSourceId) || null, preset: session.preset, view: session.view, name: session.name,
+      vibrationWarning: getVibrationOrderWarning(sources.map(source => source.record)) };
   }
 
   function createSessionController(deps) {
@@ -202,7 +229,8 @@
         const staged = hydrate(decoded, { prepareVolume: deps.prepareVolume });
         await deps.applyState(staged);
         if (deps.onOpened) deps.onOpened(staged);
-        return { ok: true, name: decoded.name, sceneCount: decoded.graph.scenes.length, sourceCount: decoded.sources.length };
+        return { ok: true, name: decoded.name, sceneCount: decoded.graph.scenes.length, sourceCount: decoded.sources.length,
+          ...(staged.vibrationWarning ? { vibrationWarning: staged.vibrationWarning } : {}) };
       } finally {
         opening = false;
         if (deps.setOpening) deps.setOpening(false);
@@ -217,6 +245,9 @@
         return { ok: true, sceneCount: session.graph.scenes.length, sourceCount: session.sources.length };
       },
       isOpening: () => opening,
+      getVibrationOrderWarning,
+      hasDisabledVibration: vol => disabledVibrations.has(vol),
+      clearDisabledVibration: vol => disabledVibrations.delete(vol),
     });
   }
 

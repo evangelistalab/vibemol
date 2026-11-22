@@ -301,6 +301,7 @@
     async function commitFilePlan(plan, options = {}) {
       const { primaries, sidecars, presets, sessions = [], failures } = plan;
       const successful = new Set();
+      let vibrationWarning = '';
       const attempt = async (item, callback) => {
         try { await callback(); successful.add(item); }
         catch (err) { failures.push(`${item.inputName}: ${err && err.message || err}`); }
@@ -312,7 +313,10 @@
           sidecars.length = 0;
           presets.length = 0;
         } else {
-          await attempt(sessions[0], () => deps.importSessionText(sessions[0].text));
+          await attempt(sessions[0], async () => {
+            const opened = await deps.importSessionText(sessions[0].text);
+            vibrationWarning = opened?.vibrationWarning || '';
+          });
         }
       }
       if (primaries.length) {
@@ -367,7 +371,7 @@
       }
       if (!successful.size) deps.updateEmptyStateVisibility();
       const loadedNames = Array.from(new Set(Array.from(successful, item => item.sourceInput || item)), item => item.inputName);
-      if (loadedNames.length) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
+      if (loadedNames.length && !vibrationWarning) deps.setNavigationHint(`Loaded ${loadedNames.length} file${loadedNames.length === 1 ? '' : 's'}`);
       if (failures.length) {
         deps.setHintMessage(failures[0]);
       }

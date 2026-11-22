@@ -1043,8 +1043,8 @@
     },
     "statement:sessionOpenRecovery": {
       "before": "4e33899056d3665329ddc920d8149f92ddac65f32f5edd45ac430f61f7bc55f5",
-      "after": "fa409197de24aa8d828269fa047774790ea30f0d419258e0cb151aeef7093617",
-      "reason": "Reserve durable snapshot decline for an explicit Start fresh choice.",
+      "after": "25a28104ec8e0eec65420e768125a455f6cec4e10ebd8b6d2332fac5cd239f79",
+      "reason": "Reserve durable snapshot decline for an explicit Start fresh choice and surface saved vibration atom-order mismatches when opening or recovering.",
       "units": []
     },
     "statement:declineRecovery": {
@@ -2111,8 +2111,8 @@
     },
     "attachVibrationPayloadToBestVolume": {
       "before": "a3e440992341e5942a4e6ebda02661a6359f9f8206ee6582886bfe209bef34c4",
-      "after": "7ce3a2056404d210f81ff98c0870f875586eb154555b54dcc4b65cf57fd4de94",
-      "reason": "Reject mismatched atom order with a user-visible explanation.",
+      "after": "50e4839070ca15fa0e5fabd3dcefdd63a5b3a8352b124ec7abc3086767c4563b",
+      "reason": "Reject mismatched atom order with a user-visible explanation. Restore disabled playback only for a sidecar with verified atom order.",
       "units": []
     },
     "ensureEditableVolumeRecord": {
@@ -2186,6 +2186,12 @@
           ]
         }
       ]
+    },
+    "updateSidePanel": {
+      "before": "92df0b80a6539176a7f478b5fac72e284e0ec2e8aadba7a91766df0d44705481",
+      "after": "3287651df92d387a6712e6629cc8c9a0d1a478bc297026bee7f6aa199eb2b619",
+      "reason": "Keep the saved vibration atom-order warning visible through scene and session changes.",
+      "units": []
     }
   },
   "placementChanges": {
