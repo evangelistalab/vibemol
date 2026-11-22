@@ -70,6 +70,10 @@ Compatibility notes:
 - `fancy` is accepted as a deprecated alias and mapped to `toon`.
 - Unknown preset keys are preserved in relaxed mode for round-trip safety.
 
+## Browser automation
+
+The [command registry](docs/api/commands.md) exposes `window.VibeMolCommands` for listing commands, inspecting parameter schemas and calling supported file, session, structure, preset, Edit, Calculations and forte2 operations.
+
 ## Python API Prototype
 See `api/README.md` for full usage.
 

@@ -333,6 +333,8 @@ Required script order in `index.html`:
 57. `assets/app/js/app.js`
     - `periodic-table.js` loads immediately before `app.js`; its controller is constructed at the original periodic-state initialization point and binds controls at the original late UI-wiring point.
     - `pubchem.js` loads immediately before `periodic-table.js`; its inert controller is constructed immediately after `els`, before any startup restoration callback can read it. Listener wiring remains at its original late point.
+58. `assets/app/js/workbench-model.js` and `assets/app/js/workbench.js`
+59. `assets/app/js/command-registry.js` and `assets/app/js/commands.js`. The registry factory loads first. Command adapters resolve public target namespaces at execution time.
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolElementUtils`
@@ -408,6 +410,8 @@ Preset automation contract exposed globally:
 - `window.VibeMolPreset.listKeys()`
 - `window.VibeMolPreset.export(options?)`
 - `window.VibeMolPreset.import(preset, options?)`
+
+The [command registry v0](docs/api/commands.md) exposes `window.VibeMolCommandRegistry` for creation and parameter validation and `window.VibeMolCommands` for command discovery and execution.
 
 ## Key Behavior Notes
 - A pending session-recovery choice defers automatic restoration of saved Workbench windows. It never hides panels opened in the current workspace (including Subspace on entering Calculations); menu checkmarks and dock visibility use the same live panel state. Opening a panel does not accept/dismiss recovery or overwrite its snapshot. `tests/e2e/measurements.py` covers this with new work loaded while recovery remains pending.

@@ -66,7 +66,7 @@ Pushing `main` publishes **vibemol.org** through Pages independently of ordinary
 
 ## Paused and unscheduled work
 
-No next product increment is selected. These are boundaries, not a work queue:
+The [command registry v0](docs/api/commands.md) is the directly authorized additive 0.11 work. These other dispositions remain in force:
 
 | Work | Disposition |
 | --- | --- |
