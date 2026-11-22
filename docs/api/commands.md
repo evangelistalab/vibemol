@@ -94,7 +94,12 @@ await (async () => {
     if (!result.ok) throw new Error(JSON.stringify(result.error));
     return result.value;
   };
-  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  const canonical = value => {
+    if (Array.isArray(value)) return value.map(canonical);
+    if (!value || typeof value !== 'object') return value;
+    return Object.fromEntries(Object.keys(value).sort().map(key => [key, canonical(value[key])]));
+  };
+  const same = (a, b) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b));
 
   console.log(value(await run('app.info')));
   const response = await fetch(VibeMolAssets.url('./assets/fragments/water.xyz'));

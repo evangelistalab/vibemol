@@ -5,7 +5,8 @@
 Read [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md), [VIBEMOL_CONTEXT.md](VIBEMOL_CONTEXT.md)
 and [the roadmap](docs/roadmap.md) before selecting work. The historical receipts
 below preserve their actual counts and rejected candidates; their old “next”
-instructions do not select a new task. **No next product increment is selected.**
+instructions do not select a new task. The separately authorized
+[command registry v0](docs/api/commands.md) is in development.
 
 - Latest deployed runtime: **0.10.11**, PR #107 merge
   `297e608fa88038151fa73edc10362281fc6103db`. Documentation-only commits may follow.
