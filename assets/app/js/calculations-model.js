@@ -267,6 +267,12 @@
     if(!specs(record).length)errors.push('Select at least one MINAO function.');
     if(!['RHF','ROHF','GHF'].includes(o.reference))errors.push('Choose RHF, ROHF or GHF.');
     if(!Number.isInteger(o.charge))errors.push('Charge must be an integer.');
+    const formalCharges=(record?.vol?.atoms || []).map(a=>a.formalCharge).filter(charge=>Number.isSafeInteger(charge) && charge!==0);
+    const formalCharge=formalCharges.reduce((sum,charge)=>sum+charge,0);
+    if(formalCharges.length && Number.isInteger(o.charge) && o.charge!==formalCharge){
+      const signedCharge=charge=>charge>0?`+${charge}`:String(charge);
+      warnings.push(`The atoms’ formal charges add up to ${signedCharge(formalCharge)}. Calculations uses the Charge field (${signedCharge(o.charge)}).`);
+    }
     const electrons=all.reduce((sum,a)=>sum+a.Z,0)-o.charge;
     if(electrons<1)errors.push('The electron count must be positive; adjust the charge.');
     else if(o.reference==='RHF' && electrons%2)errors.push('RHF requires an even electron count; adjust charge or use ROHF/GHF.');

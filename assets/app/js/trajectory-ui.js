@@ -32,6 +32,14 @@
       input.value = String(value);
     }
 
+    function commitFpsInput(input, previous) {
+      if (!input) return previous;
+      const entered = input.valueAsNumber;
+      const fps = Number.isFinite(entered) ? Math.max(1, Math.min(120, Math.round(entered))) : previous;
+      input.value = String(fps);
+      return fps;
+    }
+
     function setTrajectorySyncDisabledClass(el, disabled) {
       if (!el) return;
       el.disabled = !!disabled;
@@ -137,7 +145,7 @@
         const current = getTrajectoryInfoBySceneId(sceneId);
         if (!(current && current.enabled && current.traj) || current.traj.syncEnabled) return;
         focusTrajectoryInfoScene(current);
-        current.traj.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
+        current.traj.fps = commitFpsInput(fps, current.traj.fps);
         current.traj._lastStepMs = 0;
         syncTrajectoryControls();
       });
@@ -277,7 +285,7 @@
       fps.step = '1';
       fps.addEventListener('change', () => {
         const master = getTrajectorySyncMaster();
-        master.fps = Math.max(1, Math.min(120, Math.round(Number(fps.value) || 12)));
+        master.fps = commitFpsInput(fps, master.fps);
         master.lastStepMs = 0;
         syncTrajectoryControls();
       });
@@ -361,7 +369,7 @@
       syncTrajectoryMasterStructure(anyTrajectorySyncEnabled(infos));
       updateTrajectoryPopoverValues(infos, activeInfo);
     }
-    return Object.freeze({ reset, sync, setInputValueIfIdle });
+    return Object.freeze({ reset, sync, setInputValueIfIdle, commitFpsInput });
   }
   global.VibeMolTrajectoryUi = Object.freeze({ createTrajectoryUi });
 })(typeof window !== 'undefined' ? window : globalThis);

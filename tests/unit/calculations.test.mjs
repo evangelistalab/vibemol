@@ -11,6 +11,19 @@ const record=rows=>({name:'fixture',vol:{units:'angstrom',atoms:rows.map(([Z,x,y
 const ring=()=>record([[6,0,0,.859492],[6,0,-.651229,-.499559],[6,0,.651229,-.499559],[1,.91265,0,1.457504],[1,-.91265,0,1.457504],[1,0,-1.585659,-1.038624],[1,0,1.585659,-1.038624]]);
 // Scientific fixtures explicitly assign shells; viewport selection has no AO side effects.
 const pick=(r,...indices)=>indices.forEach(i=>{const id='a'+i;if(M.state(r).selections.some(row=>row.id===id))M.removeOrbitals(r,[id]);else M.selectShell(r,id,M.defaultShell(r.vol.atoms.find(a=>a.id===id).Z));});
+test('Calculations warns when formal charges differ from the chosen charge', () => {
+  const r = record([[26, 0, 0, 0], [17, 2.28, 0, 0]]);
+  r.vol.atoms[0].formalCharge = 2;
+  r.vol.atoms[1].formalCharge = -1;
+  M.setOptions(r, {method: 'cumulative'});
+  assert.equal(M.selectShell(r, 'a0', '3d'), true);
+  assert.match(M.validation(r).warnings.join(' '), /add up to \+1.*Charge field \(0\)/);
+  assert.match(M.validation(r).errors.join(' '), /RHF requires an even electron count/);
+  M.setOptions(r, {charge: 1});
+  assert.equal(M.validation(r).warnings.some(warning => warning.includes('formal charges')), false);
+  assert.equal(M.validation(r).errors.length, 0);
+  assert.match(M.generate(r), /RHF\(charge=1\)/);
+});
 test('CAS is the new-record default and explicit saved methods retain their choice',()=>{
  const r=ring();assert.equal(M.state(r).options.method,'cas');
  assert.equal(Object.hasOwn(M.state(r).options,'cas'),false);

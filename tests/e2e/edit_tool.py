@@ -554,9 +554,7 @@ def halo_placement_hint(page, url):
     measure_key = page.locator('#hint kbd')
     check('Measure Escape key name', [measure_key.inner_text(), measure_key.get_attribute('aria-label')], ['esc', 'Escape'])
 
-    read_hint = '''key => {
-      const canvas = document.getElementById('canvas');
-      if (key) canvas.dispatchEvent(new KeyboardEvent('keydown', {key, bubbles:true, cancelable:true}));
+    read_hint = '''() => {
       const hint = document.querySelector('.vm-edit-tool-hint');
       return {hint:hint.textContent, keys:Array.from(hint.querySelectorAll('kbd'), k=>[k.textContent,k.getAttribute('aria-label')]),
               elements:VibeMolStructure.exportActive().volume.atoms.map(atom=>atom.Z)};
@@ -583,13 +581,34 @@ def halo_placement_hint(page, url):
                 .sort((a,b)=>distance(b)-distance(a))[0] ?? null;
             }''', anchor)
             assert site, 'No open halo site is reachable on the canvas'
-            page.mouse.click(site['x'], site['y'])
-            check(f'{key} pending before {"native" if native else "same-event"} check', page.evaluate(read_hint), expected_pending)
-            page.locator('#canvas').focus()
             if native:
+                page.mouse.click(site['x'], site['y'])
+                pending = page.evaluate(read_hint)
+                check(f'{key} pending before native check', pending, expected_pending)
+                page.locator('#canvas').focus()
                 page.keyboard.press(key)
-            actual = page.evaluate(read_hint, None if native else key)
-            # The same-event check reads after the handler, before a render frame can refresh the hint.
+                actual = page.evaluate(read_hint)
+            else:
+                # Read after the app's native placement handler and send the key before any frame runs.
+                page.evaluate(f'''key => {{
+                  const canvas = document.getElementById('canvas');
+                  const readHint = {read_hint};
+                  canvas.addEventListener('pointerdown', () => {{
+                    const pending = readHint();
+                    canvas.focus({{preventScroll:true}});
+                    canvas.dispatchEvent(new KeyboardEvent('keydown', {{key, bubbles:true, cancelable:true}}));
+                    canvas.haloHintReceipt = {{pending, actual:readHint()}};
+                  }}, {{once:true}});
+                }}''', key)
+                page.mouse.click(site['x'], site['y'])
+                receipt = page.locator('#canvas').evaluate('''canvas => {
+                  const receipt = canvas.haloHintReceipt;
+                  delete canvas.haloHintReceipt;
+                  return receipt;
+                }''')
+                assert receipt, 'No readback from the native halo placement handler'
+                check(f'{key} pending before same-event check', receipt['pending'], expected_pending)
+                actual = receipt['actual']
             expected = dict(hint='BUILD — Click to place chlorine · Right-drag to rotate · esc switches to Transform',
                             keys=[['esc', 'Escape']], elements=elements)
             check(f'{key} {"native" if native else "same-event"} result', actual, expected)

@@ -737,6 +737,18 @@
       spec = { groupId, label: 'Ci', order: 2, ops: [matIdentity(), matDiagonal(-1, -1, -1)] };
     } else if (groupId === 'Cs') {
       spec = { groupId, label: 'Cs', order: 2, ops: groupClosure([reflectionMatrix([0, 0, 1])]), expectedOrder: 2 };
+    } else if (groupId === 'Td') {
+      spec = { order: 24, ops: groupClosure([
+        rotationMatrix(TETRA_TEMPLATE[0], 2 * Math.PI / 3), rotationMatrix([1, 0, 0], Math.PI), reflectionMatrix([1, -1, 0]),
+      ]) };
+    } else if (groupId === 'Oh') {
+      spec = { order: 48, ops: groupClosure([
+        rotationMatrix([1, 0, 0], Math.PI / 2), rotationMatrix([0, 0, 1], Math.PI / 2), matDiagonal(-1, -1, -1),
+      ]) };
+    } else if (groupId === 'Ih') {
+      spec = { order: 120, ops: groupClosure([
+        rotationMatrix(ICOSA_TEMPLATE[0], 2 * Math.PI / 5), rotationMatrix(ICOSA_TEMPLATE[1], 2 * Math.PI / 5), matDiagonal(-1, -1, -1),
+      ]) };
     }
     let match = /^C(\d+)(v|h)?$/u.exec(groupId);
     if (!spec && match) {
@@ -979,6 +991,11 @@
     normalize([0, -1, GOLDEN]), normalize([0, 1, GOLDEN]), normalize([0, -1, -GOLDEN]), normalize([0, 1, -GOLDEN]),
     normalize([GOLDEN, 0, -1]), normalize([GOLDEN, 0, 1]), normalize([-GOLDEN, 0, -1]), normalize([-GOLDEN, 0, 1]),
   ].filter(Boolean);
+  const CUBE_TEMPLATE = [...TETRA_TEMPLATE, ...TETRA_TEMPLATE.map(point => scale(point, -1))];
+  const DODECA_TEMPLATE = [...CUBE_TEMPLATE, ...[1, -1].flatMap(a => [1, -1].flatMap(b => [
+    normalize([0, a * GOLDEN, b / GOLDEN]), normalize([b / GOLDEN, 0, a * GOLDEN]), normalize([a * GOLDEN, b / GOLDEN, 0]),
+  ]))];
+  const POLYHEDRAL_TEMPLATES = { Td: [TETRA_TEMPLATE], Oh: [OCTA_TEMPLATE, CUBE_TEMPLATE], Ih: [ICOSA_TEMPLATE, DODECA_TEMPLATE] };
 
   function permutationsOfIndices(count) {
     const out = [];
@@ -1130,11 +1147,60 @@
     return { centerIndex, shell, avgRadius };
   }
 
-  function quickRejectShellGroup(groupId, centered) {
-    if (groupId === 'Td') return centered.length !== 5;
-    if (groupId === 'Oh') return centered.length !== 7;
-    if (groupId === 'Ih') return centered.length !== 13;
-    return false;
+  function collectRadialShells(centered) {
+    const cache = getCenteredAnalysisCache(centered);
+    if (cache.radialShells) return cache.radialShells;
+    const shells = [];
+    for (const indices of bucketIndicesByAtomicNumber(centered).values()) {
+      const points = indices.map(index => centered[index].local).filter(point => length(point) > EPS)
+        .sort((a, b) => lengthSq(a) - lengthSq(b));
+      let shell = [];
+      for (const point of points) {
+        if (shell.length && length(point) > 1.12 * length(shell[0])) {
+          shells.push(shell);
+          shell = [];
+        }
+        shell.push(point);
+      }
+      if (shell.length) shells.push(shell);
+    }
+    cache.radialShells = shells;
+    return shells;
+  }
+
+  function fitPolyhedralShell(points, template) {
+    const directions = points.map(normalize);
+    const first = template[0];
+    const second = template.slice(1).find(point => Math.abs(dot(first, point)) < 0.9);
+    const templateAngle = dot(first, second);
+    const templateFrame = buildFrame(first, second);
+    const templateAxes = [templateFrame.x, templateFrame.y, templateFrame.z];
+    const seeds = [];
+    for (const direction of directions.slice(1)) {
+      if (Math.abs(dot(directions[0], direction) - templateAngle) > 0.16) continue;
+      const frame = buildFrame(directions[0], direction);
+      const [x, y, z] = matMul(matTranspose([frame.x, frame.y, frame.z]), templateAxes);
+      seeds.push({ x, y, z });
+    }
+    return seeds.length ? fitTemplateIterative(directions, template, seeds) : null;
+  }
+
+  function buildPolyhedralCandidate(groupId, centered) {
+    let best = null;
+    // A shell proposes an orientation. Every operation must fit all atoms,
+    // including additional shells, while matching each element separately.
+    for (const points of collectRadialShells(centered)) {
+      const template = POLYHEDRAL_TEMPLATES[groupId].find(item => item.length === points.length);
+      if (!template) continue;
+      const fit = fitPolyhedralShell(points, template);
+      if (!fit) continue;
+      const [x, y, z] = matTranspose(fit.rotation);
+      const candidate = buildCandidateFromGeneric(groupId, centered, { x, y, z });
+      if (candidate.ops.length !== candidate.order) continue;
+      if (!best || rankCandidates(candidate, best) < 0) best = candidate;
+      if (best.maxDisplacementAng < EPS) break;
+    }
+    return best;
   }
 
   function buildSpecialShellCandidate(groupId, centered, frameSeeds) {
@@ -1216,9 +1282,7 @@
     if (groupId === 'C1') candidate = findBestGenericCandidate('C1', centered);
     else if (groupId === 'Cinfv' || groupId === 'Dinfh') candidate = findBestLinearCandidate(groupId, centered);
     else if (groupId === 'Td' || groupId === 'Oh' || groupId === 'Ih') {
-      candidate = quickRejectShellGroup(groupId, centered)
-        ? null
-        : buildSpecialShellCandidate(groupId, centered);
+      candidate = buildSpecialShellCandidate(groupId, centered) || buildPolyhedralCandidate(groupId, centered);
     } else candidate = findBestGenericCandidate(groupId, centered);
     cache.candidateByGroup.set(groupId, candidate || null);
     return candidate;
@@ -1477,6 +1541,12 @@
     const toleranceAng = Math.max(EXACT_TOLERANCE_ANG, Number(options.toleranceAng) || DEFAULT_TOLERANCE_ANG);
     const centeredState = centerTargetAtoms(targetAtoms);
     const centered = centeredState.centered;
+    if (centered.length < 2) return {
+      targetAtomCount: centered.length, toleranceAng, exactGroupId: null,
+      exactGroupLabel: centered.length ? 'Single atom' : 'No atoms',
+      exactCandidate: null, approximateCandidates: [],
+      _internal: { centeredState, exactCandidate: null, approximateCandidates: [] },
+    };
     const approximateCandidates = buildApproximateCandidates(centered, toleranceAng);
     const exactCandidate = pickBestCandidate(approximateCandidates.filter((candidate) => (
       candidate && (candidate.rmsDisplacementAng || 0) <= EXACT_TOLERANCE_ANG + 1e-12
@@ -1556,6 +1626,7 @@
 
   function buildSymmetryPreview(targetAtoms, groupId, options = {}) {
     const centeredState = centerTargetAtoms(targetAtoms);
+    if (centeredState.centered.length < 2) return null;
     const candidate = options.candidate && options.candidate.groupId === groupId
       ? options.candidate
       : buildCandidateForGroup(groupId, centeredState.centered);

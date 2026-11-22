@@ -107,6 +107,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
       'applyCatalogLigandAtMetal','attachCatalogDonorAtPointer','buildXyzVectorArrows','commitAtomAtHaloGhost','describeMetalLigandMoves',
       'getBuildMetalLigandType','getDisplayedMetalBondStyle','getOpenMetalPlacement',
       'selectMetalBuildAnchor','setSelectedAtomFormalCharge','updateGrowPlacementPreview',
+      'rejectTrajectoryStructureEdit','statement:trajectoryEditHint',
       'resetAppOptions','resetSceneDisplayOptions','resetVisualizationOptions','statement:defaultAppOptions',
     ].includes(name),
      'Only the enumerated private product statements may be added');

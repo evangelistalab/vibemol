@@ -135,7 +135,7 @@ function collect(root = ROOT) {
   // site. These reviewed routes supplement the getter/direct-member census.
   const transport = [
     ['session.js', 'captureVolume', 'transport-read', 'pick(vol, VOLUME_FIELDS)', 'Serialize annotations through the explicit volume field allow-list for session save/autosave.'],
-    ['session.js', 'hydrate', 'transport-write', 'prepareVolume(vol)', 'Stage and hydrate complete saved volumes, including annotations, before workspace commit.'],
+    ['session.js', 'hydrate', 'transport-write', 'restoreVolume(vol, prepareVolume)', 'Stage saved volumes and their annotations before workspace commit, with incompatible vibration modes kept separately.'],
     ['structure-transport.js', 'exportStructureVolume', 'transport-read', 'deps.cloneStructuredData(vol)', 'Clone/normalize the whole volume including annotations for structure export.'],
     ['structure-transport.js', 'parseStructureEnvelopeText', 'transport-write', 'parsed.volume', 'Validate/clone/normalize imported whole-volume annotations before the explicit import commit.'],
     ['session-format.js', 'pack', 'transport-read', 'Object.entries(value)', 'Recursively encode all ordinary object children, including annotation maps.'],

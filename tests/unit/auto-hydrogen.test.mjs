@@ -21,6 +21,7 @@ function loadAutoHydrogen(extraGlobals = {}) {
         15: { symbol: 'B', radius_covalent: 1.07 },
         16: { symbol: 'C', radius_covalent: 1.05 },
         17: { symbol: 'N', radius_covalent: 1.02 },
+        26: { symbol: 'Fe', radius_covalent: 1.32 },
         29: { symbol: 'Cu', radius_covalent: 1.32 },
         35: { symbol: 'B', radius_covalent: 1.2 },
         53: { symbol: 'I', radius_covalent: 1.39 },
@@ -250,6 +251,16 @@ test('auto-hydrogen adds H only to the designated neutral oxygen donor at a meta
   assert.deepEqual(hydrogenCounts('another-oxygen'), [0, 0, 0]);
   assert.deepEqual(hydrogenCounts('o'), [2, 0, 0]);
   assert.equal(hydrogen.buildAutoHydrogenPlan({ atoms: [oxygen], bonds: [] }).stats.hydrogenCount, 2);
+});
+
+test('X-type carbon and nitrogen donors count the metal bond when completing hydrogens', () => {
+  const { VibeMolAutoHydrogen: hydrogen } = loadAutoHydrogen();
+  for (const [Z, hydrogenCount] of [[6, 3], [7, 2]]) {
+    const atoms = [{ id: 'donor', Z, formalCharge: -1, x: 0, y: 0, z: 0 }, { id: 'fe', Z: 26, x: 2, y: 0, z: 0 }];
+    const bond = { a: 'donor', b: 'fe', kind: 'normal', order: 1, origin: 'explicit', style: 'metal-strong' };
+    assert.equal(hydrogen.buildAutoHydrogenPlan({ atoms, bonds: [bond] }).stats.hydrogenCount, 0);
+    assert.equal(hydrogen.buildAutoHydrogenPlan({ atoms, bonds: [{ ...bond, ligandType: 'X' }] }).stats.hydrogenCount, hydrogenCount);
+  }
 });
 
 test('auto-hydrogen controller previews on first shortcut and applies on second shortcut', () => {
