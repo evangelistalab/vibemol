@@ -119,3 +119,15 @@ test('run snapshots parameters before forwarding and owns the result', async () 
   forwarded.values.push(4);
   assert.deepEqual(result.value.values, [1, 2]);
 });
+
+test('open objects accept plain data and reject accessors and shared memory', async () => {
+  const host = load();
+  host.TestHost = { echo: params => params };
+  const registry = host.VibeMolCommandRegistry.createCommandRegistry([definition({ params: { type: 'object' } })]);
+  const run = params => registry.run('test.echo', params);
+  assert.deepEqual(plain(await run({ nested: { value: null } })), { ok: true, value: { nested: { value: null } } });
+  assert.equal((await run({ nested: new SharedArrayBuffer(8) })).error.code, 'invalid-params');
+  let read = false;
+  assert.equal((await run({ get nested() { read = true; return {}; } })).error.code, 'invalid-params');
+  assert.equal(read, false);
+});

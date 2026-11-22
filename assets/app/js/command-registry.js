@@ -28,7 +28,12 @@
     if (value === null || typeof value === 'boolean' || typeof value === 'string' || Number.isFinite(value)) return true;
     if ((!isObject(value) && !Array.isArray(value)) || ancestors.has(value)) return false;
     const path = new Set(ancestors).add(value);
-    return Object.values(value).every(child => isJson(child, path));
+    const keys = Object.keys(value);
+    if (Array.isArray(value) && (keys.length !== value.length || keys.some((key, i) => key !== String(i)))) return false;
+    return keys.every(key => {
+      const entry = Object.getOwnPropertyDescriptor(value, key);
+      return Object.hasOwn(entry, 'value') && isJson(entry.value, path);
+    });
   }
 
   function sameJson(left, right) {
@@ -159,16 +164,15 @@
       const command = commands.get(id);
       if (!command) return failure('unknown-command', 'Unknown command id');
       try {
-        const validation = validateParams(command.descriptor.params, params);
-        if (!validation.ok) return failure('invalid-params', 'Invalid command parameters', validation.errors);
         let owned;
         try {
+          if (!isJson(params)) throw new TypeError('Expected plain JSON data');
           owned = structuredClone(params);
         } catch {
-          return failure('invalid-params', 'Invalid command parameters', [{ path: '$', message: 'Expected cloneable data' }]);
+          return failure('invalid-params', 'Invalid command parameters', [{ path: '$', message: 'Expected cloneable JSON data' }]);
         }
-        const copiedValidation = validateParams(command.descriptor.params, owned);
-        if (!copiedValidation.ok) return failure('invalid-params', 'Invalid command parameters', copiedValidation.errors);
+        const validation = validateParams(command.descriptor.params, owned);
+        if (!validation.ok) return failure('invalid-params', 'Invalid command parameters', validation.errors);
         targetMember(command.descriptor.target);
         const value = await command.run(owned, api);
         try {
