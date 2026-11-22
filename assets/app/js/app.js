@@ -21649,6 +21649,8 @@
     updateSelectedHalos();
     updateEditSelectionVisuals();
     updateEditAdaptiveMenuUi();
+    // Confirmation can arrive before the render loop sees the pending placement.
+    editToolUi?.sync();
     setHintMessage(HINT_EDIT);
     return true;
   }

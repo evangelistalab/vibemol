@@ -1234,8 +1234,8 @@
     },
     "beginGestureAddedAtomOperatorSession": {
       "before": "ed722da57ba854c5e99e5a7c39022c543c1e7e1746be44661b78ca966f465b2f",
-      "after": "5ea07efa45fb04f5912ce842dca5554dadd9bbcc4280a95e853da136de25cf7c",
-      "reason": "Fit the first atom added to an empty scene. Record the placement source in the existing atom operator session.",
+      "after": "eadb3ab2897a163a7dc99d17ca54ead2d70d446001d5dafcee7234ac71784eec",
+      "reason": "Fit the first atom added to an empty scene. Record the placement source in the existing atom operator session. Synchronize the pending hint before a confirmation can arrive in the same frame.",
       "units": []
     },
     "updateMoleculePlacementOperatorUi": {
