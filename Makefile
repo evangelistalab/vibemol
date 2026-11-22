@@ -76,7 +76,7 @@ JS_CHECK_FILES = \
 	assets/app/js/trajectory-ui.js \
 	assets/app/js/app.js
 
-JS_CHECK_FILES += assets/app/js/qa-characterize.js
+JS_CHECK_FILES += assets/app/js/qa-characterize.js assets/app/js/command-registry.js assets/app/js/commands.js
 
 .PHONY: check version-assets test-unit test-e2e test
 
