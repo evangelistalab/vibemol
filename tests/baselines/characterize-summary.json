@@ -1,10 +1,10 @@
 {
   "baseline": {
-    "commit": "50c9e3efd7812d307c794ecd26882bfc757d07cb",
-    "tag": "v0.10.12",
+    "commit": "8c09ca1cacb532cd0c93dc740e7ad284e2d8d8ef",
+    "tag": "v0.10.13",
     "recordingMode": "candidate",
-    "sourceRefAtCapture": "refs/heads/codex/record-0.10.12",
-    "appSha256": "c8a314e21ab7dadeaa0e76bc977190daa02f59af7cb474bb55592f7847d5f3a2",
+    "sourceRefAtCapture": "refs/heads/codex/record-0.10.13-warning",
+    "appSha256": "b3e88e8e0eaf14e2ca95fe05c4e6657122bc69879b123b347676036f6c8ea55c",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -20,20 +20,20 @@
       0
     ],
     "metrics": {
-      "lines": 33748,
-      "functionDeclarations": 1257,
+      "lines": 33767,
+      "functionDeclarations": 1258,
       "letDeclarations": 249,
-      "constDeclarations": 594
+      "constDeclarations": 595
     },
     "captureProvenance": {
       "os": "Linux",
-      "osRelease": "7.0.0-1014-aws",
+      "osRelease": "7.0.0-1017-azure",
       "architecture": "x86_64",
       "browserName": "chromium",
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/44959620647",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/45069845741",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -62,8 +62,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "4728897f35176e52474d2e70b4589cc21010537b424fb9a70b846bf900bd996f",
-      "4728897f35176e52474d2e70b4589cc21010537b424fb9a70b846bf900bd996f"
+      "d187f4a5f23145e88c3fe119563ccfb44bbc5302a981305f85953fcb64922d10",
+      "d187f4a5f23145e88c3fe119563ccfb44bbc5302a981305f85953fcb64922d10"
     ]
   },
   "api": {
@@ -843,7 +843,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "fce2f9519ec2440317b59d2315e93d75783a4ff37ff31c2b23c1a5cdfa56c3c3",
+  "goldenSha256": "3990a040b9e8505997b77f5e3ddc10efff5343f99110d622864964e706da2953",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
