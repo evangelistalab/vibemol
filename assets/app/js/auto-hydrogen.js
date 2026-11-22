@@ -558,6 +558,8 @@
       const envJ = envs[j];
       if (isMetalAtomicNumber(atomJ.Z)) envI.metalNeighbor = true;
       if (isMetalAtomicNumber(atomI.Z)) envJ.metalNeighbor = true;
+      if (rawBond.ligandType === 'X' && isMetalAtomicNumber(atomJ.Z)) envI.metalXNeighbor = true;
+      if (rawBond.ligandType === 'X' && isMetalAtomicNumber(atomI.Z)) envJ.metalXNeighbor = true;
       if (countsTowardAtomValence(atomI, atomJ) || rawBond.ligandType === 'X') {
         envI.bondOrderSum += order;
         envI.maxBondOrder = Math.max(envI.maxBondOrder, order);
@@ -591,7 +593,10 @@
     // Only the neutral oxygen specified by Build can receive H while bound solely to metal.
     if (z === 8 && env?.metalNeighbor && env.neighborCount === 0
         && (!options.metalOxygenDonorId || options.metalOxygenDonorId !== atom.id)) return null;
-    if (env?.metalNeighbor && (Number(atom.formalCharge) < 0 || [9, 17, 35, 53, 85, 117].includes(z))) return null;
+    const charge = Number(atom.formalCharge) || 0;
+    // The X bond already occupies one site for an alkyl or amido donor.
+    const alkylOrAmido = charge === -1 && env?.metalXNeighbor && (z === 6 || z === 7);
+    if (env?.metalNeighbor && ((charge < 0 && !alkylOrAmido) || [9, 17, 35, 53, 85, 117].includes(z))) return null;
     const rule = typeof options.resolveRule === 'function'
       ? options.resolveRule(atom, env, getAutoHydrogenRule(z))
       : getAutoHydrogenRule(z);

@@ -336,6 +336,64 @@ def vibration_and_topology(page, dialogs):
     assert export(page)['sources'] != saved['sources'], 'Vibration remains playable after restore'
 
 
+def trajectory_edit_protection(page, _dialogs):
+    xyz = ''.join(f'3\nframe {i}\nO 0 0 0\nH {1 + i / 50} 0 0\nH 0 1 0\n' for i in range(20))
+    assert load(page, [{'name': '20-frames.xyz', 'text': xyz}])['ok']
+    before = export(page)['sources'][0]['volume']['trajectory']['frames']
+    page.locator('#modeEditBtn').click()
+    point = page.evaluate('() => VibeMolTesting.projectActiveAtomToClient(1)')
+    assert point, 'The trajectory atom must be pickable'
+    page.mouse.click(point['x'], point['y'])
+    page.keyboard.press('Delete')
+    assert 'Trajectory structure is locked' in page.locator('#hint').inner_text()
+    state = page.evaluate('() => VibeMolEdit.context().value.atoms')
+    assert len(state) == 3, state
+    page.mouse.move(point['x'], point['y'])
+    page.mouse.down()
+    page.mouse.move(point['x'] + 24, point['y'] + 12, steps=4)
+    page.mouse.up()
+    assert page.evaluate('() => VibeMolEdit.context().value.atoms') == state
+    page.keyboard.press('/')
+    assert 'Trajectory structure is locked' in page.locator('#hint').inner_text()
+    assert len(page.evaluate('() => VibeMolEdit.context().value.atoms')) == 3
+    page.locator('#modeDisplayBtn').click()
+    page.locator('#canvas').focus()
+    page.keyboard.press('ArrowRight')
+    saved = export(page)['sources'][0]['volume']['trajectory']
+    actual = (saved['frameIndex'], len(saved['frames']), saved['frames'] == before)
+    assert actual == (1, 20, True), actual
+    page.wait_for_function('() => VibeMolRecovery.getState().ready')
+    assert page.evaluate('() => VibeMolRecovery.flush({force:true})')
+    with page.expect_download() as pending:
+        page.locator('#saveSessionBtn').click()
+    payload = pathlib.Path(pending.value.path()).read_text()
+    assert page.evaluate('text => VibeMolSession.validateText(text)', payload)['ok']
+
+
+def vibration_sidecar_atom_order(page, _dialogs):
+    xyz = '3\nWater\nO 0 0 0\nH 1 0 0\nH 0 1 0\n'
+    assert load(page, [{'name': 'water.xyz', 'text': xyz}])['ok']
+    mode = {'frequencyCm1': 250, 'displacements': [0,0,0, 0.125,0,0, 0,0,0], 'irIntensityKmMol': 3}
+    payload = {'kind': 'vibemol.vibrations', 'version': 1, 'units': 'angstrom', 'atomCount': 3,
+               'atomSymbols': ['H', 'O', 'H'], 'modes': [mode]}
+
+    def load_modes():
+        return load(page, [{'name': 'water.vib.json', 'text': json.dumps(payload)}], clear_first=False)
+
+    mismatch = load_modes()
+    assert not mismatch['ok'] and 'same order' in mismatch['error'], mismatch
+    assert export(page)['sources'][0]['volume'].get('vibration') is None
+    payload['atomSymbols'] = ['O', 'H', 'H']
+    mode['displacements'] = [0.125,0,0, 0,0,0, 0,0,0]
+    assert load_modes()['ok']
+    before = export(page)['sources'][0]['volume']['vibration']
+    assert before['atomSymbols'] == ['O', 'H', 'H']
+    mode['irIntensityKmMol'] = -1
+    invalid_intensity = load_modes()
+    assert not invalid_intensity['ok'] and 'negative IR intensity' in invalid_intensity['error'], invalid_intensity
+    assert export(page)['sources'][0]['volume']['vibration'] == before
+
+
 def recovery_and_quota(page, dialogs):
     page.wait_for_function('() => VibeMolRecovery.getState().ready')
     assert load(page, [{'name':'recover.cube','text':cube(0)}])['ok']
@@ -461,7 +519,8 @@ def main():
         browser = playwright.chromium.launch(headless=True)
         try:
             for run in (portable_round_trip, failed_imports, multi_dataset_cubes, arithmetic_and_lazy_orbitals,
-                        vibration_and_topology, recovery_and_quota, mobile_pending_recovery, declined_recovery, spinor_and_download,
+                        vibration_and_topology, trajectory_edit_protection, vibration_sidecar_atom_order,
+                        recovery_and_quota, mobile_pending_recovery, declined_recovery, spinor_and_download,
                         retained_source, autosave_and_tab_conflict, scoped_shortcuts):
                 context = browser.new_context(viewport={'width':1440,'height':1000})
                 page = context.new_page()

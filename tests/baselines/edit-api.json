@@ -1138,14 +1138,14 @@
     },
     "setActiveSceneGraphLayer": {
       "before": "3a098bc23a47d6aea86c868dc1f30a1856c7404a9840f374d6dffae1a6f122e5",
-      "after": "a8f87666b6e28d46bbf4d216ffc141ee858245bef0782407dfe67819c856fb99",
-      "reason": "Reveal and rebuild the explicitly selected Edit scene or molecule layer.",
+      "after": "bb87d8ad45a7c8bc5def52982703217cebe1d013eeac99757f0f0c7ec0c60dcc",
+      "reason": "Reveal and rebuild the explicitly selected Edit scene or molecule layer. Fit the camera when the first Molden surface becomes visible.",
       "units": []
     },
     "setMode": {
       "before": "f81b8aef246cdf3078796d4e0a7695e76b6f7c7cceddeb721b77d019d2b923ed",
-      "after": "ec6af8aa4e15d9ea4843e6a24d912cf5c99caa1bd5215f8676db1c2015db9283",
-      "reason": "Retain dropped molecules on mode exit and reveal the target when entering Edit.",
+      "after": "cfc0cc2fe03bec7b17c09b5a4eafc635b1ca312daba281d26852f015c126010a",
+      "reason": "Retain dropped molecules on mode exit and reveal the target when entering Edit. Explain restrictions when entering Edit on a trajectory.",
       "units": []
     },
     "getEditToolState": {
@@ -1156,8 +1156,8 @@
     },
     "chooseEditTool": {
       "before": "edde5294c34276bf38899fce5550718d3f0844fb8bebddb2782b2657fb916646",
-      "after": "9256d13eed8531d66d0b7276757910c025c866cf059f1e30cc1d03f761110c80",
-      "reason": "Confirm dropped placement and clear the Build filter on an explicit tool switch.",
+      "after": "eed87e3d58af7cec7789ccb3d56ef6db80cc2e3c13c98cdf7a509d483b762cdc",
+      "reason": "Confirm dropped placement and clear the Build filter on an explicit tool switch. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "handleEditToolEscape": {
@@ -1198,8 +1198,8 @@
     },
     "handleUnifiedEditControllerPointerDown": {
       "before": "2cbcfc5356971202d52a5941a6893217c58612794d9c934634b2da6e82391ef8",
-      "after": "8a7b5712218f1adaf3320430e9000c09cd5a7ae364278d1060fd9be068a1a398",
-      "reason": "Reject hidden-target pointer input and finish actual operator edits before a drag.",
+      "after": "f35b55e9f8ae581369aa322e08a80fd925572473b8483980a98d82991a018055",
+      "reason": "Reject hidden-target pointer input and finish actual operator edits before a drag. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "handleUnifiedEditControllerPointerMove": {
@@ -1258,8 +1258,8 @@
     },
     "deleteSelectedOrHoveredAtom": {
       "before": "2fa0f1665b55c216b9da79adfceef2d7e0dc2e0da062c782c5d509d289d9db2a",
-      "after": "3badc6bd83b5291207e9b82187f5970524ee3d9f74b35b2d3e7867d0697ad898",
-      "reason": "Refuse to delete atoms from a hidden molecule.",
+      "after": "7f5602bf6a5ababd3a9b10c53cde35eaa66bbcc1bcc894a54d24f8fd7575b6eb",
+      "reason": "Refuse to delete atoms from a hidden molecule. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "handleUndoRedoHotkey": {
@@ -1300,8 +1300,8 @@
     },
     "optimizeActiveStructureWithUff": {
       "before": "8977ca52a3420ede1871a264776e0e7a0066f1c0d1d6a89d53474d077e70e893",
-      "after": "ee8e6fe3d8a3209f9d8d8f42462815c4a70524608b66189ebe33cde8222ff883",
-      "reason": "Refuse the Edit optimization shortcut when the target is hidden.",
+      "after": "ce436bdd9be6cfdb67e76709fec71ad7df48303708cdbda91c8b184d225ef3a1",
+      "reason": "Refuse the Edit optimization shortcut when the target is hidden. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "beginSelectionCueDrag": {
@@ -1336,8 +1336,8 @@
     },
     "alignActiveMoleculePrincipalAxes": {
       "before": "e07c8f778a78907b11d66dee99ba9f9f0f3aed4d6c283488fa4a9258266c6681",
-      "after": "6860a92d6950c73d2f17ce984c1669bd5d4d5b97b41cc3802fb3169d749669ee",
-      "reason": "Reject Edit coordinate alignment when the target is hidden.",
+      "after": "8496c8157bef01a13adf0e3c86cbbd45d618aa25265645096fd02239e0218456",
+      "reason": "Reject Edit coordinate alignment when the target is hidden. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "applyCoordsPopoverEdit": {
@@ -1354,20 +1354,20 @@
     },
     "buildEditAddControls": {
       "before": "a92608cd0fa285af9ae86bbe0918b41b8b39cb8b17af82a29553dc244e5bf0c9",
-      "after": "70568c59366f7f224db0885494867e7813309f132282f54598bd87570d11ff41",
-      "reason": "Escape from an operator input cancels a provisional atom like Escape from the viewport.",
+      "after": "e0cd50466cd9b80a36bd1f9065b8ac60f7bf82ff6ea4abe4fde9da0d950048be",
+      "reason": "Escape from an operator input cancels a provisional atom like Escape from the viewport. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "statement:selectionPositionVisibility": {
       "before": "db177c9cc12686d15a19c2318f03006bb1d4014a5c08f8a738808bd22598b883",
-      "after": "218a3868aeef2eac1ca1a5fde2206a59637687bd7d16cd32e7579e33dd2e8e74",
-      "reason": "The selection position field refuses to write to a hidden target.",
+      "after": "ddcff930a2733aec0bc0a90598dc758412536406e8cff0a4d6f94ac030e7e60b",
+      "reason": "The selection position field refuses to write to a hidden target. Protect trajectory frames from transform-field edits.",
       "units": []
     },
     "statement:hydrogenShortcutVisibility": {
       "before": "7168d520bb30f7e7c0512455a6ac515bed8450656616c8177e4d5c8fa6a7f76d",
-      "after": "e758f02b8307516d807f23c5df1a45f58de2d86ebd0762f28019b161a4cc6301",
-      "reason": "Space does not apply hydrogens to a hidden Edit target.",
+      "after": "c3e394391cd6db026da092fafbde583ba1cbd63549ee1f8a66dc6b72986ab557",
+      "reason": "Space does not apply hydrogens to a hidden Edit target. Protect trajectory topology from the hydrogen shortcut.",
       "units": []
     },
     "rebuildScene": {
@@ -1478,8 +1478,8 @@
     },
     "isEditHaloIntent": {
       "before": "3cee22d19b679b2403d48b007c113cd5d8b6542b53801f6e0361125418a246ef",
-      "after": "01d695d755c48211f91f4bc8b018d2b613df26b3725aa1956cf3371f72e26a53",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "4238152eac436506fad17b66ad33db5469ac4952d4a77245ac057baf5558e9dc",
+      "reason": "Build and display transition-metal ligands using coordination sites. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "getEditHaloGhostPayloadDescriptor": {
@@ -1659,8 +1659,8 @@
     },
     "collectHydrogenAdjustmentEnvironment": {
       "before": "5c9d3a3bb41d96230b800e5b19e7666f9dba09395d3eeee33e4fb8195a067cf1",
-      "after": "8cec6eef24a964c497f7497c44db737c36409f8d65b928006488e6edd6fb5193",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "902e599cefbe656f91ff50988d4b9c4dd3a09d42e86d0568260677b12a6b028b",
+      "reason": "Build and display transition-metal ligands using coordination sites. Recognize explicit X-type metal bonds while counting placement geometry and hydrogens.",
       "units": []
     },
     "getBuildMetalLigandType": {
@@ -1776,8 +1776,8 @@
     },
     "statement:metalSelectedAnchorDrag": {
       "before": "6995c6a4949ade939a20d4bc0bcd8a9c00ddbcb301782bab58a13b921cef480d",
-      "after": "700172ef9d19248ccd80c76c2c97dafa8156a1350c58558969738bd9926c0963",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "82e8ba57a6ea8955f9abc90ef99c48fc515e68776d8042f4fee25807169cc8cb",
+      "reason": "Build and display transition-metal ligands using coordination sites. Protect trajectory frames from canvas drags while keeping atom selection.",
       "units": []
     },
     "statement:metalGrowPreview": {
@@ -1860,8 +1860,8 @@
     },
     "placeGestureAtomAtWorld": {
       "before": "4759a614533589c356853ece17ba223da01d935ac84df50f1c291ff2fac5ae1d",
-      "after": "7d8b3bb1d3f52b8ca663bc3ae378bc311e5f8f41d7609d120129e407bc92f313",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "18ef7e054de0b15a27ff5afe4c4ba22d1edc0830f301a95f3e8dfba0d77691c8",
+      "reason": "Build and display transition-metal ligands using coordination sites. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "beginGestureGrowDrag": {
@@ -2033,8 +2033,8 @@
     },
     "beginTransformDragFromResolvedTarget": {
       "before": "22cc9dbb9ca20df016fbc75940f2d11723f54a040c465ca4cb7b479c1eb21280",
-      "after": "d5b8f48b1e6d7e90268af95f0e94e1e076ea214541a6f59fa8b76e69815e30a8",
-      "reason": "Use shift+drag notation in the bond-side rotation hint.",
+      "after": "6c8b6787787eef6ba342d9c9ec6039b90f8a833b4e8c88d6cbf8ea87d83ed763",
+      "reason": "Use shift+drag notation in the bond-side rotation hint. Protect trajectory frames from static-structure Edit operations.",
       "units": []
     },
     "statement:hintEdit": {
@@ -2072,6 +2072,120 @@
       "after": "060e1336504a5816ab7227a518122679fc486a1a7fd68b5799af56009e92ae7e",
       "reason": "Pass the newly grown neutral oxygen donor to the existing hydrogen planner.",
       "units": []
+    },
+    "drawPhaseWheel": {
+      "before": "027067e6cdcddcf859a63f7234117b38330aafcef78cdda44e00aa4e199c31e2",
+      "after": "872c71a00c7e760c672172c2f8bb5d027f808a4e74113ef159c6a961382a34b6",
+      "reason": "Reserve separate room for the phase ticks and caption on the legend canvas.",
+      "units": []
+    },
+    "requestMoldenOrbitalRender": {
+      "before": "6389d73db2539f11f5d0e3085061de303547e6e58b04a9ae3b923748c2434517",
+      "after": "6df248e448dd914e11f3a51d9133696ebd588ac0867ef349b6b93371e24bd688",
+      "reason": "Fit the camera when the first Molden surface is selected.",
+      "units": []
+    },
+    "createAutoHydrogenGeometryResolver": {
+      "before": "19231adc7572983121bf93ab5810b28f22a8ab2961588e211bbe29c6ac62364d",
+      "after": "70b6433d05c8e1f5678d8eb92e9308ca08af962dd790e7e3380f1edc5d324495",
+      "reason": "Use a geometry that counts the metal bond on X-type carbon and nitrogen donors.",
+      "units": []
+    },
+    "computeDesiredHydrogenCountForAtom": {
+      "before": "9e4fd7c3ca7569b9673793577c5627551b045ce91fb051873355bdcae3ee2f93",
+      "after": "49e0beb21c4b706a8b0363f8344b09ce5cc6033802954e1d227153162cb320a7",
+      "reason": "Use the heavy-atom bond order when completing X-type ligands.",
+      "units": []
+    },
+    "parseVibrationPayload": {
+      "before": "94e88d5c68959ee604ee96a7838a34b4ecfe423b77efd5903b8430a64bcd6788",
+      "after": "c4cf958aedf40e6687353689c2d685d82e10cc71382d7a38c3217c31e0da791b",
+      "reason": "Reject negative JSON IR intensities with the mode number.",
+      "units": []
+    },
+    "findMatchingVolumesForVibrationPayload": {
+      "before": "13a66812132f2b64ce9174c4f191cb0b31a05c16318b7694249bbec5b4253b49",
+      "after": "fa5899df6f644ec74c020439351bd1b745f564d00222c03b1d663ac16c6b2f0c",
+      "reason": "Require the ordered element sequence when matching a vibration sidecar.",
+      "units": []
+    },
+    "attachVibrationPayloadToBestVolume": {
+      "before": "a3e440992341e5942a4e6ebda02661a6359f9f8206ee6582886bfe209bef34c4",
+      "after": "7ce3a2056404d210f81ff98c0870f875586eb154555b54dcc4b65cf57fd4de94",
+      "reason": "Reject mismatched atom order with a user-visible explanation.",
+      "units": []
+    },
+    "ensureEditableVolumeRecord": {
+      "before": "0e202592e77d53cafe3cd04c9e04cff473a2f761b545daff61798037d8ec7643",
+      "after": "09d36763def59aa90381560de14fe17419419a5ce5083e215c714343f5fba105",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "showBuildPopover": {
+      "before": "1c9a23d03602128bb82ee6e1c5caeb3b336006cfe5c3a15a4464495bdb57a38a",
+      "after": "ab27487a3c2d2c077f7adeb9f26f9ddccd980ff2eea02a3deb3e11548dfc6c7b",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "applyActiveSymmetryPreview": {
+      "before": "be412737f9ada8f95cbeb6c56451f60608303c5a82e9f4fe0aad55ef32dfe6c4",
+      "after": "d6d13e8958a6681b73ebcc7c652406148ddf2d9141750f17797d61380e2610c2",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "pasteEditClipboardSelection": {
+      "before": "40e3c001047dcbdb1fd077a5be51f1f42b2f8b5858eb9bab94833b6653106a9c",
+      "after": "c4e6f2cda6eb11848602b6a7d75ec8f81ad5fa4bffb41c65b28fda69c5bbb26a",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "centerActiveMoleculeMassAtOrigin": {
+      "before": "94b4d4010066fa529546a7bcfea299864608c840daf4fcf98299a10a9eb386c5",
+      "after": "4a49263f053fca890114e86e9d24cdb620d4526a7d979b40c9f305f1a0e32eac",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "buildCoordsRowActions": {
+      "before": "fa472bee7eea0abd7170c5756dd80e61619a26e045b581247f0ee940ad4edaf2",
+      "after": "032a40f031e5dd72217cf38ca9c5ce70771d66e8d0fc066f96b2992120949035",
+      "reason": "Protect trajectory frames from static-structure Edit operations.",
+      "units": []
+    },
+    "statement:trajectoryCaptureFps": {
+      "before": "564549eb012e133aca84bf86661311c4228f98835aa52e14717e921e2fcc31cf",
+      "after": "2cda42038d47dba613efebcc308481f043d76cacbad6e59aeef1a04e523faa48",
+      "reason": "Use the same committed FPS in legacy playback and recording.",
+      "units": []
+    },
+    "statement:figureViewportScale": {
+      "before": "51a9c44f4082980a81527131f32f28e7b1e49d04ebb9d15315ece69c657b85ea",
+      "after": "9a7dbc6521405f6d48ed0160caea2b1b1b38a9b208a5309a95ea1c6f916773de",
+      "reason": "Report the backing buffer scale alongside device-pixel dimensions.",
+      "units": []
+    },
+    "statement:trajectoryEditHint": {
+      "before": null,
+      "after": "aafc3a9a8cf19b65c42758eb8aa7ea2aa63acbf5f7fb486473b55c1d401047ae",
+      "reason": "Explain that trajectory edits belong in Coordinates or in a copied static molecule.",
+      "units": []
+    },
+    "rejectTrajectoryStructureEdit": {
+      "before": null,
+      "after": "1109566b5b3f0c7a47548ccce8ee2a41039110569323b2979cc1093e6e9765ac",
+      "reason": "Guard native Edit paths that would desynchronize stored trajectory frames.",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "rejectTrajectoryStructureEdit",
+          "count": 4,
+          "inputs": [
+            "HINT_TRAJECTORY_EDIT",
+            "currentIndex",
+            "setHintMessage",
+            "volumes"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {

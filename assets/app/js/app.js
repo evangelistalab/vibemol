@@ -10,6 +10,7 @@
   const HINT_NAVIGATION = 'Orbit: mouse drag • Zoom: wheel • Pan: right-drag';
   const HINT_MEASURE = 'Click two atoms for distance, three for angle, four for dihedral • `esc` starts a new selection • saved values remain in Measurements';
   const HINT_EDIT = 'Left-click atoms or bonds to select · Right-drag to rotate · `/` opens Build';
+  const HINT_TRAJECTORY_EDIT = 'Trajectory structure is locked. Use Coordinates to edit the current frame, or copy its XYZ to edit a separate molecule.';
   const HINT_START = '';
   const { VIBRATION_KIND, VIBRATION_DEFAULT_AMPLITUDE, VIBRATION_DEFAULT_SPEED, VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1, VIBRATION_IR_MIN_FREQ_CM1, VIBRATION_IR_DEFAULT_SIGMA_CM1, CM_INV_TEXT, CM_INV_HTML } = window.VibeMolVibration;
   const AUTO_ISO_TARGET_FRACTION = 0.85;
@@ -998,7 +999,8 @@
     };
   }
   function defaultEditApiMetalLigandType(z, entryId) {
-    return [9, 17, 35, 53, 85, 117].includes(z) || ['cyano', 'hydroxyl', 'methoxy'].includes(entryId) ? 'X' : 'L';
+    const growsCarbon = !entryId && z === 6;
+    return growsCarbon || [9, 17, 35, 53, 85, 117].includes(z) || ['cyano', 'hydroxyl', 'methoxy'].includes(entryId) ? 'X' : 'L';
   }
   function createEditApiAttachmentPlanner(deps) {
     return (draft, request) => {
@@ -1579,9 +1581,10 @@
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     ctx.clearRect(0, 0, pxW, pxH);
     const cx = pxW / 2;
-    const labelSpace = Math.max(18 * dpr, 18); // reserve space at bottom for the label
-    const cy = Math.floor((pxH - labelSpace) / 2);
-    const R = Math.floor(Math.min(cx, cy) - 1);
+    const topSpace = 18 * dpr;
+    const bottomSpace = 36 * dpr; // tick above the caption
+    const cy = Math.floor((topSpace + pxH - bottomSpace) / 2);
+    const R = Math.max(1, Math.floor(Math.min(cx - 16 * dpr, cy - topSpace)));
     const img = ctx.createImageData(pxW, pxH);
     for (let y = 0; y < pxH; y++) {
       for (let x = 0; x < pxW; x++) {
@@ -1625,8 +1628,7 @@
     ];
     ctx.font = `${Math.max(10, Math.round(10 * dpr))}px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif`;
     ctx.textBaseline = 'middle';
-    const tickGap = Math.max(8, Math.round(8 * dpr));
-    const innerGap = Math.max(10, Math.round(10 * dpr));
+    const tickGap = Math.max(3, Math.round(4 * dpr));
     for (const t of ticks) {
       const ca = Math.cos(t.a), sa = Math.sin(t.a);
       const r1 = R - Math.max(2, Math.round(3 * dpr));
@@ -1654,9 +1656,9 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
       } else {
-        // Bottom: place just inside the circle to avoid colliding with mode label
+        // Bottom: place between the wheel and the reserved caption line.
         tx = cx;
-        ty = cy + (R - innerGap);
+        ty = cy + (R + tickGap);
         ctx.textAlign = 'center';
         ctx.textBaseline = 'top';
       }
@@ -1673,7 +1675,7 @@
     else if (modeLabel === 'totalBloch') label = 'Bloch color';
     else label = '';
     ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-    const ly = Math.min(pxH - Math.max(4, Math.round(4 * dpr)), cy + R + Math.max(18, Math.round(18 * dpr)));
+    const ly = pxH - Math.max(4, Math.round(4 * dpr));
     ctx.lineWidth = Math.max(3, Math.round(3 * dpr)); ctx.strokeStyle = UI_PALETTE.phaseWheelStrokeDark; ctx.strokeText(label, cx, ly);
     ctx.fillStyle = UI_PALETTE.phaseWheelStrokeLight; ctx.fillText(label, cx, ly);
   }
@@ -7601,9 +7603,8 @@
     canResumePlayback: () => currentMode !== MODES.EDIT,
     getCaptureFps: (info) => {
       const fallback = Math.max(1, Math.min(120, Math.round(Number(info && info.traj && info.traj.fps) || 12)));
-      const next = Math.max(1, Math.min(120, Math.round(Number(trajectoryFpsEl && trajectoryFpsEl.value) || fallback)));
+      const next = getTrajectoryUi().commitFpsInput(trajectoryFpsEl, fallback);
       if (info && info.enabled && info.traj) info.traj.fps = next;
-      if (trajectoryFpsEl) trajectoryFpsEl.value = String(next);
       return next;
     },
     prepareSceneForRecording: () => {
@@ -8343,7 +8344,7 @@
   editSelectionPositionUi = window.VibeMolEditUi.createSelectionPositionController({
     root: document.getElementById('editSelectionPosition'),
     getSnapshot: getSelectionPositionSnapshot,
-    onCommit: (axis, value) => !isEditTargetHidden() && editTransformController?.setSelectionPosition(axis, value),
+    onCommit: (axis, value) => !isEditTargetHidden() && !rejectTrajectoryStructureEdit() && editTransformController?.setSelectionPosition(axis, value),
   });
   cacheElement('editSelectionTranslateCueButtonEl', 'editSelectionTranslateCueButton');
   cacheElement('editSelectionRotateCueButtonEl', 'editSelectionRotateCueButton');
@@ -9349,6 +9350,8 @@
     ensureMoldenGridForRecord(record, vol);
     const layer = sceneSources.addOrbital(record, rowIndex);
     syncSceneGraphFromVolumes({ preferActiveRecord: true });
+    const scene = layer ? sceneGraphController.getSceneForLayer(layer) : null;
+    const showFirstSurface = !!(scene && options.selectOnly && getVisibleCubeLayerCount(scene) === 0);
     if (layer && options.selectOnly) setActiveSceneGraphLayer(layer.id, {
       ensureSceneVisible: true,
       ensureLayerVisible: true,
@@ -9363,7 +9366,7 @@
     moldenRenderFrameId = window.requestAnimationFrame(() => {
       moldenRenderFrameId = 0;
       try {
-        rebuildScene({ preserveView: true });
+        rebuildScene({ preserveView: !showFirstSurface });
       } finally {
         moldenPendingRowIndex = -1;
         syncMoldenOrbitalsPanel(currentIndex >= 0 ? volumes[currentIndex] : null);
@@ -10516,7 +10519,8 @@
   function setActiveSceneGraphLayer(layerId, options = {}) {
     const nextLayer = sceneGraphController.getLayerById(layerId);
     const scene = nextLayer ? sceneGraphController.getSceneForLayer(nextLayer) : null;
-    const singleCubeMode = scene ? getVisibleCubeLayerCount(scene) <= 1 : false;
+    const visibleCubeCount = scene ? getVisibleCubeLayerCount(scene) : 0;
+    const singleCubeMode = !!scene && visibleCubeCount <= 1;
     const previousLayer = sceneGraphController.getActiveLayer();
     const previousActiveId = previousLayer && previousLayer.id;
     const revealEditTarget = !!scene && currentMode === MODES.EDIT && prepareOutlinerEditTarget(scene);
@@ -10557,18 +10561,20 @@
     }
     const record = layer.record || (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP ? getSceneFocusRecord(scene) : null);
     const recordIndex = getRecordIndex(record);
+    const showFirstMoldenSurface = visibleCubeCount === 0 && Number.isInteger(layer.moldenMoIndex)
+      && sceneGraphController.isLayerEffectivelyVisible(layer);
     if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, record);
     if (revealEditTarget || (recordIndex >= 0 && currentIndex !== recordIndex)) {
       if (recordIndex >= 0) currentIndex = recordIndex;
       syncLoadedSceneControls();
       if (revealEditTarget || options.rebuild !== false) {
-        rebuildScene({ preserveView: !revealEditTarget, syncGraph: false });
+        rebuildScene({ preserveView: !revealEditTarget && !showFirstMoldenSurface, syncGraph: false });
       }
     } else {
       syncLoadedSceneControls();
       const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
-      if (switchedCubeLayer && options.rebuild !== false) {
-        rebuildScene({ preserveView: true, syncGraph: false });
+      if ((switchedCubeLayer || showFirstMoldenSurface) && options.rebuild !== false) {
+        rebuildScene({ preserveView: !showFirstMoldenSurface, syncGraph: false });
       } else if (options.rebind !== false) {
         syncAppearanceControlsToActiveLayer();
       }
@@ -11394,7 +11400,7 @@
     } else if (currentMode === MODES.MEASURE) {
       setHintMessage(HINT_MEASURE, { accent: false });
     } else if (currentMode === MODES.EDIT) {
-      setHintMessage(HINT_EDIT, { accent: false });
+      setHintMessage(volumes[currentIndex]?.vol?.trajectory ? HINT_TRAJECTORY_EDIT : HINT_EDIT, { accent: false });
     } else if (currentMode === MODES.DISPLAY) {
       setNavigationHint(HINT_START);
     }
@@ -13713,8 +13719,14 @@
    * If no file is loaded, this creates an empty angstrom XYZ-like record.
    * @returns {{name:string,vol:*}|null}
    */
-  function ensureEditableVolumeRecord() {
-    return editState.ensureEditableVolumeRecord();
+  function rejectTrajectoryStructureEdit(vol = volumes[currentIndex]?.vol) {
+    if (!vol?.trajectory) return false;
+    setHintMessage(HINT_TRAJECTORY_EDIT);
+    return true;
+  }
+
+  function ensureEditableVolumeRecord(options) {
+    return rejectTrajectoryStructureEdit() ? null : editState.ensureEditableVolumeRecord(options);
   }
 
   /**
@@ -13746,6 +13758,7 @@
    */
   function optimizeActiveStructureWithUff(options = {}) {
     if (currentMode === MODES.EDIT && isEditTargetHidden()) return null;
+    if (rejectTrajectoryStructureEdit()) return null;
     const record = (currentIndex >= 0 && volumes[currentIndex]) ? volumes[currentIndex] : null;
     const vol = record && record.vol;
     if (!record || !vol || !Array.isArray(vol.atoms) || !vol.atoms.length) {
@@ -15346,6 +15359,7 @@
    */
   function beginTransformDragFromResolvedTarget(e, vol, target, interactionPoint = null, context = null, options = {}) {
     if (!vol || !Array.isArray(vol.atoms) || !target || !Array.isArray(target.indices) || !target.indices.length) return false;
+    if (rejectTrajectoryStructureEdit(vol)) return false;
     clearAddGrowPreview();
     clearTransformState({ restoreControls: false });
     const dragMode = options && (options.dragMode === 'bondAngleHorizontal' || options.dragMode === 'bondQuaternion' || options.dragMode === 'bondDistanceHorizontal')
@@ -15613,6 +15627,7 @@
   function isEditHaloIntent() {
     const intent = getEditIntent();
     return currentMode === MODES.EDIT
+      && !volumes[currentIndex]?.vol?.trajectory
       && (
         intent === EDIT_INTENT.ATOM_MANIPULATION
         || intent === EDIT_INTENT.ADD_ATOM
@@ -15796,6 +15811,7 @@
 
   function chooseEditTool(tool, options = {}) {
     if (currentMode !== MODES.EDIT) return;
+    if (tool === 'build' && rejectTrajectoryStructureEdit()) return;
     if (getEditToolState().build !== (tool === 'build')) {
       setBuildPaletteFilterQuery('');
       clearBuildSearchKeyboardSelection();
@@ -15814,7 +15830,7 @@
         else showBuildPopover();
       }
     }
-    setHintMessage(HINT_EDIT, { accent: false });
+    setHintMessage(volumes[currentIndex]?.vol?.trajectory ? HINT_TRAJECTORY_EDIT : HINT_EDIT, { accent: false });
     editToolUi?.sync();
   }
 
@@ -18019,7 +18035,7 @@
     if (els.editAdaptiveCleanStructureBtn) {
       els.editAdaptiveCleanStructureBtn.onclick = () => {
         if (isBuildPopoverOpen() && !workspaceEnabled) {
-          if (autoHydrogenController) autoHydrogenController.handleShortcut();
+          if (!rejectTrajectoryStructureEdit()) autoHydrogenController?.handleShortcut();
           return;
         }
         optimizeActiveStructureWithUff();
@@ -18288,13 +18304,13 @@
     updateGrowDrag: updateGestureGrowDrag,
     commitGrowDrag: commitGestureGrowDrag,
     cancelGrowDrag: cancelGestureGrowDrag,
-    startRotateDrag: (e, indices, dragOptions) => editTransformController
+    startRotateDrag: (e, indices, dragOptions) => !rejectTrajectoryStructureEdit() && editTransformController
       ? editTransformController.startRotateDrag(e, indices, dragOptions || { axis: 'none' })
       : false,
     updateRotateDrag: (e) => editTransformController ? editTransformController.updateRotateDrag(e) : false,
     finishRotateDrag: () => editTransformController ? editTransformController.finishRotateDrag() : false,
     cancelRotateDrag: () => { if (editTransformController) editTransformController.cancelRotateDrag(); },
-    startMoveDrag: (e, indices, anchorWorld, dragOptions) => editTransformController
+    startMoveDrag: (e, indices, anchorWorld, dragOptions) => !rejectTrajectoryStructureEdit() && editTransformController
       ? editTransformController.startMoveDrag(e, indices, anchorWorld, Object.assign({ axis: 'none' }, dragOptions || {}))
       : false,
     updateMoveDrag: (e) => editTransformController ? editTransformController.updateMoveDrag(e) : false,
@@ -19040,6 +19056,7 @@
   function showBuildPopover(options = {}) {
     if (!els.editAdaptiveAddAtomPopoverEl) return;
     if (workspaceEnabled && currentMode !== MODES.EDIT) return;
+    if (rejectTrajectoryStructureEdit()) return;
     if (!options.preserveFocus) window.VibeMolWorkbench?.setFocus(false);
     hideSelectionCoordinationCuePopover();
     hideSelectionMetalBondingCuePopover();
@@ -19349,6 +19366,7 @@
   function cancelSymmetryPreview(...args) { return symmetryPanelController.cancelSymmetryPreview(...args); }
 
   function applyActiveSymmetryPreview() {
+    if (rejectTrajectoryStructureEdit()) return false;
     if (!symmetryPanelController.getPreviewState() || !symmetryPanelController.getPreviewState().groupId) return false;
     const target = resolveEditSymmetryTarget();
     if (!target || !target.record || !target.vol) return false;
@@ -20977,6 +20995,7 @@
 
   function handleUnifiedEditControllerPointerDown(intent, e) {
     if (isEditTargetHidden()) return true;
+    if (volumes[currentIndex]?.vol?.trajectory) return getEditToolState().build && rejectTrajectoryStructureEdit();
     if (addAtomOperatorSession?.source === 'selection' && addAtomOperatorSession.beforeAtoms) {
       finalizeAddAtomOperatorSession({ announce: false });
     }
@@ -21934,6 +21953,7 @@
   }
 
   function pasteEditClipboardSelection() {
+    if (rejectTrajectoryStructureEdit()) return false;
     if (!editClipboardSelection || !editClipboardSelection.payload) {
       setHintMessage('Clipboard is empty.');
       return false;
@@ -24314,6 +24334,7 @@
   function createAutoHydrogenGeometryResolver(vol) {
     return (atom, env, rule, defaultGeometry) => {
       if (!vol || !Array.isArray(vol.atoms) || !atom) return defaultGeometry || null;
+      if (env?.metalXNeighbor && atom.formalCharge === -1 && (atom.Z === 6 || atom.Z === 7)) return defaultGeometry;
       const targetAtomId = String((atom && atom.id) || '').trim();
       const atomIndex = targetAtomId
         ? vol.atoms.findIndex((candidate) => candidate && String(ensureAtomId(candidate)) === targetAtomId)
@@ -24349,6 +24370,7 @@
     let heavyBondOrderSum = 0;
     let heavyNeighborCount = 0;
     let maxHeavyBondOrder = 0;
+    let metalXNeighbor = false;
     for (const edge of edges) {
       if (!edge) continue;
       let otherIndex = -1;
@@ -24375,6 +24397,7 @@
           isTerminal: totalNeighborCount <= 1,
         });
       } else {
+        if (edge.ligandType === 'X' && isMetalAtomZ(otherAtom.Z)) metalXNeighbor = true;
         if (!countsTowardAtomValence(atom, otherAtom) && edge.ligandType !== 'X') {
           if (atom.formalCharge < 0 && isMetalAtomZ(otherAtom.Z)) return null;
           continue;
@@ -24390,6 +24413,7 @@
       heavyBondOrderSum,
       heavyNeighborCount,
       maxHeavyBondOrder,
+      metalXNeighbor,
       occupiedDirs: heavyOccupiedDirs,
       hydrogenNeighbors,
     };
@@ -24399,7 +24423,8 @@
     const z = Number(atom && atom.Z) | 0;
     const rule = getAutoHydrogenRule(z);
     if (!rule || !(Number(rule.targetValence) > 0)) return null;
-    const fallbackGeometry = resolveGeometryForEnvironment(z, env, rule);
+    const geometryEnvironment = env?.metalXNeighbor ? { maxBondOrder: env.maxHeavyBondOrder } : env;
+    const fallbackGeometry = resolveGeometryForEnvironment(z, geometryEnvironment, rule);
     const geometry = typeof geometryResolver === 'function'
       ? (geometryResolver(atom, env, rule, fallbackGeometry) || fallbackGeometry)
       : fallbackGeometry;
@@ -24656,7 +24681,7 @@
     if (addAtomOperatorSession) finalizeAddAtomOperatorSession({ announce: false });
     // First placement materializes the empty workspace without rearming Build.
     const geometryId = getEffectiveEditAddCoordinationGeometryId(z);
-    const record = editState.ensureEditableVolumeRecord({ onCreate: scene => editSceneTools.remember(scene, 'build') });
+    const record = ensureEditableVolumeRecord({ onCreate: scene => editSceneTools.remember(scene, 'build') });
     const vol = record && record.vol;
     if (!record || !vol || !Array.isArray(vol.atoms)) return null;
     const beforeAtoms = cloneAtomsSnapshot(vol);
@@ -25011,6 +25036,7 @@
    * @returns {boolean}
    */
   function deleteSelectedOrHoveredAtom() {
+    if (rejectTrajectoryStructureEdit()) return false;
     if (isEditTargetHidden()) {
       setHintMessage('Show the active molecule before editing it.');
       return false;
@@ -25257,6 +25283,7 @@
    * @returns {boolean}
    */
   function centerActiveMoleculeMassAtOrigin() {
+    if (rejectTrajectoryStructureEdit()) return false;
     if (dragActive) {
       setHintMessage('Finish moving the current atom before recentering mass.');
       return false;
@@ -25335,6 +25362,7 @@
    */
   function alignActiveMoleculePrincipalAxes() {
     if (currentMode === MODES.EDIT && isEditTargetHidden()) return false;
+    if (rejectTrajectoryStructureEdit()) return false;
     if (dragActive) {
       setHintMessage('Finish moving the current atom before aligning principal axes.');
       return false;
@@ -26233,7 +26261,7 @@
     bind('down', MODES.EDIT, 'q', () => toggleExclusiveDisplayWindow(NON_EDIT_WINDOW_ID.VIEW_INSPECTOR));
   }
   bind('down', MODES.EDIT, ' ', (e) => {
-    if (!isEditTargetHidden() && autoHydrogenController && autoHydrogenController.handleShortcut()) {
+    if (!isEditTargetHidden() && !rejectTrajectoryStructureEdit() && autoHydrogenController?.handleShortcut()) {
       if (e && typeof e.preventDefault === 'function') e.preventDefault();
     }
   });
@@ -29862,7 +29890,7 @@
       actions.appendChild(button);
     };
     addAction('copy', `Copy atom ${item.order} coordinates in angstroms`, VIEW_COPY_ICON_SVG);
-    if (currentMode === MODES.EDIT) {
+    if (currentMode === MODES.EDIT && !record?.vol?.trajectory) {
       addAction('delete', `Delete atom ${item.order} (${item.sym})`, '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M9 6V4h6v2M5 6l1 14h12l1-14M10 10v6M14 10v6"></path></svg>');
     }
     return actions;
@@ -30932,12 +30960,13 @@
       if (!Number.isFinite(irIntensityKmMol) && irIntensities && i < irIntensities.length) {
         irIntensityKmMol = Number(irIntensities[i]);
       }
+      if (irIntensityKmMol < 0) throw new Error(`Mode ${i + 1} has a negative IR intensity. Use a nonnegative value in km/mol.`);
       const parsedDisp = parseVibrationDisplacements(displacementRaw, atomCount, i + 1);
       atomCount = parsedDisp.atomCount;
       modes.push({
         label,
         frequencyCm1: Number.isFinite(frequencyCm1) ? frequencyCm1 : NaN,
-        irIntensityKmMol: Number.isFinite(irIntensityKmMol) ? Math.max(0, irIntensityKmMol) : NaN,
+        irIntensityKmMol: Number.isFinite(irIntensityKmMol) ? irIntensityKmMol : NaN,
         displacements: parsedDisp.values,
       });
     }
@@ -31048,28 +31077,16 @@
   /**
    * Find loaded molecules that are compatible with one vibration payload.
    * @param {*} payload
-   * @param {{allowPermutation?:boolean}=} options
-   * @returns {Array<{index:number,record:*,vol:*,matchType:'exact'|'permuted'|'count'}>}
+   * @returns {Array<{index:number,record:*,vol:*}>}
    */
-  function findMatchingVolumesForVibrationPayload(payload, options = null) {
-    const allowPermutation = !!(options && options.allowPermutation);
+  function findMatchingVolumesForVibrationPayload(payload) {
     const candidates = [];
     for (let i = 0; i < volumes.length; i++) {
       const record = volumes[i];
       const vol = record && record.vol;
-      if (!vol || !Array.isArray(vol.atoms)) continue;
-      if (vol.atoms.length !== payload.atomCount) continue;
-      if (payload.atomSymbols && payload.atomSymbols.length) {
-        const symbols = getVolumeAtomSymbols(vol);
-        if (areSymbolSequencesEqual(symbols, payload.atomSymbols)) {
-          candidates.push({ index: i, record, vol, matchType: 'exact' });
-          continue;
-        }
-        if (!allowPermutation || !areSymbolMultisetsEqual(symbols, payload.atomSymbols)) continue;
-        candidates.push({ index: i, record, vol, matchType: 'permuted' });
-        continue;
-      }
-      candidates.push({ index: i, record, vol, matchType: 'count' });
+      if (!Array.isArray(vol?.atoms) || vol.atoms.length !== payload.atomCount) continue;
+      if (payload.atomSymbols?.length && !areSymbolSequencesEqual(getVolumeAtomSymbols(vol), payload.atomSymbols)) continue;
+      candidates.push({ index: i, record, vol });
     }
     return candidates;
   }
@@ -31082,21 +31099,19 @@
    * @returns {{ok:boolean,error?:string,targetName?:string}}
    */
   function attachVibrationPayloadToBestVolume(sourceName, payload, options = null) {
-    let candidates = findMatchingVolumesForVibrationPayload(payload);
-    let usedPermutationMatch = false;
-    if (
-      candidates.length === 0
-      && payload
-      && Array.isArray(payload.atomSymbols)
-      && payload.atomSymbols.length > 0
-    ) {
-      candidates = findMatchingVolumesForVibrationPayload(payload, { allowPermutation: true });
-      usedPermutationMatch = candidates.some((c) => c && c.matchType === 'permuted');
-    }
+    const candidates = findMatchingVolumesForVibrationPayload(payload);
     if (candidates.length === 0) {
+      const atomOrderMismatch = payload.atomSymbols?.length && volumes.some(record => {
+        const vol = record?.vol;
+        return Array.isArray(vol?.atoms) && vol.atoms.length === payload.atomCount
+          && areSymbolMultisetsEqual(getVolumeAtomSymbols(vol), payload.atomSymbols);
+      });
+      const symbols = payload.atomSymbols?.length ? ' and the listed elements' : '';
       return {
         ok: false,
-        error: `No loaded molecule matches ${payload.atomCount} atoms for vibration payload "${sourceName}".`,
+        error: atomOrderMismatch
+          ? `The atom symbols in vibration payload "${sourceName}" must match a loaded molecule in the same order. Check the structure and displacement rows.`
+          : `No loaded molecule matches ${payload.atomCount} atoms${symbols} for vibration payload "${sourceName}".`,
       };
     }
 
@@ -31154,12 +31169,6 @@
       vibrationRuntimeController.setPlaybackState({ lastStepMs: 0 });
       applyActiveVibrationPhase(0, { syncUi: false });
       syncVibrationControls();
-    }
-    if (usedPermutationMatch) {
-      console.warn('[Vibration] Attached payload using order-insensitive symbol matching.', {
-        sourceName,
-        targetName: target.record && target.record.name ? target.record.name : '',
-      });
     }
     return { ok: true, targetName: target.record && target.record.name ? target.record.name : '' };
   }
@@ -32956,7 +32965,7 @@
     compose:figureComposer.compose,sceneName:()=>getFocusedScene()?.name||'vibemol',onOpenChange:()=>window.VibeMolWorkbench?.refresh()});
   window.VibeMolFigure=Object.freeze({compose:figureComposer.compose,listTargets:figureTargets,limits:figureRenderer.limits,
     open:()=>{figurePanel.setOpen(true);window.VibeMolWorkbench?.open('figurePanel');},
-    viewport:()=>({width:canvas.width,height:canvas.height,pixelRatio:renderer.getPixelRatio(),...figureRenderer.cameraSnapshot()}),
+    viewport:()=>({width:canvas.width,height:canvas.height,pixelRatio:readRendererViewportMetrics().dpr,...figureRenderer.cameraSnapshot()}),
   });
   document.addEventListener('keydown',event=>{if(!figureRendering)return;if(event.key==='Escape')figureComposer.cancel();event.preventDefault();event.stopImmediatePropagation();},true);
 

@@ -14,6 +14,45 @@ function atom(id, Z, x, y, z) {
   return { id, Z, x, y, z };
 }
 
+test('polyhedral groups use every same-element shell without requiring a center atom', () => {
+  const { VibeMolSymmetry: symmetry } = loadSymmetry();
+  const phi = (1 + Math.sqrt(5)) / 2;
+  const octahedron = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+  const tetrahedron = [[1,1,1],[1,-1,-1],[-1,1,-1],[-1,-1,1]];
+  const cube = [...tetrahedron, ...tetrahedron.map(point => point.map(value => -value))];
+  const ico = [1,-1].flatMap(a => [1,-1].flatMap(b => [[0,a,b*phi],[a,b*phi,0],[b*phi,0,a]]));
+  const dodecahedron = [...cube, ...[1,-1].flatMap(a => [1,-1].flatMap(b => [[0,a*phi,b/phi],[b/phi,0,a*phi],[a*phi,b/phi,0]]))];
+  const shell = (points, Z, radius = 1) => points.map((point, index) => atom(`${Z}-${index}`, Z, ...point.map(value => value * radius)));
+  const rotation = point => {
+    const { x, y, z } = point;
+    return { ...point, x: (3*x-4*y)/5+2, y: (12*x+9*y-20*z)/25-4, z: (16*x+12*y+15*z)/25+1 };
+  };
+  for (const [name, expected, atoms] of [
+    ['P4','Td',shell(tetrahedron,15)],
+    ['F6','Oh',shell(octahedron,9)],
+    ['Mo(CO)6','Oh',[atom('mo',42,0,0,0), ...shell(octahedron,6,2), ...shell(octahedron,8,3)]],
+    ['cube','Oh',shell(cube,6)],
+    ['cubane','Oh',[...shell(cube,6), ...shell(cube,1,1.6)]],
+    ['B12','Ih',shell(ico,5)],
+    ['B12H12','Ih',[...shell(ico,5), ...shell(ico,1,1.6)]],
+    ['C20','Ih',shell(dodecahedron,6)],
+  ]) {
+    for (const geometry of [atoms, atoms.map(rotation).reverse()]) {
+      const actual = symmetry.analyzePointGroup(geometry);
+      assert.equal(actual.exactGroupId, expected, name);
+      assert.ok(actual.approximateCandidates.some(candidate => candidate.groupId === expected), name);
+    }
+  }
+  const distorted = [...shell(octahedron,6,2), ...shell(octahedron,8,3)];
+  distorted[6].Z = 9;
+  assert.notEqual(symmetry.analyzePointGroup(distorted).exactGroupId, 'Oh');
+  for (const atoms of [[], [atom('he',2,0,0,0)]]) {
+    const actual = symmetry.analyzePointGroup(atoms);
+    assert.equal(actual.exactGroupId, null);
+    assert.equal(actual.approximateCandidates.length, 0);
+  }
+});
+
 function buildWater() {
   return [
     atom('o', 8, 0, 0, 0),

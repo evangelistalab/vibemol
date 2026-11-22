@@ -622,6 +622,8 @@
         event.stopPropagation();
         const scene = options.scene || (options.layer ? sceneGraphController.getSceneForLayer(options.layer) : null);
         const wasVisible = !!options.visible;
+        const firstMoldenSurface = !wasVisible && Number.isInteger(options.layer?.moldenMoIndex)
+          && getVisibleCubeLayerCount(scene) === 0;
         sceneGraphController.toggleVisibility(options.id);
         if (options.layer && options.layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP && wasVisible === false) {
           const activeCube = getSceneActiveCubeLayer(scene);
@@ -632,7 +634,8 @@
             visible: options.layer.visible !== false,
           });
         }
-        rebuildScene({ preserveView: true, syncGraph: false });
+        const revealedSurface = firstMoldenSurface && sceneGraphController.isLayerEffectivelyVisible(options.layer);
+        rebuildScene({ preserveView: !revealedSurface, syncGraph: false });
         renderSceneOutliner();
       });
       row.appendChild(eye);
@@ -1038,7 +1041,9 @@
     function normalizeCombinePopoverStateOperands() {
       if (!combinePopoverState) return [];
       const op = normalizeArithmeticOperation(combinePopoverState.operation);
-      combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+      if (op !== 'linear_combination') {
+        combinePopoverState.operands = normalizeArithmeticInputsForOperation(op, combinePopoverState.operands);
+      }
       ensureCombineOperandRowsHaveChoices(combinePopoverState);
       return combinePopoverState.operands;
     }
@@ -1049,6 +1054,9 @@
       if (!scene) return { ok: false, error: 'No scene is focused.' };
       if (!hasEligibleCombineOperands(scene, state)) return { ok: false, error: getNoEligibleOperandsError(state) };
       const op = normalizeArithmeticOperation(state.operation);
+      if (op === 'linear_combination' && state.operands.some(input => !Number.isFinite(input.coefficient))) {
+        return { ok: false, immediate: true, error: 'Enter a number for every coefficient.' };
+      }
       const operands = normalizeArithmeticInputsForOperation(op, state.operands);
       if (op === 'abs' && operands.length !== 1) return { ok: false, error: 'Abs requires exactly one operand.' };
       if (op === 'product' && operands.length < 2) return { ok: false, error: 'Product requires at least two operands.' };
@@ -1061,9 +1069,11 @@
       const resolved = resolveArithmeticInputs(operands);
       if (resolved.length !== operands.length) return { ok: false, error: 'Choose a valid operand for every row.' };
       const grid = validateArithmeticInputGrids(resolved);
-      return grid.ok
-        ? { ok: true, operands, resamplePlan: grid.resamplePlan || null }
-        : grid;
+      if (!grid.ok) return grid;
+      const coefficients = new Map();
+      for (const { layerId, coefficient } of operands) coefficients.set(layerId, (coefficients.get(layerId) || 0) + coefficient);
+      const zero = op === 'linear_combination' && [...coefficients.values()].every(coefficient => coefficient === 0);
+      return { ok: true, operands, resamplePlan: grid.resamplePlan || null, zero };
     }
 
     function syncCombineAutoName() {
@@ -1223,8 +1233,11 @@
       const options = scene ? getCombineOperandOptions(scene) : [];
       const op = normalizeArithmeticOperation(combinePopoverState.operation);
       const operands = normalizeCombinePopoverStateOperands();
-      const validation = getCombineValidation(combinePopoverState);
-      const errorText = combinePopoverState.error || validation.error || '';
+      const resample = document.createElement('div');
+      const zero = document.createElement('div');
+      const error = document.createElement('div');
+      const nameInput = document.createElement('input');
+      const create = document.createElement('button');
       popover.textContent = '';
 
       const title = document.createElement('div');
@@ -1271,12 +1284,15 @@
           coef.className = 'vm-combine-popover__coefficient';
           coef.type = 'number';
           coef.step = '0.1';
-          coef.value = String(Number.isFinite(Number(input.coefficient)) ? Number(input.coefficient).toFixed(2) : '1.00');
-          coef.addEventListener('change', () => {
+          coef.value = Number.isFinite(input.coefficient) ? String(input.coefficient) : '';
+          coef.addEventListener('input', () => {
             combinePopoverState.error = '';
-            combinePopoverState.operands[index].coefficient = Number(coef.value);
-            syncCombineAutoName();
-            renderCombinePopover();
+            combinePopoverState.operands[index].coefficient = coef.valueAsNumber;
+            if (Number.isFinite(coef.valueAsNumber) && !getCombineNameTouched(combinePopoverState)) {
+              syncCombineAutoName();
+              nameInput.value = combinePopoverState.name || '';
+            }
+            syncValidation();
           });
           row.appendChild(coef);
           const times = document.createElement('span');
@@ -1338,22 +1354,12 @@
         popover.appendChild(add);
       }
 
-      if (validation.ok && validation.resamplePlan) {
-        const notice = document.createElement('div');
-        notice.className = 'vm-combine-popover__note vm-combine-popover__note--resample';
-        notice.textContent = ArithmeticGrid.formatResampleNotice(validation.resamplePlan);
-        popover.appendChild(notice);
-      }
-
-      const showValidationError = combinePopoverState.triedCreate
-        || !!validation.immediate
-        || errorText === getNoEligibleOperandsError(combinePopoverState);
-      if (errorText && (combinePopoverState.error || (showValidationError && !validation.ok))) {
-        const error = document.createElement('div');
-        error.className = 'vm-combine-popover__error';
-        error.textContent = errorText;
-        popover.appendChild(error);
-      }
+      resample.className = 'vm-combine-popover__note vm-combine-popover__note--resample';
+      zero.className = 'vm-combine-popover__note';
+      zero.textContent = 'These coefficients cancel. The result will be zero everywhere.';
+      error.className = 'vm-combine-popover__error';
+      error.setAttribute('aria-live', 'polite');
+      popover.append(resample, zero, error);
 
       const dividerB = document.createElement('div');
       dividerB.className = 'vm-combine-popover__divider';
@@ -1363,7 +1369,6 @@
       nameRow.className = 'vm-combine-popover__field';
       const nameLabel = document.createElement('span');
       nameLabel.textContent = 'Output name';
-      const nameInput = document.createElement('input');
       nameInput.className = 'vm-combine-popover__input';
       nameInput.type = 'text';
       nameInput.value = combinePopoverState.name || '';
@@ -1382,15 +1387,27 @@
       cancel.className = 'vm-combine-popover__button is-secondary';
       cancel.textContent = 'Cancel';
       cancel.addEventListener('click', closeCombinePopover);
-      const create = document.createElement('button');
       create.type = 'button';
       create.className = 'vm-combine-popover__button is-primary';
       create.textContent = combinePopoverState.busy ? 'Calculating…' : getCombineSaveButtonLabel(combinePopoverState);
-      create.disabled = !validation.ok || !!combinePopoverState.busy;
       create.addEventListener('click', saveCombinedLayerFromPopover);
       actions.appendChild(cancel);
       actions.appendChild(create);
       popover.appendChild(actions);
+
+      function syncValidation() {
+        const validation = getCombineValidation(combinePopoverState);
+        const errorText = combinePopoverState.error || validation.error || '';
+        const showError = combinePopoverState.error || combinePopoverState.triedCreate
+          || validation.immediate || errorText === getNoEligibleOperandsError(combinePopoverState);
+        error.textContent = errorText;
+        error.hidden = !errorText || !showError;
+        resample.hidden = !validation.resamplePlan;
+        resample.textContent = validation.resamplePlan ? ArithmeticGrid.formatResampleNotice(validation.resamplePlan) : '';
+        zero.hidden = !validation.zero;
+        create.disabled = !validation.ok || !!combinePopoverState.busy;
+      }
+      syncValidation();
 
       if (combinePopoverState.busy) popover.querySelectorAll('input, select, button').forEach(control => { control.disabled = control !== cancel; });
       popover.hidden = false;

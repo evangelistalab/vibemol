@@ -290,7 +290,7 @@
       syncSymmetryToleranceUi();
       if (!target) {
         if (els.editSymmetryTargetSummaryEl) els.editSymmetryTargetSummaryEl.textContent = 'Whole structure (0 atoms)';
-        updateSymmetryCurrentGroupUi('C1', { highlightChange: false });
+        updateSymmetryCurrentGroupUi('No atoms', { highlightChange: false });
         if (els.editSymmetryElementSelectEl) {
           els.editSymmetryElementSelectEl.innerHTML = '<option value="">None</option>';
           els.editSymmetryElementSelectEl.disabled = true;
