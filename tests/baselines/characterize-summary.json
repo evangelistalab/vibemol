@@ -1,9 +1,7 @@
 {
   "baseline": {
-    "commit": "8c09ca1cacb532cd0c93dc740e7ad284e2d8d8ef",
-    "tag": "v0.10.13",
-    "recordingMode": "candidate",
-    "sourceRefAtCapture": "refs/heads/codex/record-0.10.13-warning",
+    "commit": "a84632d82ab13e7e89ed42c99a215bce60d8dc86",
+    "tag": "declared-api-delta",
     "appSha256": "b3e88e8e0eaf14e2ca95fe05c4e6657122bc69879b123b347676036f6c8ea55c",
     "viewport": {
       "width": 1512,
@@ -33,7 +31,7 @@
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/45069845741",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/45074295496",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -62,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "d187f4a5f23145e88c3fe119563ccfb44bbc5302a981305f85953fcb64922d10",
-      "d187f4a5f23145e88c3fe119563ccfb44bbc5302a981305f85953fcb64922d10"
+      "632dcf3b148ca7ab59a7d39e4a2d6dd39ffb8fd780cfd5b4ed50abaec33312e6",
+      "632dcf3b148ca7ab59a7d39e4a2d6dd39ffb8fd780cfd5b4ed50abaec33312e6"
     ]
   },
   "api": {
@@ -242,6 +240,17 @@
       "buildCloudPoints2CTotal",
       "estimateCellSize",
       "voxelCenterToWorld"
+    ],
+    "VibeMolCommandRegistry": [
+      "createCommandRegistry",
+      "validateParams"
+    ],
+    "VibeMolCommands": [
+      "describe",
+      "kind",
+      "list",
+      "run",
+      "version"
     ],
     "VibeMolCoordination": [
       "GeometryId",
@@ -843,7 +852,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "3990a040b9e8505997b77f5e3ddc10efff5343f99110d622864964e706da2953",
+  "goldenSha256": "0fb7bbe8de096338abbde57044958d5c216880eab954fd925bd3ee9ec49329bc",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
