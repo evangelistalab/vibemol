@@ -41,6 +41,26 @@ def run(page, url):
     build.locator('#editFragmentQuick button:visible').first.click()
     assert page.evaluate('()=>VibeMolTesting.getEditBuildState().payload.kind')=='fragment'
     assert build.is_visible()
+
+    co = build.locator('[data-molecule-id="carbon-monoxide"]')
+    expected = {'kind': 'molecule', 'id': 'carbon-monoxide', 'formula': 'CO', 'canvasFocused': True}
+    for query, action in [('carbon monoxide', 'click'), ('carbon monoxide', 'Enter'), ('monoxide', 'Enter'), ('CO', 'click')]:
+        search.fill('oxygen')
+        search.press('Enter')
+        search.fill(query)
+        visible = co.is_visible()
+        before = page.evaluate('()=>VibeMolTesting.getEditBuildState().payload.kind')
+        print('[build search]', repr(query), action, 'actual', (visible, before), 'expected', (True, 'atom'), flush=True)
+        assert (visible, before) == (True, 'atom')
+        if action == 'click':
+            co.click()
+        else:
+            search.press(action)
+        actual = page.evaluate('''()=>{const {kind,id,formula} = VibeMolTesting.getEditBuildState().payload;
+          return {kind,id,formula,canvasFocused:document.activeElement===document.getElementById('canvas')};}''')
+        print('[build search]', repr(query), action, 'actual', actual, 'expected', expected, flush=True)
+        assert actual == expected
+
     search.fill('benzene');search.press('Enter')
     assert page.evaluate('()=>VibeMolTesting.getEditBuildState().payload.kind')=='molecule'
     page.mouse.click(**point)

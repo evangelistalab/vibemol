@@ -1,6 +1,6 @@
 # VibeMol
 
-Static molecular visualization app for `.cube/.cub`, `.2ccube`, and `.xyz` files, with a companion Python automation client.
+Static molecular visualization app for `.cube/.cub`, `.2ccube`, `.xyz`, and `.molden` files, with supported automation clients.
 It also accepts vibrational data from sidecar JSON (`.vib.json`, `.vmodes.json`, `.modes.json`), ORCA `.hess`, Psi4 `.dat/.out`, and CFOUR `.freq` files.
 
 ## Features
@@ -17,6 +17,8 @@ It also accepts vibrational data from sidecar JSON (`.vib.json`, `.vmodes.json`,
 - Complete session save/open, with browser autosave and recovery
 - Shared preset model with CLI (`window.VibeMolPreset` + Python client)
 - Vibrational mode playback from sidecar JSON (`.vib.json`), ORCA Hessian files (`.hess`), Psi4 vibration outputs (`.dat`, `.out`), and CFOUR frequency files (`.freq`)
+- Publication Figure grids and a [reproducible headless figure runner](docs/figure-runner.md)
+- Interactive water tutorial, live molecular formula/electron count, and reset-to-defaults in App settings
 - Click a scene's **Orbitals** header to edit all its surfaces together in Appearance: colors, iso value, Auto-iso, opacity, material, and surface/cloud mode. Hidden and uncomputed orbitals receive the settings too; Molden grids are still computed only when needed. Click an individual orbital to adjust it separately. Differing settings are marked **(mixed)**.
 
 ## Web Quick Start
@@ -26,6 +28,8 @@ python3 -m http.server
 Open `http://localhost:8000/`.
 
 Startup now shows the empty onboarding card. Use `Choose files` or `Open sample file` to load content.
+
+The water tutorial walks through loading, navigation, measurement, panels, XYZ copy/paste and camera/geometry actions. Panels open on the right on desktop unless a saved placement says otherwise; small screens use the bottom dock. **App settings → Reset all options** resets preferences while preserving loaded data and saved named libraries/layouts.
 
 XYZ files and pasted coordinates share the same import checks. If a structure has at least two atoms but no plausible bonds at angstrom distances, a popup offers conversion from bohr to angstroms. Choose **OK** to convert or **Cancel** to keep the original coordinates as angstroms. For trajectories, the check uses the first frame and conversion applies to every frame.
 
@@ -37,14 +41,14 @@ Open or drop `cfour.freq` to load the molecule and animate its modes in **Freque
 - **Scenes → +**: create an empty editable scene or create scenes from XYZ, Cube, or Molden files
 - **Appearance → Preset**: choose a built-in preset or one of your saved looks
 - **Appearance → Style Studio**: choose, customize, and save rendering presets
-- `S`: save PNG
-- `B`: batch export
-- `I`: toggle surfaces
-- `A`: toggle axes
-- `V`: open view/coords panel
+- **Save PNG / Batch export / Camera controls**: use the named controls; the former global bare S/B/I/A shortcuts are retired
+- `V`: View mode
 - `M`: measurement mode
 - `E`: edit mode
-- `Arrow keys`: previous/next file
+- `C` in View/Measure: Coordinates; `Q`: Quick actions
+- `Up/Down`: cycle orbital layers in the focused scene; `Left/Right` in View: step the active trajectory
+- In Edit: `/` selects Build and focuses search; `Shift+R` moves COM to origin; `P` aligns principal axes; `O` optimizes; `S` opens Symmetry; Space previews/applies hydrogen adjustment
+- `?`: detailed Help, including mode-specific keys; text fields keep their editing shortcuts
 - `Cmd/Ctrl+C`: copy element and XYZ coordinate rows in angstroms, without the atom-count/comment header. Copies selected atoms in Edit mode, or the active structure otherwise. Text fields and selected page text keep normal copy behavior.
 - `Cmd/Ctrl+V`: paste XYZ into a new structure, including in a fresh VibeMol window. Selected atoms copied in the same Edit window retain the existing duplicate-selection behavior, including internal bonds.
 
@@ -126,7 +130,9 @@ make test-e2e
 make test
 ```
 
-`make test-e2e` runs the full smoke suite, focused scene/arithmetic regressions, and session/recovery regressions, each with its own temporary local server. Set `VIBEMOL_TEST_ARTIFACT_DIR` to keep browser artifacts outside the checkout.
+`make test-e2e` runs characterization and the 37-suite browser inventory with temporary local servers. Set `VIBEMOL_TEST_ARTIFACT_DIR` to choose an artifact directory. Full CI also requires independent capture repetition, checkpoint/cache checks, units, WebKit, construction and the app-state ratchet; one smoke run is not the complete gate.
+
+For an agent handoff, start with [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md) and [current context](VIBEMOL_CONTEXT.md). The connector is paused and absent from production; no next product increment is selected.
 
 See the [Product roadmap](docs/roadmap.md) for implemented features, remaining work, and priorities. See [Scene architecture](docs/scene-architecture.md) for data ownership, the shared import pipeline, and arithmetic execution limits.
 
@@ -155,8 +161,8 @@ python -m playwright install chromium
 ```
 
 ## Deployment
-- Current release: **v0.10.1** — [release notes](docs/releases/v0.10.1.md), covering appearance restore, projection, export and interaction fixes. [VibeMol](https://vibemol.org/) opens the Workbench interface by default.
+- Current release: **v0.10.12**, with Build search, metal ligand placement, Atom settings, and keyboard shortcut updates. [VibeMol](https://vibemol.org/) opens the Workbench interface by default.
 - Static deployment from repository root (`index.html`)
-- Release versions live in `assets/app/js/asset-urls.js`. Run `python3 tools/sync_asset_versions.py --version 0.9.4` (using the intended version) to update the version and committed asset URLs together. `make check` rejects stale URLs. See [asset versioning](docs/asset-versioning.md).
+- Release versions live in `assets/app/js/asset-urls.js`. Run `python3 tools/sync_asset_versions.py --version <release-version>` (replace the placeholder with the intended version) to update the version and committed asset URLs together. `make check` rejects stale URLs. See [asset versioning](docs/asset-versioning.md).
 - `.nojekyll` is required for GitHub Pages compatibility
-- GitHub Pages publishes the repository root from `main` at `vibemol.org`. Pushing main publishes production independently of ordinary CI; keep `CNAME` in source. Beta deployment is retired; its dead channel plumbing is deferred in #77.
+- GitHub Pages publishes the repository root from `main` at `vibemol.org`. Pushing main publishes production independently of ordinary CI; keep `CNAME` in source. Beta deployment and its channel plumbing are retired.

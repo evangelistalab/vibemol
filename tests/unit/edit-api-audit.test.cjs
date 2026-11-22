@@ -6,7 +6,7 @@ const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/edit-a
 const audit=(s,productChanges=contract.productChanges||{},removals=contract.legacyStatementRemovals)=>
  additiveApp(s,baseline,contract.testing.changes,productChanges,removals);
 test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
- const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,3);assert(result.testingMembers>40&&result.legacyStatements>1000);
+ const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,4);assert(result.testingMembers>40&&result.legacyStatements>1000);
  const actual={before:result.legacyStatementsBeforeRemovals,after:result.legacyStatements,removed:result.legacyStatementRemovals};
  const expected={before:2502,after:2496,removed:[
   "bind('down', 'global', 'a', () => {\n    window.__showAxes__ = !window.__showAxes__;\n    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;\n    syncAllAppearanceActionToggleButtons();\n    scheduleAppearancePresetAutosave();\n  });",
@@ -65,7 +65,7 @@ test('an authorized member cannot change past its declared fingerprint',()=>{
 });
 test('an omitted declared change cannot silently shrink the batch guard',()=>{
  const changes={...contract.testing.changes};delete changes.projectHaloGhostToClient;
- assert.throws(()=>additiveApp(source,baseline,changes,contract.productChanges,contract.legacyStatementRemovals),/Exactly the three/);
+ assert.throws(()=>additiveApp(source,baseline,changes,contract.productChanges,contract.legacyStatementRemovals),/Exactly the four/);
 });
 test('the lazy facade fails before reading a record when the product API is absent',()=>{
  const parser=require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser')),vm=require('node:vm');

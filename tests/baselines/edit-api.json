@@ -159,8 +159,16 @@
       ]
     },
     {
+      "name": "editApiCheckMetalDonorSite",
+      "count": 1,
+      "deps": [],
+      "closure": [
+        "editApiFault"
+      ]
+    },
+    {
       "name": "createEditApiAttachmentGeometry",
-      "count": 10,
+      "count": 11,
       "deps": [
         "THREE",
         "atomWorld",
@@ -173,6 +181,7 @@
       ],
       "closure": [
         "defaultEditApiMetalLigandType",
+        "editApiCheckMetalDonorSite",
         "editApiFault"
       ]
     },
@@ -368,11 +377,10 @@
     },
     {
       "name": "createEditApiBuildQueries",
-      "count": 14,
+      "count": 13,
       "deps": [
         "bondLength",
-        "catalog",
-        "connection",
+        "catalogSiteElement",
         "elements",
         "readSystem",
         "resolve",
@@ -605,6 +613,18 @@
       ]
     },
     {
+      "name": "editApiCatalogSiteElement",
+      "count": 5,
+      "deps": [],
+      "closure": [
+        "editApiCheckMetalDonorSite",
+        "editApiFault",
+        "editApiValidator",
+        "getCoordinationProfile",
+        "getFragmentConnectionAtom"
+      ]
+    },
+    {
       "name": "enterEditApi",
       "count": 11,
       "deps": [],
@@ -651,12 +671,17 @@
       "projectHaloGhostToClient": {
         "before": "4238cfd3de0eb1f90f072b07102b030eadbbdb5cbb31e016366a6ff582ec7428",
         "after": "359ec25efcd26353b89e930a14001604c5499fb1ca0a1e79f025cb49109cd4c2"
+      },
+      "triggerHaloGhostByIndex": {
+        "before": "043c3f7df161270d6989603483d82b78d98a52e7857c582b951c93f127517baa",
+        "after": "0a67caf2a246606d64df346d96c10361e628129dc4fc505a5211f9bc91550f8a"
       }
     },
     "unchangedExcept": [
       "setEditSelectionIndices",
       "replaceGestureTerminalHydrogen",
-      "projectHaloGhostToClient"
+      "projectHaloGhostToClient",
+      "triggerHaloGhostByIndex"
     ],
     "batch": 1,
     "remainingBatches": "held after risk batch; fragment cue remains isolated; native drag unchanged"
@@ -880,8 +905,8 @@
     },
     "setHintMessage": {
       "before": "05bce7f87a2cd06bf3b94a1c52f4b036b3ab2f96642aeb616f35810bd04bb1c8",
-      "after": "3e561e6e501683a0652591ee92df3256429f7a437630b6e249226e2c921740a6",
-      "reason": "Label both Edit tools in the persistent hint using the existing tool state.",
+      "after": "1db4ae72226034d2973deed803999b1d630ee07eb63f93e877e8c25145dc41e6",
+      "reason": "Label both Edit tools using the existing tool state and render explicit shortcuts in Adobe FrameMaker notation with accessible key names.",
       "units": []
     },
     "updateEditSelectionVisuals": {
@@ -1125,8 +1150,8 @@
     },
     "getEditToolState": {
       "before": "49ef7e343f64d27e50f66f1a6c5f8ccc865f000f8d2c57fca4a934deaf195f5c",
-      "after": "9d83dfd7f946f7a462dc728615de62c1b04c14a3464d6d17fdde205bdd968da0",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "1043083f5735fb5fe7c9b5999e4af799dd1fbcad385981f1cf581613d168c8e9",
+      "reason": "Build and display transition-metal ligands using coordination sites. Describe halo placement from the existing provisional atom session.",
       "units": []
     },
     "chooseEditTool": {
@@ -1153,10 +1178,16 @@
       "reason": "Hide placement-only alignment actions while filtering and show an empty result.",
       "units": []
     },
+    "matchesBuildPaletteTerms": {
+      "before": "cd25e82178cf60031a14c215d587fa878f8e7015e760510a4012acbfd42f6a00",
+      "after": "0c4365c3116cdf2604d2db71523bd6b4a9ff50fcc5e93a9a404df23685d320cb",
+      "reason": "Match every word in a multi-word Build search while retaining single-word prefix matching.",
+      "units": []
+    },
     "setEditAddFragment": {
       "before": "d1460e09d3e09bcab6b38beecb0af680f5d02e0d7db28737f965e7f2b67ca671",
-      "after": "145792e1088dfd21b6bcfffa24bb36f3d1932f0bcd08fd86106a8ef6a955cf7f",
-      "reason": "Confirm a dropped molecule before arming a different valid fragment.",
+      "after": "45e7479e3f79172581b2af3e742db28d45c377ea03929b3d0c94bf8dfb1e64d1",
+      "reason": "Confirm a dropped molecule before arming a different valid fragment. Keep the fixed Oxo bond order local to the ligand so it does not change the order for the next Build payload.",
       "units": []
     },
     "setEditAddMolecule": {
@@ -1203,8 +1234,8 @@
     },
     "beginGestureAddedAtomOperatorSession": {
       "before": "ed722da57ba854c5e99e5a7c39022c543c1e7e1746be44661b78ca966f465b2f",
-      "after": "291572d5ea3e54da7a528b4afcd6959d419bf6d30fb5de9824cbb9c01b6b819f",
-      "reason": "Fit the first atom added to an empty scene.",
+      "after": "5ea07efa45fb04f5912ce842dca5554dadd9bbcc4280a95e853da136de25cf7c",
+      "reason": "Fit the first atom added to an empty scene. Record the placement source in the existing atom operator session.",
       "units": []
     },
     "updateMoleculePlacementOperatorUi": {
@@ -1556,8 +1587,8 @@
     },
     "commitAtomAtHaloGhost": {
       "before": null,
-      "after": "90dd2dfe5ea3c895d9adb51f892d74ed492e55367ad5dc95d71387253feb08c7",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "fdbf78d6afa5d31c12191caff9bee457fa0da51d194772ca872b1f98bd5646bd",
+      "reason": "Build and display transition-metal ligands using coordination sites. Identify an atom snapped through a native halo click.",
       "units": [
         {
           "file": "app.js",
@@ -1607,18 +1638,20 @@
     },
     "selectMetalBuildAnchor": {
       "before": null,
-      "after": "014aa41938789a8e78ed374ff3059f7995534bec1f678905c54556236ea63a81",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "a01d4e1a1eccb8ccb47d43a24b0007ecd52593bfe67253fd6839179dcb53d30c",
+      "reason": "Build and display transition-metal ligands using coordination sites. Arm the fragment cue after clicking a metal with Oxo loaded.",
       "units": [
         {
           "file": "app.js",
           "name": "selectMetalBuildAnchor",
-          "count": 5,
+          "count": 7,
           "inputs": [
             "editHaloController",
+            "isFragmentPayloadLoaded",
             "setEditAtomSelection",
             "setHintMessage",
             "setSelectionAtomBuildCueActive",
+            "setSelectionFragmentCueActive",
             "updateEditSelectionVisuals"
           ]
         }
@@ -1648,8 +1681,8 @@
     },
     "appendGestureAtomFromAnchor": {
       "before": "efe2cd3f452a357dc727f0030cd241432b0f5b24b7b8c9308c2b38756ca701ac",
-      "after": "39122f9cdaf2e36cc8668af123162164cb1a14dc4f94dcf47274d2164a5e9bf3",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "612987ad3f8ff56720943615ad8bbd8c4d2ce6efc6deeec2307d921067c52663",
+      "reason": "Build and display transition-metal ligands using coordination sites. Pass the placement source to the atom operator session. Opt in the newly grown neutral oxygen donor for hydrogen adjustment.",
       "units": []
     },
     "updateGestureGrowDrag": {
@@ -1721,8 +1754,8 @@
     },
     "applyCatalogLigandAtMetal": {
       "before": null,
-      "after": "9bd21e29395653cfd9ef7a4c32d7fbb5b55f49965316b724717f28808799847c",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "6fc7ee0318d2f847e0c8c800025dadf9a342b7ca17bc2654ed59eaa6fcf93678",
+      "reason": "Build and display transition-metal ligands using coordination sites. Pass the catalog bond order for Oxo to the validated attachment operation.",
       "units": [
         {
           "file": "app.js",
@@ -1737,8 +1770,8 @@
     },
     "setSelectionBuildCueActive": {
       "before": "d071ea883fc3dc7b3b43f04c2b61516197d95a40b2b293cf7532893737a7ac2b",
-      "after": "b0c9f0b963b128e317107ed2877eb12f727ef8174717ada5ebe261157c94246c",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "e5d49fa3505497ac2da13f83a451623cc0c693f7d1689e88f8dcaf1fd3a5b456",
+      "reason": "Build and display transition-metal ligands using coordination sites. Require one metal anchor when arming Oxo through the selection cue.",
       "units": []
     },
     "statement:metalSelectedAnchorDrag": {
@@ -1794,8 +1827,8 @@
     },
     "handleFragmentIntentControllerPointerUp": {
       "before": "21e499527d385eb6841563ced8a1f9728f461db1050ec0c877b9b9d2e601c611",
-      "after": "1709bc0f8d2d379dac6ecac771e4d5069624536394dcb6d21ea591b91e986746",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "7e543f3e3888531dbc2358e693670e6fb16da82451440b1f7f25022aac88790f",
+      "reason": "Build and display transition-metal ligands using coordination sites. Reveal the open sites on metal click and keep Oxo on the metal placement path.",
       "units": []
     },
     "finishCatalogMetalDrag": {
@@ -1860,8 +1893,8 @@
     },
     "handleFragmentIntentControllerPointerDown": {
       "before": "06ed3c5d7332b457bdd4490cab4b835205d24fd878e8a64bdcd66edb6643dcd9",
-      "after": "7ec92580c94c9e4593c00fcd9b566b4e3494083adb92c4de4be1917bc5742331",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "3b728413105099b788a32f5de71861963b62e4fb2df7b3003684e12ce5e9bea1",
+      "reason": "Build and display transition-metal ligands using coordination sites. Reject starting metal-only fragment placement on a nonmetal atom.",
       "units": []
     },
     "handleFragmentIntentControllerPointerMove": {
@@ -1966,6 +1999,78 @@
       "before": "77ec5152fb005ea9a6fc488c7a9ac40ec7d4096293f4c2f0b2a3e7bc4c94ae43",
       "after": "8d2aca1c22432b8d231727c1918bbb7de5dcb1c787c0e0390f67abd2caf2ac07",
       "reason": "Restore app options to startup defaults while preserving loaded structures and saved libraries.",
+      "units": []
+    },
+    "statement:editQuickFragments": {
+      "before": "209877340a68c6ad0f23c6a6d5722c9fe7a9a4875022ffb17ea212c1c9927f6c",
+      "after": "6c66d164348a3bb7d3c89b82a84dc738eb79ce98332c95fba3dc565dd871c0d6",
+      "reason": "Include Oxo in the Build palette and its search results.",
+      "units": []
+    },
+    "buildFragmentAttachUiHint": {
+      "before": "1198a6056f755aea07419e1e5b9cc7ca2ee8a60e3db6a696546843713576caad",
+      "after": "2bb0b06a4f93863694c940ad23218479899de0f5210f523d7d2a899683fb40fd",
+      "reason": "Guide Oxo placement through open metal sites.",
+      "units": []
+    },
+    "buildMoleculePlacementData": {
+      "before": "5389261a0721d570ca129843a57d83bf770911942a3880d06c64d27e8d5f4448",
+      "after": "1db6a5c0f39c791f5a3ad93c1d2ed6c0fe5b64a086bafc4e941fea7b06f38218",
+      "reason": "Exclude metal-only fragments from standalone placement and its canvas preview.",
+      "units": []
+    },
+    "appendFragmentAtWorld": {
+      "before": "9ed60e1ebc2df9a9fbacc7a7309ad5b22eab20cd521733cb428a4817338af3ea",
+      "after": "d0fa25fc3deb597f73ad2ccf266d3564c1ecb9621264195006d1778254d035eb",
+      "reason": "Keep metal-only fragments out of the generic fragment placement path.",
+      "units": []
+    },
+    "statement:hintMeasure": {
+      "before": "9b1d994ca1ef7c2418e0ce52105a616349a4c2c38f66662e3ffabbfda2d98080",
+      "after": "3810121da4046c7d71c14ba757ce07cbb2c7e7a6317c13c4bef2e4f3bd1110b4",
+      "reason": "Use Adobe FrameMaker notation for the Escape shortcut in the Measure hint.",
+      "units": []
+    },
+    "beginTransformDragFromResolvedTarget": {
+      "before": "22cc9dbb9ca20df016fbc75940f2d11723f54a040c465ca4cb7b479c1eb21280",
+      "after": "d5b8f48b1e6d7e90268af95f0e94e1e076ea214541a6f59fa8b76e69815e30a8",
+      "reason": "Use shift+drag notation in the bond-side rotation hint.",
+      "units": []
+    },
+    "statement:hintEdit": {
+      "before": "7a1ba72bd2012e584263a83d4f7106cd742596386eace0be6068c0ff2595aa01",
+      "after": "30de8fcecb0e6b8e7b9230e9f7aa769ee9531f04bff5e6ad36322242e189b9ed",
+      "reason": "Mark the slash shortcut explicitly in the Edit hint.",
+      "units": []
+    },
+    "setEditAddBondOrder": {
+      "before": "a461d11ad961e895a83f98925d31ff39c06d500b856c0a4a2da6c70c06d4848b",
+      "after": "ba66751d4daa31d93edce6883511e88d10e0ad7a881f089bcc6a1a7635c5dc14",
+      "reason": "Present bond-order keys as separate alternatives in the Build hint.",
+      "units": []
+    },
+    "setBondCenterSelectionFromHit": {
+      "before": "90d8dd8bb7606fafc40c074e64ec2d303cba02e6290c1bfef08aad390767bde4",
+      "after": "7be7415a1c6ae2ed5a20399452f784afc3041226d6056a0c399511feed5b8954",
+      "reason": "Present individual metal-bond shortcut keys as separate alternatives in the selection hint.",
+      "units": []
+    },
+    "statement:bindTransformShortcut": {
+      "before": null,
+      "after": "48f61e19d3f6b3f0345fd75a683751002b935ac309defadb9f93de912073d44a",
+      "reason": "Bind w in Edit mode to the existing Transform tool action.",
+      "units": []
+    },
+    "statement:refreshBuildCueHalo": {
+      "before": "da624ce591406b9b59c20c5c7af0d612f5bd7dfbfb880de25363758104ee2c67",
+      "after": "1bc76afacfa78374bb76c5bcb0a6f3ed3e0a22ca6a4cbb57e24d146ba5acb851",
+      "reason": "Refresh open sites in the native Build cue click handler before its event completes.",
+      "units": []
+    },
+    "applyAutomaticHydrogenAdjustmentToVolume": {
+      "before": "dcf67a5f6ab5bb14bed09d9f0d7fc1d99e643bfb24d4f9c89bc203e2defb4536",
+      "after": "060e1336504a5816ab7227a518122679fc486a1a7fd68b5799af56009e92ae7e",
+      "reason": "Pass the newly grown neutral oxygen donor to the existing hydrogen planner.",
       "units": []
     }
   },

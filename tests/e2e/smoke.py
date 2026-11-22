@@ -2922,7 +2922,7 @@ def main() -> int:
                 page.wait_for_function(
                     """() => {
                         const hint = document.getElementById('hint');
-                        return !!hint && /Press Space again to apply/i.test(hint.textContent || '');
+                        return !!hint?.querySelector('kbd[aria-label="Space"]') && /Press space again to apply/i.test(hint.textContent || '');
                     }"""
                 )
                 hydrogen_preview_summary = active_structure_summary(page)
@@ -5029,7 +5029,7 @@ def main() -> int:
             midpoint_x, midpoint_y = find_bond_midpoint_canvas_point(page)
             page.mouse.click(midpoint_x, midpoint_y)
             page.wait_for_function("""() => !!window.VibeMolTesting?.isFuseRingPreviewActive?.()""")
-            wait_for_hint_contains(page, 'Esc discards this fused ring (Fusion phenyl)')
+            wait_for_hint_contains(page, 'esc discards this fused ring (Fusion phenyl)')
 
             log_step('clicking a bond with a non-fusion fragment leaves fuse preview inactive')
             load_build_query(page, 'methyl')

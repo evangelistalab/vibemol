@@ -141,6 +141,9 @@ are never product defaults. Positions/directions/deltas are Angstrom vectors;
 
 Use `attachFragment` with `entryKind: 'molecule'` and `attachPolicy: 'append'`
 to attach a catalog molecule with the `coordinate` mode to a transition metal.
+For terminal oxo, use `attachFragment` with `entryId: 'oxo'`, `entryKind: 'fragment'`,
+`attachPolicy: 'append'` and `bondOrder: 2` on an open transition-metal site.
+The catalog assigns the oxygen a formal charge of −2. Omit `ligandType` for oxo.
 For metal growth, direction selects the closest open coordination site.
 A full geometry returns `NO_OPEN_SITE`. The optional `ligandType` takes
 `L` (neutral donor) or `X` (a singly anionic donor).
@@ -155,10 +158,15 @@ that existing representation.
 
 `listBuildCatalog()` enumerates the **currently available** catalog, which loads
 asynchronously at startup. Unknown/unloaded IDs fail; no fallback entry is
-selected. `listBuildSites({system,anchor,element|entryId,bondOrder,geometryId?,
-frameQuaternion?})` reuses the halo geometry kernel on owned data. It returns
-world sites, terminal-H members, eligibility reasons and context-bound site IDs;
-hover, cached UI orientation and screen projection are separate test concerns.
+selected. `listBuildSites({system,anchor,element|entryId,entryKind?,bondOrder,
+geometryId?,frameQuaternion?})` reuses the halo geometry kernel on owned data.
+It returns world sites, terminal-H members, eligibility reasons and context-bound site IDs.
+Hover, cached UI orientation and screen projection are separate test concerns.
+For an `entryId` query, `entryKind` defaults to `fragment`. For a coordinating
+molecule such as carbon monoxide on iron, pass `entryKind: 'molecule'`.
+To attach at a site in the active coordination geometry, query with the default
+frame and pass the chosen site's `direction` to `attachFragment` along with the
+same `entryId` and `entryKind`.
 
 `translate(resolved.value, delta)` is an exact atom-set translation, without
 implicit fragment expansion or simulated input. Structural writes on scientific
@@ -204,9 +212,11 @@ fallback to a first atom/site is permitted.
 ## Additive boundary and verification
 
 `tools/audit-edit-api.cjs` compares all 2,502 original app statements against
-main c37bb07, allowing exactly three fingerprinted Testing member changes:
-`setEditSelectionIndices`, `replaceGestureTerminalHydrogen`, and
-`projectHaloGhostToClient`. The other39 members remain byte-identical. There
+main c37bb07. The risk batch changed `setEditSelectionIndices`,
+`replaceGestureTerminalHydrogen`, and `projectHaloGhostToClient`. The later
+`triggerHaloGhostByIndex` fix uses exact integer site IDs and refreshes the
+available sites synchronously. The audit fingerprints those four changes
+and checks the other 38 members byte for byte. There
 are two validated adapters, no retirements and still42 members.
 `performSelectionMoveDrag` is unchanged. Negative controls reject changed
 unrelated getters/statements, mutable API state, altered declared members and

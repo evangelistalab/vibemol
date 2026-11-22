@@ -191,9 +191,9 @@
       if (state.editIntent === EDIT_INTENT.ADD_MOLECULE) {
         const molecule = getCurrentMoleculeDefinition();
         const label = molecule ? `${molecule.name} (${molecule.formula})` : 'molecule';
-        return `Build molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • X/Y/Z align`;
+        return `Build molecule: ${label} • Click to place • Drag to rotate • Click again to confirm • Press \`x\`, \`y\`, or \`z\` to align`;
       }
-      return `Build element: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Right-drag to rotate • Click void to add • Space previews/applies missing H`;
+      return `Build element: ${getElementName(state.editAddElementZ)} (${getElementSymbol(state.editAddElementZ)}) • Right-drag to rotate • Click void to add • \`space\` previews/applies missing H`;
     }
 
     function getEditIntent() {

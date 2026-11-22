@@ -258,6 +258,9 @@ def run_once(browser, url, inject):
                 for mode in ('Display', 'Measure', 'Edit', 'Calculations'):
                     page.locator('#mode' + mode + 'Btn').click()
                     page.evaluate('() => VibeMolCalculations.ready()')
+                    if mode == 'Measure':
+                        # Let the scheduled atom fit finish before pinning the camera.
+                        page.evaluate('() => __vmqa.settle()')
                     if name == 'sample' and mode == 'Calculations':
                         # This fixture keeps its existing cumulative-program contract explicit.
                         page.evaluate("() => VibeMolCalculations.configure({method:'cumulative'})")

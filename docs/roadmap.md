@@ -1,128 +1,61 @@
-# VibeMol Product Roadmap
+# VibeMol product roadmap
 
-Reviewed on **2026-09-10** on `codex/session-save-recovery`, based on local `main` at `c0a543c`. Session save/open and recovery are implemented on this branch and await merge review. Completed items describe repository code; deployment status is tracked separately.
+Reviewed **2026-11-19** after PR #107. Latest deployed runtime: **0.10.11** at `297e608fa88038151fa73edc10362281fc6103db`. See [current handoff](../VIBEMOL_CONTEXT.md) for test, recording and deployment references. This replaces the September branch-local roadmap; sessions are shipped, not awaiting merge.
 
-## Product goals
+## Current priority
 
-- Make molecular visualization fast, reproducible, and beautiful.
-- Support both exploratory work (UI) and scripted pipelines (CLI/notebooks).
-- Keep editing/building intuitive for first-time users and efficient for experts.
-- Make chemistry-aware editing and preservation of user work core workflows.
+**No next product feature is selected.** Complete the handoff and let Francesco choose the next task. Candidate work below is not authorization to begin it. Preserve 37 passing / 0 failing / 37 and the intentionally empty accepted-failure set.
 
-## Delivered on this branch: save, reopen, and recover a complete workspace
+Goals remain fast, reproducible scientific visualization, intuitive editing and preservation of user work, through both UI and supported automation.
 
-**Save session / Open session and browser autosave/recovery now use one format.** The `.vibemol-session` bundle preserves the source data, scene/layer graph, and derived data dependencies. See [Sessions and recovery](sessions.md) for the user workflow, schema, API, and storage limits.
+## Delivered
 
-The beta merge made it possible to assemble multiple scenes, independently styled orbital layers, arithmetic combinations, and synchronized trajectories. Session persistence now complements the narrower existing tools:
-
-- [Presets](../assets/app/js/preset.js) save registered settings and builder operation logs. Import applies them to loaded records; it does not recreate their source data or the scene graph.
-- [Save Structure](../assets/app/js/structure-transport.js) exports the active record's volume, topology, and annotations. It does not export the whole workspace.
-- Appearance autosave in [app.js](../assets/app/js/app.js) stores only settings in the appearance persistence scope.
-- [Scene ownership](scene-architecture.md) remains authoritative during redraws and is now captured/restored explicitly by the session controller.
-
-This provides the foundation for recent sessions, reproducible automation, and movie export. After this branch is reviewed and merged, the next product improvement is **bounded local heavy-atom relaxation and builder reliability**, described below.
-
-### First milestone: portable session round-trip
-
-- [x] Define a versioned session schema and public import/export contract. Reuse the existing preset and structure contracts, with stable source/scene/layer IDs rather than filename-based identity.
-- [x] Include the source data needed to reopen offline, plus edited coordinates, explicit/perceived/suppressed bonds, builder annotations and operation logs, trajectory frames, and vibrational equilibrium/mode data. Restore the edited result directly; operation replay and saved undo history are separate future work.
-- [x] Restore scene/layer names, order, membership, visibility, active scene/layer, per-layer appearance, Molden orbital/grid settings, and arithmetic recipes/dependencies. Retain sources still referenced by moved or copied layers even if their original scene was deleted.
-- [x] Restore camera and playback controls: selected trajectory frame, FPS, loop and synchronization settings, and vibration mode/amplitude/speed/phase. Reopen with playback paused.
-- [x] Validate the entire bundle and dependency graph before replacing the current workspace. Missing assets, unsupported versions, or invalid dependencies must leave the existing workspace intact. Keep renderer objects and disposable grid caches out of the durable schema; deduplicate source payloads.
-- [x] Add a browser round-trip regression that saves a mixed workspace, opens it in a fresh page without re-uploading source files, and checks geometry/topology, layer appearance/order, distinct Molden orbitals, a derived layer chain, and synchronized trajectories. Include duplicate filenames and failed-import cases.
-
-**Done when:** a user can close the page, reopen one session file, and continue working with the same sources, edited structures, layers, view, and playback configuration.
-
-### Following increment: recovery
-
-- [x] Use the same serializer for bounded, asynchronous browser autosave with a last-known-good snapshot and an explicit recovery action.
-- [x] Cover reload/interruption, corrupt snapshots, and storage quota failures. A failed save must preserve the previous recoverable snapshot and expose the failure to the user.
-- [ ] Add recent-session access after recovery storage exists. Browser persistence and portability limits must be documented.
-
-## Implemented baseline
-
-- [x] Multi-scene outliner with stable layer identity across redraws, rename/reorder/move/delete, visibility/focus, and incremental source registration.
-- [x] Portable complete-session save/open; bounded browser autosave with explicit recovery, corruption fallback, quota failure handling, and cross-tab overwrite protection.
-- [x] Independent Molden orbital grids; arithmetic layers with dependency updates, cancellation, worker/fallback execution, and allocation limits.
-- [x] Shared import pipeline with append/replace semantics, per-file errors and partial success; batch PNG targets with graph/camera/playback restoration after success or failure.
-- [x] Multi-frame XYZ playback, frame readouts, per-scene controls, and synchronized trajectories.
-- [x] Vibrational playback from sidecar JSON, ORCA `.hess`, and Psi4 outputs; cropped WebM export from both trajectory and vibration panels.
-- [x] Cube/2C surface and cloud rendering, Molden MO selection/grid controls, normalized-grid hover metrics, and PubChem 3D import.
-- [x] Basic, Toon, and Kit molecule styles; optional shadows; gradient-derived surface normals; WBOIT surface/cloud transparency with a fallback; 2C split-view labels and spinor information.
-- [x] Appearance components: independent display geometry, atom/bond/surface materials, coloring, and lighting. Native Basic/Toon/Kit presets and reusable look/material libraries preserve exact values through sessions and autosave. Additional curated presets remain under evaluation in the real-renderer comparison.
-- [x] Gesture editing, Build palette and selection build cue, move/rotate/transform, snapping, undo/redo, inline coordinates, and new/duplicate structure flows.
-- [x] External XYZ-backed catalog with fragment/molecule kinds, atom/fragment/molecule placement, append/replace-H attachment, and supported ring-fusion preview/commit/cancel flows.
-- [x] Stable builder group metadata and fragment/molecule transform scopes; preset operation-log storage and single-record structure round-trip.
-- [x] Nonmetal bond-order inference/aromatic display, metal-aware bond styles and overrides, reviewed bond cleanup, hydrogen repair, and whole-structure UFF optimization.
-- [x] Symmetry detection, approximate fits, symmetrization preview/apply, and symmetry-element visualization.
-- [x] Quaternion camera rotation; distance/angle/dihedral measurements that refresh with trajectory coordinates in Measure mode.
-- [x] Web presets and drag/drop import, Python render automation, notebook embedding/postMessage loading, and a VS Code webview package.
-- [x] Modular scene/source/export/outliner, arithmetic, grid-cache, and trajectory controllers; deep GPU disposal and autoiso worker/cache handling.
-- [x] Node unit tests and Playwright smoke/focused regressions, wired into `make test` and GitHub Actions. See [Makefile](../Makefile), [CI](../.github/workflows/ci.yml), [smoke tests](../tests/e2e/smoke.py), and [focused regressions](../tests/e2e/premerge.py).
-
-## Obsolete backlog wording and corrected scope
-
-These items should no longer be scheduled as entirely new features. Remaining work is narrower than the previous roadmap implied.
-
-| Previous item | Current implementation and remaining scope |
+| Area | Current capability |
 | --- | --- |
-| Split atoms, fragments, and molecules; add fragment/molecule identity | Catalog kinds, placement modes, stable group metadata, and group-aware transforms already exist in [fragments.js](../assets/app/js/fragments.js), [structure.js](../assets/app/js/structure.js), and `app.js`. Improve discoverability, scope/pivot feedback, and behavior after edits rather than introducing a second identity system. |
-| Finish append / replace-H / fuse-ring attachment | [edit-placement.js](../assets/app/js/edit-placement.js) already implements these paths, including ring-fusion preview/commit/cancel for supported templates. Broader fusion chemistry, edge-case validation, and clearer placement warnings remain. |
-| Add builder operation and metadata persistence | Presets store operation logs; structure export preserves the active record. Sessions now preserve the complete workspace and logs per source. Actual operation replay remains separate future work. |
-| Add local cleanup / relaxation | Bond cleanup, hydrogen repair, local hydrogen-only UFF relaxation, and whole-structure UFF optimization exist. The missing improvement is bounded **local heavy-atom** relaxation after attachment/substitution; see [uff-adapter.js](../assets/app/js/uff-adapter.js). |
-| Add frame index and live measurements | Frame counters and coordinate-driven measurement overlays already exist. Physical simulation time, persistent analysis selections, RMSD traces, and trajectory reports remain. Playback FPS must not be presented as physical simulation time. |
-| Add animated export (GIF / MP4 / WebM) | [trajectory-video.js](../assets/app/js/trajectory-video.js) already provides cropped WebM export for trajectories and vibrations. PNG sequences, GIF/MP4, and a deterministic CLI movie path remain. Batch PNG export currently iterates scenes/layers, not trajectory frames. |
-| Create an end-to-end regression suite | The suite and CI include session recovery. Remaining extensions include broader chemistry fixtures, real recording checks, and additional browsers. |
-| Add autosave; serialize playback in presets | Appearance autosave and vibration preset keys remain available. Sessions now preserve full playback configuration and support complete workspace recovery. |
-| Keep builder hardening first; ongoing refactoring is completed | Replace the old blanket ranking with the ordered milestones below. The scene/arithmetic/trajectory extractions are complete; future refactors should support a specific feature or measured reliability/performance problem. |
+| Workspace | Stable multi-scene/layer identity, visibility/appearance, arithmetic dependencies and bounded grid caching. [Architecture](scene-architecture.md). |
+| Persistence | Portable sessions, retained sources, autosave/recovery, validation before replacement and applied-state verification. Presets/structure transport remain complementary. [Sessions](sessions.md). |
+| Measurements | Persistent distances/angles/dihedrals, live coordinate updates, undo and CSV. [Measurements](measurements.md). |
+| Playback/export | XYZ trajectories, synchronized playback, vibrations, real cropped WebM from both exporters; PNG/XYZ and batch images. |
+| Figures | Publication grids and pinned-browser runner with explicit readiness/environment provenance. [Composer](figure-composer.md), [runner](../api/README.md). |
+| Appearance | Shared geometry/material/color/light settings, portable Looks, named libraries, Style Studio and Object/Look inspector. [Looks](appearance-looks.md). |
+| Scientific ownership | Private source buffers, copy boundaries, sealing and write-trap checks. [Ownership](maintenance/private-scientific-buffers.md). |
+| APIs | Validated twelve-method Edit API, strict first Testing bridge batch, export-only ASET/AVAS interchange. CAS default and approved ROHF/GHF conventions. [Edit](api/edit-build-api.md), [forte2](forte2-interchange.md). |
+| 0.10.3–0.10.8 | Live formula/electron count, mode badges/Help, water tutorial, parser/recovery repairs, conjugated bond matching, UFF aromatic typing, import camera fitting and Edit target/drag/placement repairs. |
+| 0.10.9 | Transition-metal site-based building, ligand/charge/bond controls, XYZ vector arrows and corrected diffuse-basis Molden normalization. [Vectors](xyz-vectors.md). |
+| 0.10.10 | App-settings reset, COM/alignment/gizmo tutorial steps, compact panel tabs with close/add/options. |
+| 0.10.11 | CFOUR `.freq` geometry/modes including touching signed fields; all desktop panels default right, saved placements win, compact screens retain bottom presentation. [Workbench](experiments/workbench/README.md). |
 
-The former Glossy molecule style and its welded connectors remain retired. **Emissive / Satin / Lacquer / Metal / Gel / Ceramic** reproduce the original material recipes across atoms, bonds, and surfaces, with save/open support. Gel replaces Glossy in the Material menu; old saved Glossy materials remain readable. The complete preset menu lists Basic / Classic / Ink / Kit / Opal / Porcelain / Toon alphabetically. Number keys no longer change rendering presets; edit-mode bond-order shortcuts remain available. Material controls are shared across atoms, bonds, and surfaces; studio presets include their complete lighting and tone mapping.
+The original 0.11 paired-control census found **zero same-scope divergences**, superseding the historical five of fourteen. Keep its invariant; it did not justify starting a command bus. [Decision](maintenance/paired-controls-invariant.md).
 
-Material opens from a section closed by default, with all material properties directly inside it. The former Ink outlines and Blackbody coloring toggles and their rendering code are retired; older saved flags are ignored. The curated Ink preset uses the standard material and contour controls.
+## Paused or held
 
-## Subsequent priorities
+- **AI connector:** paused; shell, adapter and consent reverted from main. Preserve local prototypes/designs; never merge the prototype or widen the Edit audit for it. [Historical consent design](connector-consent.md).
+- **Command bus/declarative controls:** stopped at the measurement gate. No Phase 0 or bus.
+- **General undo:** design-only; existing Edit/measurement undo stays. Buffer ownership has shipped.
+- **Testing wrappers after batch 1:** held, including isolated fragment-cue review. Retain `performSelectionMoveDrag` and native-click suites.
+- **Browser sharding:** needs new scope and timing analysis; one Looks duration is not a stable allocation basis.
+- **Placement policy #55:** justified, not scheduled. The strict guard supplies the checking/data model; runtime placement is missing. Twelve exact latent pairs are not ordinary accepted failures; coverage remains incomplete. [Audit](maintenance/coordinates-placement-policy.md), [0.11 evidence](maintenance/0.11-controls-evidence.md).
+- **Runner migration #81:** Ubuntu 24.04 stays pinned. OS-key caches before unpinning, centralize the pin in that pass and recheck Figure CDP classification when moving Chrome.
+- **Clamp/relocations:** preserve branches/evidence. Write-only bindings ride with the first authorized relocation, not this handoff.
 
-### 2. Local geometry cleanup and builder reliability
+Open/unclassified #42/#70, carried #71 and placement findings retain their ledger dispositions. Later passes do not close them. [The ledger](../tests/baselines/carried-defects.json) includes historical `relativeBatchPriority` text for closed #53; it is not a current work order.
 
-- [ ] Add bounded local heavy-atom relaxation after fragment attachment or substitution, reusing the UFF adapter. Show the affected region, allow preview/apply/cancel, keep remote atoms fixed, preserve topology, and make the result one undoable edit.
-- [ ] Expand fixtures for replace-H, ring fusion, steric clashes, unusual valence, and unsupported force-field types. Improve explanations and override affordances using the existing placement warnings and chemistry policies.
-- [ ] Refine existing fragment/molecule transform scopes, pivot choice, and selection feedback; verify group metadata through deletion, duplication, and session round-trip.
+## Candidate work awaiting selection
 
-### 3. Reproducibility and integration contracts
+These extend working features rather than introduce missing foundations:
 
-- [ ] Publish a Web / CLI / Notebook / VS Code compatibility matrix covering imports, presets/sessions, editing, scene/layer access, and exports. Turn documented differences into focused regression cases.
-- [ ] Define schema/version compatibility for presets, structures, sessions, and embed messages. Preserve existing aliases and relaxed-mode unknown-key round-tripping where supported.
-- [ ] Add packaging checks for the VS Code app copy and document source-versus-bundled version provenance. The existing copy/prepublish script is a foundation, not a missing packaging pipeline.
-- [ ] Build deterministic frame-sequence export from an explicit session/playback specification, then evaluate CLI movies and GIF/MP4 encoding. Camera paths and export overlays need their own specification; they are not current preset capabilities.
+- **Editing:** bounded local heavy-atom relaxation after attachment/substitution, with affected-region feedback, preview/cancel and one undo action; broader clash/valence/force-field fixtures. Whole-structure UFF and hydrogen cleanup already exist.
+- **Chemistry-aware starting bond distances (Build review A6).** Deferred. Build places CO on an octahedral Fe site at 2.026 Å using the generic UFF Fe–C single-bond estimate, which it also uses for bare carbon. The goal is a versioned reference library keyed by donor, binding mode, and metal environment, with measured distances and their sources. Start with terminal carbonyls and gather octahedral Fe–CO references before selecting a default for that geometry. Use one lookup for the halo preview, click and drag placement, and the Edit API, with UFF or covalent-radius estimates as fallbacks. Validate placement against independent structures. [Gas-phase Fe(CO)₅ measurements](https://pubmed.ncbi.nlm.nih.gov/11300842/)
+- **Integration:** Web/CLI/notebook/VS Code compatibility, packaging provenance, schema compatibility and automation use cases. Connector restart/interchange import require separate scope.
+- **Scientific validation/performance:** repeatable timing/memory and chemistry measurements, repeated disposal checks and accuracy documentation. UFF heteroaromatic equalization is a known approximation.
+- **Analysis/export:** physical trajectory time, stable-mapping RMSD, trajectory reports, deterministic frame sequences/CLI movies, general synchronized comparisons and recent-session access. Persistent measurements, CSV, Figure grids and real WebM completion already exist.
 
-### 4. Scientific validation and performance
+Reaction Guess Camera and VibeDJ remain unscheduled ideas. No old phase label or unchecked item selects a release scope.
 
-- [ ] Broaden symmetry and metal-coordination reference fixtures, document supported cases and uncertainty, and improve fit/cleanup feedback.
-- [ ] Establish repeatable timing and memory benchmarks for large molecules, long trajectories, multiple orbital layers, and dependent arithmetic. Set budgets from measured baselines and check repeated load/edit/export/dispose cycles.
-- [ ] Extend existing Chromium automation with representative Firefox/WebKit checks, WBOIT activation/fallback cases, and real encoded-video validation. Current video smoke coverage includes a mocked recorder.
-- [ ] Continue user documentation for builder, symmetry, metal bonding, and multi-scene workflows alongside those tests.
+## Delivery discipline
 
-### 5. Analysis and comparison workflows
+Report the mechanism before product changes. Keep units below 15 dependencies; audit construction order on extraction. Run every local audit before pushing a product candidate. Require all 37 suites, completion counts, captures twice/exact repeat, cache identities, units, WebKit, construction and the 260-binding AST ratchet.
 
-- [ ] Add physical-time metadata/input and RMSD traces, with stable atom mapping and reference-frame selection.
-- [ ] Extend live measurements into persistent selections and CSV/JSON reports over trajectories.
-- [ ] Add side-by-side comparison with a shared/synchronized camera. Existing multi-scene rendering and 2C split view do not provide a general comparison layout.
-- [ ] Evaluate task-oriented startup presets once common session workflows are documented.
+Preserve failures and log comparands. Retries, accepted failures and capture changes require authorization. Capture approvals enumerate exact changes with zero residual difference. Enumerate intended visible changes individually, holding everything else to the accepted captures; the old 0.10.0 zero-visible-change promise does not describe a feature release.
 
-## Deferred exploration
-
-Reaction Guess Camera (activity-based trajectory framing) and VibeDJ (procedural audio/visual pulses) remain unimplemented ideas. They are removed from the active delivery backlog until a concrete use case justifies their priority. They are neither completed work nor commitments for the next release. Any future prototype remains opt-in.
-
-## Delivery approach
-
-- Keep portable session round-trip and recovery on the same versioned serializer.
-- Keep the current regression gates; add targeted coverage with each milestone.
-- Refactor along the ownership boundaries in [Scene architecture](scene-architecture.md). Avoid serializing renderer state or expanding `app.js` with a second persistence system.
-- Revisit priorities after session save/recovery is usable and local-cleanup behavior has been evaluated on representative structures.
-
-## 0.11 architecture evidence
-
-[Controls maintenance evidence](maintenance/0.11-controls-evidence.md) records
-the Escape matrix cost and the placement model already computed by the strict
-guard. These are inputs to future evaluation, not scheduled tasks or a new
-implementation plan.
+Pushing main publishes production; beta is retired. Follow local merge/tree and deployment verification in [AGENTS](../AGENTS.md) and [asset versioning](asset-versioning.md).

@@ -309,4 +309,7 @@ body.vm-workbench #toolbar { width: var(--workspace-sidebar-width); box-sizing: 
 @container workbench-bar (min-width: 421px) and (max-width: 900px) {
   .wb-bar #toolbarModeRow { width: 300px; }
   .wb-bar #toolbarModeRow .tb-modeBtn { font-size: 11px; padding-inline: 4px; }
+  .wb-bar .wb-edit-tools { padding-right: 2px; margin-right: 0; }
+  .wb-bar .wb-edit-tool-radio { gap: 3px; padding-inline: 3px; }
+  .wb-bar .wb-edit-tool-radio .tb-mode-shortcut { min-width: 14px; }
 }

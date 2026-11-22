@@ -11,14 +11,16 @@
     const placement = state.placement || {};
     const kind = placement.kind || entity.kind || 'atom';
     const object = kind === 'atom' ? 'this atom' : `this ${kind}${placement.name || entity.name ? ` (${placement.name || entity.name})` : ''}`;
+    const discard = placement.stage === 'halo' ? '`esc` discards' : `\`esc\` discards ${object}`;
     const action = kind === 'fused ring' ? 'Drag to spin around bond · Click again to place'
-      : state.placement?.stage === 'catalog' ? 'Drag to rotate · Click again to place · X/Y/Z align'
+      : state.placement?.stage === 'catalog' ? 'Drag to rotate · Click again to place · Press `x`, `y`, or `z` to align'
+      : placement.stage === 'halo' ? `${placement.name} placement pending · Adjust location`
       : 'Adjust location';
-    const hint = state.dragging ? 'Drag to transform · Esc cancels drag'
+    const hint = state.dragging ? 'Drag to transform · `esc` cancels drag'
       : build ? state.placing
-      ? `${action}${state.confirmable ? ' · Enter confirms' : ''} · Esc discards ${object}`
-      : `Click to place ${name} · Right-drag to rotate · Esc switches to Transform`
-      : `Left-click atoms or bonds to select · ${escape === 'clear' ? 'Esc clears selection' : escape === 'close-build' ? 'Esc closes Build' : 'Right-drag to rotate'} · / opens Build`;
+      ? `${action}${state.confirmable ? ' · `return` confirms' : ''} · ${discard}`
+      : `Click to place ${name} · Right-drag to rotate · \`esc\` switches to Transform`
+      : `Left-click atoms or bonds to select · ${escape === 'clear' ? '`esc` clears selection' : escape === 'close-build' ? '`esc` closes Build' : 'Right-drag to rotate'} · \`/\` opens Build`;
     return { build, name, badge, hint };
   }
 
@@ -112,9 +114,16 @@
       strip = document.createElement('div'); strip.id = 'editToolStrip'; strip.className = 'wb-edit-tools';
       strip.setAttribute('role', 'radiogroup'); strip.setAttribute('aria-label', 'Edit tool');
       transform = document.createElement('button'); transform.id = 'editTransformToolBtn'; transform.type = 'button'; transform.textContent = 'Transform';
+      transform.setAttribute('aria-keyshortcuts', 'w');
       build = buildButton; build.replaceChildren(document.createTextNode('Build'));
-      entity = document.createElement('span'); entity.className = 'vm-tool-badge'; build.append(entity);
+      entity = document.createElement('span'); entity.className = 'vm-tool-badge';
+      build.append(entity);
       for (const button of [build, transform]) {
+        const shortcut = document.createElement('kbd');
+        shortcut.className = 'vm-key-pill tb-mode-shortcut';
+        shortcut.setAttribute('aria-hidden', 'true');
+        shortcut.textContent = button.getAttribute('aria-keyshortcuts');
+        button.append(shortcut);
         button.className = 'vm-btn vm-btn--ghost wb-edit-tool-radio';
         button.setAttribute('role', 'radio'); button.removeAttribute('aria-pressed');
         button.removeAttribute('aria-expanded'); button.removeAttribute('aria-haspopup');

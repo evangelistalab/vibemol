@@ -30,7 +30,7 @@ SYMBOL_TO_Z = {sym.upper(): z for z, sym in enumerate(ELEMENT_SYMBOLS) if z > 0}
 
 CATALOG_KIND_FRAGMENT = "fragment"
 CATALOG_KIND_MOLECULE = "molecule"
-FRAGMENT_ATTACH_MODES = {"append", "replace_h", "fuse_ring"}
+FRAGMENT_ATTACH_MODES = {"append", "replace_h", "fuse_ring", "coordinate"}
 
 KNOWN_ENTRY_KEYS = {
     "kind",
@@ -264,8 +264,9 @@ def normalize_entry(entry: dict, manifest_dir: Path, refresh_formula: bool) -> T
     kind = normalize_kind(entry.get("kind"))
     tags = normalize_tags(entry.get("tags", []))
     bonds = normalize_bonds(entry.get("bonds", []), natoms, entry_id)
-    formula_existing = str(entry.get("formula", "")).strip()
-    formula = infer_formula(symbols) if refresh_formula or not formula_existing else formula_existing
+    formula = str(entry.get("formula", "")).strip()
+    if not formula or (refresh_formula and "metalDonorCharge" not in entry):
+        formula = infer_formula(symbols)
 
     normalized = {
         "kind": kind,
@@ -296,6 +297,10 @@ def normalize_entry(entry: dict, manifest_dir: Path, refresh_formula: bool) -> T
         pbo = max(1, min(4, pbo))
 
         attach_modes = normalize_attach_modes(entry.get("attachModes", []))
+        if "coordinate" in attach_modes:
+            charge = entry.get("metalDonorCharge")
+            if attach_modes != ["coordinate"] or type(charge) is not int or charge >= 0:
+                raise SyncError(f"entry '{entry_id}': coordinate fragments require an exclusive mode and a negative integer metalDonorCharge")
         fuse_pair = normalize_fuse_bond_local_pair(entry.get("fuseBondLocalPair"), natoms, entry_id)
         if "fuse_ring" in attach_modes and fuse_pair is None:
             notes.append(f"entry '{entry_id}': fuse_ring listed but fuseBondLocalPair missing")

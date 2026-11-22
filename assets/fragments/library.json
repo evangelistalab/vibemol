@@ -694,6 +694,29 @@
     },
     {
       "kind": "fragment",
+      "id": "oxo",
+      "name": "Oxo",
+      "formula": "O²⁻",
+      "tags": [
+        "oxido",
+        "oxide"
+      ],
+      "xyz": "./oxo.xyz",
+      "bonds": [],
+      "connectionAtomIndex": 0,
+      "preferredBondOrder": 2,
+      "linkBondDirection": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "attachModes": [
+        "coordinate"
+      ],
+      "metalDonorCharge": -2
+    },
+    {
+      "kind": "fragment",
       "id": "phenyl",
       "name": "Phenyl",
       "formula": "C6H5",

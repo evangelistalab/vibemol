@@ -50,7 +50,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  const api=surface(source),old=surface(baseline,{requireProduct:false});
  const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
  assert.deepEqual(api.testing,old.testing,'Testing members changed');
- assert.deepEqual(Object.keys(testingChanges).sort(),['projectHaloGhostToClient','replaceGestureTerminalHydrogen','setEditSelectionIndices'],'Exactly the three authorized Testing changes');
+ assert.deepEqual(Object.keys(testingChanges).sort(),['projectHaloGhostToClient','replaceGestureTerminalHydrogen','setEditSelectionIndices','triggerHaloGhostByIndex'],'Exactly the four authorized Testing changes');
  for(const name of api.testing){
   const change=testingChanges[name];
   if(change){assert.equal(hash(old.testingMembers[name]),change.before,name+' original fingerprint');assert.equal(hash(api.testingMembers[name]),change.after,name+' changed fingerprint');}
@@ -102,7 +102,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
    assert(!appliedProductChanges.has(name),'Product change must occur once');appliedProductChanges.add(name);
    if(change.before===null) {
     assert([
-      'statement:tutorialConnection','isEditTargetHidden','prepareOutlinerEditTarget',
+      'statement:tutorialConnection','statement:bindTransformShortcut','isEditTargetHidden','prepareOutlinerEditTarget',
       'statement:metalGrowPreview','beginCatalogMetalDrag','finishCatalogMetalDrag','showMetalBuildPressSites',
       'applyCatalogLigandAtMetal','attachCatalogDonorAtPointer','buildXyzVectorArrows','commitAtomAtHaloGhost','describeMetalLigandMoves',
       'getBuildMetalLigandType','getDisplayedMetalBondStyle','getOpenMetalPlacement',
