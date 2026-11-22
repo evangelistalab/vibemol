@@ -24,13 +24,18 @@ class PremergeEntrypointTests(unittest.TestCase):
                           'persistence', 'batch_export', 'orbital_group_appearance', 'molden_group_appearance',
                           'molden_browsing', 'arithmetic', 'synchronized_trajectories')
         calls = []
+        def commands(original_browser, url):
+            self.assertIs(original_browser, browser)
+            self.assertEqual(url, 'http://fixture')
+            self.assertEqual(browser.new_context.call_count, 17)
+            calls.append('commands')
         def matrix(output):
             browser.close.assert_called_once_with()
             self.assertEqual(output, premerge.ARTIFACTS/'validated-edit-api')
             calls.append('matrix')
         def bridges(output):
             browser.close.assert_called_once_with()
-            self.assertEqual(calls, ['matrix'])
+            self.assertEqual(calls, ['commands', 'matrix'])
             self.assertEqual(output, premerge.ARTIFACTS/'edit-testing-adapters')
             calls.append('bridges')
         with contextlib.ExitStack() as stack:
@@ -41,10 +46,11 @@ class PremergeEntrypointTests(unittest.TestCase):
                 stub.__name__ = name
                 stack.enter_context(patch.object(premerge, name, stub))
             stack.enter_context(patch.object(atomic_identity, 'run', lambda page, dialogs: None))
+            stack.enter_context(patch.object(premerge, 'run_commands', commands))
             stack.enter_context(patch.object(edit_api, 'run_matrix', matrix))
             stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
-        self.assertEqual(calls, ['matrix', 'bridges'])
+        self.assertEqual(calls, ['commands', 'matrix', 'bridges'])
         self.assertEqual(browser.new_context.call_count, 17)
 
 

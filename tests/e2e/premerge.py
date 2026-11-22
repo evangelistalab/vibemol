@@ -1032,6 +1032,101 @@ def synchronized_trajectories(page, dialogs):
     assert rows.nth(1).get_by_label('FPS', exact=True).is_disabled()
 
 
+def commands(page):
+    def check(label, actual, expected):
+        row = dict(case=label, actual=actual, expected=expected)
+        print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
+        assert json.dumps(actual, sort_keys=True) == json.dumps(expected, sort_keys=True), row
+
+    def invoke(id_, params=None, *, target=None):
+        active = page if target is None else target
+        return active.evaluate('({id, params}) => VibeMolCommands.run(id, params)', dict(id=id_, params=params or {}))
+
+    def success(id_, params=None, *, target=None, wrapped=False):
+        result = invoke(id_, params, target=target)
+        check(id_ + ' command result', True if result['ok'] is True else result, True)
+        value = result.get('value')
+        if wrapped:
+            check(id_ + ' product result', True if value['ok'] is True else value, True)
+            return value['value']
+        return value
+
+    app_version = re.search(r"const APP_VERSION = '([^']+)'",
+                            (ROOT / 'assets/app/js/asset-urls.js').read_text())[1]
+    check('app.info versions', success('app.info'), dict(appVersion=app_version, commandVersion=1))
+    water = (ROOT / 'assets/fragments/water.xyz').read_text()
+    check('loaded water', success('files.load', {'files': [{'name': 'water.xyz', 'text': water}]}),
+          dict(ok=True, loadedCount=1, loadedNames=['water.xyz']))
+    check('entered Edit', success('edit.enter', {'tool': 'transform'}, wrapped=True),
+          dict(mode='edit', tool='transform'))
+    atoms = success('edit.context', wrapped=True)['atoms']
+    check('water atom labels', [atom['label'] for atom in atoms], ['O1', 'H1', 'H2'])
+    selection = dict(atomIds=[atoms[0]['id'], atoms[1]['id']], indices=[0, 1], count=2)
+    check('set two atoms', success('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['O1', 'H1']}},
+                                   wrapped=True), selection)
+    check('read two atoms', success('edit.getSelection', wrapped=True), selection)
+
+    basis = success('calculations.ready')
+    check('oxygen basis', isinstance(basis, dict) and bool(basis.get('8')), True)
+    success('calculations.selectShell', {'index': 0, 'shell': '2p'})
+    success('calculations.configure', {'method': 'cumulative', 'sigma': 0.9})
+    state = success('calculations.state')
+    check('shell assignment', state['selections'], [{'id': atoms[0]['id'], 'shells': {'2p': 'all'}}])
+    check('applied AVAS options', [state['options'][key] for key in ('method', 'sigma')], ['cumulative', 0.9])
+    avas = success('forte2.export', {'avas': {}}, wrapped=True)
+    check('exported AVAS arguments', avas['avas']['arguments'],
+          dict(subspace=['O(2p)'], selection_method='cumulative', sigma=0.9, diagonalize=True))
+
+    structure = json.loads(success('structure.export'))['volume']
+    text = success('session.export')
+    check('exported session text', isinstance(text, str) and bool(text), True)
+    context = page.context.browser.new_context(viewport=page.viewport_size)
+    reopened = context.new_page()
+    errors = []
+    reopened.on('pageerror', lambda error: errors.append(str(error)))
+    try:
+        reopened.goto(page.url, wait_until='domcontentloaded')
+        reopened.wait_for_function('() => !!window.VibeMolCommands')
+        imported = success('session.import', {'text': text}, target=reopened)
+        check('session import counts', [imported[key] for key in ('ok', 'sceneCount', 'sourceCount')], [True, 1, 1])
+        check('restored structure', json.loads(success('structure.export', target=reopened))['volume'], structure)
+        check('restored mode', success('edit.context', target=reopened, wrapped=True)['mode'], 'display')
+        check('restored selection', success('edit.getSelection', target=reopened, wrapped=True),
+              dict(atomIds=[], indices=[], count=0))
+        check('reopened page errors', errors, [])
+    except Exception:
+        write_failure_artifacts(reopened, ARTIFACTS, 'premerge-commands-reopened', errors, [])
+        raise
+    finally:
+        context.close()
+
+    check('invalid params envelope', invoke('edit.setSelection'), {
+        'ok': False, 'error': {'code': 'invalid-params', 'message': 'Invalid command parameters',
+                               'details': [{'path': '$.selector', 'message': 'Required property'}]},
+    })
+    check('unknown command envelope', invoke('app.unknown'),
+          {'ok': False, 'error': {'code': 'unknown-command', 'message': 'Unknown command id'}})
+
+
+def run_commands(browser, url):
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    page = context.new_page()
+    errors, console_errors = [], []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
+    try:
+        page.goto(url, wait_until='domcontentloaded')
+        page.wait_for_function('() => !!window.VibeMolCommands')
+        commands(page)
+        print('[premerge commands] ' + json.dumps(dict(case='page errors', actual=errors, expected=[])), flush=True)
+        assert not errors, errors
+    except Exception:
+        write_failure_artifacts(page, ARTIFACTS, 'premerge-commands', errors, console_errors)
+        raise
+    finally:
+        context.close()
+
+
 def main():
     from atomic_identity import run as atomic_identity
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
@@ -1060,6 +1155,7 @@ def main():
                     raise
                 finally:
                     context.close()
+            run_commands(browser, url)
         finally:
             browser.close()
     from edit_api import run_matrix as edit_api_matrix
