@@ -1,0 +1,19 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "vibemol-widget"
+version = "0.1.0"
+description = "VibeMol's two-way notebook viewer"
+requires-python = ">=3.10"
+dependencies = ["anywidget>=0.9", "traitlets"]
+
+[project.optional-dependencies]
+test = ["pytest", "playwright==1.64.1", "jupyterlab>=4,<5", "ipykernel"]
+
+[tool.hatch.build.targets.wheel]
+packages = ["vibemol"]
+
+[tool.pytest.ini_options]
+markers = ["slow: starts JupyterLab and runs the demo in a browser"]
