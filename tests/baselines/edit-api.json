@@ -1912,8 +1912,8 @@
     },
     "accumulateMoldenShellContribution": {
       "before": "368e9cedd07585e20a2ec2974b6c9f16dd917fe0c549409799c22b5aaef1622d",
-      "after": "4f79bf65eedf3be43af29ad3c220ed86814ead25167b02e2e3489dad24888d9e",
-      "reason": "Normalize Molden Gaussian primitives and angular components before evaluating molecular orbitals.",
+      "after": "dd54bade25dabf3ff49398db8ed5ffd76a62fb2fb4438a8e417460194427104e",
+      "reason": "Normalize Molden Gaussian primitives and angular components, and evaluate spherical and Cartesian g shells, before evaluating molecular orbitals.",
       "units": [
         {
           "file": "app.js",

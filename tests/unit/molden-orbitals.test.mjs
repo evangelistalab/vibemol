@@ -2,12 +2,16 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import vm from 'node:vm';
+import { loadGlobalModule } from './load-global-module.mjs';
 
 const source = readFileSync(new URL('../../assets/app/js/app.js', import.meta.url), 'utf8');
-const start = source.indexOf('  function accumulateMoldenShellContribution(');
-const end = source.indexOf('\n  }\n', start);
-assert.ok(start >= 0 && end > start, 'Expected the app’s Molden shell evaluator');
-const accumulate = vm.runInNewContext(`(${source.slice(start, end + 4)})`);
+function extractFunction(name) {
+  const start = source.indexOf(`  function ${name}(`);
+  const end = source.indexOf('\n  }\n', start);
+  assert.ok(start >= 0 && end > start, `Expected the app’s ${name} function`);
+  return vm.runInNewContext(`(${source.slice(start, end + 4)})`);
+}
+const accumulate = extractFunction('accumulateMoldenShellContribution');
 
 // PySCF 2.13.0 GTO values at these Bohr coordinates, in Molden AO order.
 // The Cartesian values are divided by the square roots of the AO overlap
@@ -80,5 +84,63 @@ for (const { label, spherical, contractions, pContractions, expected } of cases)
           `AO ${component + 1} at ${point} Bohr: actual ${data[0]}, expected ${reference} within 1e-7`);
       }
     }
+  });
+}
+
+const fixtureDir = new URL('../fixtures/molden-g/', import.meta.url);
+const reference = JSON.parse(readFileSync(new URL('molden_g_reference.json', fixtureDir), 'utf8'));
+const { parseMolden } = loadGlobalModule('assets/app/js/parsers.js', {
+  globals: { ATOM_SYMBOL_TO_Z: { NE: 10 } },
+}).VibeMolParsers;
+const buildAxis = extractFunction('buildMoldenAxisTables');
+const countFunctions = extractFunction('countMoldenShellFunctionCount');
+
+function evaluateNeOrbital(point, molden, moIndex) {
+  const data = new Float32Array(1);
+  const axes = point.map(coordinate => buildAxis(1, coordinate, 0, 0));
+  const coefficients = molden.mos[moIndex].coefficients;
+  const { angularFlags } = molden;
+  let offset = 0;
+  for (const { shells } of molden.basis.atomBlocks) {
+    for (const shell of shells) {
+      const end = offset + countFunctions(shell.label, angularFlags);
+      accumulate(data, [1, 1, 1], ...axes, shell, coefficients.subarray(offset, end), angularFlags);
+      offset = end;
+    }
+  }
+  assert.equal(offset, coefficients.length);
+  return data[0];
+}
+
+for (const representation of ['spherical', 'cartesian']) {
+  test(`Molden ${representation} g-shell MOs agree at 64 reference points`, () => {
+    const { file, mos, values } = reference[representation];
+    const { points_bohr: pointsBohr } = reference;
+    const volume = parseMolden(readFileSync(new URL(file, fixtureDir), 'utf8'));
+    assert.equal(pointsBohr.length, 64);
+    assert.equal(mos.length, representation === 'spherical' ? 9 : 15);
+    assert.equal(values.length, mos.length);
+    assert.deepEqual(Array.from(volume.atoms, ({ Z, x, y, z }) => [Z, x, y, z]), [[10, 0, 0, 0]]);
+    assert.equal(volume.molden.angularFlags.g, representation);
+    const failures = [];
+    for (const [row, moIndex] of mos.entries()) {
+      const expected = values[row];
+      assert.equal(expected.length, 64);
+      const maxReference = Math.max(...expected.map(Math.abs));
+      const limit = 2e-6 * maxReference;
+      try {
+        const actual = pointsBohr.map(point => evaluateNeOrbital(point, volume.molden, moIndex));
+        // Compare signed amplitudes directly. The Molden coefficients fix the phase.
+        const maxError = Math.max(...actual.map((value, index) => Math.abs(value - expected[index])));
+        const result = { representation, moIndex, points: actual.length, maxReference, maxError, limit };
+        console.log('[molden-g-mo] ' + JSON.stringify(result));
+        if (!(maxError <= limit)) failures.push(result);
+      } catch (error) {
+        const result = { representation, moIndex, maxReference, limit, error: error.message };
+        console.log('[molden-g-mo] ' + JSON.stringify(result));
+        failures.push(result);
+      }
+    }
+    assert.deepEqual(failures, []);
   });
 }

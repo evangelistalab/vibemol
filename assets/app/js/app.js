@@ -11046,7 +11046,7 @@
 
   /**
    * Evaluate one Molden shell contribution into a scalar orbital grid.
-   * Supports s/p/sp/d/f shells. G shells are rejected explicitly for now.
+   * Supports s/p/sp/d/f/g shells in Molden order.
    * @param {Float32Array} data
    * @param {number[]} nxyz
    * @param {{coord:Float64Array,sq:Float64Array}} xAxis
@@ -11058,14 +11058,12 @@
    */
   function accumulateMoldenShellContribution(data, nxyz, xAxis, yAxis, zAxis, shell, moCoefficients, angularFlags) {
     const shellLabel = String(shell && shell.label || '').trim().toLowerCase();
-    if (shellLabel === 'g') {
-      throw new Error('Molden MO rendering does not yet support g shells.');
-    }
-    const angularMomentum = ['s', 'p', 'd', 'f'].indexOf(shellLabel === 'sp' ? 's' : shellLabel);
+    const angularMomentum = ['s', 'p', 'd', 'f', 'g'].indexOf(shellLabel === 'sp' ? 's' : shellLabel);
     if (angularMomentum < 0) throw new Error(`Unsupported Molden shell label "${shellLabel}".`);
-    const axialMoment = [1, 1, 3, 15][angularMomentum]; // (2L - 1)!!
+    const axialMoment = [1, 1, 3, 15, 105][angularMomentum]; // (2L - 1)!!
     const sphericalD = angularFlags?.d === 'spherical';
     const sphericalF = angularFlags?.f === 'spherical';
+    const sphericalG = angularFlags?.g === 'spherical';
     // Radial factors normalize the axial Cartesian primitive. Apply the
     // remaining angular factors to the MO weights once per shell.
     let angularFactors;
@@ -11082,6 +11080,16 @@
       angularFactors = sphericalF
         ? [0.5, f1, f1, sqrt15 / 2, sqrt15, f3, f3]
         : [1, 1, 1, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt15];
+    } else if (shellLabel === 'g') {
+      const sqrt5 = Math.sqrt(5);
+      const sqrt7 = Math.sqrt(7);
+      const sqrt35 = Math.sqrt(35);
+      const g1 = Math.sqrt(5 / 8);
+      const g3 = Math.sqrt(35 / 8);
+      const pairs = Math.sqrt(105) / 3;
+      angularFactors = sphericalG
+        ? [1 / 8, g1, g1, sqrt5 / 4, sqrt5 / 2, g3, g3, sqrt35 / 8, sqrt35 / 2]
+        : [1, 1, 1, sqrt7, sqrt7, sqrt7, sqrt7, sqrt7, sqrt7, pairs, pairs, pairs, sqrt35, sqrt35, sqrt35];
     }
     const coeffs = angularFactors
       ? Float64Array.from(moCoefficients, (value, index) => value * angularFactors[index])
@@ -11183,6 +11191,40 @@
                 coeffs[7] * (y * zz) +
                 coeffs[8] * (yy * z) +
                 coeffs[9] * xyz
+              );
+            }
+          } else if (shellLabel === 'g') {
+            if (sphericalG) {
+              const transverseSq = xx + yy;
+              const g2 = 6 * zz - transverseSq;
+              value = radial0 * (
+                coeffs[0] * (8 * zz * zz - 24 * zz * transverseSq + 3 * transverseSq * transverseSq) +
+                coeffs[1] * (xz * (4 * zz - 3 * transverseSq)) +
+                coeffs[2] * (yz * (4 * zz - 3 * transverseSq)) +
+                coeffs[3] * ((xx - yy) * g2) +
+                coeffs[4] * (xy * g2) +
+                coeffs[5] * (xz * (xx - 3 * yy)) +
+                coeffs[6] * (yz * (3 * xx - yy)) +
+                coeffs[7] * (xx * xx - 6 * xx * yy + yy * yy) +
+                coeffs[8] * (xy * (xx - yy))
+              );
+            } else {
+              value = radial0 * (
+                coeffs[0] * (xx * xx) +
+                coeffs[1] * (yy * yy) +
+                coeffs[2] * (zz * zz) +
+                coeffs[3] * (xx * xy) +
+                coeffs[4] * (xx * xz) +
+                coeffs[5] * (yy * xy) +
+                coeffs[6] * (yy * yz) +
+                coeffs[7] * (zz * xz) +
+                coeffs[8] * (zz * yz) +
+                coeffs[9] * (xx * yy) +
+                coeffs[10] * (xx * zz) +
+                coeffs[11] * (yy * zz) +
+                coeffs[12] * (x * xyz) +
+                coeffs[13] * (y * xyz) +
+                coeffs[14] * (z * xyz)
               );
             }
           }
