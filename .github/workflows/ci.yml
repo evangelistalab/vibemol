@@ -243,3 +243,27 @@ jobs:
           name: webkit-properties
           path: out/test-artifacts/
           if-no-files-found: ignore
+
+  python-widget:
+    name: Python notebook widget
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12.15'
+      - name: Install widget and test dependencies
+        run: python -m pip install './python[test]'
+      - name: Install Playwright Chromium
+        run: |
+          bash tools/ci/use-ubuntu-archive.sh
+          python -m playwright install --with-deps chromium
+      - name: Test the widget and run the JupyterLab notebook
+        run: |
+          python -m pytest -q python/tests/test_viewer.py python/tests/test_widget_browser.py python/tests/test_notebook_smoke.py
+      - name: Upload the JupyterLab screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: python-widget
+          path: out/test-artifacts/python-widget/viewer_demo.png
+          if-no-files-found: error
