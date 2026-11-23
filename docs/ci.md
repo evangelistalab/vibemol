@@ -29,6 +29,10 @@ Both joins require identical commit/tree, app/QA/golden/manifest hashes and CI r
 
 For wall-time comparisons, use workflow creation to the latest job completion, and report queue/setup/artifact overhead as part of the observed result. Do not sum parallel job durations. Compare the critical path and cache-hit status separately. If Smoke becomes the measured critical path, propose a themed-file split for review before changing it.
 
+## Notebook smoke evidence
+
+The widget smoke waits for an idle JupyterLab kernel and a dialog-free notebook before the first input. Each Shift+Enter must advance its cell prompt before the output checks begin. The test logs prompts, kernel state, open dialogs, focus, input delivery, elapsed time and the server log tail on pass and failure. It verifies a presented, non-blank VibeMol canvas and checks the same region in the saved PNG. Failures save a full-page diagnostic screenshot in the test artifact directory.
+
 ## Additional Stage 5 gates
 
 The eleven-job layout and both aggregate joins remain unchanged. The checks/unit job now requires the inverse construction-order audit in `tests/baselines/stage5/construction-order.json`; its separate artifact makes ten core artifacts, plus optional WebKit output. The self-test includes old-wrapper parameters and an early reading closure inside an existing callback. Unresolved early activation is a failed gate.
