@@ -4,7 +4,7 @@ Reviewed **2026-11-19** after PR #107. Latest deployed runtime: **0.10.11** at `
 
 ## Current priority
 
-**No next product feature is selected.** Complete the handoff and let Francesco choose the next task. Candidate work below is not authorization to begin it. Preserve 37 passing / 0 failing / 37 and the intentionally empty accepted-failure set.
+[Command registry v0](api/commands.md) (additive, direct authorization; not the 0.11 bus). Preserve 37 passing / 0 failing / 37 and the intentionally empty accepted-failure set.
 
 Goals remain fast, reproducible scientific visualization, intuitive editing and preservation of user work, through both UI and supported automation.
 

@@ -1032,6 +1032,154 @@ def synchronized_trajectories(page, dialogs):
     assert rows.nth(1).get_by_label('FPS', exact=True).is_disabled()
 
 
+def commands(page, dialogs):
+    def check(label, actual, expected):
+        row = dict(case=label, actual=actual, expected=expected)
+        print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
+        assert json.dumps(actual, sort_keys=True) == json.dumps(expected, sort_keys=True), row
+
+    def invoke(id_, params=None, *, target=None):
+        active = page if target is None else target
+        return active.evaluate('({id, params}) => VibeMolCommands.run(id, params)', dict(id=id_, params=params or {}))
+
+    def success(id_, params=None, *, target=None):
+        result = invoke(id_, params, target=target)
+        check(id_ + ' command result', True if result['ok'] is True else result, True)
+        return result['value']
+
+    app_version = re.search(r"const APP_VERSION = '([^']+)'",
+                            (ROOT / 'assets/app/js/asset-urls.js').read_text())[1]
+    check('app.info versions', success('app.info'), dict(appVersion=app_version, commandVersion=1))
+    water = (ROOT / 'assets/fragments/water.xyz').read_text()
+    check('loaded water', success('files.load', {'files': [{'name': 'water.xyz', 'text': water}]}),
+          dict(ok=True, loadedCount=1, loadedNames=['water.xyz']))
+    fresh_options = success('calculations.state')['options']
+    success('calculations.configure', fresh_options)
+    check('fresh Calculations options round trip', success('calculations.state')['options'], fresh_options)
+    preset = success('preset.export')
+    axes_key = 'global.showAxes'
+    original_axes = preset['settings'][axes_key]
+    changed_axes = not original_axes
+    changed_preset = {**preset, 'settings': {**preset['settings'], axes_key: changed_axes}}
+    import_result = success('preset.import', {'preset': changed_preset})
+    check('preset import applied axes setting', axes_key in import_result['applied'], True)
+    check('preset axes round trip', success('preset.export')['settings'][axes_key], changed_axes)
+    success('preset.import', {'preset': preset})
+    check('restored preset axes setting', success('preset.export')['settings'][axes_key], original_axes)
+    check('entered Edit', success('edit.enter', {'tool': 'transform'}),
+          dict(mode='edit', tool='transform'))
+    atoms = success('edit.context')['atoms']
+    check('water atom labels', [atom['label'] for atom in atoms], ['O1', 'H1', 'H2'])
+    selection = dict(atomIds=[atoms[0]['id'], atoms[1]['id']], indices=[0, 1], count=2)
+    check('set two atoms', success('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['O1', 'H1']}}), selection)
+    refused_selection = invoke('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['Ar1']}})
+    check('refused Edit selection', [refused_selection.get('ok'), refused_selection.get('error', {}).get('code'),
+                                     refused_selection.get('error', {}).get('details', {}).get('code')],
+          [False, 'rejected', 'ELEMENT_ABSENT'])
+    check('read two atoms', success('edit.getSelection'), selection)
+
+    basis = success('calculations.ready')
+    check('oxygen basis', isinstance(basis, dict) and bool(basis.get('8')), True)
+    unavailable_shell = {'index': 0, 'shell': '9f'}
+    check('refused shell assignment', invoke('calculations.selectShell', unavailable_shell), {
+        'ok': False, 'error': {'code': 'rejected', 'message': 'The requested shell toggle was not applied',
+                               'details': {'requested': unavailable_shell, 'applied': False, 'assigned': False,
+                                           'message': 'The requested shell toggle was not applied'}},
+    })
+    check('empty state after refused shell', success('calculations.state')['selections'], [])
+    shell = {'index': 0, 'shell': '2p'}
+    check('shell toggled on', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=True))
+    check('shell toggled off', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=False))
+    check('empty state after removing shell', success('calculations.state')['selections'], [])
+    check('shell toggled back on', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=True))
+    success('calculations.configure', {'method': 'cumulative', 'sigma': 0.9})
+    state = success('calculations.state')
+    check('shell assignment', state['selections'], [{'id': atoms[0]['id'], 'shells': {'2p': 'all'}}])
+    check('applied AVAS options', [state['options'][key] for key in ('method', 'sigma')], ['cumulative', 0.9])
+    avas = success('forte2.export', {'avas': {}})
+    check('exported AVAS arguments', avas['avas']['arguments'],
+          dict(subspace=['O(2p)'], selection_method='cumulative', sigma=0.9, diagonalize=True))
+
+    structure = json.loads(success('structure.export'))['volume']
+    text = success('session.export')
+    check('exported session text', isinstance(text, str) and bool(text), True)
+    context = page.context.browser.new_context(viewport=page.viewport_size)
+    reopened = context.new_page()
+    errors = []
+    reopened.on('pageerror', lambda error: errors.append(str(error)))
+    try:
+        reopened.goto(page.url, wait_until='domcontentloaded')
+        reopened.wait_for_function('() => !!window.VibeMolCommands')
+        imported = success('session.import', {'text': text}, target=reopened)
+        check('session import counts', [imported[key] for key in ('ok', 'sceneCount', 'sourceCount')], [True, 1, 1])
+        check('restored structure', json.loads(success('structure.export', target=reopened))['volume'], structure)
+        check('restored mode', success('edit.context', target=reopened)['mode'], 'display')
+        check('restored selection', success('edit.getSelection', target=reopened),
+              dict(atomIds=[], indices=[], count=0))
+        check('reopened page errors', errors, [])
+    except Exception:
+        write_failure_artifacts(reopened, ARTIFACTS, 'premerge-commands-reopened', errors, [])
+        raise
+    finally:
+        context.close()
+
+    empty_selection = dict(atomIds=[], indices=[], count=0)
+    check('Edit selection before clear', success('edit.getSelection'), selection)
+    check('clear Edit selection', success('edit.clearSelection'), empty_selection)
+    check('read cleared Edit selection', success('edit.getSelection'), empty_selection)
+
+    success('calculations.configure', {'cas': [2, None]})
+    partial_options = success('calculations.state')['options']
+    check('partially cleared CAS', partial_options['cas'], [2, None])
+    success('calculations.configure', partial_options)
+    check('partial CAS options round trip', success('calculations.state')['options'], partial_options)
+
+    check('invalid params envelope', invoke('edit.setSelection'), {
+        'ok': False, 'error': {'code': 'invalid-params', 'message': 'Invalid command parameters',
+                               'details': [{'path': '$.selector', 'message': 'Required property'}]},
+    })
+    check('unknown command envelope', invoke('app.unknown'),
+          {'ok': False, 'error': {'code': 'unknown-command', 'message': 'Unknown command id'}})
+    helium = {'name': 'separated.xyz', 'text': '2\nSeparated helium atoms\nHe 0 0 0\nHe 12 0 0\n'}
+    check('ambiguous XYZ load settles', success('files.load', {'files': [helium]}),
+          dict(ok=True, loadedCount=1, loadedNames=['separated.xyz']))
+    check('ambiguous XYZ confirmation', dialogs, [{
+        'type': 'confirm',
+        'message': 'No bonds were detected in "separated.xyz" using angstrom coordinates.\n\n'
+                   'These XYZ coordinates might be in bohr. Convert them to angstroms (1 bohr = 0.529177 angstrom)?\n\n'
+                   'OK: convert from bohr.\nCancel: keep the original coordinates as angstroms.',
+    }])
+    return dict(restoredSceneCount=imported['sceneCount'], restoredSourceCount=imported['sourceCount'], dialogCount=len(dialogs))
+
+
+def run_commands(browser, url):
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    page = context.new_page()
+    errors, console_errors, dialogs = [], [], []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
+    def dismiss_dialog(dialog):
+        dialogs.append(dict(type=dialog.type, message=dialog.message))
+        dialog.dismiss()
+    page.on('dialog', dismiss_dialog)
+    try:
+        page.goto(url, wait_until='domcontentloaded')
+        page.wait_for_function('() => !!window.VibeMolCommands')
+        completion = commands(page, dialogs)
+        expected = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
+        row = dict(case='workflow completion', actual=completion, expected=expected)
+        print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
+        assert completion == expected, row
+        print('[premerge commands] ' + json.dumps(dict(case='page errors', actual=errors, expected=[])), flush=True)
+        assert not errors, errors
+    except Exception:
+        write_failure_artifacts(page, ARTIFACTS, 'premerge-commands', errors, console_errors)
+        raise
+    finally:
+        context.close()
+    print('[commands-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
+
+
 def main():
     from atomic_identity import run as atomic_identity
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
@@ -1060,6 +1208,7 @@ def main():
                     raise
                 finally:
                     context.close()
+            run_commands(browser, url)
         finally:
             browser.close()
     from edit_api import run_matrix as edit_api_matrix

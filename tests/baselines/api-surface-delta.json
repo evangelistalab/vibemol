@@ -1,24 +1,28 @@
 {
   "schemaVersion": 2,
-  "baseCommit": "b1de909288d8ba85da017f18654771eca54547d0",
-  "baselineGzipSha256": "2387e1bee5b4ed7f0037d6ff5a3ed841942c9df1eb4afee31db7fa459f1ba397",
+  "baseCommit": "0d257054b9749d60cd53695a35f3061fcc415321",
+  "baselineGzipSha256": "dfe8f62f2d11e6af351e19778b5de3d2bda65f48468b7cb602c7ab8b778ef115",
   "captures": 102,
   "delta": [
     {
       "operation": "add-api-namespace",
-      "namespace": "VibeMolForte2Format",
+      "namespace": "VibeMolCommandRegistry",
       "members": [
-        "buildAvasArguments",
-        "createForte2Controller"
+        "createCommandRegistry",
+        "validateParams"
       ]
     },
     {
       "operation": "add-api-namespace",
-      "namespace": "VibeMolForte2",
+      "namespace": "VibeMolCommands",
       "members": [
-        "export"
+        "describe",
+        "kind",
+        "list",
+        "run",
+        "version"
       ]
     }
   ],
-  "authority": "Direct human export-only forte2 interchange and PR283 CAS selector authorization. Exactly two namespace additions in each of 102 captures (204 additions / 306 member strings); no other capture changes. The existing declared-delta recording mode enforces zero residual difference."
+  "authority": "Francesco directly authorizes one bounded exception: an additive command registry v0, defined below."
 }

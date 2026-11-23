@@ -1,5 +1,7 @@
 """The additive API matrix must execute after the original browser retires."""
 import contextlib
+import io
+import json
 from pathlib import Path
 import sys
 import unittest
@@ -11,6 +13,7 @@ import premerge
 import atomic_identity
 import edit_api
 import edit_testing_adapters
+from checkpoint_contract import require_checkpoint_counts
 
 
 class PremergeEntrypointTests(unittest.TestCase):
@@ -24,13 +27,18 @@ class PremergeEntrypointTests(unittest.TestCase):
                           'persistence', 'batch_export', 'orbital_group_appearance', 'molden_group_appearance',
                           'molden_browsing', 'arithmetic', 'synchronized_trajectories')
         calls = []
+        def commands(original_browser, url):
+            self.assertIs(original_browser, browser)
+            self.assertEqual(url, 'http://fixture')
+            self.assertEqual(browser.new_context.call_count, 17)
+            calls.append('commands')
         def matrix(output):
             browser.close.assert_called_once_with()
             self.assertEqual(output, premerge.ARTIFACTS/'validated-edit-api')
             calls.append('matrix')
         def bridges(output):
             browser.close.assert_called_once_with()
-            self.assertEqual(calls, ['matrix'])
+            self.assertEqual(calls, ['commands', 'matrix'])
             self.assertEqual(output, premerge.ARTIFACTS/'edit-testing-adapters')
             calls.append('bridges')
         with contextlib.ExitStack() as stack:
@@ -41,11 +49,42 @@ class PremergeEntrypointTests(unittest.TestCase):
                 stub.__name__ = name
                 stack.enter_context(patch.object(premerge, name, stub))
             stack.enter_context(patch.object(atomic_identity, 'run', lambda page, dialogs: None))
+            stack.enter_context(patch.object(premerge, 'run_commands', commands))
             stack.enter_context(patch.object(edit_api, 'run_matrix', matrix))
             stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
-        self.assertEqual(calls, ['matrix', 'bridges'])
+        self.assertEqual(calls, ['commands', 'matrix', 'bridges'])
         self.assertEqual(browser.new_context.call_count, 17)
+
+    def test_commands_completion_is_required_exactly_once(self):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        suite = 'tests/e2e/premerge.py'
+        expected = manifest['checkpointCounts']
+        marker = 'commands-completion'
+        self.assertEqual(expected[suite][marker], 1)
+        other_records = [f'[{name}] {{}}' for name, count in expected[suite].items()
+                         if name != marker for _ in range(count)]
+        receipt = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
+        output = io.StringIO()
+        with patch.object(premerge, 'commands', return_value=receipt), contextlib.redirect_stdout(output):
+            premerge.run_commands(MagicMock(), 'http://fixture')
+        records = [line for line in output.getvalue().splitlines() if line.startswith(f'[{marker}] ')]
+        self.assertEqual(len(records), 1)
+        self.assertEqual(json.loads(records[0].split(' ', 1)[1]), receipt)
+        for count in (0, 1, 2):
+            log = '\n'.join(other_records + records * count)
+            with self.subTest(count=count), contextlib.redirect_stdout(io.StringIO()):
+                if count == 1:
+                    self.assertTrue(require_checkpoint_counts(log, suite, expected)['passed'])
+                else:
+                    with self.assertRaises(AssertionError):
+                        require_checkpoint_counts(log, suite, expected)
+
+        output = io.StringIO()
+        with patch.object(premerge, 'commands', return_value=None), patch.object(premerge, 'write_failure_artifacts'):
+            with contextlib.redirect_stdout(output), self.assertRaises(AssertionError):
+                premerge.run_commands(MagicMock(), 'http://fixture')
+        self.assertNotIn(f'[{marker}]', output.getvalue())
 
 
 if __name__ == '__main__':

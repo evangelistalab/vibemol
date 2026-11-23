@@ -1,0 +1,586 @@
+[
+  {
+    "id": "app.info",
+    "title": "Get the app and command registry versions",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolAssets.version"
+  },
+  {
+    "id": "calculations.configure",
+    "title": "Configure the Calculations options",
+    "params": {
+      "type": "object",
+      "properties": {
+        "reference": {
+          "type": "string"
+        },
+        "charge": {
+          "type": "number"
+        },
+        "ms": {
+          "type": "number"
+        },
+        "basis": {
+          "type": "string"
+        },
+        "auxiliary": {
+          "type": "string"
+        },
+        "minao": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string"
+        },
+        "sigma": {
+          "type": "number"
+        },
+        "cutoff": {
+          "type": "number"
+        },
+        "docc": {
+          "type": "number"
+        },
+        "uocc": {
+          "type": "number"
+        },
+        "total": {
+          "type": "number"
+        },
+        "totalFollowsSelection": {
+          "type": "boolean"
+        },
+        "diagonalize": {
+          "type": "boolean"
+        },
+        "cas": {
+          "type": "array",
+          "items": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "minItems": 2,
+          "maxItems": 2
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolCalculations.configure"
+  },
+  {
+    "id": "calculations.ready",
+    "title": "Load the Calculations reference bases",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolCalculations.ready"
+  },
+  {
+    "id": "calculations.selectShell",
+    "title": "Toggle assignment of a whole shell on an atom",
+    "params": {
+      "type": "object",
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        "shell": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "index",
+        "shell"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolCalculations.selectShell"
+  },
+  {
+    "id": "calculations.state",
+    "title": "Get the Calculations state",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolCalculations.state"
+  },
+  {
+    "id": "edit.clearSelection",
+    "title": "Clear the current atom selection",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolEdit.clearSelection"
+  },
+  {
+    "id": "edit.context",
+    "title": "Get the current Edit context",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolEdit.context"
+  },
+  {
+    "id": "edit.enter",
+    "title": "Enter Edit mode",
+    "params": {
+      "type": "object",
+      "properties": {
+        "tool": {
+          "type": "string",
+          "enum": [
+            "transform",
+            "build"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolEdit.enter"
+  },
+  {
+    "id": "edit.getSelection",
+    "title": "Get the current atom selection",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolEdit.getSelection"
+  },
+  {
+    "id": "edit.setSelection",
+    "title": "Set the atom selection from a predicate",
+    "params": {
+      "type": "object",
+      "properties": {
+        "selector": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "all",
+                "ids",
+                "element",
+                "labels",
+                "fragment",
+                "component",
+                "union",
+                "intersection",
+                "difference",
+                "piPlane"
+              ]
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "element": {
+              "type": "string"
+            },
+            "instanceId": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "owned",
+                "footprint"
+              ]
+            },
+            "members": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "seed": {
+              "type": "object"
+            },
+            "selectors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 2
+            },
+            "left": {
+              "type": "object"
+            },
+            "right": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "replace",
+                "add",
+                "remove",
+                "toggle"
+              ]
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "selector"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolEdit.setSelection"
+  },
+  {
+    "id": "files.load",
+    "title": "Load embedded files (may prompt for XYZ units)",
+    "params": {
+      "type": "object",
+      "properties": {
+        "files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "mimeType": {
+                "type": "string"
+              },
+              "text": {
+                "type": "string"
+              },
+              "base64": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "clearFirst": {
+              "type": "boolean"
+            },
+            "targetSceneKey": {
+              "type": "string"
+            },
+            "newScenes": {
+              "type": "boolean"
+            },
+            "extras": {
+              "type": "object"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "files"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolEmbed.loadFiles"
+  },
+  {
+    "id": "forte2.export",
+    "title": "Export forte2 input selections",
+    "params": {
+      "type": "object",
+      "properties": {
+        "system": {
+          "type": "object",
+          "properties": {
+            "systemId": {
+              "type": "string"
+            },
+            "fingerprint": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "systemId",
+            "fingerprint"
+          ],
+          "additionalProperties": false
+        },
+        "fragment": {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "all",
+                "ids",
+                "element",
+                "labels",
+                "fragment",
+                "component",
+                "union",
+                "intersection",
+                "difference",
+                "piPlane"
+              ]
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "element": {
+              "type": "string"
+            },
+            "instanceId": {
+              "type": "string"
+            },
+            "role": {
+              "type": "string",
+              "enum": [
+                "owned",
+                "footprint"
+              ]
+            },
+            "members": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "seed": {
+              "type": "object"
+            },
+            "selectors": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              },
+              "minItems": 2
+            },
+            "left": {
+              "type": "object"
+            },
+            "right": {
+              "type": "object"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "additionalProperties": false
+        },
+        "avas": {
+          "type": "object",
+          "properties": {
+            "planes": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "piPlane"
+                    ]
+                  },
+                  "seed": {
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "seed"
+                ],
+                "additionalProperties": false
+              },
+              "maxItems": 40
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolForte2.export"
+  },
+  {
+    "id": "preset.export",
+    "title": "Export the current preset",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "persistScope": {
+          "type": "string"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolPreset.export"
+  },
+  {
+    "id": "preset.import",
+    "title": "Import a preset",
+    "params": {
+      "type": "object",
+      "properties": {
+        "preset": {
+          "type": "object"
+        },
+        "options": {
+          "type": "object",
+          "properties": {
+            "mode": {
+              "type": "string",
+              "enum": [
+                "strict",
+                "relaxed"
+              ]
+            },
+            "afterApply": {
+              "type": "boolean"
+            },
+            "applyBuilder": {
+              "type": "boolean"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "preset"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolPreset.import"
+  },
+  {
+    "id": "session.export",
+    "title": "Export the workspace session as text",
+    "params": {
+      "type": "object",
+      "properties": {
+        "maxBytes": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolSession.exportText"
+  },
+  {
+    "id": "session.import",
+    "title": "Open a workspace session from text",
+    "params": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolSession.importText"
+  },
+  {
+    "id": "structure.export",
+    "title": "Export the active structure as text",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolStructure.exportActiveText"
+  }
+]
