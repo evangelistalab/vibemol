@@ -1056,6 +1056,16 @@ def commands(page, dialogs):
     fresh_options = success('calculations.state')['options']
     success('calculations.configure', fresh_options)
     check('fresh Calculations options round trip', success('calculations.state')['options'], fresh_options)
+    preset = success('preset.export')
+    axes_key = 'global.showAxes'
+    original_axes = preset['settings'][axes_key]
+    changed_axes = not original_axes
+    changed_preset = {**preset, 'settings': {**preset['settings'], axes_key: changed_axes}}
+    import_result = success('preset.import', {'preset': changed_preset})
+    check('preset import applied axes setting', axes_key in import_result['applied'], True)
+    check('preset axes round trip', success('preset.export')['settings'][axes_key], changed_axes)
+    success('preset.import', {'preset': preset})
+    check('restored preset axes setting', success('preset.export')['settings'][axes_key], original_axes)
     check('entered Edit', success('edit.enter', {'tool': 'transform'}),
           dict(mode='edit', tool='transform'))
     atoms = success('edit.context')['atoms']
@@ -1112,6 +1122,11 @@ def commands(page, dialogs):
         raise
     finally:
         context.close()
+
+    empty_selection = dict(atomIds=[], indices=[], count=0)
+    check('Edit selection before clear', success('edit.getSelection'), selection)
+    check('clear Edit selection', success('edit.clearSelection'), empty_selection)
+    check('read cleared Edit selection', success('edit.getSelection'), empty_selection)
 
     success('calculations.configure', {'cas': [2, None]})
     partial_options = success('calculations.state')['options']
