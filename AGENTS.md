@@ -7,13 +7,40 @@ and [the roadmap](docs/roadmap.md) before selecting work. The historical receipt
 below preserve their actual counts and rejected candidates; their old “next”
 instructions do not select a new task.
 
-- **0.10.14 release candidate** (PR #111) includes [command registry v0](docs/api/commands.md),
-  the [opt-in embed bridge](docs/api/embed.md), and the [notebook widget](python/README.md)
-  at package version 0.1.0. Recording [45231609802](https://github.com/evangelistalab/vibemol/actions/runs/45231609802)
-  reproduced the 204 declared version changes across 102 captures, with zero residual
-  differences. The in-app What's new text is intentionally unchanged.
-  See the [release notes](docs/releases/v0.10.14.md).
-- The latest verified deployment before this candidate is **0.10.13**, PR #110 merge
+- **0.10.14** is released at `5537d9810b8691820c7f8e2893c6786501c13732`
+  (PR #111). It includes [command registry v0](docs/api/commands.md), the
+  [opt-in embed bridge](docs/api/embed.md), and the [notebook widget](python/README.md)
+  at package version 0.1.0. The in-app What's new text is intentionally unchanged.
+  [Release notes](docs/releases/v0.10.14.md)
+- Recording [45231609802](https://github.com/evangelistalab/vibemol/actions/runs/45231609802)
+  reproduced 204 exact version changes across 102 captures in all four
+  serializations, with zero residual differences. Candidate run
+  [45238180013](https://github.com/evangelistalab/vibemol/actions/runs/45238180013)
+  passed 37/0/37 and all 14 widget tests. Pages
+  [45246657068](https://github.com/evangelistalab/vibemol/actions/runs/45246657068)
+  deployed the release merge. Live asset bytes matched it and the embed
+  returned command version 1 and app version 0.10.14 for both ready and app.info.
+- First main run [45246657200](https://github.com/evangelistalab/vibemol/actions/runs/45246657200)
+  stays failed on attempt 1. Its notebook smoke timed out before the first viewer
+  output, with the first cell prompt still `[ ]`. The notebook had yet to accept
+  the first execution. The historical log did not capture keyboard delivery.
+  Local instrumentation showed that the toolbar can report idle
+  while the status bar still says No Kernel | Initializing.
+- Harness [PR #112](https://github.com/evangelistalab/vibemol/pull/112), merged
+  as `ca5faf772c419a48e9c2954884f82e1eada58a2a`, waits for the connected idle
+  kernel and records one accepted Shift+Enter per cell before testing outputs.
+  It checks both the presented canvas and the pixels in the saved PNG. Its first
+  [PR run](https://github.com/evangelistalab/vibemol/actions/runs/45254365009)
+  and [main run](https://github.com/evangelistalab/vibemol/actions/runs/45260662764)
+  each passed 37/0/37, all completion checks, exact goldens twice, eight identity
+  contexts and minima, units, WebKit, construction, and 14 widget tests. Kernel
+  readiness took 2,811 ms in PR CI and 2,746 ms in main CI, with no dialogs and
+  three trusted keystrokes advancing their prompts in each run. Both PNGs
+  measured 1,220 non-background pixels out of 4,096. Pages
+  [45260661630](https://github.com/evangelistalab/vibemol/actions/runs/45260661630)
+  redeployed the same runtime bytes and the served bootstrap read back 0.10.14.
+  The release tag points to the original release merge.
+- Previous release runtime **0.10.13** was deployed from PR #110 merge
   `1ab735dc990ccde03e9a4da96259432fe9f0723c`.
 - **0.10.11** right-panel patch, PR #107 merge
   `297e608fa88038151fa73edc10362281fc6103db`. Documentation-only commits may follow.
