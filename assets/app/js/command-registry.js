@@ -90,7 +90,7 @@
     }
   }
 
-  function validateParams(schema, params) {
+  function validateValue(schema, params) {
     const errors = [];
     function validate(rule, value, path) {
       const report = message => errors.push({ path, message });
@@ -125,6 +125,16 @@
     }
     validate(schema, params, '$');
     return errors.length ? { ok: false, errors } : { ok: true };
+  }
+
+  function validateParams(schema, params) {
+    try {
+      if (!isJson(schema)) throw new TypeError('Expected a plain JSON schema');
+      checkSchema(schema, '$');
+      return validateValue(schema, params);
+    } catch (error) {
+      return { ok: false, errors: [{ path: '$', message: errorString(error, 'message', 'Validation failed') }] };
+    }
   }
 
   class Unavailable extends Error {}
@@ -187,7 +197,7 @@
         } catch {
           return failure('invalid-params', 'Invalid command parameters', [{ path: '$', message: 'Expected cloneable JSON data' }]);
         }
-        const validation = validateParams(command.descriptor.params, owned);
+        const validation = validateValue(command.descriptor.params, owned);
         if (!validation.ok) return failure('invalid-params', 'Invalid command parameters', validation.errors);
         targetMember(command.descriptor.target);
         const value = await command.run(owned, api);

@@ -100,6 +100,22 @@ test('scalar unions check numeric bounds on numbers and enum on all values', () 
   assert.equal(validateParams({ ...schema, enum: [null] }, null).ok, true);
 });
 
+test('public validation reports malformed schemas and unreadable parameters', () => {
+  const { validateParams } = load().VibeMolCommandRegistry;
+  for (const schema of [null, {}, { type: 'object', required: 'field' },
+    { type: 'array', items: { type: ['object'] } }, { type: 'string', pattern: '.' }]) {
+    const result = validateParams(schema, {});
+    assert.equal(result.ok, false);
+    assert.equal(result.errors[0].path, '$');
+    assert.ok(result.errors[0].message.length);
+  }
+  const schema = { type: 'object', properties: { field: { type: 'string' } } };
+  const params = { get field() { throw new Error('field unavailable'); } };
+  assert.deepEqual(plain(validateParams(schema, params)), {
+    ok: false, errors: [{ path: '$', message: 'field unavailable' }],
+  });
+});
+
 test('run resolves every error envelope, including hostile thrown values', async () => {
   const host = load();
   const registry = host.VibeMolCommandRegistry.createCommandRegistry([definition()]);
