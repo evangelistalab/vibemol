@@ -160,6 +160,21 @@
     return { ok: false, error: { code, message, ...(details === undefined ? {} : { details }) } };
   }
 
+  function commandResult(result, outcome) {
+    if (outcome === 'value') return { ok: true, value: result };
+    if (isObject(result) && Object.hasOwn(result, 'ok')) {
+      const hasValue = Object.hasOwn(result, 'value');
+      const hasError = Object.hasOwn(result, 'error');
+      if (result.ok === true && hasValue && !hasError) return { ok: true, value: result.value };
+      if (result.ok === false && hasError && !hasValue) {
+        const reason = result.error;
+        if (typeof reason === 'string') return failure('rejected', reason, reason);
+        if (isObject(reason)) return failure('rejected', errorString(reason, 'message', 'Command rejected'), reason);
+      }
+    }
+    return failure('failed', 'Malformed command outcome envelope', { code: 'malformed-envelope' });
+  }
+
   function errorString(error, key, fallback) {
     try {
       const value = error?.[key];
@@ -174,15 +189,16 @@
     const commands = new Map();
     for (const definition of definitions) {
       if (!isObject(definition)) throw new TypeError('Expected a command definition object');
-      const { id, title, params, mutates, target, run } = definition;
+      const { id, title, params, mutates, target, run, outcome = 'value' } = definition;
       if (typeof id !== 'string' || !identifier.test(id) || typeof title !== 'string' || !title.trim()
         || typeof mutates !== 'boolean' || typeof target !== 'string' || !targetPath.test(target)
-        || typeof run !== 'function' || !isObject(params) || params.type !== 'object' || !isJson(params)) {
+        || typeof run !== 'function' || (outcome !== 'value' && outcome !== 'envelope')
+        || !isObject(params) || params.type !== 'object' || !isJson(params)) {
         throw new TypeError('Invalid command definition');
       }
       if (commands.has(id)) throw new TypeError(`Duplicate command id "${id}"`);
       checkSchema(params, id);
-      commands.set(id, { descriptor: structuredClone({ id, title, params, mutates, target }), run });
+      commands.set(id, { descriptor: structuredClone({ id, title, params, mutates, target }), run, outcome });
     }
     const ids = [...commands.keys()].sort();
 
@@ -200,9 +216,9 @@
         const validation = validateValue(command.descriptor.params, owned);
         if (!validation.ok) return failure('invalid-params', 'Invalid command parameters', validation.errors);
         targetMember(command.descriptor.target);
-        const value = await command.run(owned, api);
+        const result = commandResult(await command.run(owned, api), command.outcome);
         try {
-          return { ok: true, value: structuredClone(value) };
+          return structuredClone(result);
         } catch (error) {
           return failure('failed', 'Command result is not cloneable', {
             code: 'non-serializable-result', name: errorString(error, 'name', 'Error'),

@@ -25,6 +25,7 @@ Francesco subsequently authorized explicit Edit entry, in-app selection resoluti
   params: { type: 'object', properties: {}, required: [], additionalProperties: false },
   mutates: false,
   target: 'VibeMolEdit.getSelection',
+  outcome: 'envelope',
   run: (params, api) => api.call('VibeMolEdit.getSelection'),
 }
 ```
@@ -33,25 +34,26 @@ Descriptors contain `id`, `title`, `params`, `mutates` and `target`. The factory
 
 ### Parameter schemas
 
-Every schema specifies a `type` of `object`, `array`, `string`, `number`, `integer` or `boolean`. Supported constraints are:
+Every schema specifies a supported `type`. Object and array schemas use `object` and `array`, respectively. Scalar types are `string`, `number`, `integer`, `boolean` and `null`. An array of two or more distinct scalar types forms a union.
 
 - `properties`, `required` and `additionalProperties: false` for objects.
 - `items`, `minItems` and `maxItems` for arrays.
-- Inclusive `minimum` and `maximum` for numbers and integers.
+- Inclusive `minimum` and `maximum` for numeric values, including numeric members of scalar unions.
 - `enum` for exact JSON values.
 
 `validateParams` returns `{ ok: true }` or `{ ok: false, errors: [{ path, message }] }`. Paths start at `$`. The command wrapper takes plain JSON data and clones it before forwarding. The product API still validates domain-specific rules such as file payload alternatives, recursive Edit predicate shapes, preset envelopes and AVAS selections.
 
 ### Results
 
-`run` always returns a Promise that resolves to `{ ok: true, value }` or `{ ok: false, error: { code, message, details? } }`. A successful call returns a structured clone of the target's result. If a target uses its own `ok` field, inspect that field inside `value` to learn the product outcome.
+`run` always returns a Promise that resolves to `{ ok: true, value }` or `{ ok: false, error: { code, message, details? } }`. The definition's optional `outcome` selects how its adapter result is interpreted. `value` is the default and returns a structured clone of the result as data, including any `ok` field. `envelope` requires a boolean `ok` with exactly one matching payload field, `value` for success or `error` for refusal. The registry unwraps success once and reports a refusal as `rejected`. Outcome declarations belong to definitions. Discovery descriptors retain the fields described above.
 
 | Code | Meaning |
 | --- | --- |
 | `unknown-command` | The ID is absent from the registry. |
 | `invalid-params` | The request failed validation. `details` contains the paths and messages. |
 | `not-available` | A required public namespace or member is missing. |
-| `failed` | The target threw or rejected. `details.name` contains the original error name when available. A result that cannot be cloned sets `details.code` to `non-serializable-result`. |
+| `rejected` | The product declined the operation or the requested change could not be confirmed. `details` holds the product error or the applied-state readback. A file batch may have loaded some files before reporting a refusal. |
+| `failed` | The target threw or its Promise rejected. `details.name` contains the original error name when available. Malformed envelopes and results that cannot be cloned set `details.code` to `malformed-envelope` and `non-serializable-result`, respectively. |
 
 ### Commands
 
@@ -75,7 +77,11 @@ Every schema specifies a `type` of `object`, `array`, `string`, `number`, `integ
 | `calculations.configure` | `VibeMolCalculations.configure` | Yes |
 | `forte2.export` | `VibeMolForte2.export` | No |
 
-Enter Edit explicitly before changing atom selection. `edit.setSelection` accepts a documented selection predicate and gives the original resolver result to Edit inside the same call. `calculations.selectShell` uses the atom's zero-based index and toggles the whole shell. See [Edit selection](edit-build-api.md) and [forte2 export](../forte2-interchange.md).
+Enter Edit explicitly before changing atom selection. `edit.setSelection` accepts a documented selection predicate and gives the original resolver result to Edit inside the same call. See [Edit selection](edit-build-api.md) and [forte2 export](../forte2-interchange.md).
+
+`calculations.selectShell` uses a zero-based atom index and toggles whole-shell assignment. Its receipt contains `requested`, `applied` and `assigned`. Calling it twice on the same available shell assigns and then removes it. `calculations.configure` returns the requested patch and applied options. When automatic selection counting is enabled, `total` comes from the Calculations state readback.
+
+`preset.import` preserves the product receipt, including applied keys and warnings from relaxed imports.
 
 ## Browser console example
 
@@ -108,14 +114,14 @@ await (async () => {
     files: [{ name: 'water.xyz', text: await response.text() }],
   })).ok, 'Water did not load');
 
-  value(value(await run('edit.enter', { tool: 'transform' })));
-  const { atoms } = value(value(await run('edit.context')));
+  value(await run('edit.enter', { tool: 'transform' }));
+  const { atoms } = value(await run('edit.context'));
   const expected = { atomIds: [atoms[0].id, atoms[1].id], indices: [0, 1], count: 2 };
-  const selected = value(value(await run('edit.setSelection', {
+  const selected = value(await run('edit.setSelection', {
     selector: { kind: 'labels', labels: ['O1', 'H1'] },
-  })));
+  }));
   assert(same(selected, expected), 'Edit did not apply the requested selection');
-  assert(same(value(value(await run('edit.getSelection'))), expected), 'Edit selection differs');
+  assert(same(value(await run('edit.getSelection')), expected), 'Edit selection differs');
 
   value(await run('calculations.ready'));
   value(await run('calculations.selectShell', { index: 0, shell: '2p' }));
@@ -123,7 +129,7 @@ await (async () => {
   const state = value(await run('calculations.state'));
   assert(state.selections[0].shells['2p'] === 'all', 'Oxygen 2p is missing');
   assert(state.options.method === 'cumulative' && state.options.sigma === 0.9, 'AVAS options differ');
-  const forte2 = value(value(await run('forte2.export', { avas: {} })));
+  const forte2 = value(await run('forte2.export', { avas: {} }));
   const { subspace, selection_method, sigma, diagonalize } = forte2.avas.arguments;
   assert(same(subspace, ['O(2p)']) && selection_method === 'cumulative' && sigma === 0.9 && diagonalize,
     'AVAS arguments differ');
@@ -139,7 +145,7 @@ await (async () => {
   const imported = value(await fresh('session.import', { text }));
   assert(imported.ok && imported.sceneCount === 1 && imported.sourceCount === 1, 'Session did not open');
   assert(same(JSON.parse(value(await fresh('structure.export'))).volume, structure), 'Restored structure differs');
-  assert(same(value(value(await fresh('edit.getSelection'))), { atomIds: [], indices: [], count: 0 }),
+  assert(same(value(await fresh('edit.getSelection')), { atomIds: [], indices: [], count: 0 }),
     'Expected an empty Edit selection after opening the session');
 
   const invalid = await run('edit.setSelection');

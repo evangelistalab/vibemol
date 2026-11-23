@@ -146,6 +146,32 @@ test('run resolves every error envelope, including hostile thrown values', async
   assert.equal((await run({})).error.details.code, 'non-serializable-result');
 });
 
+test('declared envelopes unwrap once and distinguish refusals from invalid outcomes', async () => {
+  const host = load();
+  const { createCommandRegistry } = host.VibeMolCommandRegistry;
+  assert.throws(() => createCommandRegistry([definition({ outcome: 'auto' })]), /Invalid command definition/);
+  const registry = createCommandRegistry([definition({ outcome: 'envelope' }), definition({ id: 'test.raw' })]);
+  const run = async (result, id = 'test.echo') => {
+    host.TestHost = { echo: () => result };
+    return plain(await registry.run(id));
+  };
+  assert.deepEqual(await run({ ok: true, value: 2, mutation: {} }), { ok: true, value: 2 });
+  const reason = { code: 'PRODUCT_REFUSED', message: 'Target declined' };
+  assert.deepEqual(await run({ ok: false, error: reason }), {
+    ok: false, error: { code: 'rejected', message: reason.message, details: reason },
+  });
+  assert.equal((await run({ ok: false, error: 'No' })).error.details, 'No');
+  for (const result of [null, { ok: 'false', error: reason }, { ok: true }, { ok: false, error: null },
+    { ok: true, value: 1, error: reason }, { ok: false, value: 1, error: reason }]) {
+    assert.deepEqual(await run(result), {
+      ok: false, error: { code: 'failed', message: 'Malformed command outcome envelope', details: { code: 'malformed-envelope' } },
+    });
+  }
+  const raw = { ok: false, error: reason };
+  assert.deepEqual(await run(raw, 'test.raw'), { ok: true, value: raw });
+  assert.equal(Object.hasOwn(registry.describe('test.echo'), 'outcome'), false);
+});
+
 test('run snapshots parameters before forwarding and owns the result', async () => {
   const host = load();
   const registry = host.VibeMolCommandRegistry.createCommandRegistry([definition({ params: {

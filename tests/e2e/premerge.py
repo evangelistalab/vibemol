@@ -1042,14 +1042,10 @@ def commands(page):
         active = page if target is None else target
         return active.evaluate('({id, params}) => VibeMolCommands.run(id, params)', dict(id=id_, params=params or {}))
 
-    def success(id_, params=None, *, target=None, wrapped=False):
+    def success(id_, params=None, *, target=None):
         result = invoke(id_, params, target=target)
         check(id_ + ' command result', True if result['ok'] is True else result, True)
-        value = result.get('value')
-        if wrapped:
-            check(id_ + ' product result', True if value['ok'] is True else value, True)
-            return value['value']
-        return value
+        return result['value']
 
     app_version = re.search(r"const APP_VERSION = '([^']+)'",
                             (ROOT / 'assets/app/js/asset-urls.js').read_text())[1]
@@ -1060,23 +1056,37 @@ def commands(page):
     fresh_options = success('calculations.state')['options']
     success('calculations.configure', fresh_options)
     check('fresh Calculations options round trip', success('calculations.state')['options'], fresh_options)
-    check('entered Edit', success('edit.enter', {'tool': 'transform'}, wrapped=True),
+    check('entered Edit', success('edit.enter', {'tool': 'transform'}),
           dict(mode='edit', tool='transform'))
-    atoms = success('edit.context', wrapped=True)['atoms']
+    atoms = success('edit.context')['atoms']
     check('water atom labels', [atom['label'] for atom in atoms], ['O1', 'H1', 'H2'])
     selection = dict(atomIds=[atoms[0]['id'], atoms[1]['id']], indices=[0, 1], count=2)
-    check('set two atoms', success('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['O1', 'H1']}},
-                                   wrapped=True), selection)
-    check('read two atoms', success('edit.getSelection', wrapped=True), selection)
+    check('set two atoms', success('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['O1', 'H1']}}), selection)
+    refused_selection = invoke('edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['Ar1']}})
+    check('refused Edit selection', [refused_selection.get('ok'), refused_selection.get('error', {}).get('code'),
+                                     refused_selection.get('error', {}).get('details', {}).get('code')],
+          [False, 'rejected', 'ELEMENT_ABSENT'])
+    check('read two atoms', success('edit.getSelection'), selection)
 
     basis = success('calculations.ready')
     check('oxygen basis', isinstance(basis, dict) and bool(basis.get('8')), True)
-    success('calculations.selectShell', {'index': 0, 'shell': '2p'})
+    unavailable_shell = {'index': 0, 'shell': '9f'}
+    check('refused shell assignment', invoke('calculations.selectShell', unavailable_shell), {
+        'ok': False, 'error': {'code': 'rejected', 'message': 'The requested shell toggle was not applied',
+                               'details': {'requested': unavailable_shell, 'applied': False, 'assigned': False,
+                                           'message': 'The requested shell toggle was not applied'}},
+    })
+    check('empty state after refused shell', success('calculations.state')['selections'], [])
+    shell = {'index': 0, 'shell': '2p'}
+    check('shell toggled on', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=True))
+    check('shell toggled off', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=False))
+    check('empty state after removing shell', success('calculations.state')['selections'], [])
+    check('shell toggled back on', success('calculations.selectShell', shell), dict(requested=shell, applied=True, assigned=True))
     success('calculations.configure', {'method': 'cumulative', 'sigma': 0.9})
     state = success('calculations.state')
     check('shell assignment', state['selections'], [{'id': atoms[0]['id'], 'shells': {'2p': 'all'}}])
     check('applied AVAS options', [state['options'][key] for key in ('method', 'sigma')], ['cumulative', 0.9])
-    avas = success('forte2.export', {'avas': {}}, wrapped=True)
+    avas = success('forte2.export', {'avas': {}})
     check('exported AVAS arguments', avas['avas']['arguments'],
           dict(subspace=['O(2p)'], selection_method='cumulative', sigma=0.9, diagonalize=True))
 
@@ -1093,8 +1103,8 @@ def commands(page):
         imported = success('session.import', {'text': text}, target=reopened)
         check('session import counts', [imported[key] for key in ('ok', 'sceneCount', 'sourceCount')], [True, 1, 1])
         check('restored structure', json.loads(success('structure.export', target=reopened))['volume'], structure)
-        check('restored mode', success('edit.context', target=reopened, wrapped=True)['mode'], 'display')
-        check('restored selection', success('edit.getSelection', target=reopened, wrapped=True),
+        check('restored mode', success('edit.context', target=reopened)['mode'], 'display')
+        check('restored selection', success('edit.getSelection', target=reopened),
               dict(atomIds=[], indices=[], count=0))
         check('reopened page errors', errors, [])
     except Exception:
