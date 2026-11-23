@@ -77,7 +77,8 @@
     command('calculations.configure', 'Configure the Calculations options', object({
       reference: string, charge: number, ms: number, basis: string, auxiliary: string, minao: string,
       method: string, sigma: number, cutoff: number, docc: number, uocc: number, total: number,
-      totalFollowsSelection: boolean, diagonalize: boolean, cas: array(index, { minItems: 2, maxItems: 2 }),
+      totalFollowsSelection: boolean, diagonalize: boolean,
+      cas: array({ type: ['integer', 'null'], minimum: 0 }, { minItems: 2, maxItems: 2 }),
     }), true, 'VibeMolCalculations.configure'),
     command('forte2.export', 'Export forte2 input selections', object({
       system: object({ systemId: string, fingerprint: string }, ['systemId', 'fingerprint']),

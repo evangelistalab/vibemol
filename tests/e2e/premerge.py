@@ -1057,6 +1057,9 @@ def commands(page):
     water = (ROOT / 'assets/fragments/water.xyz').read_text()
     check('loaded water', success('files.load', {'files': [{'name': 'water.xyz', 'text': water}]}),
           dict(ok=True, loadedCount=1, loadedNames=['water.xyz']))
+    fresh_options = success('calculations.state')['options']
+    success('calculations.configure', fresh_options)
+    check('fresh Calculations options round trip', success('calculations.state')['options'], fresh_options)
     check('entered Edit', success('edit.enter', {'tool': 'transform'}, wrapped=True),
           dict(mode='edit', tool='transform'))
     atoms = success('edit.context', wrapped=True)['atoms']
@@ -1099,6 +1102,12 @@ def commands(page):
         raise
     finally:
         context.close()
+
+    success('calculations.configure', {'cas': [2, None]})
+    partial_options = success('calculations.state')['options']
+    check('partially cleared CAS', partial_options['cas'], [2, None])
+    success('calculations.configure', partial_options)
+    check('partial CAS options round trip', success('calculations.state')['options'], partial_options)
 
     check('invalid params envelope', invoke('edit.setSelection'), {
         'ok': False, 'error': {'code': 'invalid-params', 'message': 'Invalid command parameters',
