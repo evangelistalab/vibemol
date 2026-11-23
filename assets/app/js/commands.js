@@ -85,7 +85,7 @@
         commandVersion: api.read('VibeMolCommands.version'),
       }),
     },
-    command('files.load', 'Load embedded files', object({
+    command('files.load', 'Load embedded files (may prompt for XYZ units)', object({
       files: array(object({ name: string, mimeType: string, text: string, base64: string }, ['name']), { minItems: 1 }),
       options: object({ clearFirst: boolean, targetSceneKey: string, newScenes: boolean, extras: data }),
     }, ['files']), true, 'VibeMolEmbed.loadFiles', {

@@ -83,6 +83,12 @@ Enter Edit explicitly before changing atom selection. `edit.setSelection` accept
 
 `preset.import` preserves the product receipt, including applied keys and warnings from relaxed imports.
 
+`files.load` can open a browser confirmation for an XYZ with at least two atoms and no bond candidates at angstrom distances. The call waits for a response before continuing. Accepting converts from bohr to angstroms. Dismissing keeps the original coordinates. Unattended clients need a dialog handler for this case.
+
+### Proposed follow-up
+
+A separately authorized product change could add a `units: 'prompt' | 'angstrom' | 'bohr'` option so clients can give a unit explicitly.
+
 ## Browser console example
 
 Run this in a fresh VibeMol workspace served over HTTP. Loading the bundled water file replaces the current workspace by default. The example opens a second tab for the session import, so allow the popup when running it.

@@ -1032,7 +1032,7 @@ def synchronized_trajectories(page, dialogs):
     assert rows.nth(1).get_by_label('FPS', exact=True).is_disabled()
 
 
-def commands(page):
+def commands(page, dialogs):
     def check(label, actual, expected):
         row = dict(case=label, actual=actual, expected=expected)
         print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
@@ -1125,18 +1125,31 @@ def commands(page):
     })
     check('unknown command envelope', invoke('app.unknown'),
           {'ok': False, 'error': {'code': 'unknown-command', 'message': 'Unknown command id'}})
+    helium = {'name': 'separated.xyz', 'text': '2\nSeparated helium atoms\nHe 0 0 0\nHe 12 0 0\n'}
+    check('ambiguous XYZ load settles', success('files.load', {'files': [helium]}),
+          dict(ok=True, loadedCount=1, loadedNames=['separated.xyz']))
+    check('ambiguous XYZ confirmation', dialogs, [{
+        'type': 'confirm',
+        'message': 'No bonds were detected in "separated.xyz" using angstrom coordinates.\n\n'
+                   'These XYZ coordinates might be in bohr. Convert them to angstroms (1 bohr = 0.529177 angstrom)?\n\n'
+                   'OK: convert from bohr.\nCancel: keep the original coordinates as angstroms.',
+    }])
 
 
 def run_commands(browser, url):
     context = browser.new_context(viewport={'width': 1440, 'height': 1000})
     page = context.new_page()
-    errors, console_errors = [], []
+    errors, console_errors, dialogs = [], [], []
     page.on('pageerror', lambda error: errors.append(str(error)))
     page.on('console', lambda message: console_errors.append(message.text) if message.type == 'error' else None)
+    def dismiss_dialog(dialog):
+        dialogs.append(dict(type=dialog.type, message=dialog.message))
+        dialog.dismiss()
+    page.on('dialog', dismiss_dialog)
     try:
         page.goto(url, wait_until='domcontentloaded')
         page.wait_for_function('() => !!window.VibeMolCommands')
-        commands(page)
+        commands(page, dialogs)
         print('[premerge commands] ' + json.dumps(dict(case='page errors', actual=errors, expected=[])), flush=True)
         assert not errors, errors
     except Exception:
