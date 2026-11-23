@@ -44,7 +44,8 @@ class CheckpointContractTests(unittest.TestCase):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
         self.assertEqual(manifest['checkpointCounts'], {
             'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'edit-api-catalog-site':7,
-                                      'atomic-identity-rejection':24, 'edit-testing-case':84, 'commands-completion':1},
+                                      'atomic-identity-rejection':24, 'edit-testing-case':84, 'commands-completion':1,
+                                      'embed-bridge-completion':1},
             'tests/e2e/smoke.py': {'video-activation':58, 'video-export-completion':2, 'smoke-spinor-launcher':8},
             'tests/e2e/look_references.py': {'registry-readback':500},
             'tests/e2e/axis_gizmo.py': {'escape-native-case':62},

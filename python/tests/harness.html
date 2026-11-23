@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>VibeMol notebook widget test harness</title>
+<body>
+<div id="views"></div>
+<script type="module">
+  import widget from '../vibemol/static/widget.js';
+
+  const token = 'notebook-bridge-test-token-0123456789abcd';
+  const values = {
+    url: new URL('/?from=notebook', location.href).href,
+    height: 480, token, ready: false, app_info: {},
+    selection: null, calculations: null, last_error: null,
+  };
+  const listeners = new Map();
+  const sent = [];
+  const saves = [];
+  const model = {
+    get(key) { return values[key]; },
+    set(key, value) { values[key] = value; },
+    on(name, fn) {
+      if (!listeners.has(name)) listeners.set(name, new Set());
+      listeners.get(name).add(fn);
+    },
+    off(name, fn) { listeners.get(name)?.delete(fn); },
+    emit(msg) { for (const fn of listeners.get('msg:custom') || []) fn(msg); },
+    send(msg) {
+      sent.push(msg);
+      if (msg.kind === 'frontend-attached') this.emit({ kind: 'frontend-sync' });
+    },
+    save_changes() { saves.push(structuredClone(values)); },
+  };
+  const instances = new Map();
+  const initialize = widget.initialize({ model });
+  function display(id) {
+    const el = document.createElement('div');
+    el.id = id;
+    document.querySelector('#views').append(el);
+    instances.set(id, widget.render({ model, el }));
+  }
+  function remove(id) {
+    instances.get(id)();
+    instances.delete(id);
+    document.getElementById(id).remove();
+  }
+  display('first');
+  window.harness = { model, token, sent, saves, display, remove, initialize };
+</script>
+</body>
+</html>

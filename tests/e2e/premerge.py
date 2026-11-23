@@ -12,7 +12,7 @@ import sys
 import tempfile
 
 from playwright.sync_api import expect, sync_playwright
-from helpers import ensure_artifact_dir, run_http_server, write_failure_artifacts
+from helpers import ensure_artifact_dir, read_app_version, run_http_server, write_failure_artifacts
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACTS = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(ROOT / 'out' / 'test-artifacts'))))
@@ -1180,6 +1180,137 @@ def run_commands(browser, url):
     print('[commands-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
 
 
+def embed_bridge(page, url):
+    token = 'embed-bridge-test-token-0123456789abcdef'
+    fixture = url + 'tests/fixtures/embed-bridge.html'
+    page.goto(fixture)
+    page.evaluate("""() => {
+      window.messages = [];
+      addEventListener('message', event => {
+        const frame = [...document.querySelectorAll('iframe')].find(el => el.contentWindow === event.source);
+        if (frame && event.data?.channel === 'vibemol.embed') messages.push({ frame: frame.id, ...event.data });
+      });
+    }""")
+
+    def check(case, actual, expected):
+        row = dict(case=case, actual=actual, expected=expected)
+        print('[premerge embed bridge] ' + json.dumps(row, sort_keys=True), flush=True)
+        assert json.dumps(actual, sort_keys=True) == json.dumps(expected, sort_keys=True), row
+
+    def frame(name, src):
+        page.evaluate("""({name, src}) => {
+          const iframe = document.createElement('iframe');
+          iframe.id = iframe.name = name;
+          iframe.width = 1100;
+          iframe.height = 650;
+          iframe.src = src;
+          document.body.append(iframe);
+        }""", dict(name=name, src=src))
+        page.wait_for_function("""({name, src}) => {
+          const iframe = document.getElementById(name);
+          return iframe.contentWindow.location.pathname === new URL(src).pathname && !!iframe.contentDocument.body;
+        }""", arg=dict(name=name, src=src))
+
+    def send(id_, command, params=None, *, target='viewer', key=token, sender=page):
+        sender.evaluate("""({target, request}) => {
+          const owner = window === parent ? window : parent;
+          owner.document.getElementById(target).contentWindow.postMessage(request, location.origin);
+        }""", dict(target=target, request=dict(channel='vibemol.embed', v=1, token=key,
+                                             kind='request', id=id_, command=command, params=params or {})))
+
+    def messages(kind, target='viewer'):
+        return page.evaluate("({kind,target}) => messages.filter(m => m.kind === kind && m.frame === target)",
+                             dict(kind=kind, target=target))
+
+    def response(id_):
+        return page.wait_for_function(
+            "id => messages.find(m => m.frame === 'viewer' && m.kind === 'response' && m.id === id)", arg=id_
+        ).json_value()['result']
+
+    def states(count):
+        page.wait_for_function("n => messages.filter(m => m.frame === 'viewer' && m.kind === 'state').length >= n", arg=count)
+        return [m['state'] for m in messages('state')]
+
+    frame('viewer', f'{url}?embed=commands#vmtoken={token}')
+    viewer = page.frame(name='viewer')
+    ready = page.wait_for_function("() => messages.find(m => m.frame === 'viewer' && m.kind === 'ready')").json_value()
+    check('ready envelope', ready, dict(frame='viewer', channel='vibemol.embed', v=1, token=token, kind='ready',
+                                       info=dict(appVersion=read_app_version(), commandVersion=1)))
+    check('fragment stripped', viewer.evaluate('location.hash'), '')
+
+    send('water', 'files.load', {'files': [{'name': 'water.xyz', 'text': (ROOT/'assets/fragments/water.xyz').read_text()}]})
+    check('load response', response('water'), dict(ok=True, value=dict(ok=True, loadedCount=1, loadedNames=['water.xyz'])))
+    initial = dict(atomIds=[], indices=[], count=0)
+    calculations = viewer.evaluate("async () => (await VibeMolCommands.run('calculations.state')).value")
+    expected = [dict(selection=initial, calculations=calculations)]
+    check('load broadcasts one snapshot', states(1), expected)
+
+    send('mode', 'edit.enter', {'tool': 'transform'})
+    check('mode response', response('mode'), dict(ok=True, value=dict(mode='edit', tool='transform')))
+    send('selection', 'edit.setSelection', {'selector': {'kind': 'labels', 'labels': ['O1', 'H1']}})
+    atoms = viewer.evaluate("() => VibeMolEdit.context().value.atoms.map(atom => atom.id)")
+    selected = dict(atomIds=atoms[:2], indices=[0, 1], count=2)
+    check('selection response', response('selection'), dict(ok=True, value=selected))
+    expected.append(dict(selection=selected, calculations=calculations))
+    check('selection broadcasts one snapshot', states(2), expected)
+
+    direct = viewer.evaluate("""() => {
+      const found = VibeMolEdit.resolveSelection({kind: 'labels', labels: ['H2']});
+      const result = VibeMolEdit.setSelection(found.value);
+      document.dispatchEvent(new Event('pointerup'));
+      document.dispatchEvent(new Event('keyup'));
+      return result.value;
+    }""")
+    direct_selection = dict(atomIds=atoms[2:], indices=[2], count=1)
+    check('direct selection applied', direct, direct_selection)
+    expected.append(dict(selection=direct_selection, calculations=calculations))
+    check('debounced interactions broadcast one snapshot', states(3), expected)
+
+    frame('sibling', fixture)
+    send('wrong-token', 'edit.clearSelection', key='invalid-012345678901234567890123456789')
+    send('wrong-source', 'edit.clearSelection', sender=page.frame(name='sibling'))
+    send('fence', 'edit.getSelection')
+    check('rejected inputs preserve active selection', response('fence'), dict(ok=True, value=direct_selection))
+
+    frame('inactive', f'{url}#vmtoken={token}')
+    inactive = page.frame(name='inactive')
+    inactive.wait_for_function('() => !!window.VibeMolCommands')
+    read_context = "() => VibeMolCommands.run('edit.context')"
+    inactive_before = inactive.evaluate(read_context)
+    inactive.evaluate("""() => {
+      addEventListener('message', event => {
+        if (event.data?.id === 'inactive') document.body.dataset.seenRequest = 'yes';
+      });
+    }""")
+    send('inactive', 'files.load', {'files': [{'name': 'wrong.xyz', 'text': '1\nwrong\nHe 0 0 0\n'}]}, target='inactive')
+    inactive.wait_for_function("() => document.body.dataset.seenRequest === 'yes'")
+    page.evaluate('() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))')
+    check('inactive fragment retained', inactive.evaluate('location.hash'), f'#vmtoken={token}')
+    check('inactive received no bridge messages', page.evaluate("() => messages.filter(m => m.frame === 'inactive')"), [])
+    check('inactive workspace unchanged', inactive.evaluate(read_context), inactive_before)
+    check('exact response sequence', [m['id'] for m in messages('response')], ['water', 'mode', 'selection', 'fence'])
+    check('exact final state sequence', [m['state'] for m in messages('state')], expected)
+    check('one ready message', len(messages('ready')), 1)
+    return dict(responses=len(messages('response')), snapshots=len(messages('state')), ignoredRequests=3)
+
+
+def run_embed_bridge(browser, url):
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    page = context.new_page()
+    errors = []
+    page.on('pageerror', lambda error: errors.append(str(error)))
+    try:
+        completion = embed_bridge(page, url)
+        assert completion == dict(responses=4, snapshots=3, ignoredRequests=3), completion
+        assert not errors, errors
+    except Exception:
+        write_failure_artifacts(page, ARTIFACTS, 'premerge-embed-bridge', errors, [])
+        raise
+    finally:
+        context.close()
+    print('[embed-bridge-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
+
+
 def main():
     from atomic_identity import run as atomic_identity
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
@@ -1209,6 +1340,7 @@ def main():
                 finally:
                     context.close()
             run_commands(browser, url)
+            run_embed_bridge(browser, url)
         finally:
             browser.close()
     from edit_api import run_matrix as edit_api_matrix

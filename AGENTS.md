@@ -1,14 +1,21 @@
 # AGENTS.md
 
-## Current handoff — 2026-11-19
+## Current handoff — 2026-11-23
 
 Read [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md), [VIBEMOL_CONTEXT.md](VIBEMOL_CONTEXT.md)
 and [the roadmap](docs/roadmap.md) before selecting work. The historical receipts
 below preserve their actual counts and rejected candidates; their old “next”
-instructions do not select a new task. The separately authorized
-[command registry v0](docs/api/commands.md) is in development.
+instructions do not select a new task.
 
-- Latest deployed runtime: **0.10.11**, PR #107 merge
+- **0.10.14 release candidate** (PR #111) includes [command registry v0](docs/api/commands.md),
+  the [opt-in embed bridge](docs/api/embed.md), and the [notebook widget](python/README.md)
+  at package version 0.1.0. Recording [45231609802](https://github.com/evangelistalab/vibemol/actions/runs/45231609802)
+  reproduced the 204 declared version changes across 102 captures, with zero residual
+  differences. The in-app What's new text is intentionally unchanged.
+  See the [release notes](docs/releases/v0.10.14.md).
+- The latest verified deployment before this candidate is **0.10.13**, PR #110 merge
+  `1ab735dc990ccde03e9a4da96259432fe9f0723c`.
+- **0.10.11** right-panel patch, PR #107 merge
   `297e608fa88038151fa73edc10362281fc6103db`. Documentation-only commits may follow.
   Tested head `042a319a2cbf8378e96288c9e0a9085f0081c893` passed the complete
   [44562324565](https://github.com/evangelistalab/vibemol/actions/runs/44562324565)
@@ -336,6 +343,7 @@ Required script order in `index.html`:
     - `pubchem.js` loads immediately before `periodic-table.js`; its inert controller is constructed immediately after `els`, before any startup restoration callback can read it. Listener wiring remains at its original late point.
 58. `assets/app/js/workbench-model.js` and `assets/app/js/workbench.js`
 59. `assets/app/js/command-registry.js` and `assets/app/js/commands.js`. The registry factory loads first. Command adapters resolve public target namespaces at execution time.
+60. `assets/app/js/embed-bridge.js` loads directly after `commands.js`. It uses the [opt-in embed protocol](docs/api/embed.md) and installs no global.
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolElementUtils`

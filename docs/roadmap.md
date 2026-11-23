@@ -4,7 +4,7 @@ Reviewed **2026-11-19** after PR #107. Latest deployed runtime: **0.10.11** at `
 
 ## Current priority
 
-[Command registry v0](api/commands.md) (additive, direct authorization; not the 0.11 bus). Preserve 37 passing / 0 failing / 37 and the intentionally empty accepted-failure set.
+[Step 3a notebook widget](api/embed.md) adds an opt-in iframe transport for [command registry v0](api/commands.md) and mirrors Edit selection and Calculations state to the Python kernel. The separate widget job exercises the demo in JupyterLab. Preserve 37 passing / 0 failing / 37 and the intentionally empty accepted-failure set.
 
 Goals remain fast, reproducible scientific visualization, intuitive editing and preservation of user work, through both UI and supported automation.
 
