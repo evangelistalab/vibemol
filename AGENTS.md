@@ -336,6 +336,7 @@ Required script order in `index.html`:
     - `pubchem.js` loads immediately before `periodic-table.js`; its inert controller is constructed immediately after `els`, before any startup restoration callback can read it. Listener wiring remains at its original late point.
 58. `assets/app/js/workbench-model.js` and `assets/app/js/workbench.js`
 59. `assets/app/js/command-registry.js` and `assets/app/js/commands.js`. The registry factory loads first. Command adapters resolve public target namespaces at execution time.
+60. `assets/app/js/embed-bridge.js` loads directly after `commands.js`. It uses the [opt-in embed protocol](docs/api/embed.md) and installs no global.
 
 `assets/app/js/app.js` requires global modules:
 - `window.VibeMolElementUtils`

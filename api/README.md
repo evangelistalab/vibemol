@@ -43,6 +43,8 @@ Note:
 - `vibemol(...)` displays inline by default and returns `None`.
 - Use `auto_display=False` if you want to capture and manually display the returned `HTML` object.
 
+For two-way notebook commands and selection readback, use [`vibemol.Viewer`](../python/README.md).
+
 Batch render multiple files:
 ```bash
 python api/vibemol_client.py \
