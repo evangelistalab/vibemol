@@ -8,7 +8,9 @@
     number: Number.isFinite,
     integer: Number.isInteger,
     boolean: value => typeof value === 'boolean',
+    null: value => value === null,
   };
+  const scalarTypes = new Set(['string', 'number', 'integer', 'boolean', 'null']);
   const fieldsByType = {
     object: ['properties', 'required', 'additionalProperties'],
     array: ['items', 'minItems', 'maxItems'],
@@ -46,8 +48,19 @@
   }
 
   function checkSchema(schema, path) {
-    if (!isObject(schema) || !Object.hasOwn(types, schema.type)) throw new TypeError(`Invalid schema type at ${path}`);
-    const allowed = ['type', 'enum', ...(fieldsByType[schema.type] || [])];
+    if (!isObject(schema) || !Object.prototype.propertyIsEnumerable.call(schema, 'type')) {
+      throw new TypeError(`Invalid schema type at ${path}`);
+    }
+    const { type } = schema;
+    const union = Array.isArray(type);
+    const valid = union
+      ? type.length >= 2 && new Set(type).size === type.length && type.every(name => scalarTypes.has(name))
+      : typeof type === 'string' && Object.hasOwn(types, type);
+    if (!valid) throw new TypeError(`Invalid schema type at ${path}`);
+    const fields = union
+      ? (type.includes('number') || type.includes('integer') ? fieldsByType.number : [])
+      : fieldsByType[type] || [];
+    const allowed = ['type', 'enum', ...fields];
     for (const key of Object.keys(schema)) {
       if (!allowed.includes(key)) throw new TypeError(`Unsupported schema keyword "${key}" at ${path}`);
     }
@@ -67,11 +80,11 @@
       throw new TypeError(`Only additionalProperties: false is supported at ${path}`);
     }
     if (Object.hasOwn(schema, 'items')) checkSchema(schema.items, `${path}.items`);
-    for (const [min, max, valid] of [
+    for (const [min, max, validBound] of [
       ['minimum', 'maximum', Number.isFinite],
       ['minItems', 'maxItems', count => Number.isInteger(count) && count >= 0],
     ]) {
-      if ([min, max].some(key => Object.hasOwn(schema, key) && !valid(schema[key])) || schema[min] > schema[max]) {
+      if ([min, max].some(key => Object.hasOwn(schema, key) && !validBound(schema[key])) || schema[min] > schema[max]) {
         throw new TypeError(`Invalid ${min}/${max} at ${path}`);
       }
     }
@@ -81,13 +94,16 @@
     const errors = [];
     function validate(rule, value, path) {
       const report = message => errors.push({ path, message });
-      if (!types[rule.type](value)) {
-        report(`Expected ${rule.type}`);
+      const names = Array.isArray(rule.type) ? rule.type : [rule.type];
+      if (!names.some(name => types[name](value))) {
+        report(`Expected ${names.join(' or ')}`);
         return;
       }
       if (rule.enum && !rule.enum.some(choice => sameJson(value, choice))) report('Expected one of the enum values');
-      if (Object.hasOwn(rule, 'minimum') && value < rule.minimum) report(`Expected a value of at least ${rule.minimum}`);
-      if (Object.hasOwn(rule, 'maximum') && value > rule.maximum) report(`Expected a value of at most ${rule.maximum}`);
+      if (typeof value === 'number') {
+        if (Object.hasOwn(rule, 'minimum') && value < rule.minimum) report(`Expected a value of at least ${rule.minimum}`);
+        if (Object.hasOwn(rule, 'maximum') && value > rule.maximum) report(`Expected a value of at most ${rule.maximum}`);
+      }
       if (rule.type === 'object') {
         const properties = rule.properties || {};
         for (const key of rule.required || []) {

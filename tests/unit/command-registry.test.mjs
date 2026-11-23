@@ -74,6 +74,32 @@ test('registration rejects duplicate IDs, invalid definitions and unknown nested
   })]), /Unsupported schema keyword "pattern"/);
 });
 
+test('nested schemas reject unsupported types and enforce object constraints', async () => {
+  const host = load();
+  const { createCommandRegistry } = host.VibeMolCommandRegistry;
+  for (const type of [['object'], ['array'], ['object', 'null'], ['array', 'null'], [], ['string', 'string'], 5, 'date']) {
+    const params = { type: 'object', properties: { nested: { type } } };
+    assert.throws(() => createCommandRegistry([definition({ params })]), /Invalid schema type.*nested/);
+  }
+  const registry = createCommandRegistry([definition({ params: {
+    type: 'object', properties: { nested: {
+      type: 'object', properties: { value: { type: 'string' } }, required: ['value'], additionalProperties: false,
+    } },
+  } })]);
+  const { error } = await registry.run('test.echo', { nested: { extra: true } });
+  assert.equal(error.code, 'invalid-params');
+  assert.deepEqual(plain(error.details).map(detail => detail.path), ['$.nested.value', '$.nested.extra']);
+});
+
+test('scalar unions check numeric bounds on numbers and enum on all values', () => {
+  const { validateParams } = load().VibeMolCommandRegistry;
+  const schema = { type: ['integer', 'null'], minimum: 1, maximum: 3 };
+  for (const value of [2, null]) assert.equal(validateParams(schema, value).ok, true);
+  for (const value of [2.5, '2', 0, 4]) assert.equal(validateParams(schema, value).ok, false);
+  assert.equal(validateParams({ ...schema, enum: [2] }, null).ok, false);
+  assert.equal(validateParams({ ...schema, enum: [null] }, null).ok, true);
+});
+
 test('run resolves every error envelope, including hostile thrown values', async () => {
   const host = load();
   const registry = host.VibeMolCommandRegistry.createCommandRegistry([definition()]);
