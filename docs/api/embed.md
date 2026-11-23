@@ -12,6 +12,8 @@ Francesco authorizes this step as a continuation of the command registry v0 exce
 
 ## Activation
 
+The embed bridge requires VibeMol 0.10.14 or later. `Viewer()` defaults to `https://vibemol.org/`. An older deployment never sends the bridge's `ready` message.
+
 Embed a compatible VibeMol page in an iframe with `?embed=commands#vmtoken=<token>`. The fragment must contain at least 32 URL-safe characters from `A–Z`, `a–z`, `0–9`, `_` and `-`. The bridge reads the token into memory and removes the fragment with `history.replaceState`. It installs listeners only when both URL parameters match. The notebook [Viewer](../../python/README.md) generates a random token for each instance.
 
 ## Messages

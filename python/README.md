@@ -8,7 +8,7 @@ Install from the repository root in the environment used by your notebook kernel
 pip install -e python
 ```
 
-Use a compatible VibeMol server. `Viewer()` defaults to `https://vibemol.org/` and requires the [embed bridge](../docs/api/embed.md) to be present on that server. To run this checkout locally, serve the repository root in a separate terminal.
+The [embed bridge](../docs/api/embed.md) requires VibeMol 0.10.14 or later. `Viewer()` defaults to `https://vibemol.org/`. An older deployment never sends `ready`, so the widget stays pending. To run this checkout locally, serve the repository root in a separate terminal.
 
 ```bash
 python3 -m http.server 8000 --bind 127.0.0.1
