@@ -92,7 +92,8 @@
       "edit-api-rejection": 26,
       "edit-api-catalog-site": 7,
       "atomic-identity-rejection": 24,
-      "edit-testing-case": 84
+      "edit-testing-case": 84,
+      "commands-completion": 1
     },
     "tests/e2e/smoke.py": {
       "video-activation": 58,

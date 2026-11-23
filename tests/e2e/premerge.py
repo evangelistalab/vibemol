@@ -1149,6 +1149,7 @@ def commands(page, dialogs):
                    'These XYZ coordinates might be in bohr. Convert them to angstroms (1 bohr = 0.529177 angstrom)?\n\n'
                    'OK: convert from bohr.\nCancel: keep the original coordinates as angstroms.',
     }])
+    return dict(restoredSceneCount=imported['sceneCount'], restoredSourceCount=imported['sourceCount'], dialogCount=len(dialogs))
 
 
 def run_commands(browser, url):
@@ -1164,7 +1165,11 @@ def run_commands(browser, url):
     try:
         page.goto(url, wait_until='domcontentloaded')
         page.wait_for_function('() => !!window.VibeMolCommands')
-        commands(page, dialogs)
+        completion = commands(page, dialogs)
+        expected = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
+        row = dict(case='workflow completion', actual=completion, expected=expected)
+        print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
+        assert completion == expected, row
         print('[premerge commands] ' + json.dumps(dict(case='page errors', actual=errors, expected=[])), flush=True)
         assert not errors, errors
     except Exception:
@@ -1172,6 +1177,7 @@ def run_commands(browser, url):
         raise
     finally:
         context.close()
+    print('[commands-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
 
 
 def main():

@@ -17,6 +17,7 @@ The manifest requires these raw JSON record cardinalities:
 | Premerge | edit-api | 115 |
 | Premerge | edit-api-rejection | 26 |
 | Premerge | atomic-identity-rejection | 24 |
+| Premerge | commands-completion | 1 |
 | Smoke | video-activation | 58 |
 | Smoke | video-export-completion | 2 |
 | Smoke | smoke-spinor-launcher | 8 |
