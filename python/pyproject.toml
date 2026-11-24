@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = ["anywidget>=0.9", "traitlets"]
 
 [project.optional-dependencies]
-test = ["pytest", "playwright==1.64.1", "jupyterlab>=4,<5", "ipykernel"]
+test = ["pytest", "playwright==1.64.1", "jupyterlab>=4,<5", "ipykernel", "numpy"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["vibemol"]

@@ -276,5 +276,12 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: python-widget
-          path: out/test-artifacts/python-widget/viewer_demo.png
+          path: |
+            out/test-artifacts/python-widget/viewer_demo.png
+            out/test-artifacts/python-widget/excited_state_vectors.png
+            out/test-artifacts/python-widget/excited_s1_forces.png
+            out/test-artifacts/python-widget/excited_s0_forces.png
+            out/test-artifacts/python-widget/excited_s0_dipole.png
+            out/test-artifacts/python-widget/excited_s1_dipole.png
+            out/test-artifacts/python-widget/excited_transition.png
           if-no-files-found: error

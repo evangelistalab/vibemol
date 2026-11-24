@@ -1,6 +1,6 @@
 """Exercise the installed widget in a real JupyterLab notebook."""
 
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from contextlib import ExitStack, contextmanager, suppress
 import json
 import os
@@ -22,6 +22,9 @@ from helpers import find_free_port, read_app_version
 PYTHON_DIR = Path(__file__).resolve().parents[1]
 NOTEBOOK = Path("examples/viewer_demo.ipynb")
 MOLDEN = Path("tests/data/cyclopropene_cas43.molden")
+EXCITED_NOTEBOOK = Path("examples/excited_state_vectors.ipynb")
+EXCITED_MOLDEN = Path("tests/data/cyclopropene_sa2cas43.molden")
+EXCITED_PROPERTIES = Path("tests/data/cyclopropene_sa2cas43_properties.json")
 VIEWER = 'iframe[title="VibeMol molecular viewer"]'
 PROMPT = re.compile(r"^\[\s*(?:\*|\d+)\s*\]:?$")
 MIN_NON_BACKGROUND_PIXELS = 64
@@ -75,9 +78,9 @@ PIXEL_STATS = """(source, {x, y, width, height}) => {
 
 
 @contextmanager
-def jupyter_lab(directory, app_url):
+def jupyter_lab(directory, app_url, notebook, fixtures):
     workspace = directory / "notebooks"
-    for relative in (NOTEBOOK, MOLDEN):
+    for relative in (notebook, *fixtures):
         target = workspace / relative
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(PYTHON_DIR / relative, target)
@@ -126,7 +129,7 @@ def jupyter_lab(directory, app_url):
     try:
         if not startup_finished.wait(timeout=60) or not ready.is_set():
             raise RuntimeError("JupyterLab did not announce its listening URL")
-        yield f"{base}/lab/tree/{NOTEBOOK.as_posix()}?token={token}"
+        yield f"{base}/lab/tree/{notebook.as_posix()}?token={token}"
     finally:
         process.terminate()
         try:
@@ -158,8 +161,8 @@ def presented_canvas(frame, actual):
             actual.update(probe.json_value())
 
 
-@pytest.mark.slow
-def test_demo_notebook_displays_and_loads_molden(page, app_url, tmp_path, capsys):
+@contextmanager
+def notebook_run(page, app_url, tmp_path, capsys, notebook, fixtures):
     artifact_dir = Path(os.environ.get(
         "VIBEMOL_WIDGET_ARTIFACT_DIR", "out/test-artifacts/python-widget",
     ))
@@ -212,7 +215,7 @@ def test_demo_notebook_displays_and_loads_molden(page, app_url, tmp_path, capsys
     with ExitStack() as server:
         try:
             with check("server-start", listening=True):
-                notebook_url = server.enter_context(jupyter_lab(tmp_path, app_url))
+                notebook_url = server.enter_context(jupyter_lab(tmp_path, app_url, notebook, fixtures))
             with check("navigation", responseOK=True) as actual:
                 page.add_init_script(f"""
                     window.notebookShiftEnter = [];
@@ -230,40 +233,96 @@ def test_demo_notebook_displays_and_loads_molden(page, app_url, tmp_path, capsys
                 actual["status"] = navigation.status if navigation else None
                 assert navigation and navigation.ok, "JupyterLab did not serve the demo notebook"
 
-            run_cell(0)
-            iframe = page.locator(VIEWER)
-            with check("viewer-output", visible=True, timeoutMs=60_000):
-                expect(iframe).to_be_visible(timeout=60_000)
-            run_cell(1)
-            viewer = page.frame_locator(VIEWER)
-            with check("molden-loaded", file=MOLDEN.name, timeoutMs=30_000):
-                expect(viewer.get_by_text(MOLDEN.name, exact=True).first).to_be_visible(timeout=30_000)
-            status = run_cell(2)
-            receipt = f"True {read_app_version()}\n1 Molden file loaded"
-            with check("load-receipt", text=receipt, timeoutMs=30_000):
-                expect(status.locator(".jp-OutputArea-output")).to_contain_text(receipt, timeout=30_000)
-
-            with check("presented-canvas", presented=True, minimumNonBackgroundPixels=MIN_NON_BACKGROUND_PIXELS) as actual:
-                iframe.scroll_into_view_if_needed()
-                frame = iframe.element_handle().content_frame()
-                assert frame is not None
-                presented_canvas(frame, actual)
-
-            with check("screenshot", minimumNonBackgroundPixels=MIN_NON_BACKGROUND_PIXELS) as actual:
-                bounds = frame.locator("#canvas").bounding_box()
-                actual["bounds"] = bounds
-                assert bounds is not None
-                path = artifact_dir / "viewer_demo.png"
-                screenshot = page.screenshot(path=path, scale="css")
-                actual["pixels"] = page.evaluate(f"""async ({{png, bounds}}) => {{
-                    const image = new Image();
-                    image.src = 'data:image/png;base64,' + png;
-                    await image.decode();
-                    return ({PIXEL_STATS})(image, bounds);
-                }}""", {"png": b64encode(screenshot).decode("ascii"), "bounds": bounds})
-                assert actual["pixels"]["nonBackgroundPixels"] >= MIN_NON_BACKGROUND_PIXELS, actual
+            yield run_cell, check, artifact_dir
         except Exception:
             observe("notebook-smoke", "failed", {}, {})
             with suppress(Error):
-                page.screenshot(path=artifact_dir / "viewer_demo_failure.png", full_page=True)
+                page.screenshot(path=artifact_dir / f"{notebook.stem}_failure.png", full_page=True)
             raise
+
+
+def canvas_screenshot(page, iframe, check, path):
+    with check("presented-canvas", presented=True, minimumNonBackgroundPixels=MIN_NON_BACKGROUND_PIXELS) as actual:
+        iframe.scroll_into_view_if_needed()
+        frame = iframe.element_handle().content_frame()
+        assert frame is not None
+        presented_canvas(frame, actual)
+
+    with check("screenshot", minimumNonBackgroundPixels=MIN_NON_BACKGROUND_PIXELS) as actual:
+        bounds = frame.locator("#canvas").bounding_box()
+        actual["bounds"] = bounds
+        assert bounds is not None
+        screenshot = page.screenshot(path=path, scale="css")
+        actual["pixels"] = page.evaluate(f"""async ({{png, bounds}}) => {{
+            const image = new Image();
+            image.src = 'data:image/png;base64,' + png;
+            await image.decode();
+            return ({PIXEL_STATS})(image, bounds);
+        }}""", {"png": b64encode(screenshot).decode("ascii"), "bounds": bounds})
+        assert actual["pixels"]["nonBackgroundPixels"] >= MIN_NON_BACKGROUND_PIXELS, actual
+
+
+@pytest.mark.slow
+def test_demo_notebook_displays_and_loads_molden(page, app_url, tmp_path, capsys):
+    with notebook_run(page, app_url, tmp_path, capsys, NOTEBOOK, (MOLDEN,)) as (run_cell, check, artifacts):
+        run_cell(0)
+        iframe = page.locator(VIEWER)
+        with check("viewer-output", visible=True, timeoutMs=60_000):
+            expect(iframe).to_be_visible(timeout=60_000)
+        run_cell(1)
+        viewer = page.frame_locator(VIEWER)
+        with check("molden-loaded", file=MOLDEN.name, timeoutMs=30_000):
+            expect(viewer.get_by_text(MOLDEN.name, exact=True).first).to_be_visible(timeout=30_000)
+        status = run_cell(2)
+        receipt = f"True {read_app_version()}\n1 Molden file loaded"
+        with check("load-receipt", text=receipt, timeoutMs=30_000):
+            expect(status.locator(".jp-OutputArea-output")).to_contain_text(receipt, timeout=30_000)
+        canvas_screenshot(page, iframe, check, artifacts / "viewer_demo.png")
+
+
+@pytest.mark.slow
+def test_excited_state_notebook_renders_five_panels(page, app_url, tmp_path, capsys):
+    with notebook_run(page, app_url, tmp_path, capsys, EXCITED_NOTEBOOK, (EXCITED_MOLDEN, EXCITED_PROPERTIES)) as (
+        run_cell, check, artifacts,
+    ):
+        run_cell(0)
+        iframe = page.locator(VIEWER)
+        with check("excited-viewer-output", visible=True, timeoutMs=60_000):
+            expect(iframe).to_be_visible(timeout=60_000)
+
+        def output(cell_index, *messages):
+            cell = run_cell(cell_index)
+            with check("excited-cell-output", index=cell_index, messages=messages, timeoutMs=30_000):
+                for message in messages:
+                    expect(cell.locator(".jp-Cell-outputArea")).to_contain_text(message, timeout=30_000)
+            return cell
+
+        def snapshot(cell, name):
+            img = cell.locator(".jp-OutputArea-output img").first
+            with check("excited-snapshot", panel=name, width=640, height=460,
+                       minimumNonBackgroundPixels=MIN_NON_BACKGROUND_PIXELS) as actual:
+                expect(img).to_be_visible(timeout=30_000)
+                actual["pixels"] = img.evaluate(f"""async image => {{
+                    await image.decode();
+                    return ({PIXEL_STATS})(image, {{
+                        x: 0, y: 0, width: image.naturalWidth, height: image.naturalHeight
+                    }});
+                }}""")
+                pixels = actual["pixels"]
+                assert [pixels["width"], pixels["height"]] == [640, 460]
+                assert pixels["nonBackgroundPixels"] >= MIN_NON_BACKGROUND_PIXELS
+                uri = img.get_attribute("src")
+                assert uri.startswith("data:image/png;base64,")
+                (artifacts / f"excited_{name}.png").write_bytes(b64decode(uri.split(",", 1)[1], validate=True))
+
+        output(1, "Molden orbitals ready")
+        output(2, "Active occupations: 1.989, 1.480, 0.530", "View and orbital ready")
+        output(3, "Presented orbital 11 in View mode", "S1 forces ready")
+        snapshot(output(4, "S1 force scale:", "S0 forces ready"), "s1_forces")
+        snapshot(output(5, "S0 uses the S1 force scale: True", "Longest S0 arrow:"), "s0_forces")
+        output(6, "S0 dipole ready")
+        snapshot(output(7, "S0 dipole z: -0.405 a.u.", "S1 dipole ready"), "s0_dipole")
+        snapshot(output(8, "S1 dipole z: +0.604 a.u.", "Same dipole scale: True"), "s1_dipole")
+        output(9, "Transition dipole ready")
+        snapshot(output(10, "f = 0.278", "Arrow heads: both"), "transition")
+        canvas_screenshot(page, iframe, check, artifacts / "excited_state_vectors.png")

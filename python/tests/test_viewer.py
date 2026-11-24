@@ -1,10 +1,12 @@
 import json
 import re
 
+from IPython.display import Image
+import numpy as np
 import pytest
 
 from api.vibemol_client import vibemol
-from vibemol import CommandError, PendingResult, Viewer
+from vibemol import CommandError, CommandFuture, PendingResult, Viewer
 
 
 @pytest.fixture
@@ -99,6 +101,32 @@ def test_requests_resolve_by_id_and_notify_callbacks(viewer):
         first.result()
 
 
+def test_mode_and_orbital_methods_forward_futures_and_preserve_refusal(viewer):
+    model, sent = viewer
+    mode = model.set_mode("edit")
+    assert not mode.done()
+    assert sent[-1]["command"] == "view.setMode"
+    assert sent[-1]["params"] == {"mode": "edit"}
+    applied = {"mode": "edit", "surfacesSuppressed": True}
+    deliver(model, kind="response", id=sent[-1]["id"], result={"ok": True, "value": applied})
+    assert mode.result() == applied
+
+    show = model.show_orbitals([10, 11], exclusive=False)
+    assert not show.done()
+    assert [request["command"] for request in sent] == ["view.setMode", "orbitals.show"]
+    assert sent[-1]["params"] == {"indices": [10, 11], "exclusive": False}
+    refusal = {"code": "not-available",
+               "message": "Orbital surfaces are hidden in Edit mode; call view.setMode('view') first.",
+               "details": applied}
+    deliver(model, kind="response", id=sent[-1]["id"], result={"ok": False, "error": refusal})
+    with pytest.raises(CommandError) as error:
+        show.result()
+    assert error.value.code == refusal["code"]
+    assert str(error.value) == error.value.message == refusal["message"]
+    assert error.value.details == refusal["details"]
+    assert len(sent) == 2
+
+
 def test_startup_requests_are_replayed_in_order_after_frontend_attachment(viewer):
     model, sent = viewer
     first = model.run("app.info")
@@ -127,3 +155,61 @@ def test_incompatible_ready_fails_pending_and_future_requests(viewer):
     deliver(model, kind="ready", info={"appVersion": "current", "commandVersion": 1})
     assert model.ready is True
     assert model.last_error is None
+
+
+@pytest.mark.parametrize(("method", "args", "kwargs", "command", "expected"), [
+    ("orbitals", (), {}, "orbitals.list", {}),
+    ("show_orbitals", ((10, 11),), {}, "orbitals.show", {"indices": [10, 11], "exclusive": True}),
+    ("hide_orbitals", (), {}, "orbitals.hide", {}),
+    ("hide_orbitals", ((11,),), {}, "orbitals.hide", {"indices": [11]}),
+    ("configure_orbitals", (), {"indices": (10,), "iso": 0.04, "opacity": 0},
+     "orbitals.configure", {"indices": [10], "iso": 0.04, "opacity": 0}),
+    ("set_view", (), {}, "view.set", {"fit": True}),
+    ("set_view", (), {"axis": "+x", "fit": False, "projection": "orthographic"}, "view.set",
+     {"axis": "+x", "fit": False, "projection": "orthographic"}),
+    ("set_atom_vectors", ("forces", np.array([[0, 1, 0]]), "#AA0099"),
+     {"max_length": 1, "atomic_numbers": np.array([6])}, "vectors.setAtoms",
+     {"name": "forces", "values": [[0, 1, 0]], "color": "#AA0099", "maxLength": 1, "atomicNumbers": [6]}),
+    ("set_atom_vectors", ("forces", [(0, 1, 0)], "#AA0099"), {"scale": 2}, "vectors.setAtoms",
+     {"name": "forces", "values": [[0, 1, 0]], "color": "#AA0099", "scale": 2}),
+    ("set_arrow", ("dipole", (0, 0, 1), "#AA0099"), {"length": 1}, "vectors.setArrow",
+     {"name": "dipole", "vector": [0, 0, 1], "color": "#AA0099", "length": 1, "heads": "tip"}),
+    ("set_arrow", ("dipole", (0, 0, 1), "#AA0099"), {"scale": 2, "origin": (0, 0, 0), "heads": "both"},
+     "vectors.setArrow",
+     {"name": "dipole", "vector": [0, 0, 1], "color": "#AA0099", "scale": 2,
+      "heads": "both", "anchor": "point", "origin": [0, 0, 0]}),
+    ("remove_vectors", ("forces",), {}, "vectors.remove", {"name": "forces"}),
+    ("clear_vectors", (), {}, "vectors.clear", {}),
+])
+def test_scientific_widget_requests_are_asynchronous(viewer, method, args, kwargs, command, expected):
+    model, sent = viewer
+    future = getattr(model, method)(*args, **kwargs)
+    assert isinstance(future, CommandFuture)
+    assert not future.done()
+    assert len(sent) == 1
+    assert sent[0] == {"kind": "request", "id": sent[0]["id"], "command": command, "params": expected}
+    deliver(model, kind="response", id=sent[0]["id"], result={"ok": True, "value": {"name": method}})
+    assert future.result() == {"name": method}
+
+
+def test_snapshot_returns_an_image_and_preserves_release_errors(viewer):
+    model, sent = viewer
+    future = model.snapshot(width=64, height=48)
+    assert isinstance(future, CommandFuture)
+    assert not future.done()
+    assert sent[-1]["command"] == "view.snapshot"
+    assert sent[-1]["params"] == {"width": 64, "height": 48}
+    payload = {"mime": "image/png", "width": 64, "height": 48, "dataBase64": "iVBORw0KGgo="}
+    deliver(model, kind="response", id=sent[-1]["id"], result={"ok": True, "value": payload})
+    image = future.result()
+    assert isinstance(image, Image)
+    assert image.data == b"\x89PNG\r\n\x1a\n"
+
+    future = model.snapshot()
+    assert sent[-1]["params"] == {}
+    error = {"code": "failed", "message": "The PNG exceeds the 40 MB response limit."}
+    deliver(model, kind="response", id=sent[-1]["id"], result={"ok": False, "error": error})
+    with pytest.raises(CommandError) as raised:
+        future.result()
+    assert raised.value.code == error["code"]
+    assert str(raised.value) == error["message"]

@@ -1,3 +1,4 @@
+from base64 import b64decode
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
@@ -103,6 +104,54 @@ def test_iframe_round_trip_queue_state_and_cleanup(page, app_url):
     page.wait_for_function("() => harness.model.get('ready')")
     send(page, "new-view", "app.info")
     assert response(page, "new-view") == {"ok": True, "value": info}
+
+
+def test_iframe_mode_switch_and_orbital_refusal(page, app_url):
+    page.goto(app_url + "python/tests/harness.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.harness?.model.get('ready')")
+    send(page, "molden", "files.load", files=[{"name": MOLDEN.name, "text": MOLDEN.read_text()}])
+    assert response(page, "molden")["ok"] is True
+
+    send(page, "edit", "view.setMode", mode="edit")
+    edit = {"mode": "edit", "surfacesSuppressed": True}
+    assert response(page, "edit") == {"ok": True, "value": edit}
+    send(page, "hidden", "orbitals.show", indices=[1], exclusive=True)
+    assert response(page, "hidden") == {"ok": False, "error": {
+        "code": "not-available",
+        "message": "Orbital surfaces are hidden in Edit mode; call view.setMode('view') first.",
+        "details": edit,
+    }}
+    iframe = page.frame_locator("#first iframe")
+    expect(iframe.locator("#modeEditBtn")).to_have_class(re.compile(r"\bactive\b"))
+
+    send(page, "view", "view.setMode", mode="view")
+    assert response(page, "view") == {"ok": True, "value": {"mode": "view", "surfacesSuppressed": False}}
+    send(page, "visible", "orbitals.show", indices=[1], exclusive=True)
+    assert response(page, "visible") == {"ok": True, "value": {"visibleIndices": [1]}}
+
+    def run(command, **params):
+        send(page, command, command, **params)
+        result = response(page, command)
+        assert result["ok"] is True, (command, result)
+        return result["value"]
+
+    assert run("orbitals.list")["orbitals"][0]["index"] == 1
+    assert run("orbitals.configure", indices=[1], iso=0.04, opacity=0.5)["orbitals"] == [
+        {"index": 1, "iso": 0.04, "opacity": 0.5},
+    ]
+    assert run("orbitals.hide")["visibleIndices"] == []
+    assert run("view.set", projection="orthographic", axis="+x")["projection"] == "orthographic"
+    atoms = run("vectors.list")["atomicNumbers"]
+    values = [[0, 0, 1] for _ in atoms]
+    forces = run("vectors.setAtoms", name="forces", color="#BB3388", values=values, atomicNumbers=atoms, maxLength=1)
+    assert forces["sets"][0]["name"] == "forces"
+    dipole = run("vectors.setArrow", name="dipole", color="#229944", vector=[0, 1, 0], length=1, heads="both")
+    assert dipole["sets"][1]["heads"] == "both"
+    snap = run("view.snapshot", width=320, height=240)
+    assert (snap["width"], snap["height"], snap["mime"]) == (320, 240, "image/png")
+    assert b64decode(snap["dataBase64"]).startswith(b"\x89PNG\r\n\x1a\n")
+    assert [row["name"] for row in run("vectors.remove", name="forces")["sets"]] == ["dipole"]
+    assert run("vectors.clear")["sets"] == []
 
 
 def test_incompatible_viewer_never_gets_a_queued_request(page, app_url):
