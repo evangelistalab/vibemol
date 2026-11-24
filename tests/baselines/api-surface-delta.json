@@ -1,28 +1,46 @@
 {
   "schemaVersion": 2,
-  "baseCommit": "0d257054b9749d60cd53695a35f3061fcc415321",
-  "baselineGzipSha256": "dfe8f62f2d11e6af351e19778b5de3d2bda65f48468b7cb602c7ab8b778ef115",
+  "baseCommit": "7f3c0c92dda1d8cda6d8e175ed01fb5d2b89db86",
+  "baselineGzipSha256": "03102b5d239555509accb7ff12059d386134edf4d81506102dac02ecdc9f21cc",
   "captures": 102,
   "delta": [
     {
       "operation": "add-api-namespace",
-      "namespace": "VibeMolCommandRegistry",
+      "namespace": "VibeMolOrbitals",
       "members": [
-        "createCommandRegistry",
-        "validateParams"
+        "configure",
+        "hide",
+        "list",
+        "setMode",
+        "setView",
+        "show",
+        "snapshot"
       ]
     },
     {
       "operation": "add-api-namespace",
-      "namespace": "VibeMolCommands",
+      "namespace": "VibeMolVectors",
       "members": [
-        "describe",
-        "kind",
+        "clear",
         "list",
-        "run",
-        "version"
+        "remove",
+        "setArrow",
+        "setAtoms"
+      ]
+    },
+    {
+      "operation": "add-api-namespace",
+      "namespace": "VibeMolVectorsModel",
+      "members": [
+        "arrowPlan",
+        "atomSetPlan",
+        "describe",
+        "remove",
+        "restore",
+        "transform",
+        "validateArrows"
       ]
     }
   ],
-  "authority": "Francesco directly authorizes one bounded exception: an additive command registry v0, defined below."
+  "authority": "Francesco authorized reproducing the exact 19-member Step 3b API delta for PR #115 on VibeMol 0.10.15."
 }

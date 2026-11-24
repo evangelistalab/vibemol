@@ -250,7 +250,7 @@
     },
     {
       "label": "Step 3b orbital and view product API construction",
-      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
       "worktree": ".",
       "recheck": [
         "orbitalProductApi",
@@ -281,7 +281,7 @@
     },
     {
       "label": "Step 3b vector model, renderer and product API construction",
-      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
       "worktree": ".",
       "modules": [
         "assets/app/js/vectors-model.js"
@@ -313,7 +313,7 @@
     },
     {
       "label": "Step 3b vector history for command edits",
-      "before": "f1b0a96fa3d5ec560e0d221a6c43008c6250b0dc",
+      "before": "7acf2335f284761a97db8fa82dfde2883ef0ba44",
       "worktree": ".",
       "modules": [
         "assets/app/js/vectors-model.js"
@@ -331,7 +331,7 @@
     },
     {
       "label": "Step 3b orbital, view and vector command registration",
-      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
       "worktree": ".",
       "consumers": [
         "assets/app/js/commands.js"

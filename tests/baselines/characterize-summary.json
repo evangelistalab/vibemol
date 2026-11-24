@@ -1,10 +1,8 @@
 {
   "baseline": {
-    "commit": "34e566c3e5de5d9b6bc67e8a9502da768a81188d",
-    "tag": "v0.10.15",
-    "recordingMode": "candidate",
-    "sourceRefAtCapture": "refs/heads/codex/record-0.10.15-camera",
-    "appSha256": "5f2544b893493e205731f173cab5571abe85bad95718d1f36a081063755b6fb8",
+    "commit": "553c238c5313f7c3945f042436299f8770407cf3",
+    "tag": "declared-api-delta",
+    "appSha256": "43f47ec7cd530dbeed4292e48eace0ff14b31160cc6d8949488d84ba8a80f2e2",
     "viewport": {
       "width": 1512,
       "height": 1000
@@ -20,20 +18,20 @@
       0
     ],
     "metrics": {
-      "lines": 33786,
-      "functionDeclarations": 1258,
+      "lines": 34405,
+      "functionDeclarations": 1299,
       "letDeclarations": 249,
-      "constDeclarations": 595
+      "constDeclarations": 597
     },
     "captureProvenance": {
       "os": "Linux",
-      "osRelease": "7.0.0-1017-azure",
+      "osRelease": "7.0.0-1014-aws",
       "architecture": "x86_64",
       "browserName": "chromium",
       "browserVersion": "156.0.8078.4",
       "ci": {
         "provider": "GitHub Actions",
-        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/45472030305",
+        "runUrl": "https://github.com/evangelistalab/vibemol/actions/runs/45469321152",
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
@@ -62,8 +60,8 @@
     "identical": true,
     "exact": true,
     "captureSha256PerRun": [
-      "d41cc62a7225b0024e206c0a2dd78c574ff67f6fe026dc9b2720074091428709",
-      "d41cc62a7225b0024e206c0a2dd78c574ff67f6fe026dc9b2720074091428709"
+      "4c33a9769345f7f94bc1ebd117cc1fd372b055fbab6adb517b2bdee77d035db9",
+      "4c33a9769345f7f94bc1ebd117cc1fd372b055fbab6adb517b2bdee77d035db9"
     ]
   },
   "api": {
@@ -787,17 +785,6 @@
       "renderCoordsContent",
       "volumeToXYZ"
     ],
-    "VibeMolVibration": [
-      "CM_INV_HTML",
-      "CM_INV_TEXT",
-      "VIBRATION_DEFAULT_AMPLITUDE",
-      "VIBRATION_DEFAULT_SPEED",
-      "VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1",
-      "VIBRATION_IR_DEFAULT_SIGMA_CM1",
-      "VIBRATION_IR_MIN_FREQ_CM1",
-      "VIBRATION_KIND",
-      "createVibrationController"
-    ],
     "VibeMolVectors": [
       "clear",
       "list",
@@ -810,8 +797,20 @@
       "atomSetPlan",
       "describe",
       "remove",
+      "restore",
       "transform",
       "validateArrows"
+    ],
+    "VibeMolVibration": [
+      "CM_INV_HTML",
+      "CM_INV_TEXT",
+      "VIBRATION_DEFAULT_AMPLITUDE",
+      "VIBRATION_DEFAULT_SPEED",
+      "VIBRATION_HIDE_SMALL_FREQ_THRESHOLD_CM1",
+      "VIBRATION_IR_DEFAULT_SIGMA_CM1",
+      "VIBRATION_IR_MIN_FREQ_CM1",
+      "VIBRATION_KIND",
+      "createVibrationController"
     ],
     "VibeMolViewUtils": [
       "computeOrthographicFrustum",
@@ -878,7 +877,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "0e9dcf2697e3214ad8ebb31a4c3643eee184c3a5518329e6cbf1d378b5cf3a33",
+  "goldenSha256": "7bbe298ba9094231570a9ff56aa649e2e8abfc2119b0adf10609ec390d5f2338",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
