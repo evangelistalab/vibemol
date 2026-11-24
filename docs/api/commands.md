@@ -85,6 +85,9 @@ Enter Edit explicitly before changing atom selection. `edit.setSelection` accept
 
 `files.load` can open a browser confirmation for an XYZ with at least two atoms and no bond candidates at angstrom distances. The call waits for a response before continuing. Accepting converts from bohr to angstroms. Dismissing keeps the original coordinates. Unattended clients need a dialog handler for this case.
 
+
+`view.set` uses the native axis gizmo's snap. On the +z and −z axes, OrbitControls applies a pole guard of at most 1 × 10⁻⁶ radians. The lateral camera offset is at most the distance to the target multiplied by 1 × 10⁻⁶.
+
 ### Proposed follow-up
 
 A separately authorized product change could add a `units: 'prompt' | 'angstrom' | 'bohr'` option so clients can give a unit explicitly.

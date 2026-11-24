@@ -72,6 +72,15 @@ test('a fingerprint cannot authorize an unlisted new product function',()=>{
 test('a newly mutable API binding is rejected',()=>{
  const changed=source.replace('const editApiReadSystem','let editApiReadSystem');assert.notEqual(changed,source);assert.throws(()=>audit(changed),/module let/);
 });
+test('a mutable orbital product API binding is rejected',()=>{
+ const changed=source.replace('const orbitalProductApi','let orbitalProductApi');assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/module let/);
+});
+test('the orbital exposure cannot publish an extra method',()=>{
+ const changed=source.replace('snapshot:orbitalProductApi.snapshot});','snapshot:orbitalProductApi.snapshot,extra:orbitalProductApi.list});');
+ assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/Exact VibeMolOrbitals exposure/);
+});
 test('an authorized member cannot change past its declared fingerprint',()=>{
  const changed=source.replace("callEditApiTesting('selection', indices)","callEditApiTesting('selection', [])");assert.notEqual(changed,source);assert.throws(()=>audit(changed),/changed fingerprint/);
 });

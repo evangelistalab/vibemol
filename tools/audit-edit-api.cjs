@@ -80,10 +80,16 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  const statementChanges=new Map(Object.entries(productChanges).filter(([name])=>name.startsWith('statement:'))
   .map(([name,change])=>[change.after,name]));
  const appliedProductChanges=new Set();
- const preserved=[];let exposed=0;
+ const preserved=[];let exposed=0,orbitalDeclarations=0,orbitalExposures=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting|defaultEditApiMetalLigandType)/;
  for(const n of statements(source)) {
   if(n.type==='FunctionDeclaration'&&(fresh.test(n.id.name)||n.id.name==='readForte2MinaoSnapshot'))continue;
+  if(n.type==='VariableDeclaration'&&n.declarations.some(d=>d.id.name==='orbitalProductApi')) {
+   assert.equal(n.kind,'const','New API state must not add a module let');
+   assert.equal(n.declarations.length,1,'Declare only the named orbital product API object');
+   orbitalDeclarations++;
+   continue;
+  }
   if(n.type==='VariableDeclaration'&&n.declarations.every(d=>fresh.test(d.id.name)||d.id.name==='editProductApi'||d.id.name==='forte2ProductApi')) {
    assert.equal(n.kind,'const','New API state must not add a module let');continue;
   }
@@ -92,6 +98,13 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
    assert.equal(n.expression.right.name,'editProductApi');exposed++;continue;
   }
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
+  if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'
+    &&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolOrbitals') {
+   assert.equal(source.slice(n.start,n.end),'window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,snapshot:orbitalProductApi.snapshot});',
+    'Exact VibeMolOrbitals exposure');
+   orbitalExposures++;
+   continue;
+  }
   const code=source.slice(n.start,n.end).replace(api.testingCode,old.testingCode);
   const name=n.type==='FunctionDeclaration'?n.id.name:statementChanges.get(hash(code));
   if(name&&Object.hasOwn(productChanges,name)) {
@@ -113,6 +126,11 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
       'cloneVectorState','vectorStatesEqual','transformVectorState','applyQuaternionVectorTransform',
       'syncTransformedAtomArrows','prepareCoordinationLigandMoves',
       'applyCoordinationLigandVectors','refreshCoordinationGeometryPresentation',
+      'step3bRequest','step3bRequireIdle','moldenProductSource','listProductOrbitals',
+      'validateMoldenProductIndices','moldenProductLayers','readVisibleMoldenProductIndices','setMoldenProductLayerVisibility',
+      'presentMoldenProductSelection','showProductOrbitals','hideProductOrbitals','configureProductOrbitals',
+      'applyMoldenProductAppearance','setProductView','readViewportPng','paintSnapshotFrame',
+      'captureViewportPng','snapshotProductView',
     ].includes(name),
      'Only the enumerated private product statements may be added');
     assert(!previousFunctions.has(name),'A new function may not replace a legacy statement');
@@ -126,6 +144,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   preserved.push(n.type==='FunctionDeclaration'&&['applyHydrogenPlanToVolume','applyAutomaticHydrogenAdjustmentToVolume'].includes(n.id.name)?normalizeHydrogenDefaults(code):code);
  }
  assert.equal(exposed,1,'Exactly one additive product API exposure');
+ assert.equal(orbitalDeclarations,1,'Exactly one orbital product API declaration');
+ assert.equal(orbitalExposures,1,'Exactly one VibeMolOrbitals exposure');
  assert.deepEqual([...appliedProductChanges].sort(),Object.keys(productChanges).sort(),'Every declared product change must be checked');
  assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
  assert.equal(preserved.length,previousStatements.length-removed.length,'Legacy statement count must decrease by exactly the authorized removals');

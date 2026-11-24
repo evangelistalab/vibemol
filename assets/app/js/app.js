@@ -26946,7 +26946,7 @@
   }
 
   function applyToSurfaceAppearanceTargets(mutator, options = {}) {
-    const layers = getSurfaceAppearanceTargets();
+    const layers = options.targets || getSurfaceAppearanceTargets();
     if (!layers.length || typeof mutator !== 'function') return false;
     for (const layer of layers) {
       mutator(layer);
@@ -32980,7 +32980,7 @@
     const link = document.createElement('a');
     const name = currentIndex >= 0 ? volumes[currentIndex].name.replace(/\.[^/.]+$/, '') : 'render';
     link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
-    link.href = renderer.domElement.toDataURL('image/png');
+    link.href = readViewportPng();
     link.click();
   };
 
@@ -33937,6 +33937,282 @@
     clearSelection:editApiSelection.clearSelection,copySelection:editApiSelection.copySelection,listBuildCatalog:editApiCatalog,
     listBuildSites:editApiQueries.listBuildSites,validateBuild:editApiBuild.validateBuild,applyBuild:editApiBuild.applyBuild,translate:editApiBuild.translate});
   window.VibeMolEdit=editProductApi;
+
+  function step3bRequest(input, fields) {
+    try { editApiData(input); }
+    catch (error) {
+      const path = error.editApi?.path || 'request';
+      editApiFault('invalid-params', path, null, 'JSON data', `Invalid ${path}: expected JSON data.`);
+    }
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      editApiFault('invalid-params', 'request', input, 'object', 'Invalid request: expected an object.');
+    }
+    const unknown = Object.keys(input).find(field => !fields.includes(field));
+    if (unknown !== undefined) editApiFault('invalid-params', unknown, input[unknown], fields, `Unknown field: ${unknown}.`);
+  }
+
+  function step3bRequireIdle() {
+    if (figureRendering || batchExportRunning || applyingSession || sessionController?.isOpening()
+        || fileLoaderController.isLoading() || trajectoryVideoController?.isActive() || vibrationVideoController?.isActive()) {
+      editApiFault('not-available', 'scene', 'busy', 'idle', 'Finish the current open or export first.');
+    }
+  }
+
+  function moldenProductSource() {
+    const record = volumes[currentIndex];
+    const items = buildMoldenOrbitalItems(record);
+    const source = sceneSources.getSources().find(item => item.record === record);
+    const scene = sceneGraphController.getScenes().find(item => item.sceneKey === record?._sceneGraphSceneKey);
+    if (!items.length || !source || !scene) {
+      editApiFault('not-available', 'source', null, 'Molden orbitals', 'The active structure has no Molden orbitals.');
+    }
+    return { record, items, source: { id: source.id, name: record.name }, scene };
+  }
+
+  function listProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, []);
+      const { record, items, source } = moldenProductSource();
+      const frontier = new Map();
+      if (!items.some(item => item.fractional)) {
+        for (const spin of new Set(items.map(item => item.spinGlyph))) {
+          const channel = items.filter(item => item.spinGlyph === spin);
+          const homo = channel.findLast(item => item.isOccupied);
+          const lumo = channel.find(item => !item.isOccupied);
+          if (homo) frontier.set(homo.index, 'HOMO');
+          if (lumo) frontier.set(lumo.index, 'LUMO');
+        }
+      }
+      const orbitals = items.map((item, offset) => ({
+        index: item.index, energyEh: item.energyEh, occupation: item.occValue,
+        spin: record.vol.molden.mos[offset].spin, symmetry: record.vol.molden.mos[offset].symmetry,
+        class: item.orbitalClass, frontier: frontier.get(item.index) || null,
+      }));
+      return { value: { source, orbitals } };
+    });
+  }
+
+  function validateMoldenProductIndices(indices, count, limit) {
+    if (!Array.isArray(indices) || !indices.length || indices.length > limit
+        || [...indices].some(index => !Number.isSafeInteger(index) || index < 1 || index > count)
+        || new Set(indices).size !== indices.length) {
+      editApiFault('invalid-params', 'indices', indices, { count, limit }, 'Invalid indices: expected distinct, available one-based orbital indices.');
+    }
+    return indices.map(index => index - 1);
+  }
+
+  function moldenProductLayers(target) {
+    return getCubeLayersInScene(target.scene).filter(layer => layer.record === target.record
+      && Number.isInteger(layer.moldenMoIndex) && !layer.isSceneGraphDuplicate);
+  }
+
+  function readVisibleMoldenProductIndices(target) {
+    return moldenProductLayers(target).filter(layer => sceneGraphController.isLayerEffectivelyVisible(layer))
+      .map(layer => layer.moldenMoIndex + 1).sort((a, b) => a - b);
+  }
+
+  function setMoldenProductLayerVisibility(layer, visible) {
+    if (layer.visible === visible) return;
+    layer.visible = visible;
+    persistActiveCubeLayerState(layer, { render: false });
+  }
+
+  function presentMoldenProductSelection(target, indices, exclusive) {
+    const { record, scene } = target;
+    const previous = getCubeLayersInScene(scene).filter(layer => layer.visible);
+    const preserveView = getVisibleCubeLayerCount(scene) > 0;
+    const selected = indices.map(index => sceneSources.addOrbital(record, index, { visible: false }));
+    const active = selected.at(-1);
+    const group = sceneGraphController.getLayerById(scene.orbitalsGroupId);
+    if (group) group.visible = true;
+    setActiveSceneGraphLayer(active.id, {
+      ensureSceneVisible: true, ensureLayerVisible: true, expandPath: true, rebuild: false,
+      forceSingleCubeVisibility: exclusive,
+    });
+    if (!exclusive) for (const layer of previous) setMoldenProductLayerVisibility(layer, true);
+    for (const layer of selected) setMoldenProductLayerVisibility(layer, true);
+    rebuildScene({ preserveView, syncGraph: false });
+  }
+
+  async function showProductOrbitals(input = {}) {
+    const result = editApiCall(() => {
+      step3bRequest(input, ['indices', 'exclusive']);
+      const target = moldenProductSource();
+      const indices = validateMoldenProductIndices(input.indices, target.items.length, 8);
+      if (input.exclusive !== undefined && typeof input.exclusive !== 'boolean') {
+        editApiFault('invalid-params', 'exclusive', input.exclusive, 'boolean', 'Invalid exclusive: expected a boolean.');
+      }
+      step3bRequireIdle();
+      if (!showSurfaces || surfaceRenderSuppressed) {
+        editApiFault('not-available', 'surfaces', 'hidden', 'visible', 'Orbital surfaces are hidden in the current view.');
+      }
+      for (const index of indices) {
+        if (!evaluateMoldenGrid(target.record, index)) {
+          editApiFault('failed', 'indices', index + 1, 'renderable orbital', 'The requested orbital has no evaluable grid.');
+        }
+      }
+      presentMoldenProductSelection(target, indices, input.exclusive !== false);
+      return { value: { visibleIndices: readVisibleMoldenProductIndices(target) } };
+    });
+    if (result.ok) await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return result;
+  }
+
+  function hideProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['indices']);
+      const target = moldenProductSource();
+      const indices = input.indices === undefined ? null : validateMoldenProductIndices(input.indices, target.items.length, target.items.length);
+      step3bRequireIdle();
+      const layers = moldenProductLayers(target).filter(layer => layer.visible
+        && (indices === null || indices.includes(layer.moldenMoIndex)));
+      for (const layer of layers) setMoldenProductLayerVisibility(layer, false);
+      if (layers.length) rebuildScene({ preserveView: true, syncGraph: false });
+      return { value: { visibleIndices: readVisibleMoldenProductIndices(target) } };
+    });
+  }
+
+  function configureProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['indices', 'iso', 'opacity']);
+      const target = moldenProductSource();
+      const indices = input.indices === undefined ? readVisibleMoldenProductIndices(target).map(index => index - 1)
+        : validateMoldenProductIndices(input.indices, target.items.length, target.items.length);
+      if (input.iso !== undefined && !(Number.isFinite(input.iso) && input.iso > 0)) {
+        editApiFault('invalid-params', 'iso', input.iso, 'positive number', 'Invalid iso: expected a positive number.');
+      }
+      if (input.opacity !== undefined && !(Number.isFinite(input.opacity) && input.opacity >= 0 && input.opacity <= 1)) {
+        editApiFault('invalid-params', 'opacity', input.opacity, [0, 1], 'Invalid opacity: expected a number in [0, 1].');
+      }
+      step3bRequireIdle();
+      const layers = applyMoldenProductAppearance(target, indices, input);
+      return { value: { orbitals: layers.map(layer => ({ index: layer.moldenMoIndex + 1, iso: layer.iso, opacity: layer.opacity })) } };
+    });
+  }
+
+  function applyMoldenProductAppearance(target, indices, { iso, opacity }) {
+    if (iso === undefined && opacity === undefined) {
+      const existing = new Map(moldenProductLayers(target).map(layer => [layer.moldenMoIndex, layer]));
+      return indices.map(index => existing.get(index)).filter(Boolean);
+    }
+    const layers = indices.map(index => sceneSources.addOrbital(target.record, index, { visible: false }));
+    const opacityPatch = opacity === undefined ? undefined
+      : normalizeSurfaceStylePatch({ 'surface.opacity': Math.max(0.05, opacity) })['surface.opacity'];
+    const rebuild = iso !== undefined && layers.some(layer => sceneGraphController.isLayerEffectivelyVisible(layer));
+    applyToSurfaceAppearanceTargets(layer => {
+      if (iso !== undefined) {
+        setLayerAutoIsoEnabled(layer, false);
+        layer.iso = iso;
+        layer.isoPending = false;
+      }
+      if (opacityPatch !== undefined) {
+        getSurfaceStyleOverrides(layer).opacity = true;
+        layer.opacity = opacityPatch;
+      }
+    }, { targets: layers, rebuild });
+    if (!rebuild && opacityPatch !== undefined) updateRenderedLayerOpacity(layers);
+    return layers;
+  }
+
+  function setProductView(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['axis', 'fit', 'projection']);
+      if (input.axis !== undefined && (typeof input.axis !== 'string' || !/^[+-][xyz]$/.test(input.axis))) {
+        editApiFault('invalid-params', 'axis', input.axis, 'signed axis', 'Invalid axis: expected +x, -x, +y, -y, +z or -z.');
+      }
+      if (input.fit !== undefined && typeof input.fit !== 'boolean') {
+        editApiFault('invalid-params', 'fit', input.fit, 'boolean', 'Invalid fit: expected a boolean.');
+      }
+      if (input.projection !== undefined && !['perspective', 'orthographic'].includes(input.projection)) {
+        editApiFault('invalid-params', 'projection', input.projection, ['perspective', 'orthographic'], 'Invalid projection.');
+      }
+      step3bRequireIdle();
+      if (input.projection !== undefined) setProjectionMode(input.projection);
+      if (input.fit === true) fitCameraToScene();
+      if (input.axis !== undefined) setCameraAxisPreset(input.axis[1], input.axis[0] === '-' ? -1 : 1);
+      refreshViewUI();
+      cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
+      return { value: { projection: viewState.mode, position: camera.position.toArray(), target: controls.target.toArray(),
+        up: camera.up.toArray(), near: camera.near, far: camera.far, zoom: camera.zoom } };
+    });
+  }
+
+  function readViewportPng() {
+    return renderer.domElement.toDataURL('image/png');
+  }
+
+  function paintSnapshotFrame(metrics, transparent) {
+    function paint() {
+      const target = beginSceneFrameTarget(metrics);
+      renderSceneFrame(metrics, target);
+      endSceneFramePresentation(metrics, target);
+      renderAxisOverlayPass(metrics);
+    }
+    if (!transparent) {
+      paint();
+      return;
+    }
+    const color = renderer.getClearColor(new THREE.Color());
+    const alpha = renderer.getClearAlpha();
+    try {
+      renderer.setClearColor(0x000000, 0);
+      withSceneBackgroundDisabled(paint);
+    } finally {
+      renderer.setClearColor(color, alpha);
+    }
+  }
+
+  function captureViewportPng(width, height, transparent) {
+    const viewport = readRendererViewportMetrics();
+    const savedCamera = camera.clone();
+    const savedProjection = viewState.orthographicProjection;
+    const metrics = { cssWidth: width, cssHeight: height, bufferWidth: width, bufferHeight: height, dpr: 1 };
+    try {
+      renderer.setSize(width, height, false);
+      viewState.orthographicProjection = null;
+      updateActiveCameraProjection(width, height);
+      paintSnapshotFrame(metrics, transparent);
+      return readViewportPng();
+    } finally {
+      renderer.setSize(viewport.bufferWidth, viewport.bufferHeight, false);
+      camera.copy(savedCamera);
+      viewState.orthographicProjection = savedProjection;
+      paintSnapshotFrame(viewport, false);
+    }
+  }
+
+  function snapshotProductView(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['width', 'height', 'transparent']);
+      const viewport = readRendererViewportMetrics();
+      const width = input.width ?? Math.min(viewport.bufferWidth, 4096);
+      const height = input.height ?? Math.min(viewport.bufferHeight, 4096);
+      for (const field of ['width', 'height']) {
+        const size = input[field];
+        if (size !== undefined && (!Number.isInteger(size) || size < 1 || size > 4096)) {
+          editApiFault('invalid-params', field, size, [1, 4096], `Invalid ${field}: expected an integer from 1 through 4096.`);
+        }
+      }
+      if (input.transparent !== undefined && typeof input.transparent !== 'boolean') {
+        editApiFault('invalid-params', 'transparent', input.transparent, 'boolean', 'Invalid transparent: expected a boolean.');
+      }
+      step3bRequireIdle();
+      const uri = captureViewportPng(width, height, input.transparent === true);
+      const header = 'data:image/png;base64,';
+      if (!uri.startsWith(header)) editApiFault('failed', 'snapshot', null, 'PNG', 'The renderer could not encode a PNG.');
+      const dataBase64 = uri.slice(header.length);
+      if (dataBase64.length > 40_000_000) {
+        editApiFault('failed', 'snapshot', dataBase64.length, 40_000_000, 'The PNG exceeds the 40 MB response limit.');
+      }
+      return { value: { mime: 'image/png', width, height, dataBase64 } };
+    });
+  }
+
+  const orbitalProductApi = Object.freeze({
+    list: listProductOrbitals, show: showProductOrbitals, hide: hideProductOrbitals, configure: configureProductOrbitals,
+    setView: setProductView, snapshot: snapshotProductView,
+  });
+  window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,snapshot:orbitalProductApi.snapshot});
 
   function readForte2MinaoSnapshot(context, planeResolutions) {
     // This is an identity boundary, not a derived numeric comparison.

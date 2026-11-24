@@ -492,6 +492,14 @@
       "normalizeContour",
       "radial"
     ],
+    "VibeMolOrbitals": [
+      "configure",
+      "hide",
+      "list",
+      "setView",
+      "show",
+      "snapshot"
+    ],
     "VibeMolParsers": [
       "arrayMinMax",
       "parseCube",

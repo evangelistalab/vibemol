@@ -247,6 +247,34 @@
         "assets/app/js/scene-outliner.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b orbital and view product API construction",
+      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "worktree": ".",
+      "recheck": [
+        "orbitalProductApi",
+        "step3bRequest",
+        "step3bRequireIdle",
+        "moldenProductSource",
+        "listProductOrbitals",
+        "validateMoldenProductIndices",
+        "moldenProductLayers",
+        "readVisibleMoldenProductIndices",
+        "setMoldenProductLayerVisibility",
+        "presentMoldenProductSelection",
+        "showProductOrbitals",
+        "hideProductOrbitals",
+        "configureProductOrbitals",
+        "applyMoldenProductAppearance",
+        "applyToSurfaceAppearanceTargets",
+        "setProductView",
+        "readViewportPng",
+        "paintSnapshotFrame",
+        "captureViewportPng",
+        "snapshotProductView"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

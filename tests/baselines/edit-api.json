@@ -2598,6 +2598,395 @@
           ]
         }
       ]
+    },
+    "step3bRequest": {
+      "before": null,
+      "after": "5c057a0ea9022bf99b5aadbfa51cfd0db07e664eceeb257b53b86bf8e888abc3",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "step3bRequest",
+          "count": 2,
+          "inputs": [
+            "editApiData",
+            "editApiFault"
+          ]
+        }
+      ]
+    },
+    "step3bRequireIdle": {
+      "before": null,
+      "after": "6ed40c25306dadf416cdb7d1ef7dcaa62def5a85a711cfa2620dececa21b17b4",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "step3bRequireIdle",
+          "count": 8,
+          "inputs": [
+            "applyingSession",
+            "batchExportRunning",
+            "editApiFault",
+            "figureRendering",
+            "fileLoaderController",
+            "sessionController",
+            "trajectoryVideoController",
+            "vibrationVideoController"
+          ]
+        }
+      ]
+    },
+    "moldenProductSource": {
+      "before": null,
+      "after": "7089e428b706b3a5ea7d42c08b23de7e149ca2f6f2cbf9600c5b897e0e64ec52",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "moldenProductSource",
+          "count": 6,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "currentIndex",
+            "editApiFault",
+            "sceneGraphController",
+            "sceneSources",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "listProductOrbitals": {
+      "before": null,
+      "after": "2d085ffa2892bf4d4396d4615fed4c658cc5ca5b6a54790858d81122bfc48b5f",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "listProductOrbitals",
+          "count": 3,
+          "inputs": [
+            "editApiCall",
+            "moldenProductSource",
+            "step3bRequest"
+          ]
+        }
+      ]
+    },
+    "validateMoldenProductIndices": {
+      "before": null,
+      "after": "4ff5115826407c7fc9416a89cd92fba9bb94991812cf9630fb9e1970735b110d",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "validateMoldenProductIndices",
+          "count": 1,
+          "inputs": [
+            "editApiFault"
+          ]
+        }
+      ]
+    },
+    "moldenProductLayers": {
+      "before": null,
+      "after": "ca50a71fd24d39df1d61821195f61fa7d61cec47ba58a87f078f59f42e216266",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "moldenProductLayers",
+          "count": 1,
+          "inputs": [
+            "getCubeLayersInScene"
+          ]
+        }
+      ]
+    },
+    "readVisibleMoldenProductIndices": {
+      "before": null,
+      "after": "22e56ab1b9f2c60eeebdf5a6714bfdda91589c19fbc7cd8388dd26b39d51551a",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readVisibleMoldenProductIndices",
+          "count": 2,
+          "inputs": [
+            "moldenProductLayers",
+            "sceneGraphController"
+          ]
+        }
+      ]
+    },
+    "setMoldenProductLayerVisibility": {
+      "before": null,
+      "after": "9585ee04f57de93ba34a9bfde0d0645badd4bca4090dba00881f42e5c5dde3aa",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setMoldenProductLayerVisibility",
+          "count": 1,
+          "inputs": [
+            "persistActiveCubeLayerState"
+          ]
+        }
+      ]
+    },
+    "presentMoldenProductSelection": {
+      "before": null,
+      "after": "a84d0a48d87c3324368095b5f45c46f6606b57594edc6ab77b92c9a6a0f05afb",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "presentMoldenProductSelection",
+          "count": 7,
+          "inputs": [
+            "getCubeLayersInScene",
+            "getVisibleCubeLayerCount",
+            "rebuildScene",
+            "sceneGraphController",
+            "sceneSources",
+            "setActiveSceneGraphLayer",
+            "setMoldenProductLayerVisibility"
+          ]
+        }
+      ]
+    },
+    "showProductOrbitals": {
+      "before": null,
+      "after": "c24f331c09f14f94a269c6dd4107c4b2ceb02f143fd1f99872f86a11cbaf9b91",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "showProductOrbitals",
+          "count": 11,
+          "inputs": [
+            "editApiCall",
+            "editApiFault",
+            "evaluateMoldenGrid",
+            "moldenProductSource",
+            "presentMoldenProductSelection",
+            "readVisibleMoldenProductIndices",
+            "showSurfaces",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "surfaceRenderSuppressed",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "hideProductOrbitals": {
+      "before": null,
+      "after": "a7c67557601f63e4c15877c0d2d42f2adc28eace7b502d329a87462a3c13ed17",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "hideProductOrbitals",
+          "count": 9,
+          "inputs": [
+            "editApiCall",
+            "moldenProductLayers",
+            "moldenProductSource",
+            "readVisibleMoldenProductIndices",
+            "rebuildScene",
+            "setMoldenProductLayerVisibility",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "configureProductOrbitals": {
+      "before": null,
+      "after": "fc011176c8d0b8b7c13321fe73509eec230d8f125c75d8ab0f7a2d2125b09398",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "configureProductOrbitals",
+          "count": 8,
+          "inputs": [
+            "applyMoldenProductAppearance",
+            "editApiCall",
+            "editApiFault",
+            "moldenProductSource",
+            "readVisibleMoldenProductIndices",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "applyMoldenProductAppearance": {
+      "before": null,
+      "after": "114ac14f5382e45c76eeee5f3753a2e1e6b7bd27ba42b3b414cfe5d6c0f01e84",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyMoldenProductAppearance",
+          "count": 8,
+          "inputs": [
+            "applyToSurfaceAppearanceTargets",
+            "getSurfaceStyleOverrides",
+            "moldenProductLayers",
+            "normalizeSurfaceStylePatch",
+            "sceneGraphController",
+            "sceneSources",
+            "setLayerAutoIsoEnabled",
+            "updateRenderedLayerOpacity"
+          ]
+        }
+      ]
+    },
+    "applyToSurfaceAppearanceTargets": {
+      "before": "4b56e8ce6c66f931cd77faa6bf9bb07a682302dc5034aec051fe4b7fe500a26b",
+      "after": "416ebc5ca267129bde90abf3c4d462dcd3b864e69b639ad15a0210021de0fb82",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyToSurfaceAppearanceTargets",
+          "count": 6,
+          "inputs": [
+            "getSurfaceAppearanceTargets",
+            "persistActiveCubeLayerState",
+            "rebuildScene",
+            "renderSceneOutliner",
+            "syncAppearanceControlsToActiveLayer",
+            "updateRenderModeUI"
+          ]
+        }
+      ]
+    },
+    "setProductView": {
+      "before": null,
+      "after": "f838e5ee876dc0fb9e45de08a3e61c3d246d0ee2bcdafd85fd26409ca4823014",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductView",
+          "count": 14,
+          "inputs": [
+            "calculationsRenderer",
+            "camera",
+            "cameraDepthController",
+            "contentGroup",
+            "controls",
+            "editApiCall",
+            "editApiFault",
+            "fitCameraToScene",
+            "refreshViewUI",
+            "setCameraAxisPreset",
+            "setProjectionMode",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "viewState"
+          ]
+        }
+      ]
+    },
+    "readViewportPng": {
+      "before": null,
+      "after": "345b0e38e662f8549bc309226482a4337f5f28bdae0942293deaa96546202c22",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readViewportPng",
+          "count": 1,
+          "inputs": [
+            "renderer"
+          ]
+        }
+      ]
+    },
+    "paintSnapshotFrame": {
+      "before": null,
+      "after": "0bbeb4e3622831c420d81989aa7b9606fb5011df76204b19101561131b999611",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "paintSnapshotFrame",
+          "count": 7,
+          "inputs": [
+            "THREE",
+            "beginSceneFrameTarget",
+            "endSceneFramePresentation",
+            "renderAxisOverlayPass",
+            "renderSceneFrame",
+            "renderer",
+            "withSceneBackgroundDisabled"
+          ]
+        }
+      ]
+    },
+    "captureViewportPng": {
+      "before": null,
+      "after": "fb03783894a6a7433421fe89e9ab5d02cc13f890753a8b7b95cb94d703e77f65",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "captureViewportPng",
+          "count": 7,
+          "inputs": [
+            "camera",
+            "paintSnapshotFrame",
+            "readRendererViewportMetrics",
+            "readViewportPng",
+            "renderer",
+            "updateActiveCameraProjection",
+            "viewState"
+          ]
+        }
+      ]
+    },
+    "snapshotProductView": {
+      "before": null,
+      "after": "0440511377143e9d04c7e0e6c7b5883090028981f0c9cdeec860b034bff32332",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "snapshotProductView",
+          "count": 6,
+          "inputs": [
+            "captureViewportPng",
+            "editApiCall",
+            "editApiFault",
+            "readRendererViewportMetrics",
+            "step3bRequest",
+            "step3bRequireIdle"
+          ]
+        }
+      ]
+    },
+    "statement:savePngButton": {
+      "before": "70e2104e8778142171a0f58a95bd19ebefc588eb6ec73aa63f094f31095c1375",
+      "after": "2723d9567f129715bd4b5d002c110e276af28e475f19e1bf413f74ac83579698",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readViewportPng",
+          "count": 1,
+          "inputs": [
+            "renderer"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {
