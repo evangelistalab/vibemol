@@ -12,6 +12,8 @@ import sys
 import tempfile
 
 from playwright.sync_api import expect, sync_playwright
+from assertion_contract import numbers_close
+from checkpoint_contract import require_phase_counts
 from helpers import ensure_artifact_dir, read_app_version, run_http_server, write_failure_artifacts
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -865,6 +867,89 @@ def molden_group_appearance(page, dialogs):
     assert page.evaluate('() => window.__moldenGridBuilds') == []
 
 
+def first_molden_surface_camera(page):
+    from camera_depth import observe
+    from surface_shadows import settings, settle
+    from tutorials import drag
+
+    def pose():
+        state = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
+        position, target, up = ([state[key][axis] for axis in 'xyz'] for key in ('camera', 'target', 'up'))
+        distance = math.dist(position, target)
+        return dict(mode=state['mode'], direction=[(v-t)/distance for v, t in zip(position, target)],
+                    target=target, up=up, distance=distance)
+
+    def matches(actual, expected):
+        return len(actual) == len(expected) and all(numbers_close(a, b, abs_tol=1e-9) for a, b in zip(actual, expected))
+
+    observe(page)
+    canonical = [1 / math.sqrt(3)] * 3
+    default_up = [0, 0, 1]
+    results = []
+    for projection in ('perspective', 'orthographic'):
+        for entry in ('panel', 'outliner'):
+            settings(page, {'view.projection': projection, 'view.autoRotate': False, 'global.showBox': False})
+            assert load(page, [{'name': 'first-surface.molden', 'text': MOLDEN}])['ok']
+            layers = cubes(page)
+            hidden = [layer['effectiveVisible'] for layer in layers]
+            # Displace the target as well so preserving the whole camera cannot pass.
+            settings(page, {'view.target.x': 0.25})
+            drag(page)
+            before = pose()
+            layer_id = layers[0]['id']
+            row = ('#moldenInspectorBody tr[data-row-index="0"]' if entry == 'panel'
+                   else f'.vm-outliner-row[data-id="{layer_id}"]')
+            page.locator(row).click()
+            page.wait_for_function("""id => VibeMolTesting.getSceneGraphSnapshot().activeLayerId === id
+                && !document.querySelector('#moldenInspectorBody .vm-list-popover__row--pending')
+                && VibeMolTesting.getSurfaceMaterialSnapshot().some(m => m.visible && m.sceneLayerId === id)""",
+                                   arg=layer_id)
+            settle(page)
+            fitted = pose()
+            geometry = page.evaluate("""id => {
+                const atoms = new THREE.Box3(), surface = new THREE.Box3();
+                depthScene.traverseVisible(node => {
+                    if (node.userData.type === 'atom') atoms.expandByObject(node);
+                    if (node.isMesh && node.userData.sceneLayerId === id) surface.expandByObject(node);
+                });
+                const center = atoms.getCenter(new THREE.Vector3());
+                const corners = box => [box.min.x, box.max.x].flatMap(x =>
+                    [box.min.y, box.max.y].flatMap(y => [box.min.z, box.max.z].map(z => new THREE.Vector3(x,y,z))));
+                const radius = box => Math.max(...corners(box).map(point => point.distanceTo(center)));
+                const rect = document.querySelector('#canvas').getBoundingClientRect();
+                return {center: center.toArray(), atomRadius: radius(atoms), surfaceRadius: radius(surface),
+                    fitRadius: radius(atoms.clone().union(surface)), aspect: rect.width / rect.height,
+                    surfaceNdc: corners(surface).map(point => point.project(depthCamera).toArray())};
+            }""", layer_id)
+            # A sphere with the scene's fit radius must clear the limiting half-FOV.
+            half_fov = min(math.pi/8, math.atan(math.tan(math.pi/8) * geometry['aspect']))
+            fit_distance = 1.12 * geometry['fitRadius'] / math.sin(half_fov)
+            page.locator('#viewReset').evaluate('button => button.click()')
+            reset = pose()
+            expected = dict(mode=projection, direction=before['direction'], up=before['up'],
+                            target=geometry['center'], distance=fit_distance)
+            reset_expected = dict(expected, direction=canonical, up=default_up)
+            checks = dict(initiallyHidden=hidden == [False]*3,
+                          rotated=not matches(before['direction'], canonical) and not matches(before['up'], default_up),
+                          displacedTarget=not matches(before['target'], geometry['center']),
+                          extendsBeyondAtoms=geometry['surfaceRadius'] > geometry['atomRadius'],
+                          insideFrustum=all(numbers_close(value, max(-1, min(1, value)), abs_tol=1e-9)
+                                            for corner in geometry['surfaceNdc'] for value in corner))
+            for label, actual, wanted in [('fit', fitted, expected), ('reset', reset, reset_expected)]:
+                for key in ('target', 'direction', 'up'):
+                    checks[f'{label}.{key}'] = matches(actual[key], wanted[key])
+                checks[f'{label}.mode'] = actual['mode'] == wanted['mode']
+                checks[f'{label}.distance'] = numbers_close(actual['distance'], wanted['distance'], abs_tol=1e-9)
+            receipt = dict(entry=entry, projection=projection, before=before, hidden=hidden, geometry=geometry,
+                           ndcRange=[-1, 1], fit=fitted, expected=expected, reset=reset, resetExpected=reset_expected,
+                           checks=checks)
+            print('[first-molden-surface-camera] ' + json.dumps(receipt), flush=True)
+            results.append((projection, entry, [name for name, passed in checks.items() if not passed]))
+    require_phase_counts({'first-molden-surface-camera': len(results)}, 'tests/e2e/premerge.py',
+                         'first-molden-surface-camera')
+    assert all(not failures for _, _, failures in results), results
+
+
 def molden_browsing(page, dialogs):
     page.add_init_script('(' + MOLDEN_GRID_OBSERVER + ')()')
     page.reload(wait_until='domcontentloaded')
@@ -954,6 +1039,7 @@ def molden_browsing(page, dialogs):
     assert panel.is_visible()
     assert load(page, [{'name': 'molecule.xyz', 'text': '1\nHydrogen\nH 0 0 0\n'}])['ok']
     assert not panel.is_visible()
+    first_molden_surface_camera(page)
 
 
 def arithmetic(page, dialogs):

@@ -6424,13 +6424,17 @@
    * Apply one computed camera fit to the active view/camera.
    * @param {THREE.Vector3} center
    * @param {number} distance
+   * @param {{keepOrientation?:boolean}} options
    */
-  function applySceneCameraFit(center, distance) {
-    const dir = new THREE.Vector3(1, 1, 1).normalize();
-    perspectiveCamera.up.copy(DEFAULT_VIEW_UP);
-    orthographicCamera.up.copy(DEFAULT_VIEW_UP);
-    camera.up.copy(DEFAULT_VIEW_UP);
-    camera.position.copy(center.clone().add(dir.multiplyScalar(distance)));
+  function applySceneCameraFit(center, distance, { keepOrientation = false } = {}) {
+    const dir = camera.position.clone().sub(controls.target);
+    const lengthSq = dir.lengthSq();
+    const useCurrent = keepOrientation && Number.isFinite(lengthSq) && lengthSq > 1e-12;
+    if (!useCurrent) dir.set(1, 1, 1);
+    const up = useCurrent ? camera.up : DEFAULT_VIEW_UP;
+    perspectiveCamera.up.copy(up);
+    orthographicCamera.up.copy(up);
+    camera.position.copy(center).addScaledVector(dir.normalize(), distance);
     controls.target.copy(center);
     updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
     controls.update();
@@ -6440,7 +6444,7 @@
   /**
    * Fit camera position and clipping planes to the current visible content bounds.
    */
-  function fitCameraToScene({ buildSpace = false } = {}) {
+  function fitCameraToScene({ buildSpace = false, keepOrientation = false } = {}) {
     const metrics = readRendererViewportMetrics();
     const bounds = collectVisibleSceneBounds();
     if (!bounds.hasContent || bounds.contentBox.isEmpty()) return false;
@@ -6457,7 +6461,7 @@
       metrics.cssWidth / Math.max(1, metrics.cssHeight),
       perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV
     );
-    applySceneCameraFit(center, fit.distance);
+    applySceneCameraFit(center, fit.distance, { keepOrientation });
     return true;
   }
 
@@ -9366,7 +9370,7 @@
     moldenRenderFrameId = window.requestAnimationFrame(() => {
       moldenRenderFrameId = 0;
       try {
-        rebuildScene({ preserveView: !showFirstSurface });
+        rebuildScene({ preserveView: !showFirstSurface, keepOrientation: showFirstSurface });
       } finally {
         moldenPendingRowIndex = -1;
         syncMoldenOrbitalsPanel(currentIndex >= 0 ? volumes[currentIndex] : null);
@@ -10568,13 +10572,17 @@
       if (recordIndex >= 0) currentIndex = recordIndex;
       syncLoadedSceneControls();
       if (revealEditTarget || options.rebuild !== false) {
-        rebuildScene({ preserveView: !revealEditTarget && !showFirstMoldenSurface, syncGraph: false });
+        rebuildScene({
+          preserveView: !revealEditTarget && !showFirstMoldenSurface,
+          keepOrientation: !revealEditTarget && showFirstMoldenSurface,
+          syncGraph: false,
+        });
       }
     } else {
       syncLoadedSceneControls();
       const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
       if ((switchedCubeLayer || showFirstMoldenSurface) && options.rebuild !== false) {
-        rebuildScene({ preserveView: !showFirstMoldenSurface, syncGraph: false });
+        rebuildScene({ preserveView: !showFirstMoldenSurface, keepOrientation: showFirstMoldenSurface, syncGraph: false });
       } else if (options.rebind !== false) {
         syncAppearanceControlsToActiveLayer();
       }
@@ -32597,8 +32605,15 @@
     }
     const scene = getFocusedScene();
     if (fitCameraToScene(options) && scene) {
+      const defaultCamera = camera.clone();
+      if (options.keepOrientation) {
+        const distance = camera.position.distanceTo(controls.target);
+        defaultCamera.position.set(1, 1, 1).setLength(distance).add(controls.target);
+        defaultCamera.up.copy(DEFAULT_VIEW_UP);
+        defaultCamera.lookAt(controls.target);
+      }
       viewState.defaultViews.set(scene, {
-        cam: camera.clone(),
+        cam: defaultCamera,
         target: controls.target.clone(),
         contentPos: contentGroup.position.clone(),
         projectionMode: viewState.mode,
@@ -32608,7 +32623,7 @@
 
   /**
    * Recompute scene content for the active file and current render settings.
-   * @param {{preserveView?:boolean, skipAutoIso?:boolean, buildSpace?:boolean}} options
+   * @param {{preserveView?:boolean, skipAutoIso?:boolean, buildSpace?:boolean, keepOrientation?:boolean}} options
    */
   function rebuildScene(options = {}) {
     if (applyingSession) return;
@@ -32702,7 +32717,9 @@
     }
 
     refreshSimulationBoxes();
-    applyCameraStrategy(preserveView, savedCam, savedTarget, { buildSpace: options.buildSpace });
+    applyCameraStrategy(preserveView, savedCam, savedTarget, {
+      buildSpace: options.buildSpace, keepOrientation: options.keepOrientation,
+    });
     if (figureRendering) return;
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);

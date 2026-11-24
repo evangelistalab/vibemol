@@ -94,7 +94,8 @@
       "atomic-identity-rejection": 24,
       "edit-testing-case": 84,
       "commands-completion": 1,
-      "embed-bridge-completion": 1
+      "embed-bridge-completion": 1,
+      "first-molden-surface-camera": 4
     },
     "tests/e2e/smoke.py": {
       "video-activation": 58,

@@ -165,7 +165,8 @@ python -m playwright install chromium
 ```
 
 ## Deployment
-- Current release: **v0.10.14**, with command-driven [notebook viewing](python/README.md) through the opt-in embed bridge. [Release notes](docs/releases/v0.10.14.md)
+- Current release **v0.10.15** keeps your view orientation when you show the first Molden orbital. [Release notes](docs/releases/v0.10.15.md)
+- Control the viewer from a notebook through the opt-in embed bridge. [Notebook guide](python/README.md)
 - Static deployment from repository root (`index.html`)
 - Release versions live in `assets/app/js/asset-urls.js`. Run `python3 tools/sync_asset_versions.py --version <release-version>` (replace the placeholder with the intended version) to update the version and committed asset URLs together. `make check` rejects stale URLs. See [asset versioning](docs/asset-versioning.md).
 - `.nojekyll` is required for GitHub Pages compatibility
