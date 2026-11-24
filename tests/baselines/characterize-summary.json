@@ -1,7 +1,7 @@
 {
   "baseline": {
-    "commit": "553c238c5313f7c3945f042436299f8770407cf3",
-    "tag": "declared-api-delta",
+    "commit": "933dfb1c4f3fe573dff7023d8ee4404558402563",
+    "tag": "v0.10.16",
     "appSha256": "43f47ec7cd530dbeed4292e48eace0ff14b31160cc6d8949488d84ba8a80f2e2",
     "viewport": {
       "width": 1512,
@@ -35,7 +35,8 @@
         "runAttempt": "1",
         "runnerImage": "ubuntu24"
       }
-    }
+    },
+    "recordingMode": "version-projection"
   },
   "captures": 102,
   "comparison": {
@@ -877,7 +878,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "7bbe298ba9094231570a9ff56aa649e2e8abfc2119b0adf10609ec390d5f2338",
+  "goldenSha256": "84bbd10a06763b1e83c8a1a412fe1358d918264774c6f007c4a6fbbef9e595b6",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
