@@ -1252,7 +1252,7 @@
         const scale=snapshot.snapshot.units==='angstrom'?1:0.529177210903,ids=new Set(resolved.atomIds);
         for(const atom of draft.vol.atoms)if(ids.has(atom.id)){atom.x+=vector[0]/scale;atom.y+=vector[1]/scale;atom.z+=vector[2]/scale;}
         draft.vol=deps.validateCandidate(draft.vol);
-        return deps.commit({snapshot,request:{operation:'translate',originalIds:snapshot.snapshot.atoms.map(a=>a.id),delta:vector},draft,result:{label:'API translate',warnings:{}}});
+        return deps.commit({snapshot,request:{operation:'translate',originalIds:snapshot.snapshot.atoms.map(a=>a.id),delta:vector,wholeStructure:ids.size===draft.vol.atoms.length},draft,result:{label:'API translate',warnings:{}}});
       }),
     });
   }
@@ -1377,11 +1377,11 @@
         expected = deps.canonicalize(realized.result);
         record = plan.snapshot.record || deps.createRecord();
         if(!record)throw new Error('Could not create editable system.');
-        deps.apply(record,expected);
+        const vectorHistory = deps.apply(record, expected, plan.request);
         actual=deps.capture(record.vol);
         const diff=editApiDifference(actual,expected);
         if(diff)editApiFault('APPLIED_MISMATCH',diff.path,diff.actual,diff.expected,'Structural owner did not apply the complete candidate.');
-        deps.history(record,plan.snapshot.snapshot,actual,plan.result.label);
+        deps.history(record, plan.snapshot.snapshot, actual, plan.result.label, vectorHistory);
         const after=deps.readSystem();
         return { value: { operation: plan.request.operation, created: actual.atoms.filter(a=>!plan.request.originalIds.includes(a.id)).map(a=>a.id), removed: plan.request.originalIds.filter(id=>!actual.atoms.some(a=>a.id===id)), warnings: plan.result.warnings||{}, policy:plan.result.policy||null, idMap:realized.ids },
           context:after.context, requested:expected, applied:actual, mutation:{state:'applied'}, changed:!!editApiDifference(actual,plan.snapshot.snapshot) };
@@ -4904,51 +4904,83 @@
     return mat;
   }
 
-  // Share the arrow geometry and materials across all atoms in this group.
-  function buildXyzVectorArrows(vectors) {
-    if (!vectors?.sets?.length || !vectors.byAtomId) return null;
+  // Share the shaft, head and outline resources across each arrow group.
+  function buildXyzVectorArrows(vectors, freeItems = []) {
+    const sets = vectors?.sets || [];
+    if (!sets.length && !freeItems.length) return null;
     const shaft = new THREE.CylinderGeometry(1, 1, 1, 12);
     const head = new THREE.ConeGeometry(1, 1, 12);
     const outline = new THREE.MeshBasicMaterial({ color: 0x292d32, side: THREE.BackSide });
-    const materials = vectors.sets.map(({ color }) => new THREE.MeshPhongMaterial({ color, shininess: 36 }));
+    const materials = [...sets, ...freeItems].map(({ color }) => new THREE.MeshPhongMaterial({ color, shininess: 36 }));
     let attached = false;
-    function addPart(group, geometry, material, radius, length, y) {
+    function addPart(group, geometry, material, radius, length, y, reverse = false) {
       const part = new THREE.Mesh(geometry, material);
       const border = new THREE.Mesh(geometry, outline);
       part.position.y = border.position.y = y;
       part.scale.set(radius, length, radius);
       border.scale.set(radius + 0.008, length + 0.012, radius + 0.008);
+      if (reverse) part.rotation.z = border.rotation.z = Math.PI;
+      if (group.userData.type === 'freeVectorArrow') part.raycast = border.raycast = () => {};
       part.userData.type = border.userData.type = 'xyzVector';
       group.add(part, border);
+    }
+    function appendArrow(parent, components, descriptor, material, atomScale, origin = null) {
+      const magnitude = Math.hypot(...components);
+      const length = magnitude * descriptor.scale;
+      if (!(length > 1e-8)) return;
+      const arrow = new THREE.Group();
+      arrow.name = descriptor.name;
+      arrow.userData.type = origin ? 'freeVectorArrow' : 'xyzVectorArrow';
+      arrow.scale.setScalar(1 / atomScale);
+      if (origin) arrow.position.fromArray(origin);
+      arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...components.map(value => value / magnitude)));
+      const tip = Math.min(0.24, length * 0.29);
+      const width = Math.min(0.035, tip * 0.35);
+      if (descriptor.heads === 'both') {
+        const stem = length - 2 * tip;
+        addPart(arrow, shaft, material, width, stem, 0);
+        addPart(arrow, head, material, width * 2.3, tip, (stem + tip) / 2);
+        addPart(arrow, head, material, width * 2.3, tip, -(stem + tip) / 2, true);
+      } else {
+        const stem = length - tip;
+        addPart(arrow, shaft, material, width, stem, stem / 2);
+        addPart(arrow, head, material, width * 2.3, tip, stem + tip / 2);
+      }
+      parent.add(arrow);
+      attached = true;
     }
     return {
       addToAtom(mesh, atomId, atomScale) {
         if (!Object.hasOwn(vectors.byAtomId, atomId)) return;
-        const row = vectors.byAtomId[atomId];
-        row.forEach((components, i) => {
-          const magnitude = Math.hypot(...components);
-          const length = magnitude * vectors.sets[i].scale;
-          if (!(length > 1e-8)) return;
-          const arrow = new THREE.Group();
-          arrow.name = vectors.sets[i].name;
-          arrow.userData.type = 'xyzVectorArrow';
-          arrow.scale.setScalar(1 / atomScale);
-          arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...components.map(value => value / magnitude)));
-          const tip = Math.min(0.24, length * 0.29);
-          const stem = length - tip;
-          const width = Math.min(0.035, tip * 0.35);
-          addPart(arrow, shaft, materials[i], width, stem, stem / 2);
-          addPart(arrow, head, materials[i], width * 2.3, tip, stem + tip / 2);
-          mesh.add(arrow);
-          attached = true;
-        });
+        vectors.byAtomId[atomId].forEach((components, index) =>
+          appendArrow(mesh, components, sets[index], materials[index], atomScale));
+      },
+      addToStructure(group, center) {
+        freeItems.forEach((arrow, index) => appendArrow(group, arrow.vector, arrow,
+          materials[sets.length + index], 1, arrow.origin || center));
       },
       disposeUnused() {
-        // Resources shared by all arrows are retired with their atom group.
         if (attached) return;
         [shaft, head, outline, ...materials].forEach(resource => resource.dispose());
       },
     };
+  }
+
+  function buildFreeArrowDisplay(vol) {
+    const items = vol?.arrows?.items;
+    if (!items?.length) return;
+    const center = computeMassProperties(vol);
+    const units = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+    const origin = center ? [center.comX * units, center.comY * units, center.comZ * units] : [0, 0, 0];
+    const group = new THREE.Group();
+    group.userData.type = 'freeVectorArrows';
+    const builder = buildXyzVectorArrows(null, items);
+    builder.addToStructure(group, origin);
+    builder.disposeUnused();
+    if (group.children.length) {
+      contentGroup.add(group);
+      extraMoleculeRenderGroups.push(group);
+    }
   }
 
   /**
@@ -6367,6 +6399,12 @@
     if (boxHelper) {
       contentBox.expandByObject(boxHelper);
       hasContent = true;
+    }
+    for (const group of extraMoleculeRenderGroups) {
+      if (group.visible && group.userData.type === 'freeVectorArrows') {
+        contentBox.expandByObject(group);
+        hasContent = true;
+      }
     }
     return { contentBox, atomBox, hasContent, hasAtoms };
   }
@@ -8987,7 +9025,7 @@
     const vol = record && record.vol;
     const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
     if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) return [];
-    return molden.mos.map((mo, index) => {
+    const rows = molden.mos.map((mo, index) => {
       const energyEh = Number.isFinite(Number(mo && mo.energy)) ? Number(mo.energy) : 0;
       const occValue = Number.isFinite(Number(mo && mo.occupation)) ? Number(mo.occupation) : 0;
       return {
@@ -8999,6 +9037,18 @@
         spinGlyph: formatOrbitalSpinGlyph(mo && mo.spin),
         isOccupied: occValue > 0,
       };
+    });
+    const tolerance = 1e-6;
+    // Molden also labels restricted MOs Alpha. A Beta channel denotes spin orbitals.
+    const fullOccupation = rows.some(row => row.spinGlyph === 'β') ? 1 : 2;
+    const fractionalChannels = new Set(rows
+      .filter(row => Math.abs(row.occValue - Math.round(row.occValue)) > tolerance)
+      .map(row => row.spinGlyph));
+    return rows.map(row => {
+      const fractional = fractionalChannels.has(row.spinGlyph);
+      if (!fractional) return { ...row, fractional, orbitalClass: row.isOccupied ? 'occupied' : 'virtual' };
+      if (row.occValue >= fullOccupation - tolerance) return { ...row, fractional, orbitalClass: 'core' };
+      return { ...row, fractional, orbitalClass: row.occValue <= tolerance ? 'virtual' : 'active' };
     });
   }
 
@@ -9017,7 +9067,7 @@
   }
 
   /**
-   * Return the HOMO/LUMO divider label if one should appear before a row.
+   * Return the occupation divider label, preserving the integer-file boundary.
    * @param {number} rowIndex
    * @param {Array<object>} items
    * @param {number[]} visibleRowIndices
@@ -9025,11 +9075,49 @@
    */
   function getMoldenOrbitalDividerLabel(rowIndex, items, visibleRowIndices) {
     const visible = Array.isArray(visibleRowIndices) ? visibleRowIndices : [];
-    const occupiedVisible = visible.filter((index) => items[index] && items[index].isOccupied);
-    const virtualVisible = visible.filter((index) => items[index] && !items[index].isOccupied);
+    const row = items[rowIndex];
+    if (row?.fractional) {
+      const label = { active: 'Core / Active', virtual: 'Active / Virtual' }[row.orbitalClass];
+      if (!label) return '';
+      const first = visible.find(index => items[index]?.spinGlyph === row.spinGlyph
+        && items[index].orbitalClass === row.orbitalClass);
+      return first === rowIndex ? label : '';
+    }
+    const integerVisible = visible.filter(index => items[index] && !items[index].fractional);
+    const occupiedVisible = integerVisible.filter(index => items[index].isOccupied);
+    const virtualVisible = integerVisible.filter(index => !items[index].isOccupied);
     if (!occupiedVisible.length || !virtualVisible.length) return '';
     const firstVisibleVirtualIndex = virtualVisible[0];
     return rowIndex === firstVisibleVirtualIndex ? 'HOMO / LUMO' : '';
+  }
+
+  // The shared popover places the first divider. Molden adds any remaining
+  // occupation boundaries after the table render or energy filter update.
+  function syncMoldenOccupationDividers(items) {
+    if (!items.some(row => row.fractional)) return;
+    const tbody = moldenInspectorBody.querySelector('tbody');
+    if (!tbody) return;
+    const rows = new Map();
+    for (const element of tbody.querySelectorAll('tr[data-row-index]')) {
+      const index = Number(element.dataset.rowIndex);
+      rows.set(index, element);
+      if (items[index]?.fractional) element.dataset.occupationClass = items[index].orbitalClass;
+    }
+    tbody.querySelectorAll('[data-molden-extra-divider]').forEach(row => row.remove());
+    const template = tbody.querySelector('.vm-list-popover__divider');
+    if (!template) return;
+    const visible = getVisibleMoldenOrbitalIndices(items);
+    const boundaries = visible.map(index => ({
+      index, label: getMoldenOrbitalDividerLabel(index, items, visible),
+    })).filter(boundary => boundary.label);
+    for (const { index, label } of boundaries.slice(1)) {
+      const target = rows.get(index);
+      if (!target) continue;
+      const divider = template.cloneNode(true);
+      divider.dataset.moldenExtraDivider = '';
+      divider.firstElementChild.textContent = label;
+      tbody.insertBefore(divider, target);
+    }
   }
 
   /**
@@ -9298,6 +9386,7 @@
       moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
     }
     moldenListPopover.render();
+    syncMoldenOccupationDividers(items);
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -11046,7 +11135,7 @@
 
   /**
    * Evaluate one Molden shell contribution into a scalar orbital grid.
-   * Supports s/p/sp/d/f shells. G shells are rejected explicitly for now.
+   * Supports s/p/sp/d/f/g shells in Molden order.
    * @param {Float32Array} data
    * @param {number[]} nxyz
    * @param {{coord:Float64Array,sq:Float64Array}} xAxis
@@ -11058,14 +11147,12 @@
    */
   function accumulateMoldenShellContribution(data, nxyz, xAxis, yAxis, zAxis, shell, moCoefficients, angularFlags) {
     const shellLabel = String(shell && shell.label || '').trim().toLowerCase();
-    if (shellLabel === 'g') {
-      throw new Error('Molden MO rendering does not yet support g shells.');
-    }
-    const angularMomentum = ['s', 'p', 'd', 'f'].indexOf(shellLabel === 'sp' ? 's' : shellLabel);
+    const angularMomentum = ['s', 'p', 'd', 'f', 'g'].indexOf(shellLabel === 'sp' ? 's' : shellLabel);
     if (angularMomentum < 0) throw new Error(`Unsupported Molden shell label "${shellLabel}".`);
-    const axialMoment = [1, 1, 3, 15][angularMomentum]; // (2L - 1)!!
+    const axialMoment = [1, 1, 3, 15, 105][angularMomentum]; // (2L - 1)!!
     const sphericalD = angularFlags?.d === 'spherical';
     const sphericalF = angularFlags?.f === 'spherical';
+    const sphericalG = angularFlags?.g === 'spherical';
     // Radial factors normalize the axial Cartesian primitive. Apply the
     // remaining angular factors to the MO weights once per shell.
     let angularFactors;
@@ -11082,6 +11169,16 @@
       angularFactors = sphericalF
         ? [0.5, f1, f1, sqrt15 / 2, sqrt15, f3, f3]
         : [1, 1, 1, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt5, sqrt15];
+    } else if (shellLabel === 'g') {
+      const sqrt5 = Math.sqrt(5);
+      const sqrt7 = Math.sqrt(7);
+      const sqrt35 = Math.sqrt(35);
+      const g1 = Math.sqrt(5 / 8);
+      const g3 = Math.sqrt(35 / 8);
+      const pairs = Math.sqrt(105) / 3;
+      angularFactors = sphericalG
+        ? [1 / 8, g1, g1, sqrt5 / 4, sqrt5 / 2, g3, g3, sqrt35 / 8, sqrt35 / 2]
+        : [1, 1, 1, sqrt7, sqrt7, sqrt7, sqrt7, sqrt7, sqrt7, pairs, pairs, pairs, sqrt35, sqrt35, sqrt35];
     }
     const coeffs = angularFactors
       ? Float64Array.from(moCoefficients, (value, index) => value * angularFactors[index])
@@ -11183,6 +11280,40 @@
                 coeffs[7] * (y * zz) +
                 coeffs[8] * (yy * z) +
                 coeffs[9] * xyz
+              );
+            }
+          } else if (shellLabel === 'g') {
+            if (sphericalG) {
+              const transverseSq = xx + yy;
+              const g2 = 6 * zz - transverseSq;
+              value = radial0 * (
+                coeffs[0] * (8 * zz * zz - 24 * zz * transverseSq + 3 * transverseSq * transverseSq) +
+                coeffs[1] * (xz * (4 * zz - 3 * transverseSq)) +
+                coeffs[2] * (yz * (4 * zz - 3 * transverseSq)) +
+                coeffs[3] * ((xx - yy) * g2) +
+                coeffs[4] * (xy * g2) +
+                coeffs[5] * (xz * (xx - 3 * yy)) +
+                coeffs[6] * (yz * (3 * xx - yy)) +
+                coeffs[7] * (xx * xx - 6 * xx * yy + yy * yy) +
+                coeffs[8] * (xy * (xx - yy))
+              );
+            } else {
+              value = radial0 * (
+                coeffs[0] * (xx * xx) +
+                coeffs[1] * (yy * yy) +
+                coeffs[2] * (zz * zz) +
+                coeffs[3] * (xx * xy) +
+                coeffs[4] * (xx * xz) +
+                coeffs[5] * (yy * xy) +
+                coeffs[6] * (yy * yz) +
+                coeffs[7] * (zz * xz) +
+                coeffs[8] * (zz * yz) +
+                coeffs[9] * (xx * yy) +
+                coeffs[10] * (xx * zz) +
+                coeffs[11] * (yy * zz) +
+                coeffs[12] * (x * xyz) +
+                coeffs[13] * (y * xyz) +
+                coeffs[14] * (z * xyz)
               );
             }
           }
@@ -13087,7 +13218,53 @@
     return {
       atoms: cloneAtomsSnapshot(vol),
       grid: cloneGridTransformSnapshot(vol),
+      vectors: cloneVectorState(vol),
     };
+  }
+
+  function cloneVectorState(vol) {
+    if (!vol?.xyzVectors && !vol?.arrows) return undefined;
+    return structuredClone({
+      ...(vol.xyzVectors ? { xyzVectors: vol.xyzVectors } : {}),
+      ...(vol.arrows ? { arrows: vol.arrows } : {}),
+    });
+  }
+
+  function vectorStatesEqual(a, b) {
+    if (Object.is(a, b)) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length
+      && keys.every(key => Object.hasOwn(b, key) && vectorStatesEqual(a[key], b[key]));
+  }
+
+  // The rotation and pivot come from the same operation that moves the atoms.
+  // Points and displacements are in Å. Vector components retain their input units.
+  function transformVectorState(vol, before, indices, rotate, pivot = [0, 0, 0], delta = [0, 0, 0]) {
+    if (!before) return;
+    Object.assign(vol, window.VibeMolVectorsModel.transform(vol, before, indices, rotate, pivot, delta));
+  }
+
+  function applyQuaternionVectorTransform(vol, before, indices, rotation, pivot, delta, meshes) {
+    const rotate = rotation ? (components => new THREE.Vector3(...components).applyQuaternion(rotation).toArray()) : null;
+    transformVectorState(vol, before, indices, rotate, pivot?.toArray(), delta?.toArray());
+    if (before?.xyzVectors && meshes && rotation) syncTransformedAtomArrows(vol, indices, meshes);
+  }
+
+  function syncTransformedAtomArrows(vol, indices, meshes) {
+    const { byAtomId, sets } = vol.xyzVectors;
+    const setIndices = new Map(sets.map((set, index) => [set.name, index]));
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const index of indices) {
+      const row = byAtomId[vol.atoms[index].id];
+      const children = meshes.children[index]?.children;
+      if (!row || !children) continue;
+      for (const arrow of children) {
+        if (arrow.userData.type !== 'xyzVectorArrow') continue;
+        const direction = new THREE.Vector3(...row[setIndices.get(arrow.name)]).normalize();
+        arrow.quaternion.setFromUnitVectors(up, direction);
+      }
+    }
   }
 
   /**
@@ -13131,7 +13308,7 @@
     if (!a || !b) return false;
     if (!atomsSnapshotsEqual(a.atoms, b.atoms)) return false;
     if (!gridSnapshotsEqual(a.grid, b.grid)) return false;
-    return true;
+    return vectorStatesEqual(a.vectors, b.vectors);
   }
 
   const editState = createEditStateController({
@@ -13843,6 +14020,8 @@
     cloneAtomsSnapshot,
     cloneBondSnapshot,
     cloneVolumeAnnotationsSnapshot,
+    cloneVectorState,
+    applyQuaternionVectorTransform,
     cloneJsonLike,
     allocateBuilderGroupId,
     allocateBuilderOpId,
@@ -15558,6 +15737,10 @@
       atom.z = coords[2];
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[atomIdx] : null;
       if (mesh && mesh.position) mesh.position.copy(world);
+    }
+    if (transformBeforeSnapshot?.vectors && transformRotateGesture !== 'bondDistanceHorizontal') {
+      applyQuaternionVectorTransform(vol, transformBeforeSnapshot.vectors, indices,
+        transformRotateAccumulatedQuaternion, transformPivotWorld, undefined, atomGroup);
     }
   }
 
@@ -18233,6 +18416,8 @@
     cloneBondSnapshot,
     atomsSnapshotsEqual,
     pushEditHistoryEntry,
+    cloneVectorState,
+    applyQuaternionVectorTransform,
     rebuildBondsFromAtoms,
     updateBondsInPlace,
     rebuildScene,
@@ -25095,12 +25280,29 @@
       }
       const current = atomUnitsToAng(vol, vol.atoms[site.atomIndex]).sub(center).normalize();
       const rotation = new THREE.Quaternion().setFromUnitVectors(current, new THREE.Vector3(...site.direction));
-      for (const index of ligand) {
+      const positions = Array.from(ligand, index => {
         const world = atomUnitsToAng(vol, vol.atoms[index]).sub(center).applyQuaternion(rotation).add(center);
-        moves.push([index, worldToAtomUnits(vol, world)]);
-      }
+        return [index, worldToAtomUnits(vol, world)];
+      });
+      moves.push({ rotation, indices: [...ligand], positions });
     }
     return moves;
+  }
+
+  function prepareCoordinationLigandMoves(vol, index, geometryId) {
+    if (!getCoordinationProfile(vol.atoms[index].Z)?.isTransitionMetal) return [];
+    const moves = describeMetalLigandMoves(vol, index, geometryId);
+    if (!moves) setHintMessage('This geometry change would move a bridging or multidentate ligand.');
+    return moves;
+  }
+
+  function applyCoordinationLigandVectors(vol, moves) {
+    if (!moves.length || !vol.xyzVectors) return undefined;
+    const beforeVectors = cloneVectorState(vol);
+    for (const { rotation, indices } of moves) {
+      applyQuaternionVectorTransform(vol, vol, indices, rotation);
+    }
+    return { beforeVectors, afterVectors: cloneVectorState(vol) };
   }
 
   function applyAtomCoordinationChoice(atomIndex, geometryId) {
@@ -25116,13 +25318,12 @@
     const prev = getAtomCoordinationMeta(vol, atom);
     if (String(prev.geometryId || '') === nextGeometryId) return false;
     if (!isCoordinationPreferenceCompatibleForAtom(vol, idx, nextGeometryId)) return false;
-    const metal = getCoordinationProfile(atom.Z)?.isTransitionMetal;
-    const moves = metal ? describeMetalLigandMoves(vol, idx, nextGeometryId) : [];
-    if (!moves) {
-      setHintMessage('This geometry change would move a bridging or multidentate ligand.');
-      return false;
+    const moves = prepareCoordinationLigandMoves(vol, idx, nextGeometryId);
+    if (!moves) return false;
+    for (const { positions } of moves) {
+      for (const [index, [x, y, z]] of positions) Object.assign(vol.atoms[index], { x, y, z });
     }
-    for (const [index, [x, y, z]] of moves) Object.assign(vol.atoms[index], { x, y, z });
+    const vectorHistory = applyCoordinationLigandVectors(vol, moves);
     setAtomCoordinationMeta(vol, atom, { geometryId: nextGeometryId });
     const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const geometry = getCoordinationGeometry(nextGeometryId);
@@ -25130,14 +25331,19 @@
     pushEditHistoryEntry(record, beforeAtoms, cloneAtomsSnapshot(vol), `Set coordination ${labelText}`, {
       beforeAnnotations,
       afterAnnotations,
+      ...vectorHistory,
     });
+    refreshCoordinationGeometryPresentation(atom, labelText);
+    return true;
+  }
+
+  function refreshCoordinationGeometryPresentation(atom, labelText) {
     if (editHaloController) editHaloController.refresh();
     updateSelectedHalos();
     updateEditAdaptiveMenuUi();
     rebuildScene({ preserveView: true });
     updateSidePanel();
     setHintMessage(`Coordination set to ${labelText} for ${getElementSymbol(atom.Z)}.`);
-    return true;
   }
 
   /**
@@ -25241,6 +25447,10 @@
    * @param {number} dz
    */
   function translateVolumetricGrid(vol, dx, dy, dz) {
+    if (vol.arrows) {
+      const scale = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+      transformVectorState(vol, vol, null, null, undefined, [dx * scale, dy * scale, dz * scale]);
+    }
     if (!hasVolumetricGrid(vol)) return;
     const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
     vol.origin = [
@@ -25261,6 +25471,11 @@
    * @param {THREE.Vector3} ez
    */
   function rotateVolumetricGridAboutPoint(vol, comX, comY, comZ, ex, ey, ez) {
+    if (vol.xyzVectors || vol.arrows) {
+      const scale = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+      transformVectorState(vol, vol, null, components => applyBasisRowsToVector(ex, ey, ez, ...components),
+        [comX * scale, comY * scale, comZ * scale]);
+    }
     if (!hasVolumetricGrid(vol)) return;
     const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
     const axes = Array.isArray(vol.axes) ? vol.axes : [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -26750,7 +26965,7 @@
   }
 
   function applyToSurfaceAppearanceTargets(mutator, options = {}) {
-    const layers = getSurfaceAppearanceTargets();
+    const layers = options.targets || getSurfaceAppearanceTargets();
     if (!layers.length || typeof mutator !== 'function') return false;
     for (const layer of layers) {
       mutator(layer);
@@ -27206,13 +27421,16 @@
     };
   }
   if (moldenEnergyFilter) {
-    const applyMoldenEnergyFilter = () => {
+    function applyMoldenEnergyFilter() {
       const raw = String(moldenEnergyFilter.value || '').trim();
       const next = raw ? Number(raw) : 0;
       moldenEnergyThresholdEh = Number.isFinite(next) && next > 0 ? next : 0;
       if (document.activeElement !== moldenEnergyFilter) moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
-      if (moldenListPopover) moldenListPopover.syncVisibleRows();
-    };
+      if (moldenListPopover) {
+        moldenListPopover.syncVisibleRows();
+        syncMoldenOccupationDividers(buildMoldenOrbitalItems(currentIndex >= 0 ? volumes[currentIndex] : null));
+      }
+    }
     moldenEnergyFilter.addEventListener('input', () => {
       if (moldenFilterDebounceTimer) clearTimeout(moldenFilterDebounceTimer);
       moldenFilterDebounceTimer = window.setTimeout(() => {
@@ -32564,6 +32782,7 @@
       if (asActive) bondGroup = nextBondGroup;
       else extraMoleculeRenderGroups.push(nextBondGroup);
     }
+    buildFreeArrowDisplay(vol);
     if (!workspaceEnabled && showSimulationBoxes && hasGrid) {
       const nextBoxHelper = buildBox(vol);
       contentGroup.add(nextBoxHelper);
@@ -32781,7 +33000,7 @@
     const link = document.createElement('a');
     const name = currentIndex >= 0 ? volumes[currentIndex].name.replace(/\.[^/.]+$/, '') : 'render';
     link.download = `${name}_iso${parseFloat(isoInput.value || "0.02").toFixed(4)}.png`;
-    link.href = renderer.domElement.toDataURL('image/png');
+    link.href = readViewportPng();
     link.click();
   };
 
@@ -33665,9 +33884,10 @@
     applyHydroxylAttachmentGeometry(vol,fragment,indices,geometry.anchorWorld,geometry.connectionWorld);
     applyLocalFragmentCleanup(vol,anchorIndex,indices,connectionIndex,geometry.bondLength,oldSet,geometry.direction);
   }
-  function editApiHistory(record,before,after,label) {
+  function editApiHistory(record,before,after,label,vectorHistory) {
     pushEditHistoryEntry(record,before.atoms,after.atoms,label,{beforeFragmentOps:before.fragmentOps,afterFragmentOps:after.fragmentOps,
-      beforeBonds:before.bonds,afterBonds:after.bonds,beforeAnnotations:before.annotations,afterAnnotations:after.annotations});
+      beforeBonds:before.bonds,afterBonds:after.bonds,beforeAnnotations:before.annotations,afterAnnotations:after.annotations,
+      ...vectorHistory});
   }
   function editApiSyncSelection() {
     updateSelectedHalos(); updateEditSelectionVisuals(); updateEditAdaptiveMenuUi();
@@ -33696,7 +33916,14 @@
   const editApiRealizer=createEditApiIdRealizer({atom:allocateBuilderAtomId,group:allocateBuilderGroupId,operation:allocateBuilderOpId,bondId:buildVolumeBondId});
   const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),realize:editApiRealizer,
     canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
-    apply:(record,vol)=>editState.applyAtomsSnapshotToRecord(record,vol.atoms,vol.fragmentOps,vol.bonds,vol.annotations),capture:editApiCapture,history:editApiHistory});
+    apply:(record,vol,request)=>{
+      const beforeVectors = request.operation === 'translate' ? cloneVectorState(record.vol) : undefined;
+      const afterVectors = beforeVectors && request.wholeStructure
+        ? { ...beforeVectors, ...window.VibeMolVectorsModel.transform(record.vol, beforeVectors, null, null, [0, 0, 0], request.delta) }
+        : beforeVectors;
+      editState.applyAtomsSnapshotToRecord(record, vol.atoms, vol.fragmentOps, vol.bonds, vol.annotations, afterVectors);
+      return beforeVectors ? { beforeVectors, afterVectors } : undefined;
+    },capture:editApiCapture,history:editApiHistory});
   const editApiPrepare = createEditApiBuildPreparation({readSystem:editApiReadSystem,newSnapshot:editApiNewSnapshot,validate:editApiValidator.validate,makeDraft:editApiMakeDraft,
     place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});
   const editApiBuild = createEditApiBuildService({prepare:editApiPrepare,readSystem:editApiReadSystem,makeDraft:editApiMakeDraft,validateCandidate:editApiValidateCandidate,commit:editApiCommit,inspectResolution:editApiSelection.inspectResolution});
@@ -33732,6 +33959,415 @@
     clearSelection:editApiSelection.clearSelection,copySelection:editApiSelection.copySelection,listBuildCatalog:editApiCatalog,
     listBuildSites:editApiQueries.listBuildSites,validateBuild:editApiBuild.validateBuild,applyBuild:editApiBuild.applyBuild,translate:editApiBuild.translate});
   window.VibeMolEdit=editProductApi;
+
+  function step3bRequest(input, fields) {
+    try { editApiData(input); }
+    catch (error) {
+      const path = error.editApi?.path || 'request';
+      editApiFault('invalid-params', path, null, 'JSON data', `Invalid ${path}: expected JSON data.`);
+    }
+    if (!input || typeof input !== 'object' || Array.isArray(input)) {
+      editApiFault('invalid-params', 'request', input, 'object', 'Invalid request: expected an object.');
+    }
+    const unknown = Object.keys(input).find(field => !fields.includes(field));
+    if (unknown !== undefined) editApiFault('invalid-params', unknown, input[unknown], fields, `Unknown field: ${unknown}.`);
+  }
+
+  function step3bRequireIdle() {
+    if (figureRendering || batchExportRunning || applyingSession || sessionController?.isOpening()
+        || fileLoaderController.isLoading() || trajectoryVideoController?.isActive() || vibrationVideoController?.isActive()) {
+      editApiFault('not-available', 'scene', 'busy', 'idle', 'Finish the current open or export first.');
+    }
+  }
+
+  function readProductMode() {
+    const mode = currentMode === MODES.DISPLAY ? 'view' : currentMode === MODES.MEASURE ? 'measure' : currentMode;
+    return { mode, surfacesSuppressed: surfaceRenderSuppressed };
+  }
+
+  async function setProductMode(input = {}) {
+    const pending = editApiCall(() => {
+      step3bRequest(input, ['mode']);
+      const modes = { view: MODES.DISPLAY, measure: MODES.MEASURE, edit: MODES.EDIT, calculations: MODES.CALCULATIONS };
+      if (typeof input.mode !== 'string' || !Object.hasOwn(modes, input.mode)) {
+        editApiFault('invalid-params', 'mode', input.mode, Object.keys(modes), 'Invalid mode.');
+      }
+      if (input.mode === 'calculations' && !workspaceEnabled) {
+        editApiFault('not-available', 'mode', input.mode, ['view', 'measure', 'edit'], 'Calculations mode is not available in the legacy interface.');
+      }
+      step3bRequireIdle();
+      setMode(modes[input.mode]);
+      return { value: input.mode };
+    });
+    if (!pending.ok) return pending;
+    // The toolbar handler schedules the atom fit on the next frame.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return editApiCall(() => {
+      const applied = readProductMode();
+      if (applied.mode !== pending.value) {
+        editApiFault('failed', 'mode', applied.mode, pending.value, 'The requested mode was not applied.');
+      }
+      return { value: applied };
+    });
+  }
+
+  function requireProductOrbitalSurfaces() {
+    const details = readProductMode();
+    if (details.surfacesSuppressed) {
+      const label = details.mode[0].toUpperCase() + details.mode.slice(1);
+      const error = new Error(`Orbital surfaces are hidden in ${label} mode; call view.setMode('view') first.`);
+      error.editApi = { code: 'not-available', path: 'surfaces', message: error.message, details };
+      throw error;
+    }
+  }
+
+  function moldenProductSource() {
+    const record = volumes[currentIndex];
+    const items = buildMoldenOrbitalItems(record);
+    const source = sceneSources.getSources().find(item => item.record === record);
+    const scene = sceneGraphController.getScenes().find(item => item.sceneKey === record?._sceneGraphSceneKey);
+    if (!items.length || !source || !scene) {
+      editApiFault('not-available', 'source', null, 'Molden orbitals', 'The active structure has no Molden orbitals.');
+    }
+    return { record, items, source: { id: source.id, name: record.name }, scene };
+  }
+
+  function listProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, []);
+      const { record, items, source } = moldenProductSource();
+      const frontier = new Map();
+      if (!items.some(item => item.fractional)) {
+        for (const spin of new Set(items.map(item => item.spinGlyph))) {
+          const channel = items.filter(item => item.spinGlyph === spin);
+          const homo = channel.findLast(item => item.isOccupied);
+          const lumo = channel.find(item => !item.isOccupied);
+          if (homo) frontier.set(homo.index, 'HOMO');
+          if (lumo) frontier.set(lumo.index, 'LUMO');
+        }
+      }
+      const orbitals = items.map((item, offset) => ({
+        index: item.index, energyEh: item.energyEh, occupation: item.occValue,
+        spin: record.vol.molden.mos[offset].spin, symmetry: record.vol.molden.mos[offset].symmetry,
+        class: item.orbitalClass, frontier: frontier.get(item.index) || null,
+      }));
+      return { value: { source, orbitals } };
+    });
+  }
+
+  function validateMoldenProductIndices(indices, count, limit) {
+    if (!Array.isArray(indices) || !indices.length || indices.length > limit
+        || [...indices].some(index => !Number.isSafeInteger(index) || index < 1 || index > count)
+        || new Set(indices).size !== indices.length) {
+      editApiFault('invalid-params', 'indices', indices, { count, limit }, 'Invalid indices: expected distinct, available one-based orbital indices.');
+    }
+    return indices.map(index => index - 1);
+  }
+
+  function moldenProductLayers(target) {
+    return getCubeLayersInScene(target.scene).filter(layer => layer.record === target.record
+      && Number.isInteger(layer.moldenMoIndex) && !layer.isSceneGraphDuplicate);
+  }
+
+  function readVisibleMoldenProductIndices(target) {
+    return moldenProductLayers(target).filter(layer => sceneGraphController.isLayerEffectivelyVisible(layer))
+      .map(layer => layer.moldenMoIndex + 1).sort((a, b) => a - b);
+  }
+
+  function setMoldenProductLayerVisibility(layer, visible) {
+    if (layer.visible === visible) return;
+    layer.visible = visible;
+    persistActiveCubeLayerState(layer, { render: false });
+  }
+
+  function presentMoldenProductSelection(target, indices, exclusive) {
+    const { record, scene } = target;
+    const previous = getCubeLayersInScene(scene).filter(layer => layer.visible);
+    const preserveView = getVisibleCubeLayerCount(scene) > 0;
+    const selected = indices.map(index => sceneSources.addOrbital(record, index, { visible: false }));
+    const active = selected.at(-1);
+    const group = sceneGraphController.getLayerById(scene.orbitalsGroupId);
+    if (group) group.visible = true;
+    setActiveSceneGraphLayer(active.id, {
+      ensureSceneVisible: true, ensureLayerVisible: true, expandPath: true, rebuild: false,
+      forceSingleCubeVisibility: exclusive,
+    });
+    if (!exclusive) for (const layer of previous) setMoldenProductLayerVisibility(layer, true);
+    for (const layer of selected) setMoldenProductLayerVisibility(layer, true);
+    rebuildScene({ preserveView, syncGraph: false });
+  }
+
+  async function showProductOrbitals(input = {}) {
+    const result = editApiCall(() => {
+      step3bRequest(input, ['indices', 'exclusive']);
+      requireProductOrbitalSurfaces();
+      const target = moldenProductSource();
+      const indices = validateMoldenProductIndices(input.indices, target.items.length, 8);
+      if (input.exclusive !== undefined && typeof input.exclusive !== 'boolean') {
+        editApiFault('invalid-params', 'exclusive', input.exclusive, 'boolean', 'Invalid exclusive: expected a boolean.');
+      }
+      step3bRequireIdle();
+      if (!showSurfaces) {
+        editApiFault('not-available', 'surfaces', 'hidden', 'visible', 'Orbital surfaces are hidden in the current view.');
+      }
+      for (const index of indices) {
+        if (!evaluateMoldenGrid(target.record, index)) {
+          editApiFault('failed', 'indices', index + 1, 'renderable orbital', 'The requested orbital has no evaluable grid.');
+        }
+      }
+      presentMoldenProductSelection(target, indices, input.exclusive !== false);
+      return { value: { visibleIndices: readVisibleMoldenProductIndices(target) } };
+    });
+    if (result.ok) await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return result;
+  }
+
+  function hideProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['indices']);
+      const target = moldenProductSource();
+      const indices = input.indices === undefined ? null : validateMoldenProductIndices(input.indices, target.items.length, target.items.length);
+      step3bRequireIdle();
+      const layers = moldenProductLayers(target).filter(layer => layer.visible
+        && (indices === null || indices.includes(layer.moldenMoIndex)));
+      for (const layer of layers) setMoldenProductLayerVisibility(layer, false);
+      if (layers.length) rebuildScene({ preserveView: true, syncGraph: false });
+      return { value: { visibleIndices: readVisibleMoldenProductIndices(target) } };
+    });
+  }
+
+  function configureProductOrbitals(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['indices', 'iso', 'opacity']);
+      requireProductOrbitalSurfaces();
+      const target = moldenProductSource();
+      const indices = input.indices === undefined ? readVisibleMoldenProductIndices(target).map(index => index - 1)
+        : validateMoldenProductIndices(input.indices, target.items.length, target.items.length);
+      if (input.iso !== undefined && !(Number.isFinite(input.iso) && input.iso > 0)) {
+        editApiFault('invalid-params', 'iso', input.iso, 'positive number', 'Invalid iso: expected a positive number.');
+      }
+      if (input.opacity !== undefined && !(Number.isFinite(input.opacity) && input.opacity >= 0 && input.opacity <= 1)) {
+        editApiFault('invalid-params', 'opacity', input.opacity, [0, 1], 'Invalid opacity: expected a number in [0, 1].');
+      }
+      step3bRequireIdle();
+      const layers = applyMoldenProductAppearance(target, indices, input);
+      return { value: { orbitals: layers.map(layer => ({ index: layer.moldenMoIndex + 1, iso: layer.iso, opacity: layer.opacity })) } };
+    });
+  }
+
+  function applyMoldenProductAppearance(target, indices, { iso, opacity }) {
+    if (iso === undefined && opacity === undefined) {
+      const existing = new Map(moldenProductLayers(target).map(layer => [layer.moldenMoIndex, layer]));
+      return indices.map(index => existing.get(index)).filter(Boolean);
+    }
+    const layers = indices.map(index => sceneSources.addOrbital(target.record, index, { visible: false }));
+    const opacityPatch = opacity === undefined ? undefined
+      : normalizeSurfaceStylePatch({ 'surface.opacity': Math.max(0.05, opacity) })['surface.opacity'];
+    const rebuild = iso !== undefined && layers.some(layer => sceneGraphController.isLayerEffectivelyVisible(layer));
+    applyToSurfaceAppearanceTargets(layer => {
+      if (iso !== undefined) {
+        setLayerAutoIsoEnabled(layer, false);
+        layer.iso = iso;
+        layer.isoPending = false;
+      }
+      if (opacityPatch !== undefined) {
+        getSurfaceStyleOverrides(layer).opacity = true;
+        layer.opacity = opacityPatch;
+      }
+    }, { targets: layers, rebuild });
+    if (!rebuild && opacityPatch !== undefined) updateRenderedLayerOpacity(layers);
+    return layers;
+  }
+
+  function setProductView(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['axis', 'fit', 'projection']);
+      if (input.axis !== undefined && (typeof input.axis !== 'string' || !/^[+-][xyz]$/.test(input.axis))) {
+        editApiFault('invalid-params', 'axis', input.axis, 'signed axis', 'Invalid axis: expected +x, -x, +y, -y, +z or -z.');
+      }
+      if (input.fit !== undefined && typeof input.fit !== 'boolean') {
+        editApiFault('invalid-params', 'fit', input.fit, 'boolean', 'Invalid fit: expected a boolean.');
+      }
+      if (input.projection !== undefined && !['perspective', 'orthographic'].includes(input.projection)) {
+        editApiFault('invalid-params', 'projection', input.projection, ['perspective', 'orthographic'], 'Invalid projection.');
+      }
+      step3bRequireIdle();
+      if (input.projection !== undefined) setProjectionMode(input.projection);
+      if (input.fit === true) fitCameraToScene();
+      if (input.axis !== undefined) setCameraAxisPreset(input.axis[1], input.axis[0] === '-' ? -1 : 1);
+      refreshViewUI();
+      cameraDepthController.update(contentGroup, camera, calculationsRenderer?.group);
+      return { value: { projection: viewState.mode, position: camera.position.toArray(), target: controls.target.toArray(),
+        up: camera.up.toArray(), near: camera.near, far: camera.far, zoom: camera.zoom } };
+    });
+  }
+
+  function readViewportPng() {
+    return renderer.domElement.toDataURL('image/png');
+  }
+
+  function paintSnapshotFrame(metrics, transparent) {
+    function paint() {
+      const target = beginSceneFrameTarget(metrics);
+      renderSceneFrame(metrics, target);
+      endSceneFramePresentation(metrics, target);
+      renderAxisOverlayPass(metrics);
+    }
+    if (!transparent) {
+      paint();
+      return;
+    }
+    const color = renderer.getClearColor(new THREE.Color());
+    const alpha = renderer.getClearAlpha();
+    try {
+      renderer.setClearColor(0x000000, 0);
+      withSceneBackgroundDisabled(paint);
+    } finally {
+      renderer.setClearColor(color, alpha);
+    }
+  }
+
+  function captureViewportPng(width, height, transparent) {
+    const viewport = readRendererViewportMetrics();
+    const savedCamera = camera.clone();
+    const savedProjection = viewState.orthographicProjection;
+    const metrics = { cssWidth: width, cssHeight: height, bufferWidth: width, bufferHeight: height, dpr: 1 };
+    try {
+      renderer.setSize(width, height, false);
+      viewState.orthographicProjection = null;
+      updateActiveCameraProjection(width, height);
+      paintSnapshotFrame(metrics, transparent);
+      return readViewportPng();
+    } finally {
+      renderer.setSize(viewport.bufferWidth, viewport.bufferHeight, false);
+      camera.copy(savedCamera);
+      viewState.orthographicProjection = savedProjection;
+      paintSnapshotFrame(viewport, false);
+    }
+  }
+
+  function snapshotProductView(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, ['width', 'height', 'transparent']);
+      const viewport = readRendererViewportMetrics();
+      const width = input.width ?? Math.min(viewport.bufferWidth, 4096);
+      const height = input.height ?? Math.min(viewport.bufferHeight, 4096);
+      for (const field of ['width', 'height']) {
+        const size = input[field];
+        if (size !== undefined && (!Number.isInteger(size) || size < 1 || size > 4096)) {
+          editApiFault('invalid-params', field, size, [1, 4096], `Invalid ${field}: expected an integer from 1 through 4096.`);
+        }
+      }
+      if (input.transparent !== undefined && typeof input.transparent !== 'boolean') {
+        editApiFault('invalid-params', 'transparent', input.transparent, 'boolean', 'Invalid transparent: expected a boolean.');
+      }
+      step3bRequireIdle();
+      const uri = captureViewportPng(width, height, input.transparent === true);
+      const header = 'data:image/png;base64,';
+      if (!uri.startsWith(header)) editApiFault('failed', 'snapshot', null, 'PNG', 'The renderer could not encode a PNG.');
+      const dataBase64 = uri.slice(header.length);
+      if (dataBase64.length > 40_000_000) {
+        editApiFault('failed', 'snapshot', dataBase64.length, 40_000_000, 'The PNG exceeds the 40 MB response limit.');
+      }
+      return { value: { mime: 'image/png', width, height, dataBase64 } };
+    });
+  }
+
+  const orbitalProductApi = Object.freeze({
+    list: listProductOrbitals, show: showProductOrbitals, hide: hideProductOrbitals, configure: configureProductOrbitals,
+    setView: setProductView, setMode: setProductMode, snapshot: snapshotProductView,
+  });
+  window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,setMode:orbitalProductApi.setMode,snapshot:orbitalProductApi.snapshot});
+
+
+  function vectorProductTarget() {
+    const record = getFocusedScene()?.moleculeRecord;
+    const source = sceneSources.getSources().find(item => item.record === record);
+    if (!record?.vol?.atoms?.length || !source) {
+      editApiFault('not-available', 'structure', null, 'structure with atoms', 'There is no active structure with atoms.');
+    }
+    return { record, structure: { id: source.id, name: record.name } };
+  }
+
+  function readVectorProductTarget({ record, structure }) {
+    return { structure, ...window.VibeMolVectorsModel.describe(record.vol) };
+  }
+
+  function listProductVectors(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, []);
+      return { value: readVectorProductTarget(vectorProductTarget()) };
+    });
+  }
+
+  function applyVectorProductState(record, afterVectors, beforeVectors) {
+    window.VibeMolVectorsModel.restore(record.vol, afterVectors);
+    if (beforeVectors !== undefined && volumes.includes(record)) {
+      const atoms = cloneAtomsSnapshot(record.vol);
+      // Vector-only history leaves coordinates, including live trajectory frames, untouched.
+      editState.pushHistoryCommand({
+        type: 'vector_snapshot', record, before: atoms, after: atoms, beforeVectors, afterVectors,
+        label: 'Vectors', at: Date.now(),
+        undo() { return applyVectorProductState(record, beforeVectors); },
+        redo() { return applyVectorProductState(record, afterVectors); },
+      });
+    }
+    rebuildAppearanceMolecules();
+    markSessionChanged();
+    return true;
+  }
+
+  function changeProductVectors(input, fields, plan) {
+    return editApiCall(() => {
+      step3bRequest(input, fields);
+      const target = vectorProductTarget();
+      step3bRequireIdle();
+      const vol = target.record.vol;
+      const requested = validateVectorProductPlan(plan, vol, input);
+      const before = cloneVectorState(vol) ?? {};
+      const after = cloneVectorState(requested) ?? {};
+      if (!vectorStatesEqual(before, after)) {
+        if (addAtomOperatorSession || Object.values(editApiPointerInterlocks()).some(Boolean)) {
+          editApiFault('not-available', 'interactions', 'busy', 'idle', 'Finish the current edit before changing vectors.');
+        }
+        applyVectorProductState(target.record, after, before);
+      }
+      return { value: readVectorProductTarget(target) };
+    });
+  }
+
+  function validateVectorProductPlan(plan, vol, input) {
+    try {
+      return plan(vol, input);
+    } catch (error) {
+      if (!error.field) throw error;
+      editApiFault('invalid-params', error.field, input[error.field], null, error.message);
+    }
+  }
+
+  function setProductAtomVectors(input = {}) {
+    return changeProductVectors(input, ['name', 'color', 'values', 'scale', 'maxLength', 'atomicNumbers'],
+      (vol, request) => window.VibeMolVectorsModel.atomSetPlan(vol, request));
+  }
+
+  function setProductFreeArrow(input = {}) {
+    return changeProductVectors(input, ['name', 'color', 'vector', 'scale', 'length', 'anchor', 'origin', 'heads'],
+      (vol, request) => window.VibeMolVectorsModel.arrowPlan(vol, request));
+  }
+
+  function removeProductVectors(input = {}) {
+    return changeProductVectors(input, ['name'], (vol, request) => window.VibeMolVectorsModel.remove(vol, request));
+  }
+
+  function clearProductVectors(input = {}) {
+    return changeProductVectors(input, [], () => ({}));
+  }
+
+  const vectorProductApi = Object.freeze({
+    list: listProductVectors, setAtoms: setProductAtomVectors, setArrow: setProductFreeArrow,
+    remove: removeProductVectors, clear: clearProductVectors,
+  });
+  window.VibeMolVectors=Object.freeze({list:vectorProductApi.list,setAtoms:vectorProductApi.setAtoms,setArrow:vectorProductApi.setArrow,remove:vectorProductApi.remove,clear:vectorProductApi.clear});
 
   function readForte2MinaoSnapshot(context, planeResolutions) {
     // This is an identity boundary, not a derived numeric comparison.

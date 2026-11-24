@@ -247,6 +247,96 @@
         "assets/app/js/scene-outliner.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b orbital and view product API construction",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
+      "worktree": ".",
+      "recheck": [
+        "orbitalProductApi",
+        "step3bRequest",
+        "step3bRequireIdle",
+        "readProductMode",
+        "setProductMode",
+        "requireProductOrbitalSurfaces",
+        "moldenProductSource",
+        "listProductOrbitals",
+        "validateMoldenProductIndices",
+        "moldenProductLayers",
+        "readVisibleMoldenProductIndices",
+        "setMoldenProductLayerVisibility",
+        "presentMoldenProductSelection",
+        "showProductOrbitals",
+        "hideProductOrbitals",
+        "configureProductOrbitals",
+        "applyMoldenProductAppearance",
+        "applyToSurfaceAppearanceTargets",
+        "setProductView",
+        "readViewportPng",
+        "paintSnapshotFrame",
+        "captureViewportPng",
+        "snapshotProductView"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b vector model, renderer and product API construction",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/vectors-model.js"
+      ],
+      "consumers": [
+        "assets/app/js/session-format.js",
+        "assets/app/js/session.js"
+      ],
+      "recheck": [
+        "vectorProductApi",
+        "editApiCommit",
+        "vectorProductTarget",
+        "readVectorProductTarget",
+        "listProductVectors",
+        "applyVectorProductState",
+        "changeProductVectors",
+        "validateVectorProductPlan",
+        "setProductAtomVectors",
+        "setProductFreeArrow",
+        "removeProductVectors",
+        "clearProductVectors",
+        "buildXyzVectorArrows",
+        "buildFreeArrowDisplay",
+        "applyPostGeometry",
+        "collectVisibleSceneBounds",
+        "transformVectorState"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b vector history for command edits",
+      "before": "7acf2335f284761a97db8fa82dfde2883ef0ba44",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/vectors-model.js"
+      ],
+      "consumers": [
+        "assets/app/js/edit-state.js",
+        "assets/app/js/edit-transform.js",
+        "assets/app/js/edit-placement.js"
+      ],
+      "recheck": [
+        "applyVectorProductState",
+        "changeProductVectors"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b orbital, view and vector command registration",
+      "before": "05d6b301abf7e167825ff9e030b0e4f2a6865140",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/commands.js"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

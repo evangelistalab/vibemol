@@ -1,0 +1,6 @@
+{
+  "sourceGoldenSha256": "2d834463142648f0944f35c56d9b0176c756bc2feb113aca2f77ef1d93e28dc4",
+  "resultGoldenSha256": "0c5acc88c96527cc14b71c31eb5cf332b3355a97299a04553bd86dc8b5f18a9f",
+  "changedVersionLeaves": 204,
+  "toolSha256": "fb593ec2f5d5a1e8937469f02477a2b357d1baa3d09f1a2656ac2bbcc7903ac4"
+}

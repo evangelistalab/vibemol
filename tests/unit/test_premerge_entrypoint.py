@@ -25,12 +25,12 @@ class PremergeEntrypointTests(unittest.TestCase):
                           'psi4_frequencies', 'cfour_frequencies', 'xyz_units', 'clipboard_roundtrip',
                           'clipboard_edit_selection',
                           'persistence', 'batch_export', 'orbital_group_appearance', 'molden_group_appearance',
-                          'molden_browsing', 'arithmetic', 'synchronized_trajectories')
+                          'molden_browsing', 'molden_fractional_occupations', 'arithmetic', 'synchronized_trajectories')
         calls = []
         def commands(original_browser, url):
             self.assertIs(original_browser, browser)
             self.assertEqual(url, 'http://fixture')
-            self.assertEqual(browser.new_context.call_count, 17)
+            self.assertEqual(browser.new_context.call_count, 18)
             calls.append('commands')
         def embed_bridge(original_browser, url):
             self.assertIs(original_browser, browser)
@@ -59,7 +59,28 @@ class PremergeEntrypointTests(unittest.TestCase):
             stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
         self.assertEqual(calls, ['commands', 'embed bridge', 'matrix', 'bridges'])
-        self.assertEqual(browser.new_context.call_count, 17)
+        self.assertEqual(browser.new_context.call_count, 18)
+
+    def test_step3b_completion_requires_the_full_receipt(self):
+        regular = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
+        step3b = premerge.STEP3B_COMMAND_COMPLETION
+        for receipt in (step3b, {**step3b, 'successes': 0}, {**step3b, 'rejections': 30}):
+            output = io.StringIO()
+            with self.subTest(receipt=receipt), patch.object(premerge, 'commands', return_value=regular), \
+                 patch.object(premerge, 'step3b_command_cases', return_value=receipt), \
+                 patch.object(premerge, 'write_failure_artifacts'), contextlib.redirect_stdout(output):
+                if receipt == step3b:
+                    premerge.run_commands(MagicMock(), 'http://fixture')
+                    records = [line for line in output.getvalue().splitlines()
+                               if line.startswith('[step3b-command-completion] ')]
+                    self.assertEqual(len(records), 1)
+                    self.assertEqual(json.loads(records[0].split(' ', 1)[1]), step3b)
+                    manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+                    self.assertEqual(manifest['checkpointCounts']['tests/e2e/premerge.py']['step3b-command-completion'], 1)
+                else:
+                    with self.assertRaises(AssertionError):
+                        premerge.run_commands(MagicMock(), 'http://fixture')
+                    self.assertNotIn('[step3b-command-completion]', output.getvalue())
 
     def test_commands_completion_is_required_exactly_once(self):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
@@ -71,7 +92,9 @@ class PremergeEntrypointTests(unittest.TestCase):
                          if name != marker for _ in range(count)]
         receipt = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
         output = io.StringIO()
-        with patch.object(premerge, 'commands', return_value=receipt), contextlib.redirect_stdout(output):
+        with patch.object(premerge, 'commands', return_value=receipt), \
+             patch.object(premerge, 'step3b_command_cases', return_value=premerge.STEP3B_COMMAND_COMPLETION), \
+             contextlib.redirect_stdout(output):
             premerge.run_commands(MagicMock(), 'http://fixture')
         records = [line for line in output.getvalue().splitlines() if line.startswith(f'[{marker}] ')]
         self.assertEqual(len(records), 1)

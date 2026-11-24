@@ -1,3 +1,5 @@
+from base64 import b64decode
+import json
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
@@ -5,6 +7,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import expect
 
 from helpers import read_app_version
+from vibemol import Viewer
 
 VIEWER_PATH = re.compile(r"/\?from=notebook&embed=commands$")
 MOLDEN = Path(__file__).parent / "data" / "cyclopropene_cas43.molden"
@@ -103,6 +106,121 @@ def test_iframe_round_trip_queue_state_and_cleanup(page, app_url):
     page.wait_for_function("() => harness.model.get('ready')")
     send(page, "new-view", "app.info")
     assert response(page, "new-view") == {"ok": True, "value": info}
+
+
+def test_iframe_mode_switch_and_orbital_refusal(page, app_url):
+    page.goto(app_url + "python/tests/harness.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.harness?.model.get('ready')")
+    send(page, "molden", "files.load", files=[{"name": MOLDEN.name, "text": MOLDEN.read_text()}])
+    assert response(page, "molden")["ok"] is True
+
+    send(page, "edit", "view.setMode", mode="edit")
+    edit = {"mode": "edit", "surfacesSuppressed": True}
+    assert response(page, "edit") == {"ok": True, "value": edit}
+    send(page, "hidden", "orbitals.show", indices=[1], exclusive=True)
+    assert response(page, "hidden") == {"ok": False, "error": {
+        "code": "not-available",
+        "message": "Orbital surfaces are hidden in Edit mode; call view.setMode('view') first.",
+        "details": edit,
+    }}
+    iframe = page.frame_locator("#first iframe")
+    expect(iframe.locator("#modeEditBtn")).to_have_class(re.compile(r"\bactive\b"))
+
+    send(page, "view", "view.setMode", mode="view")
+    assert response(page, "view") == {"ok": True, "value": {"mode": "view", "surfacesSuppressed": False}}
+    send(page, "visible", "orbitals.show", indices=[1], exclusive=True)
+    assert response(page, "visible") == {"ok": True, "value": {"visibleIndices": [1]}}
+
+    def run(command, **params):
+        send(page, command, command, **params)
+        result = response(page, command)
+        assert result["ok"] is True, (command, result)
+        return result["value"]
+
+    assert run("orbitals.list")["orbitals"][0]["index"] == 1
+    assert run("orbitals.configure", indices=[1], iso=0.04, opacity=0.5)["orbitals"] == [
+        {"index": 1, "iso": 0.04, "opacity": 0.5},
+    ]
+    assert run("orbitals.hide")["visibleIndices"] == []
+    assert run("view.set", projection="orthographic", axis="+x")["projection"] == "orthographic"
+    atoms = run("vectors.list")["atomicNumbers"]
+    values = [[0, 0, 1] for _ in atoms]
+    forces = run("vectors.setAtoms", name="forces", color="#BB3388", values=values, atomicNumbers=atoms, maxLength=1)
+    assert forces["sets"][0]["name"] == "forces"
+    dipole = run("vectors.setArrow", name="dipole", color="#229944", vector=[0, 1, 0], length=1, heads="both")
+    assert dipole["sets"][1]["heads"] == "both"
+    snap = run("view.snapshot", width=320, height=240)
+    assert (snap["width"], snap["height"], snap["mime"]) == (320, 240, "image/png")
+    assert b64decode(snap["dataBase64"]).startswith(b"\x89PNG\r\n\x1a\n")
+    assert [row["name"] for row in run("vectors.remove", name="forces")["sets"]] == ["dipole"]
+    assert run("vectors.clear")["sets"] == []
+
+
+def test_python_widget_vector_commands_follow_edit_history(page, app_url, monkeypatch, capsys):
+    page.goto(app_url + "python/tests/harness.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.harness?.model.get('ready')")
+    frame = page.frame_locator("#first iframe")
+    water = "3\nVector history water\nO 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0"
+
+    def check(label, actual, expected):
+        with capsys.disabled():
+            print("[widget-vector-history] " + json.dumps(
+                {"label": label, "actual": actual, "expected": expected}, sort_keys=True), flush=True)
+        assert actual == expected, (label, actual, expected)
+
+    model = Viewer(url=app_url)
+    requests = []
+
+    def bridge(request):
+        requests.append(request)
+        send(page, request["id"], request["command"], **request["params"])
+
+    def complete(future):
+        request = requests[-1]
+        raw = response(page, request["id"])
+        check(f'{request["command"]} widget success', raw if raw.get("ok") is not True else True, True)
+        model._handle_custom_msg({"kind": "response", "id": request["id"], "result": raw}, [])
+        return future.result()
+
+    def state():
+        volume = json.loads(complete(model.run("session.export")))["sources"][0]["volume"]
+        return {"atoms": volume["atoms"], "vectors": {
+            field: volume[field] for field in ("xyzVectors", "arrows") if field in volume
+        }}
+
+    def press(key):
+        frame.locator("#canvas").focus()
+        page.keyboard.press(key)
+
+    try:
+        monkeypatch.setattr(model, "send", bridge)
+        complete(model.load(("water.xyz", water)))
+        complete(model.set_mode("edit"))
+        values = [[1,0,0],[0,1,0],[0,0,1]]
+        complete(model.set_atom_vectors("initial", values, "#228844", scale=1))
+        original = state()
+        press("p")
+        rotated = state()
+        check("Align changed atoms and vector components", [
+            original["atoms"] != rotated["atoms"], original["vectors"] != rotated["vectors"],
+        ], [True, True])
+        complete(model.set_atom_vectors("late", values, "#9933AA", scale=1))
+        with_atoms = state()
+        complete(model.set_arrow("dipole", [0,1,0], "#AA2277", scale=2))
+        with_arrow = state()
+        check("Widget mutations leave atoms unchanged", [with_atoms["atoms"], with_arrow["atoms"]],
+              [rotated["atoms"], rotated["atoms"]])
+        for action, key, steps in (
+            ("Undo", "ControlOrMeta+z", ((with_atoms,"Vectors"),(rotated,"Vectors"),(original,"Align principal axes"))),
+            ("Redo", "ControlOrMeta+Shift+z", ((rotated,"Align principal axes"),(with_atoms,"Vectors"),(with_arrow,"Vectors"))),
+        ):
+            for index, (expected, label) in enumerate(steps):
+                press(key)
+                check(f"{action} widget history step {index + 1}",
+                      {"hint": frame.locator("#hint .vm-edit-tool-status").text_content(), "state": state()},
+                      {"hint": f"{action}: {label}", "state": expected})
+    finally:
+        model.close()
 
 
 def test_incompatible_viewer_never_gets_a_queued_request(page, app_url):

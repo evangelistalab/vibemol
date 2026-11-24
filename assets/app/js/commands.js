@@ -76,6 +76,49 @@
       : { ok: true, value: { requested, applied } };
   }
 
+  const orbitalIndex = { type: 'integer', minimum: 1, maximum: Number.MAX_SAFE_INTEGER };
+  const orbitalIndices = array(orbitalIndex, { minItems: 1 });
+  const vector3 = array(number, { minItems: 3, maxItems: 3 });
+  const dimension = { type: 'integer', minimum: 1, maximum: 4096 };
+  const nonnegative = { type: 'number', minimum: 0 };
+  const vectorLength = { ...nonnegative, maximum: 20 };
+  const step3bDefinitions = [
+    command('orbitals.list', 'List orbitals for the active Molden source', object(),
+      false, 'VibeMolOrbitals.list', envelope),
+    command('orbitals.show', 'Present selected Molden orbitals', object({
+      indices: array(orbitalIndex, { minItems: 1, maxItems: 8 }), exclusive: boolean,
+    }, ['indices']), true, 'VibeMolOrbitals.show', envelope),
+    command('orbitals.hide', 'Hide selected or all Molden orbitals', object({ indices: orbitalIndices }),
+      true, 'VibeMolOrbitals.hide', envelope),
+    command('orbitals.configure', 'Set Molden orbital appearance', object({
+      indices: orbitalIndices, iso: nonnegative, opacity: { ...nonnegative, maximum: 1 },
+    }), true, 'VibeMolOrbitals.configure', envelope),
+    command('view.set', 'Set the viewport projection, framing or axis', object({
+      axis: choice('+x', '-x', '+y', '-y', '+z', '-z'), fit: boolean, projection: choice('perspective', 'orthographic'),
+    }), true, 'VibeMolOrbitals.setView', envelope),
+    command('view.setMode', 'Switch the viewport interaction mode', object({
+      mode: choice('view', 'measure', 'edit', 'calculations'),
+    }, ['mode']), true, 'VibeMolOrbitals.setMode', envelope),
+    command('view.snapshot', 'Capture the current view as a PNG', object({
+      width: dimension, height: dimension, transparent: boolean,
+    }), false, 'VibeMolOrbitals.snapshot', envelope),
+    command('vectors.list', 'List atom vector sets and free arrows', object(),
+      false, 'VibeMolVectors.list', envelope),
+    command('vectors.setAtoms', 'Set one vector per atom in structure order', object({
+      name: string, color: string, values: array(vector3), scale: nonnegative, maxLength: vectorLength,
+      atomicNumbers: array({ type: 'integer', minimum: 0, maximum: 100 }),
+    }, ['name', 'color', 'values']), true, 'VibeMolVectors.setAtoms', envelope),
+    command('vectors.setArrow', 'Set a free arrow on the active structure', object({
+      name: string, color: string, vector: vector3, scale: nonnegative, length: vectorLength,
+      anchor: choice('centerOfMass', 'point'), origin: vector3, heads: choice('tip', 'both'),
+    }, ['name', 'color', 'vector']), true, 'VibeMolVectors.setArrow', envelope),
+    command('vectors.remove', 'Remove a named vector set or free arrow', object({ name: string }, ['name']),
+      true, 'VibeMolVectors.remove', envelope),
+    command('vectors.clear', 'Clear all atom vector sets and free arrows', object(),
+      true, 'VibeMolVectors.clear', envelope),
+  ];
+  const step3bIds = new Set(step3bDefinitions.map(definition => definition.id));
+
   const definitions = [
     {
       id: 'app.info', title: 'Get the app and command registry versions',
@@ -146,8 +189,22 @@
         planes: array(object({ kind: choice('piPlane'), seed: data }, ['kind', 'seed']), { maxItems: 40 }),
       }),
     }), false, 'VibeMolForte2.export', envelope),
+    ...step3bDefinitions,
   ];
 
-  const { list, describe, run } = global.VibeMolCommandRegistry.createCommandRegistry(definitions);
+  const { list, describe, run: runCommand } = global.VibeMolCommandRegistry.createCommandRegistry(definitions);
+  async function run(id, params) {
+    const result = await runCommand(id, params);
+    if (result.ok || result.error.code !== 'rejected' || !step3bIds.has(id)) return result;
+    // These reviewed product envelopes distinguish validation, availability,
+    // and execution failures. The older commands keep their rejection shapes.
+    const productError = result.error.details;
+    const productCode = productError?.code;
+    const code = productCode === 'APPLY_FAILED' ? 'failed' : productCode;
+    if (!['invalid-params', 'not-available', 'failed'].includes(code)) return result;
+    const details = code === 'not-available' && productError.path === 'surfaces'
+      && productError.details?.surfacesSuppressed === true ? productError.details : productError;
+    return { ...result, error: { ...result.error, code, details } };
+  }
   global.VibeMolCommands = Object.freeze({ kind, version, list, describe, run });
 })(window);

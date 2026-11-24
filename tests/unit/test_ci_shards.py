@@ -179,12 +179,30 @@ class BrowserJoinTests(unittest.TestCase):
         with self.assertRaisesRegex(AssertionError, 'Recorded checkpoint counts differ'):
             self.join()
 
+    def test_join_rejects_missing_or_duplicate_step3b_expectations_in_manifest(self):
+        original_read = pathlib.Path.read_text
+        for checkpoints in ({}, {'step3b-command-completion': 2}):
+            manifest = copy.deepcopy(self.manifest)
+            premerge = manifest['checkpointCounts']['tests/e2e/premerge.py']
+            self.assertEqual(premerge.pop('step3b-command-completion'), 1)
+            premerge.update(checkpoints)
+
+            def read_text(file, *args, **kwargs):
+                if file == browser_suite.MANIFEST:
+                    return json.dumps(manifest)
+                return original_read(file, *args, **kwargs)
+
+            with self.subTest(checkpoints=checkpoints), patch.object(pathlib.Path, 'read_text', read_text):
+                with self.assertRaisesRegex(AssertionError, 'step3b-command-completion'):
+                    self.join()
+
     def test_each_new_cardinality_is_recomputed_by_join(self):
         for shard,suite,marker in [('balanced-3','look_references','registry-readback'),
                                    ('balanced-3','axis_gizmo','escape-native-case'),
                                    ('balanced-2','edit_tool','metal-native-case'),
                                    ('balanced-2','premerge','atomic-identity-rejection'),
                                    ('balanced-2','premerge','edit-testing-case'),
+                                   ('balanced-2','premerge','step3b-command-completion'),
                                    ('balanced-2','build_panel','retired-cache-case')]:
             raw=self.paths[shard].parent/suite/'run.log'
             original=raw.read_text()

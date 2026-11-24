@@ -27,6 +27,38 @@ compare. Zero vectors draw no arrow. Vector input is for a single
 structure. Save a VibeMol session to keep the original vectors when
 sharing the scene. Plain XYZ export writes geometry only.
 
+## Rotating and moving a structure
+
+When an Edit rotation or Align principal axes rotates atoms, the same
+rotation is applied to the vector components attached to those atoms.
+Translating atoms leaves the components unchanged. Non-rigid edits such
+as UFF optimization, symmetrization, and per-atom coordinate typing also
+leave the components unchanged.
+
+A whole-structure rotation also rotates free arrow vectors. A free arrow
+with a fixed point origin follows the structure's full rotation or
+translation. An arrow anchored to the center of mass follows the computed
+center automatically. Edit Undo and Redo restore the stored vector state
+alongside the coordinates.
+
+## Vector commands and sessions
+
+Use `vectors.setAtoms` for components in the current atom order and
+`vectors.setArrow` for a free arrow. Each name is unique within the
+structure. A free arrow can start at a point in angstroms or follow
+the center of mass. With `heads: 'both'`, the named length spans the
+two tips, with the anchor at their midpoint. A zero vector draws
+no arrow.
+
+A vector command that changes a loaded structure adds one **Vectors** step
+to Edit history. Undo and Redo restore per-atom vector sets and free arrows
+in order alongside rotation and translation steps. Repeating an unchanged
+command leaves history and Redo intact. In Measure mode, the shortcut
+operates on measurements. Switch to View or Edit to use Edit history.
+
+A 0.10.16 session opened in 0.10.15 or earlier keeps per-atom vectors and drops
+free arrows.
+
 ## Matching the reference look
 
 Open [the example XYZ](../examples/xyz-vectors.xyz), select

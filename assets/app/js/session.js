@@ -3,7 +3,7 @@
 
   const FORMAT = global.VibeMolSessionFormat;
   const VOLUME_FIELDS = ['title', 'comment', 'natoms', 'units', 'kind', 'origin', 'axes', 'nxyz', 'atoms',
-    'bonds', 'annotations', 'fragmentOps', 'xyzVectors', 'isoHint', 'data', 'isTwoComponent', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm'];
+    'bonds', 'annotations', 'fragmentOps', 'xyzVectors', 'arrows', 'isoHint', 'data', 'isTwoComponent', 'alphaRe', 'alphaIm', 'betaRe', 'betaIm'];
   const RECORD_FIELDS = ['moldenMoIndex', 'moldenGridStepAng', 'moldenGridPaddingAng',
     'calculations', 'measurements', 'measurementLabelOffsets', 'pubchemMeta', '_sceneGraphHasOrbitalsGroup', '_sceneGraphLayerState', '_moldenSceneGraphLayerStateByMo'];
   const SCENE_FIELDS = ['id', 'name', 'visible', 'expanded', 'sceneKey', 'sourceFile', 'kind', 'meta',

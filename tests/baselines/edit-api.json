@@ -1325,9 +1325,31 @@
     },
     "applyAtomCoordinationChoice": {
       "before": "c44eed6e6a01c9b172297c5cf337be9679f193c5c2499ac8cc454eacecfe4a9f",
-      "after": "1292f6b398f2a5a9a3f860dda592254899a24e72a676b821cfc0da343c5b7f5a",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
-      "units": []
+      "after": "ddea8849a821b376926d74ddb2321c88a86a2c1ecc672525b325bde7d7ea0125",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyAtomCoordinationChoice",
+          "count": 14,
+          "inputs": [
+            "MODES",
+            "applyCoordinationLigandVectors",
+            "cloneAtomsSnapshot",
+            "cloneVolumeAnnotationsSnapshot",
+            "currentMode",
+            "ensureEditableVolumeRecord",
+            "getAtomCoordinationMeta",
+            "getCoordinationGeometry",
+            "isCoordinationPreferenceCompatibleForAtom",
+            "isEditTargetHidden",
+            "prepareCoordinationLigandMoves",
+            "pushEditHistoryEntry",
+            "refreshCoordinationGeometryPresentation",
+            "setAtomCoordinationMeta"
+          ]
+        }
+      ]
     },
     "applyAtomMetalBondingChoice": {
       "before": "d38b409dc92da07298ed6602f7485b7e8b2190921bac10560b24e4e20e9d9be3",
@@ -1398,8 +1420,8 @@
     },
     "buildXyzVectorArrows": {
       "before": null,
-      "after": "d491cdb509c43dfadedfa8771d6dcb4d53262a5c2a6072dc32f41039eb72810e",
-      "reason": "Render XYZ vector fields with the molecule.",
+      "after": "5603282d33b75c1c97294e816df1ce375c05aa61a2f8d4871aca97655354e692",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
       "units": [
         {
           "file": "app.js",
@@ -1694,8 +1716,8 @@
     },
     "describeMetalLigandMoves": {
       "before": null,
-      "after": "644eecc3c37d8fde01a9a6b683e5426fc516a92c5550abfe00d5e377e5f72a21",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "7451ed1d4e246556600b79e0494e90eb51de03ef4c9f73cc3a2f93365a947325",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
       "units": [
         {
           "file": "app.js",
@@ -1912,8 +1934,8 @@
     },
     "accumulateMoldenShellContribution": {
       "before": "368e9cedd07585e20a2ec2974b6c9f16dd917fe0c549409799c22b5aaef1622d",
-      "after": "4f79bf65eedf3be43af29ad3c220ed86814ead25167b02e2e3489dad24888d9e",
-      "reason": "Normalize Molden Gaussian primitives and angular components before evaluating molecular orbitals.",
+      "after": "dd54bade25dabf3ff49398db8ed5ffd76a62fb2fb4438a8e417460194427104e",
+      "reason": "Normalize Molden Gaussian primitives and angular components, and evaluate spherical and Cartesian g shells, before evaluating molecular orbitals.",
       "units": [
         {
           "file": "app.js",
@@ -2217,6 +2239,1047 @@
           ]
         }
       ]
+    },
+    "buildMoldenOrbitalItems": {
+      "before": "4c752bbfc2be84847dadd3f03d2b85f774440239e6f25b10d9db229358800a92",
+      "after": "2f58f88819c5e30ed23edbd2e4ea12fe9e1264648995107d4565229bebf1cfc6",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "buildMoldenOrbitalItems",
+          "count": 1,
+          "inputs": [
+            "formatOrbitalSpinGlyph"
+          ]
+        }
+      ]
+    },
+    "getMoldenOrbitalDividerLabel": {
+      "before": "d38b313f269568d2aa5fca2af3a4b326ec02f0a54819e54ae17fedc654e7add4",
+      "after": "61119495573ca2bc3e0e78a79e352483ca1be030187ffd8a2386659425fa89df",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "getMoldenOrbitalDividerLabel",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "syncMoldenOccupationDividers": {
+      "before": null,
+      "after": "59325d1581e80963ee9ccb1bb76642bd9fbf086fdc5d6bc573b11dbeb9f30bcb",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncMoldenOccupationDividers",
+          "count": 3,
+          "inputs": [
+            "getMoldenOrbitalDividerLabel",
+            "getVisibleMoldenOrbitalIndices",
+            "moldenInspectorBody"
+          ]
+        }
+      ]
+    },
+    "syncMoldenOrbitalsPanel": {
+      "before": "6392de4804cf76a4b379f1deffa1f7665eb51ef988fa3a1710fa19bf0380e67d",
+      "after": "9a7f8cc79bbb6bc26a3edb934671f2c128c7e973e48df12910ed567514ee4759",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncMoldenOrbitalsPanel",
+          "count": 14,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "ensureListPopovers",
+            "formatMoldenGridSummary",
+            "getMoldenGridSettings",
+            "moldenEnergyFilter",
+            "moldenEnergyThresholdEh",
+            "moldenGridPaddingEl",
+            "moldenGridStepEl",
+            "moldenGridSummary",
+            "moldenInspectorControls",
+            "moldenListPopover",
+            "setMoldenInspectorOpen",
+            "syncMoldenOccupationDividers",
+            "updateDisplayWindowAdaptiveMenuUi"
+          ]
+        }
+      ]
+    },
+    "statement:moldenEnergyFilter": {
+      "before": "992ac6aca36e12fd012986a8dd4257036331ef6d98d3a510524e75e9dbfe0883",
+      "after": "79139dd5a2358575c72377751a23000d1566d57a2d832d2cfd861b29e6927c3f",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyMoldenEnergyFilter",
+          "count": 7,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "currentIndex",
+            "moldenEnergyFilter",
+            "moldenEnergyThresholdEh",
+            "moldenListPopover",
+            "syncMoldenOccupationDividers",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "cloneCoordinateSnapshot": {
+      "before": "c36a818421844b96ff100225ea143ea966ea505a84e396d635991fdb37597396",
+      "after": "e3388e0ca4deef2ee1021e422d677370409dc336cd9d89f3b571c961f2effbe5",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneCoordinateSnapshot",
+          "count": 3,
+          "inputs": [
+            "cloneAtomsSnapshot",
+            "cloneGridTransformSnapshot",
+            "cloneVectorState"
+          ]
+        }
+      ]
+    },
+    "cloneVectorState": {
+      "before": null,
+      "after": "0e169a480b33e4e874992800fc3c9cf8f3326091ff6a28fe8484213193b76ecd",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "vectorStatesEqual": {
+      "before": null,
+      "after": "88edd44e5984de7613f5442cd3e982e624947c27357ca9d1e774018d1d4fff61",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "vectorStatesEqual",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "transformVectorState": {
+      "before": null,
+      "after": "a9128ec1546de7f5c8b8d2f7cf8ab2f51f521b93623d3c0069ed7a21f940e9ee",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "transformVectorState",
+          "count": 1,
+          "inputs": [],
+          "parameterCallbacks": [
+            "rotate"
+          ]
+        }
+      ]
+    },
+    "applyQuaternionVectorTransform": {
+      "before": null,
+      "after": "0b7894240631e0d37670490f6d633f65eec3af671709527f241245064966c5f2",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "syncTransformedAtomArrows": {
+      "before": null,
+      "after": "8c3db028e2943a247b89b37535ffcb2f4c2c5be73d007fcc81265fc120c856a8",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncTransformedAtomArrows",
+          "count": 1,
+          "inputs": [
+            "THREE"
+          ]
+        }
+      ]
+    },
+    "coordinateSnapshotsEqual": {
+      "before": "9b0fe8e5993bd5f77077ea59eb68f44c7956da8c27b23c1478d08b8fa66383b5",
+      "after": "9c6cdb1e972b32f26320541189e71475ebe483292e1cabd1827e436db19b9bac",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "coordinateSnapshotsEqual",
+          "count": 3,
+          "inputs": [
+            "atomsSnapshotsEqual",
+            "gridSnapshotsEqual",
+            "vectorStatesEqual"
+          ]
+        }
+      ]
+    },
+    "applyTransformWorldPositions": {
+      "before": "8469ffda049b7a14aff793d47eac73ecd64cde523ace262c1ee48bdd6e255549",
+      "after": "756ed42181edc7be7d6a03de9354875be4dd936839e3ee1b4139f38eb9791d88",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyTransformWorldPositions",
+          "count": 8,
+          "inputs": [
+            "applyQuaternionVectorTransform",
+            "atomGroup",
+            "moleculePickCache",
+            "transformBeforeSnapshot",
+            "transformPivotWorld",
+            "transformRotateAccumulatedQuaternion",
+            "transformRotateGesture",
+            "worldToAtomUnits"
+          ]
+        }
+      ]
+    },
+    "translateVolumetricGrid": {
+      "before": "9897eaeee2999a21c7c4894db8aeb61c9c2020128316343a9093b0ea4eb3c4c2",
+      "after": "2fe6e0033b80b0d9d9d3c7faefcd6db82d24abd92306f95cb3377142114651ee",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "translateVolumetricGrid",
+          "count": 3,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "hasVolumetricGrid",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "rotateVolumetricGridAboutPoint": {
+      "before": "c34cab17bf6d1a39c751b387c9489b08c1fd66328d6535d76c76730f3049a746",
+      "after": "0dc1dabde293798bf6062b72941b579cdf065885a60377134e5075bdc20a891a",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "rotateVolumetricGridAboutPoint",
+          "count": 4,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "applyBasisRowsToVector",
+            "hasVolumetricGrid",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "statement:editTransformController": {
+      "before": "fac2a011fcb85dc88b0839d23a0f195dffb658360fd0e1826ecee974dfb79c9f",
+      "after": "ca77e52f6290e3323ab1db4cd4c87e71b8ac32e7bcbc729956ccaf45b6fb7b2a",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        },
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "statement:editPlacement": {
+      "before": "22694253869fb2b3b7411aa632d8b0a388040386270cf359ae642f2984a90f81",
+      "after": "f518e73fccf453d154f37dc1adbec6265b8e0d40b8911d5d0af3aefb68514763",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        },
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "prepareCoordinationLigandMoves": {
+      "before": null,
+      "after": "0d47e95fe37308b2a8e928539ed78b9b40196c26f74de491e6a78aeb6e74c40b",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "prepareCoordinationLigandMoves",
+          "count": 3,
+          "inputs": [
+            "describeMetalLigandMoves",
+            "getCoordinationProfile",
+            "setHintMessage"
+          ]
+        }
+      ]
+    },
+    "applyCoordinationLigandVectors": {
+      "before": null,
+      "after": "5b6e6c3cc6b1e917ce889c203de6774b5fa235a48d3b63e7ef4179fb44b59bba",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyCoordinationLigandVectors",
+          "count": 2,
+          "inputs": [
+            "applyQuaternionVectorTransform",
+            "cloneVectorState"
+          ]
+        }
+      ]
+    },
+    "refreshCoordinationGeometryPresentation": {
+      "before": null,
+      "after": "a89a403716b50ade5b2cc3906226ef93e49420677e9c288ccc0259197170152d",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "refreshCoordinationGeometryPresentation",
+          "count": 7,
+          "inputs": [
+            "editHaloController",
+            "getElementSymbol",
+            "rebuildScene",
+            "setHintMessage",
+            "updateEditAdaptiveMenuUi",
+            "updateSelectedHalos",
+            "updateSidePanel"
+          ]
+        }
+      ]
+    },
+    "step3bRequest": {
+      "before": null,
+      "after": "5c057a0ea9022bf99b5aadbfa51cfd0db07e664eceeb257b53b86bf8e888abc3",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "step3bRequest",
+          "count": 2,
+          "inputs": [
+            "editApiData",
+            "editApiFault"
+          ]
+        }
+      ]
+    },
+    "step3bRequireIdle": {
+      "before": null,
+      "after": "6ed40c25306dadf416cdb7d1ef7dcaa62def5a85a711cfa2620dececa21b17b4",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "step3bRequireIdle",
+          "count": 8,
+          "inputs": [
+            "applyingSession",
+            "batchExportRunning",
+            "editApiFault",
+            "figureRendering",
+            "fileLoaderController",
+            "sessionController",
+            "trajectoryVideoController",
+            "vibrationVideoController"
+          ]
+        }
+      ]
+    },
+    "moldenProductSource": {
+      "before": null,
+      "after": "7089e428b706b3a5ea7d42c08b23de7e149ca2f6f2cbf9600c5b897e0e64ec52",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "moldenProductSource",
+          "count": 6,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "currentIndex",
+            "editApiFault",
+            "sceneGraphController",
+            "sceneSources",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "listProductOrbitals": {
+      "before": null,
+      "after": "2d085ffa2892bf4d4396d4615fed4c658cc5ca5b6a54790858d81122bfc48b5f",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "listProductOrbitals",
+          "count": 3,
+          "inputs": [
+            "editApiCall",
+            "moldenProductSource",
+            "step3bRequest"
+          ]
+        }
+      ]
+    },
+    "validateMoldenProductIndices": {
+      "before": null,
+      "after": "4ff5115826407c7fc9416a89cd92fba9bb94991812cf9630fb9e1970735b110d",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "validateMoldenProductIndices",
+          "count": 1,
+          "inputs": [
+            "editApiFault"
+          ]
+        }
+      ]
+    },
+    "moldenProductLayers": {
+      "before": null,
+      "after": "ca50a71fd24d39df1d61821195f61fa7d61cec47ba58a87f078f59f42e216266",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "moldenProductLayers",
+          "count": 1,
+          "inputs": [
+            "getCubeLayersInScene"
+          ]
+        }
+      ]
+    },
+    "readVisibleMoldenProductIndices": {
+      "before": null,
+      "after": "22e56ab1b9f2c60eeebdf5a6714bfdda91589c19fbc7cd8388dd26b39d51551a",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readVisibleMoldenProductIndices",
+          "count": 2,
+          "inputs": [
+            "moldenProductLayers",
+            "sceneGraphController"
+          ]
+        }
+      ]
+    },
+    "setMoldenProductLayerVisibility": {
+      "before": null,
+      "after": "9585ee04f57de93ba34a9bfde0d0645badd4bca4090dba00881f42e5c5dde3aa",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setMoldenProductLayerVisibility",
+          "count": 1,
+          "inputs": [
+            "persistActiveCubeLayerState"
+          ]
+        }
+      ]
+    },
+    "presentMoldenProductSelection": {
+      "before": null,
+      "after": "a84d0a48d87c3324368095b5f45c46f6606b57594edc6ab77b92c9a6a0f05afb",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "presentMoldenProductSelection",
+          "count": 7,
+          "inputs": [
+            "getCubeLayersInScene",
+            "getVisibleCubeLayerCount",
+            "rebuildScene",
+            "sceneGraphController",
+            "sceneSources",
+            "setActiveSceneGraphLayer",
+            "setMoldenProductLayerVisibility"
+          ]
+        }
+      ]
+    },
+    "showProductOrbitals": {
+      "before": null,
+      "after": "b7bf2316b6606ddd2d564c3e18ef527a51b746ca42925dd8e189ebe7633477f6",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "showProductOrbitals",
+          "count": 11,
+          "inputs": [
+            "editApiCall",
+            "editApiFault",
+            "evaluateMoldenGrid",
+            "moldenProductSource",
+            "presentMoldenProductSelection",
+            "readVisibleMoldenProductIndices",
+            "requireProductOrbitalSurfaces",
+            "showSurfaces",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "hideProductOrbitals": {
+      "before": null,
+      "after": "a7c67557601f63e4c15877c0d2d42f2adc28eace7b502d329a87462a3c13ed17",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "hideProductOrbitals",
+          "count": 9,
+          "inputs": [
+            "editApiCall",
+            "moldenProductLayers",
+            "moldenProductSource",
+            "readVisibleMoldenProductIndices",
+            "rebuildScene",
+            "setMoldenProductLayerVisibility",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "configureProductOrbitals": {
+      "before": null,
+      "after": "74092db76cdb942823ff6e6daa255c279d9452db6756cf7715a5f888ebef502a",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "configureProductOrbitals",
+          "count": 9,
+          "inputs": [
+            "applyMoldenProductAppearance",
+            "editApiCall",
+            "editApiFault",
+            "moldenProductSource",
+            "readVisibleMoldenProductIndices",
+            "requireProductOrbitalSurfaces",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateMoldenProductIndices"
+          ]
+        }
+      ]
+    },
+    "applyMoldenProductAppearance": {
+      "before": null,
+      "after": "114ac14f5382e45c76eeee5f3753a2e1e6b7bd27ba42b3b414cfe5d6c0f01e84",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyMoldenProductAppearance",
+          "count": 8,
+          "inputs": [
+            "applyToSurfaceAppearanceTargets",
+            "getSurfaceStyleOverrides",
+            "moldenProductLayers",
+            "normalizeSurfaceStylePatch",
+            "sceneGraphController",
+            "sceneSources",
+            "setLayerAutoIsoEnabled",
+            "updateRenderedLayerOpacity"
+          ]
+        }
+      ]
+    },
+    "applyToSurfaceAppearanceTargets": {
+      "before": "4b56e8ce6c66f931cd77faa6bf9bb07a682302dc5034aec051fe4b7fe500a26b",
+      "after": "416ebc5ca267129bde90abf3c4d462dcd3b864e69b639ad15a0210021de0fb82",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyToSurfaceAppearanceTargets",
+          "count": 6,
+          "inputs": [
+            "getSurfaceAppearanceTargets",
+            "persistActiveCubeLayerState",
+            "rebuildScene",
+            "renderSceneOutliner",
+            "syncAppearanceControlsToActiveLayer",
+            "updateRenderModeUI"
+          ]
+        }
+      ]
+    },
+    "setProductView": {
+      "before": null,
+      "after": "f838e5ee876dc0fb9e45de08a3e61c3d246d0ee2bcdafd85fd26409ca4823014",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductView",
+          "count": 14,
+          "inputs": [
+            "calculationsRenderer",
+            "camera",
+            "cameraDepthController",
+            "contentGroup",
+            "controls",
+            "editApiCall",
+            "editApiFault",
+            "fitCameraToScene",
+            "refreshViewUI",
+            "setCameraAxisPreset",
+            "setProjectionMode",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "viewState"
+          ]
+        }
+      ]
+    },
+    "readViewportPng": {
+      "before": null,
+      "after": "345b0e38e662f8549bc309226482a4337f5f28bdae0942293deaa96546202c22",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readViewportPng",
+          "count": 1,
+          "inputs": [
+            "renderer"
+          ]
+        }
+      ]
+    },
+    "paintSnapshotFrame": {
+      "before": null,
+      "after": "0bbeb4e3622831c420d81989aa7b9606fb5011df76204b19101561131b999611",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "paintSnapshotFrame",
+          "count": 7,
+          "inputs": [
+            "THREE",
+            "beginSceneFrameTarget",
+            "endSceneFramePresentation",
+            "renderAxisOverlayPass",
+            "renderSceneFrame",
+            "renderer",
+            "withSceneBackgroundDisabled"
+          ]
+        }
+      ]
+    },
+    "captureViewportPng": {
+      "before": null,
+      "after": "fb03783894a6a7433421fe89e9ab5d02cc13f890753a8b7b95cb94d703e77f65",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "captureViewportPng",
+          "count": 7,
+          "inputs": [
+            "camera",
+            "paintSnapshotFrame",
+            "readRendererViewportMetrics",
+            "readViewportPng",
+            "renderer",
+            "updateActiveCameraProjection",
+            "viewState"
+          ]
+        }
+      ]
+    },
+    "snapshotProductView": {
+      "before": null,
+      "after": "0440511377143e9d04c7e0e6c7b5883090028981f0c9cdeec860b034bff32332",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "snapshotProductView",
+          "count": 6,
+          "inputs": [
+            "captureViewportPng",
+            "editApiCall",
+            "editApiFault",
+            "readRendererViewportMetrics",
+            "step3bRequest",
+            "step3bRequireIdle"
+          ]
+        }
+      ]
+    },
+    "statement:savePngButton": {
+      "before": "70e2104e8778142171a0f58a95bd19ebefc588eb6ec73aa63f094f31095c1375",
+      "after": "2723d9567f129715bd4b5d002c110e276af28e475f19e1bf413f74ac83579698",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readViewportPng",
+          "count": 1,
+          "inputs": [
+            "renderer"
+          ]
+        }
+      ]
+    },
+    "vectorProductTarget": {
+      "before": null,
+      "after": "b34cbd3d5bf1da2b5dea6b470f1d5e1e4c56e28b78f5ce141ab69d3115d1c49b",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "vectorProductTarget",
+          "count": 3,
+          "inputs": [
+            "editApiFault",
+            "getFocusedScene",
+            "sceneSources"
+          ]
+        }
+      ]
+    },
+    "readVectorProductTarget": {
+      "before": null,
+      "after": "07d93787f1e5f7e25f6bbe7d2580a0a5db0ea778fb2774b71b63d1285dbb036a",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readVectorProductTarget",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "listProductVectors": {
+      "before": null,
+      "after": "fb0d91314c4a85eb9519537cd840fd644b406c795060b14b88683c2bddbcf618",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "listProductVectors",
+          "count": 4,
+          "inputs": [
+            "editApiCall",
+            "readVectorProductTarget",
+            "step3bRequest",
+            "vectorProductTarget"
+          ]
+        }
+      ]
+    },
+    "applyVectorProductState": {
+      "before": null,
+      "after": "c423ef98d7398da194a4d7be0b7e358666b1167e58cbf080f5a3b097279101a0",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyVectorProductState",
+          "count": 5,
+          "inputs": [
+            "cloneAtomsSnapshot",
+            "editState",
+            "markSessionChanged",
+            "rebuildAppearanceMolecules",
+            "volumes"
+          ]
+        }
+      ]
+    },
+    "changeProductVectors": {
+      "before": null,
+      "after": "5dca885626cea98fe9bc98a4e2b8f20ba12fbf653c901272c920e4d036ca9fd1",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "changeProductVectors",
+          "count": 12,
+          "inputs": [
+            "addAtomOperatorSession",
+            "applyVectorProductState",
+            "cloneVectorState",
+            "editApiCall",
+            "editApiFault",
+            "editApiPointerInterlocks",
+            "readVectorProductTarget",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateVectorProductPlan",
+            "vectorProductTarget",
+            "vectorStatesEqual"
+          ]
+        }
+      ]
+    },
+    "validateVectorProductPlan": {
+      "before": null,
+      "after": "6e43730a8077d7efd1436340e0069f36839d2f5e7abb15bf3a1c89df73f8f50e",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "validateVectorProductPlan",
+          "count": 2,
+          "inputs": [
+            "editApiFault"
+          ],
+          "parameterCallbacks": [
+            "plan"
+          ]
+        }
+      ]
+    },
+    "setProductAtomVectors": {
+      "before": null,
+      "after": "852fbac05bbe1f9ccf69fb25d34d249bdf3800b984a0f0094989f248db5e8a75",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductAtomVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "setProductFreeArrow": {
+      "before": null,
+      "after": "bb638e19fe18790b190cc3cb88319519ed3c2e0ce0c85a74c07ce4f36e527992",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductFreeArrow",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "removeProductVectors": {
+      "before": null,
+      "after": "939d1be26ca58e24378909eac92c51b21a9c8b37b411d60d4dbbab51af3204ee",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "removeProductVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "clearProductVectors": {
+      "before": null,
+      "after": "d976cf3be7341eed827d5d1e6ad3762ccf0f4fb50e1bb2168e247ac0843ed7fb",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "clearProductVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "buildFreeArrowDisplay": {
+      "before": null,
+      "after": "b7e216a57a813d2a787072dc7f6cdc85d1338c79532700d82d50fcc1959a07ce",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "buildFreeArrowDisplay",
+          "count": 6,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "THREE",
+            "buildXyzVectorArrows",
+            "computeMassProperties",
+            "contentGroup",
+            "extraMoleculeRenderGroups"
+          ]
+        }
+      ]
+    },
+    "applyPostGeometry": {
+      "before": "46880b8fdc629d2b7866b0a20ae23d9614bee288f794c0bd761bb107ff9ec201",
+      "after": "0532bb22d595dd51f988ee3943f284be40e7a7c2b02b1fb7e383247e374eb559",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyPostGeometry",
+          "count": 12,
+          "inputs": [
+            "applyShadowParticipation",
+            "buildAtoms",
+            "buildBonds",
+            "buildBox",
+            "buildFreeArrowDisplay",
+            "contentGroup",
+            "extraBoxHelpers",
+            "extraMoleculeRenderGroups",
+            "getMoleculeDisplay",
+            "isCubeDebugLoggingEnabled",
+            "showSimulationBoxes",
+            "workspaceEnabled"
+          ]
+        }
+      ]
+    },
+    "collectVisibleSceneBounds": {
+      "before": "c876d386f5146c3af7341cc4c32112ce2517083a3b8c1d485d1b378a9c71a783",
+      "after": "62533abef16aeee9da0ee43fbb475c7c0cdcb653577c9a48988dcef8d631ffcf",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "collectVisibleSceneBounds",
+          "count": 7,
+          "inputs": [
+            "THREE",
+            "atomGroup",
+            "bondGroup",
+            "boxHelper",
+            "cloudGroup",
+            "extraMoleculeRenderGroups",
+            "meshes"
+          ]
+        }
+      ]
+    },
+    "readProductMode": {
+      "before": null,
+      "after": "cc81b862d47332d782e59b246c32c1afaeac9e2965bd8f39eaee04f63ef0b66f",
+      "reason": "Expose the existing mode switch to command clients (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readProductMode",
+          "count": 3,
+          "inputs": [
+            "MODES",
+            "currentMode",
+            "surfaceRenderSuppressed"
+          ]
+        }
+      ]
+    },
+    "setProductMode": {
+      "before": null,
+      "after": "69c70357a215516f178d61c2394fef87d3e2fec60e39c38f54fe9afe52610de9",
+      "reason": "Expose the existing mode switch to command clients (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductMode",
+          "count": 8,
+          "inputs": [
+            "MODES",
+            "editApiCall",
+            "editApiFault",
+            "readProductMode",
+            "setMode",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "workspaceEnabled"
+          ]
+        }
+      ]
+    },
+    "requireProductOrbitalSurfaces": {
+      "before": null,
+      "after": "579ec0ffdfebdeb4d1df833ce2b50d115a395725dd5c4754d47a93c638936dac",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "requireProductOrbitalSurfaces",
+          "count": 1,
+          "inputs": [
+            "readProductMode"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {
@@ -2234,16 +3297,471 @@
     },
     "finalizeAddAtomOperatorSession": {
       "before": "9474af352ad6c9f7bbfcdd7d13dd725208e3c15663b9e2cc268e2af51cf3f483",
-      "after": "9decb5ae77977b50fa4dbc337f1f4a9cee2edc530d361553c35207bac44c0698"
+      "after": "d9093dc8ab69ca39152dbd2ce580aceda5cbec403d1535f54c08cebfc001a3f8",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review)."
     },
     "setAddAtomOperatorWorldPosition": {
       "before": "61eb5ffe5303cb577dd40a51a839c65c3aadb3646f75c84178c08a1a81acc339",
-      "after": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974"
+      "after": "8185ae5813cbf8a1851079682ad12e981ecba6f080bbd24699f2e921f229ddf0",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b)."
     }
   },
   "haloChanges": {
     "before": "395b6df54c0576233b9ef86f3748d1478311d353cff0db3507a44c995731b807",
     "after": "cf17f21d03919bf7574e5f6587d292e2907a8f40622c2f5cb2727d80ab18b7ff",
     "reason": "Share the aligned coordination template with atom drag and metal rearrangement."
+  },
+  "vectorHistoryChanges": {
+    "edit-state.js": {
+      "before": "e59b8661a1bce4672cb095069a3e03fd1f203dc4229d5e168203a7ca17f7e647",
+      "after": "5eb630994ef8f36f5e307d09bd6eb7a1d4ed5e0598350657d5fb0f710af8cfff",
+      "functions": {
+        "createEditStateController": {
+          "before": "99ba89cd3440f0add89a4cccd84e56c2d5f8af1a4e6ae3cba14c7208db27a892",
+          "after": "2a53ca96b553dd3da19d58945a1713a8ebd97e7f6873e2e2d998b124dbfaff8f",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "createEditStateController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "pushEditHistoryEntry": {
+          "before": "a38d221c5aede32516eeb67e5f07c88b7a093d25bdf9d5ba331297f41c070631",
+          "after": "df7b090cfacfbbe8addd96429159326b117810dd9bfd6d853e66947c9d7338d3",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "pushEditHistoryEntry",
+            "count": 5,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "cloneJsonLike",
+              "coordinateSnapshotsEqual",
+              "createAtomSnapshotCommand",
+              "pushHistoryCommand"
+            ]
+          }
+        },
+        "pushCoordinateSnapshotHistoryEntry": {
+          "before": "7166100ca6ba0ac4a382f6cd57021c085079cf04138c1444eff5617d19f36a89",
+          "after": "a31dd86d9f3740dda940a946b865d1f6b392449b62cf4cdedac52794bb64bbd6",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "pushCoordinateSnapshotHistoryEntry",
+            "count": 2,
+            "inputs": [
+              "coordinateSnapshotsEqual",
+              "pushHistoryCommand"
+            ]
+          }
+        },
+        "applyRecordSpatialState": {
+          "before": "58d8d661372107388688463e514eaf30f76904c704af20813acc9c428a224aa3",
+          "after": "6bbfb082ea5de469fe884d453ea571277aa5c578e93e9e8eeb2e19c6673cb39d",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyRecordSpatialState",
+            "count": 13,
+            "inputs": [
+              "clearTransientInteractionState",
+              "cloneJsonLike",
+              "ensureVolumeSchema",
+              "getVolumes",
+              "global",
+              "hasVolumetricGrid",
+              "normalizeVolumeAtom",
+              "pruneBuilderOperationsForVolume",
+              "rebuildScene",
+              "setCurrentIndex",
+              "syncActiveVolumeControls",
+              "syncBuilderExtensionFromVolumes",
+              "updateSidePanel"
+            ]
+          }
+        },
+        "applyAtomsSnapshotToRecord": {
+          "before": "5544ab0dc3eadf1a530502a199c29c6c66a90dd74be583233c2cf931a921e628",
+          "after": "1aa02502acfa02982263393d5ed3b232b260944f785db275363486099065df3c",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyAtomsSnapshotToRecord",
+            "count": 1,
+            "inputs": [
+              "applyRecordSpatialState"
+            ]
+          }
+        },
+        "applyStructureSnapshotToRecord": {
+          "before": "a4b0a6deb4d52dac58d101b6198fe977f65f3571eaa4be1d402907aa6a89ecdf",
+          "after": "65a207e5c6271507b3b7e6d8d018d0b16c47b175a898cccd796f4edd5bcf4640",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyStructureSnapshotToRecord",
+            "count": 1,
+            "inputs": [
+              "applyRecordSpatialState"
+            ]
+          }
+        }
+      }
+    },
+    "edit-commands.js": {
+      "before": "b339c41b5632d285f6e721171480984bff561cb9b4b1f5458da6f29437850a73",
+      "after": "660ab6f94b414656742a05260fbff622e562953888a78b06c8a43bf92a54d254",
+      "functions": {
+        "createAtomSnapshotCommand": {
+          "before": "5601aa64842b019ca6106d42bffb65a740adbcd01c5e0b470f0f2286e030c050",
+          "after": "1e58d70c36b60e80f1336b6ce2d55547ef156d694ebe493d05856f43327e3e6b",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-commands.js",
+            "name": "createAtomSnapshotCommand",
+            "count": 0,
+            "inputs": []
+          }
+        }
+      }
+    },
+    "edit-transform.js": {
+      "before": "fb359cf5f83b415fc4ba92e3ad020102d634a68f8770b544aa4622bff757d6cd",
+      "after": "eaeed10a67f36e25f497ef2d83c583712a1b83ec3d3ad86dc6a101428b4069c5",
+      "functions": {
+        "createEditTransformController": {
+          "before": "9f3f6f71228067ed431773424748a60291de3370a2568b73ed32e900db11654b",
+          "after": "f799af17190fd77cdfe66c0ebc067fb429eaea282125d2d353938a9af453eb5e",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "createEditTransformController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "buildRotateBaseline": {
+          "before": "c93bacbfd547ab7cc17af4c71236dac81352d5e66f0bb2e57b8219099d725f81",
+          "after": "84d132af08d887d39e0bb5149543dcd06d805f631e1238b743720d93d6ecd472",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "buildRotateBaseline",
+            "count": 14,
+            "inputs": [
+              "MODES",
+              "THREE",
+              "atomUnitsToAng",
+              "buildSelectionKey",
+              "clearRotateBaseline",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getMode",
+              "getSelection",
+              "getSelectionCenterWorld",
+              "state"
+            ]
+          }
+        },
+        "applyRotateQuaternion": {
+          "before": "e339622344a17afb2000336742e1f054c728b698b9e14f7168e3c73aa413a769",
+          "after": "f844c5521f889b1078a94470c56209f8bd8879c54aab92f87da31d8f87b2f64e",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "applyRotateQuaternion",
+            "count": 9,
+            "inputs": [
+              "applyQuaternionVectorTransform",
+              "ensureRotateBaseline",
+              "getAtomGroup",
+              "getBondGroup",
+              "updateBondsInPlace",
+              "updateMoveGizmo",
+              "updateRotateGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "setSelectionPosition": {
+          "before": "bb3f695ad9145863524b22f3954b75b55036b81d9850cba2a265fe90c72ecc51",
+          "after": "6546edbcb85caf0ac4b7df0e59854192a4c10bcb110f3e8fcf4dc07fc3a4ec8f",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "setSelectionPosition",
+            "count": 22,
+            "inputs": [
+              "MODES",
+              "THREE",
+              "applyQuaternionVectorTransform",
+              "atomUnitsToAng",
+              "buildHistoryLabel",
+              "clearRotateBaseline",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getMode",
+              "getSelection",
+              "getSelectionCenterWorld",
+              "pushEditHistoryEntry",
+              "rebuildBondsFromAtoms",
+              "rebuildScene",
+              "state",
+              "updateMoveGizmo",
+              "updateRotateGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "startMoveDrag": {
+          "before": "d0685e1a5611c87b223f7aeb295c1a955e590f2f09ba8aaec329a207dca53d79",
+          "after": "eed8e8c7747a9d7ad6e8aaa399eaaf34935f46f6a9a709f4eea03c83f89d2a79",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "startMoveDrag",
+            "count": 15,
+            "inputs": [
+              "THREE",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getCamera",
+              "getControls",
+              "getRaycaster",
+              "getSelectionCenterWorld",
+              "setMoveHover",
+              "setRaycasterFromEvent",
+              "state",
+              "updateMoveGizmo"
+            ]
+          }
+        },
+        "updateMoveDrag": {
+          "before": "e7feeaa6af51f918c26d6e3777db797da4894f6d10375f7273203f79724a4444",
+          "after": "93f49ebe05b22843a2454238638907bc4f1f456d36c699be564f7ed5514c3bc7",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "updateMoveDrag",
+            "count": 12,
+            "inputs": [
+              "THREE",
+              "applyQuaternionVectorTransform",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getBondGroup",
+              "getRaycaster",
+              "rebuildBondsFromAtoms",
+              "setRaycasterFromEvent",
+              "state",
+              "updateMoveGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "finishMoveDrag": {
+          "before": "519007c6b691459e8d87f6e5b08403714f57aa11f2d8091c62f2028cf1956995",
+          "after": "e8825e292abc466ff6f8704a98443f3dd9e81f2640f751d81c37c199f65eee0b",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "finishMoveDrag",
+            "count": 15,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "buildHistoryLabel",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getControls",
+              "isEditMode",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "renderRibbon",
+              "setMoveHover",
+              "state",
+              "updateMoveGizmo",
+              "updateSelectionVisuals"
+            ]
+          }
+        },
+        "restoreDragCoordinates": {
+          "before": "92e074ff8dbf24d02ae52584c506eb1c2f6feb15e5fea976f5fe1c837354c6e2",
+          "after": "25728fd99b7de50a40a7c3e6e9d08952ec15a424597bec88ea02364ed5fc48a0",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "restoreDragCoordinates",
+            "count": 3,
+            "inputs": [
+              "getActiveRecord",
+              "global",
+              "rebuildScene"
+            ]
+          }
+        },
+        "cancelMoveDrag": {
+          "before": "41a26e9c2b2937bd1af4d38046f6ae81b41bf2122ada5645b2332c5b2b7c398e",
+          "after": "c3c9f44e8e628721e7e696187bd0f9d0c5b843a525549a536cbd9e9782776928",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "cancelMoveDrag",
+            "count": 5,
+            "inputs": [
+              "getControls",
+              "restoreDragCoordinates",
+              "setMoveHover",
+              "state",
+              "updateMoveGizmo"
+            ]
+          }
+        },
+        "finishRotateDrag": {
+          "before": "466c341d2e8b00f5486d51ea9ac80decaed24c0a06ac02253ba5f791c2cf20f5",
+          "after": "9bb1f0fa1c2d6b7ec12f0805b6736123c40c858cf0ed61f07c88f047488c2540",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "finishRotateDrag",
+            "count": 16,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "buildHistoryLabel",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getControls",
+              "isEditMode",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "renderRibbon",
+              "resetRotateBaseline",
+              "setRotateHover",
+              "state",
+              "updateRotateGizmo",
+              "updateSelectionVisuals"
+            ]
+          }
+        },
+        "cancelRotateDrag": {
+          "before": "fd14d050961e21703370b7ce766b546d756c0fce829bdbfa7a02cf29a523524f",
+          "after": "6dace7074b00e69f9f2ff722b90af3406780b93e02595b9531dd1129d23fce50",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "cancelRotateDrag",
+            "count": 6,
+            "inputs": [
+              "clearRotateBaseline",
+              "getControls",
+              "restoreDragCoordinates",
+              "setRotateHover",
+              "state",
+              "updateRotateGizmo"
+            ]
+          }
+        }
+      }
+    },
+    "edit-placement.js": {
+      "before": "9cf0ff37f39fa7b49142849051f420f5f2029139a5a9af19b73d054d8627cdeb",
+      "after": "0abbd6c766e10805b9714bbadb280e5bfc198ffbc88b6b93ea4b39cedfafaf99",
+      "functions": {
+        "createEditPlacementController": {
+          "before": "348e6b3f1b159f2a1b277c4980119ab81099946656dce6073a6f4070e40489d0",
+          "after": "f87905b6a89801bd2d730c77c2e2cb5a68ca55d216e976b437ad233394dc5a9d",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "createEditPlacementController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "setAddAtomOperatorWorldPosition": {
+          "before": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974",
+          "after": "8185ae5813cbf8a1851079682ad12e981ecba6f080bbd24699f2e921f229ddf0",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "setAddAtomOperatorWorldPosition",
+            "count": 15,
+            "inputs": [
+              "THREE",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVolumeAnnotationsSnapshot",
+              "collectDirectlyBondedHydrogenIndices",
+              "ensureAtomId",
+              "ensureVolumeSchema",
+              "options",
+              "rebuildScene",
+              "resolveAddAtomOperatorSession",
+              "state",
+              "translateAtomsByWorldDelta",
+              "updateAddAtomOperatorUi",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "finalizeAddAtomOperatorSession": {
+          "before": "9decb5ae77977b50fa4dbc337f1f4a9cee2edc530d361553c35207bac44c0698",
+          "after": "d9093dc8ab69ca39152dbd2ce580aceda5cbec403d1535f54c08cebfc001a3f8",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "finalizeAddAtomOperatorSession",
+            "count": 19,
+            "inputs": [
+              "THREE",
+              "applyAutomaticHydrogenAdjustment",
+              "applyEditAddCoordinationToAtom",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVolumeAnnotationsSnapshot",
+              "findAtomIndexById",
+              "getElementSymbol",
+              "global",
+              "options",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "resolveAddAtomOperatorSession",
+              "setHintMessage",
+              "state",
+              "updateAddAtomOperatorUi",
+              "updateEditToolboxUi",
+              "updateSidePanel"
+            ]
+          }
+        }
+      }
+    }
   }
 }

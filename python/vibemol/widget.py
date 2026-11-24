@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from base64 import b64decode
 import logging
 from itertools import count
 from pathlib import Path
@@ -32,7 +33,8 @@ class CommandError(RuntimeError):
 class CommandFuture:
     """A response handle for a later cell. This class provides no blocking wait."""
 
-    def __init__(self):
+    def __init__(self, decode=None):
+        self._decode = decode
         self._response = None
         self._callbacks: list[Callable[[CommandFuture], None]] = []
 
@@ -44,7 +46,8 @@ class CommandFuture:
         if not self.done():
             raise PendingResult("The viewer is still processing the command. Read the result in a later cell.")
         if self._response["ok"]:
-            return self._response.get("value")
+            value = self._response.get("value")
+            return self._decode(value) if self._decode else value
         error = self._response["error"]
         raise CommandError(error["code"], error["message"], error.get("details"))
 
@@ -99,6 +102,24 @@ def _valid_response(result):
             and isinstance(error.get("code"), str) and isinstance(error.get("message"), str))
 
 
+def _provided(params):
+    return {key: value for key, value in params.items() if value is not None}
+
+
+def _png_image(value):
+    from IPython.display import Image
+
+    try:
+        if value["mime"] != "image/png":
+            raise ValueError("snapshot MIME type")
+        data = b64decode(value["dataBase64"], validate=True)
+        if not data.startswith(b"\x89PNG\r\n\x1a\n"):
+            raise ValueError("snapshot PNG signature")
+    except (KeyError, TypeError, ValueError) as exc:
+        raise CommandError("invalid-result", "Malformed PNG snapshot response") from exc
+    return Image(data=data, format="png")
+
+
 class Viewer(anywidget.AnyWidget):
     """Display a VibeMol workspace and mirror its selection into the kernel.
 
@@ -127,9 +148,12 @@ class Viewer(anywidget.AnyWidget):
 
     def run(self, command: str, **params) -> CommandFuture:
         """Send a command now and return a handle for a later cell."""
+        return self._run(command, params)
+
+    def _run(self, command, params, *, decode=None):
         if not isinstance(command, str):
             raise TypeError("command must be a string")
-        future = CommandFuture()
+        future = CommandFuture(decode)
         if self.last_error and self.last_error.get("code") == "incompatible":
             future._complete({"ok": False, "error": self.last_error})
             return future
@@ -148,6 +172,58 @@ class Viewer(anywidget.AnyWidget):
         records = [record for spec in files for record in normalize_embed_files(spec, encoding="utf-8")]
         options.setdefault("clearFirst", bool(clear_first))
         return self.run("files.load", files=records, options=options)
+
+    def set_mode(self, mode: str) -> CommandFuture:
+        """Request View, Measure, Edit, or Calculations mode."""
+        return self.run("view.setMode", mode=mode)
+
+    def orbitals(self) -> CommandFuture:
+        """List orbitals for the active Molden source."""
+        return self.run("orbitals.list")
+
+    def show_orbitals(self, indices, exclusive: bool = True) -> CommandFuture:
+        """Present Molden orbitals by one-based index in the current mode."""
+        return self.run("orbitals.show", indices=list(indices), exclusive=exclusive)
+
+    def hide_orbitals(self, indices=None) -> CommandFuture:
+        """Hide selected one-based indices, or all orbitals when omitted."""
+        return self.run("orbitals.hide", **({} if indices is None else {"indices": list(indices)}))
+
+    def configure_orbitals(self, indices=None, iso=None, opacity=None) -> CommandFuture:
+        """Configure selected orbitals, defaulting to the currently visible set."""
+        params = {"indices": None if indices is None else list(indices), "iso": iso, "opacity": opacity}
+        return self.run("orbitals.configure", **_provided(params))
+
+    def set_view(self, axis=None, fit=True, projection=None) -> CommandFuture:
+        """Set camera orientation, framing, and projection."""
+        return self.run("view.set", **_provided({"axis": axis, "fit": fit, "projection": projection}))
+
+    def snapshot(self, width=None, height=None) -> CommandFuture:
+        """Return a future whose result is an IPython PNG image."""
+        return self._run("view.snapshot", _provided({"width": width, "height": height}), decode=_png_image)
+
+    def set_atom_vectors(self, name, values, color, scale=None, max_length=None, atomic_numbers=None) -> CommandFuture:
+        """Set one vector per atom. Pass array data in the current atom order."""
+        values = values.tolist() if hasattr(values, "tolist") else [list(row) for row in values]
+        if atomic_numbers is not None:
+            atomic_numbers = atomic_numbers.tolist() if hasattr(atomic_numbers, "tolist") else list(atomic_numbers)
+        params = {"scale": scale, "maxLength": max_length, "atomicNumbers": atomic_numbers}
+        return self.run("vectors.setAtoms", name=name, values=values, color=color, **_provided(params))
+
+    def set_arrow(self, name, vector, color, scale=None, length=None, origin=None, heads="tip") -> CommandFuture:
+        """Set a center-of-mass arrow, or anchor it at an explicit world point."""
+        params = {"scale": scale, "length": length, "heads": heads}
+        if origin is not None:
+            params.update(anchor="point", origin=list(origin))
+        return self.run("vectors.setArrow", name=name, vector=list(vector), color=color, **_provided(params))
+
+    def remove_vectors(self, name) -> CommandFuture:
+        """Remove one atom vector set or free arrow."""
+        return self.run("vectors.remove", name=name)
+
+    def clear_vectors(self) -> CommandFuture:
+        """Remove all vector sets and free arrows from the active structure."""
+        return self.run("vectors.clear")
 
     def _send_request(self, request):
         try:

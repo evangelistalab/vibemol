@@ -26,6 +26,8 @@ class RefactorRunPolicy(unittest.TestCase):
             report.update(passed=36,failed=1,actualFailingWorkflows=[['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']])
         if repaired and acceptance_phase=='issue53':
             report.update(passed=37,failed=0,actualFailingWorkflows=[])
+            report['suites'] = [{'test': 'tests/e2e/premerge.py',
+                                 'checkpointCounts': {'step3b-command-completion': 1}}]
         report.update(changes)
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'result.json'
@@ -97,6 +99,9 @@ class RefactorRunPolicy(unittest.TestCase):
         self.assertIs(policy['preserveExporterSignature'], False)
         self.assertIs(policy['requireVideoExportCompletion'], True)
         self.assertEqual(policy['ordinaryExpected'], dict(passed=37, failed=0, total=37))
+        self.assertEqual(policy['checkpointCounts'], {
+            'tests/e2e/premerge.py': {'step3b-command-completion': 1},
+        })
 
     def test_repair_requires_both_complete_exporter_records(self):
         self.assertEqual(self.invoke(repaired=True).returncode, 0)
@@ -123,6 +128,15 @@ class RefactorRunPolicy(unittest.TestCase):
                        dict(actualFailingWorkflows=[]),dict(allExecutedOnce=False)]:
             result=self.invoke(repaired=True,acceptance_phase='issue52',**change)
             self.assertNotEqual(result.returncode,0,result.stdout+result.stderr)
+
+    def test_issue53_requires_one_step3b_completion_in_the_premerge_report(self):
+        for checkpoints in ({}, {'step3b-command-completion': 2}):
+            with self.subTest(checkpoints=checkpoints):
+                result = self.invoke(repaired=True, acceptance_phase='issue53', suites=[
+                    {'test': 'tests/e2e/premerge.py', 'checkpointCounts': checkpoints},
+                ])
+                self.assertNotEqual(result.returncode, 0, result.stdout+result.stderr)
+                self.assertIn('Step 3b command completion', result.stdout)
 
     def test_issue53_intentionally_empty_composition_keeps_gate_machinery(self):
         self.assertEqual(self.invoke(repaired=True,acceptance_phase='issue53').returncode,0)

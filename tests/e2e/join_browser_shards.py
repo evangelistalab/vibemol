@@ -8,11 +8,15 @@ import shutil
 
 import browser_suite as suite
 from ci_evidence import artifact_identity, digest, require_same_artifact
-from checkpoint_contract import require_checkpoint_counts
+from checkpoint_contract import require_checkpoint_counts, require_counts
 
 
 def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
     manifest = json.loads((root / 'tests/baselines/browser-suite.json').read_text())
+    step3b_checkpoints = {'tests/e2e/premerge.py': {'step3b-command-completion': 1}}
+    for test, expected in step3b_checkpoints.items():
+        declared = manifest.get('checkpointCounts', {}).get(test, {})
+        require_counts({marker: declared.get(marker) for marker in expected}, expected, suite=test)
     plan_path = root / 'tests/baselines/browser-shards.json'
     assignments = suite.shard_assignments(json.loads(plan_path.read_text()), manifest)
     paths = sorted(inputs.glob('browser-suite-*/browser-suite/browser-results.json'))
@@ -33,7 +37,10 @@ def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
             assert math.isfinite(entry['wallTimeSeconds']) and entry['wallTimeSeconds'] >= 0
             assert entry['testSha256'] == digest(root / test), 'Different test source: ' + test
             raw = path.parent / pathlib.Path(test).stem / 'run.log'
-            counts = require_checkpoint_counts(raw.read_text(), test, manifest.get('checkpointCounts', {}))
+            log = raw.read_text()
+            counts = require_checkpoint_counts(log, test, manifest.get('checkpointCounts', {}))
+            if test in step3b_checkpoints:
+                require_checkpoint_counts(log, test, step3b_checkpoints)
             assert entry['checkpointCounts'] == counts['actual'], 'Recorded checkpoint counts differ from raw log: ' + test
             assert entry['checkpointEvidence'] == counts, 'Recorded checkpoint evidence differs from raw log: ' + test
             assert entry['exitCode'] == (entry['processExitCode'] or (0 if counts['passed'] else 1)), 'Incorrect suite outcome: ' + test

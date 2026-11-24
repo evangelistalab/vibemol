@@ -791,14 +791,17 @@
         session.beforeAtoms = cloneAtomsSnapshot(resolved.vol);
         session.beforeBonds = cloneBondSnapshot(resolved.vol);
         session.beforeAnnotations = cloneVolumeAnnotationsSnapshot(resolved.vol);
+        session.beforeVectors = resolved.vol.arrows ? options.cloneVectorState?.(resolved.vol) : undefined;
       }
       const coords = worldToAtomUnits(resolved.vol, worldPos);
       resolved.atom.x = Number(coords[0]) || 0;
       resolved.atom.y = Number(coords[1]) || 0;
       resolved.atom.z = Number(coords[2]) || 0;
-      if (session && session.translateAttachedHydrogens && deltaWorld.lengthSq() > 1e-12) {
-        const hydrogenIndices = collectDirectlyBondedHydrogenIndices(resolved.vol, ensureAtomId(resolved.atom));
-        if (hydrogenIndices.length) translateAtomsByWorldDelta(resolved.vol, hydrogenIndices, deltaWorld);
+      const hydrogenIndices = session?.translateAttachedHydrogens && deltaWorld.lengthSq() > 1e-12
+        ? collectDirectlyBondedHydrogenIndices(resolved.vol, ensureAtomId(resolved.atom)) : [];
+      const movedHydrogens = hydrogenIndices.length ? translateAtomsByWorldDelta(resolved.vol, hydrogenIndices, deltaWorld) : 0;
+      if (session?.beforeVectors && movedHydrogens + 1 === resolved.vol.atoms.length) {
+        options.applyQuaternionVectorTransform?.(resolved.vol, resolved.vol, null, null, undefined, deltaWorld);
       }
       ensureVolumeSchema(resolved.vol, { inferMissingBonds: false });
       rebuildScene({ preserveView: true });
@@ -820,6 +823,7 @@
       updateEditToolboxUi({ syncSearch: false });
       if (!resolved || !session.beforeAtoms) return true;
       if (!effectiveCommit) {
+        if (session.beforeVectors !== undefined) global.VibeMolVectorsModel.restore(resolved.vol, session.beforeVectors);
         options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds, session.beforeAnnotations);
         if (announce) setHintMessage(session.source === 'selection' ? 'Canceled atom move.' : 'Canceled atom add.');
         return true;
@@ -876,6 +880,10 @@
         beforeBonds: session.beforeBonds,
         afterBonds: finalBonds,
       };
+      if (session.beforeVectors) {
+        historyOptions.beforeVectors = session.beforeVectors;
+        historyOptions.afterVectors = options.cloneVectorState?.(resolved.vol);
+      }
       if (session.beforeAnnotations && typeof session.beforeAnnotations === 'object') {
         historyOptions.beforeAnnotations = session.beforeAnnotations;
         historyOptions.afterAnnotations = finalAnnotations;

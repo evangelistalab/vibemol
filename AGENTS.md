@@ -1,5 +1,22 @@
 # AGENTS.md
 
+## Step 3b release candidate — 2026-11-24
+
+- PR #115 targets 0.10.16 and is rebuilt from the 0.10.15 camera fix at
+  `7f3c0c9`. Keep the camera fix and its four native premerge cases.
+- The three Step 3b namespaces contain 19 named members. [Restore recording
+  45469321152](https://github.com/evangelistalab/vibemol/actions/runs/45469321152)
+  added only `VibeMolVectorsModel.restore` to the previous #115 captures.
+  Four serializations matched exactly across 102 captures. The version
+  projection changes 204 version leaves and retains the source capture
+  provenance. See `tests/baselines/version-projection-0.10.16.json`.
+- Vector mutations add one **Vectors** step to Edit history. Undo and Redo
+  restore the complete vector state. Unchanged commands preserve Redo.
+  A 0.10.16 session opened in 0.10.15 or earlier keeps per-atom vectors
+  and drops free arrows.
+- Review the candidate CI and notebook screenshots before merging or tagging.
+  The 115/26 Edit API matrix and the standing CI conjunction remain required.
+
 ## Current handoff — 2026-11-24
 
 Read [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md), [VIBEMOL_CONTEXT.md](VIBEMOL_CONTEXT.md)

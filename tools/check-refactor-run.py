@@ -69,6 +69,17 @@ def main():
         assert actual_workflow in allowed_workflows, (
             'STOP: #11 differs from the applicable historical group policy or ceased to fire; '
             'do not adjust the accepted set or retry', comparands)
+    if phase == 'issue53':
+        expected = {'tests/e2e/premerge.py': {'step3b-command-completion': 1}}
+        declared = policy.get('checkpointCounts')
+        matching = [row for row in result.get('suites', []) if row['test'] in expected]
+        actual = {row['test']: {marker: row.get('checkpointCounts', {}).get(marker)
+                                for marker in expected[row['test']]} for row in matching}
+        readback = dict(check='Step 3b command completion', actual=actual, declared=declared, expected=expected)
+        print(json.dumps(readback, sort_keys=True), flush=True)
+        assert declared == expected and len(matching) == len(expected) and actual == expected, readback
+        assert all(type(count) is int for counts in (declared, actual)
+                   for markers in counts.values() for count in markers.values()), readback
     print('Additional exporter behavior gate: passed', flush=True)
 
 
