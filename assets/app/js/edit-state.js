@@ -99,6 +99,7 @@
       const afterBonds = cloneOptionalArray('afterBonds');
       const beforeAnnotations = cloneOptionalObject('beforeAnnotations');
       const afterAnnotations = cloneOptionalObject('afterAnnotations');
+      const { beforeVectors, afterVectors } = historyOptions;
       if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
         const beforeJson = serializeOptionalSnapshot(beforeFragmentOps);
         const afterJson = serializeOptionalSnapshot(afterFragmentOps);
@@ -106,7 +107,9 @@
         const afterBondJson = serializeOptionalSnapshot(afterBonds);
         const beforeAnnotationJson = serializeOptionalSnapshot(beforeAnnotations);
         const afterAnnotationJson = serializeOptionalSnapshot(afterAnnotations);
-        if (beforeJson === afterJson && beforeBondJson === afterBondJson && beforeAnnotationJson === afterAnnotationJson) return;
+        const vectorsEqual = beforeVectors === undefined && afterVectors === undefined
+          || coordinateSnapshotsEqual({ atoms: beforeAtoms, vectors: beforeVectors }, { atoms: afterAtoms, vectors: afterVectors });
+        if (beforeJson === afterJson && beforeBondJson === afterBondJson && beforeAnnotationJson === afterAnnotationJson && vectorsEqual) return;
       }
       const command = createAtomSnapshotCommand({
         record,
@@ -118,6 +121,8 @@
         afterBonds,
         beforeAnnotations,
         afterAnnotations,
+        beforeVectors,
+        afterVectors,
         label: String(label || 'Edit'),
         at: Date.now(),
       });
@@ -149,7 +154,7 @@
       });
     }
 
-    function applyRecordSpatialState(record, atoms, grid = null, fragmentOps = undefined, bonds = undefined, annotations = undefined) {
+    function applyRecordSpatialState(record, atoms, grid = null, fragmentOps = undefined, bonds = undefined, annotations = undefined, vectors = undefined) {
       if (!record || !record.vol || !Array.isArray(atoms)) return false;
       const volumes = getVolumes();
       const idx = Array.isArray(volumes) ? volumes.indexOf(record) : -1;
@@ -185,6 +190,9 @@
       } else if (annotations && typeof annotations === 'object') {
         record.vol.annotations = cloneJsonLike(annotations) || {};
       }
+      if (vectors !== undefined) {
+        Object.assign(record.vol, structuredClone(vectors));
+      }
       record.vol.natoms = record.vol.atoms.length;
       ensureVolumeSchema(record.vol, { inferMissingBonds: false });
       syncBuilderExtensionFromVolumes();
@@ -196,13 +204,13 @@
       return true;
     }
 
-    function applyAtomsSnapshotToRecord(record, atoms, fragmentOps = undefined, bonds = undefined, annotations = undefined) {
-      return applyRecordSpatialState(record, atoms, null, fragmentOps, bonds, annotations);
+    function applyAtomsSnapshotToRecord(record, atoms, fragmentOps = undefined, bonds = undefined, annotations = undefined, vectors = undefined) {
+      return applyRecordSpatialState(record, atoms, null, fragmentOps, bonds, annotations, vectors);
     }
 
     function applyStructureSnapshotToRecord(record, snapshot) {
       if (!snapshot || !Array.isArray(snapshot.atoms)) return false;
-      return applyRecordSpatialState(record, snapshot.atoms, snapshot.grid || null);
+      return applyRecordSpatialState(record, snapshot.atoms, snapshot.grid || null, undefined, undefined, undefined, snapshot.vectors);
     }
 
     function undo() {

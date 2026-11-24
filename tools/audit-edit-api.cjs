@@ -110,6 +110,9 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
       'rejectTrajectoryStructureEdit','statement:trajectoryEditHint',
       'resetAppOptions','resetSceneDisplayOptions','resetVisualizationOptions','statement:defaultAppOptions',
       'syncMoldenOccupationDividers',
+      'cloneVectorState','vectorStatesEqual','transformVectorState','applyQuaternionVectorTransform',
+      'syncTransformedAtomArrows','prepareCoordinationLigandMoves',
+      'applyCoordinationLigandVectors','refreshCoordinationGeometryPresentation',
     ].includes(name),
      'Only the enumerated private product statements may be added');
     assert(!previousFunctions.has(name),'A new function may not replace a legacy statement');

@@ -21,6 +21,8 @@
     const cloneBondSnapshot = typeof options.cloneBondSnapshot === 'function' ? options.cloneBondSnapshot : (() => []);
     const atomsSnapshotsEqual = typeof options.atomsSnapshotsEqual === 'function' ? options.atomsSnapshotsEqual : (() => false);
     const pushEditHistoryEntry = typeof options.pushEditHistoryEntry === 'function' ? options.pushEditHistoryEntry : (() => {});
+    const cloneVectorState = options.cloneVectorState || (() => undefined);
+    const applyQuaternionVectorTransform = options.applyQuaternionVectorTransform || (() => {});
     const rebuildBondsFromAtoms = typeof options.rebuildBondsFromAtoms === 'function' ? options.rebuildBondsFromAtoms : (() => {});
     const updateBondsInPlace = typeof options.updateBondsInPlace === 'function' ? options.updateBondsInPlace : (() => {});
     const rebuildScene = typeof options.rebuildScene === 'function' ? options.rebuildScene : (() => {});
@@ -89,6 +91,7 @@
         startCenterWorld: getSelectionCenterWorld(selection, vol) || new THREE.Vector3(),
         beforeAtoms: cloneAtomsSnapshot(vol),
         beforeBonds: cloneBondSnapshot(vol),
+        beforeVectors: cloneVectorState(vol),
       };
       baseline.currentQuaternion = new THREE.Quaternion();
       state.rotateOperatorBaseline = baseline;
@@ -126,6 +129,8 @@
           atom.z = coords[2];
         }
       }
+      applyQuaternionVectorTransform(vol, baseline.beforeVectors, baseline.indices,
+        nextRotation, baseline.startCenterWorld, undefined, atomGroup);
       baseline.currentQuaternion.copy(nextRotation);
       const bondGroup = getBondGroup();
       if (bondGroup && bondGroup.children && bondGroup.children.length) updateBondsInPlace();
@@ -153,16 +158,23 @@
       });
       if (positions.some(p => !Number.isFinite(p.point[axis]) || !Number.isFinite(p.native))) return false;
       const beforeAtoms = cloneAtomsSnapshot(vol), beforeBonds = cloneBondSnapshot(vol);
+      const beforeVectors = cloneVectorState(vol);
       const atomGroup = getAtomGroup();
       indices.forEach((index, i) => {
         vol.atoms[index][axis] = positions[i].native;
         const mesh = atomGroup?.children?.[index];
         if (mesh?.position) mesh.position[axis] = positions[i].point[axis];
       });
+      if (beforeVectors) {
+        const shift = new THREE.Vector3();
+        shift[axis] = delta;
+        applyQuaternionVectorTransform(vol, beforeVectors, indices, null, undefined, shift);
+      }
       clearRotateBaseline();
       rebuildBondsFromAtoms();
       pushEditHistoryEntry(record, beforeAtoms, cloneAtomsSnapshot(vol), buildHistoryLabel('move', indices.length), {
         beforeBonds, afterBonds: cloneBondSnapshot(vol),
+        beforeVectors, afterVectors: beforeVectors ? cloneVectorState(vol) : undefined,
       });
       rebuildScene({ preserveView: true });
       updateSelectionVisuals();
@@ -193,6 +205,7 @@
       state.dragOrigAtomUnits = null;
       state.dragBeforeAtomsSnapshot = cloneAtomsSnapshot(vol);
       state.dragBeforeBondSnapshot = cloneBondSnapshot(vol);
+      state.dragBeforeVectors = cloneVectorState(vol);
       state.dragRecord = record;
       const camera = getCamera();
       const raycaster = getRaycaster();
@@ -256,6 +269,7 @@
             atom.z = arr[2];
           }
         }
+        applyQuaternionVectorTransform(vol, state.dragBeforeVectors, state.dragTargetIndices, null, undefined, delta);
         if (state.dragPivotStartWorld) state.dragPivotWorld = state.dragPivotStartWorld.clone().add(delta);
         const bondGroup = getBondGroup();
         if (bondGroup && bondGroup.children && bondGroup.children.length) rebuildBondsFromAtoms();
@@ -275,6 +289,8 @@
         pushEditHistoryEntry(record, state.dragBeforeAtomsSnapshot, afterAtoms, buildHistoryLabel('move', state.dragTargetIndices.length), {
           beforeBonds: Array.isArray(state.dragBeforeBondSnapshot) ? state.dragBeforeBondSnapshot : [],
           afterBonds: vol ? cloneBondSnapshot(vol) : [],
+          beforeVectors: state.dragBeforeVectors,
+          afterVectors: state.dragBeforeVectors ? cloneVectorState(vol) : undefined,
         });
       }
       rebuildScene({ preserveView: true });
@@ -291,6 +307,7 @@
       state.dragOrigAtomUnits = null;
       state.dragBeforeAtomsSnapshot = null;
       state.dragBeforeBondSnapshot = null;
+      state.dragBeforeVectors = undefined;
       state.dragRecord = null;
       state.dragAxis = 'none';
       const controls = getControls();
@@ -302,7 +319,7 @@
       return true;
     }
 
-    function restoreDragCoordinates(record, beforeAtoms) {
+    function restoreDragCoordinates(record, beforeAtoms, beforeVectors) {
       if (!record || !beforeAtoms) return;
       const atoms = record.vol?.atoms;
       if (!atoms || atoms.length !== beforeAtoms.length
@@ -311,12 +328,14 @@
         const atom = atoms[index];
         Object.assign(atom, { x: before.x, y: before.y, z: before.z });
       }
+      if (beforeVectors) Object.assign(record.vol, structuredClone(beforeVectors));
       if (record === getActiveRecord()) rebuildScene({ preserveView: true });
     }
 
     function cancelMoveDrag() {
       const record = state.dragActive ? state.dragRecord : null;
       const beforeAtoms = state.dragBeforeAtomsSnapshot;
+      const beforeVectors = state.dragBeforeVectors;
       state.dragActive = false;
       state.dragAtomIndex = -1;
       state.dragTargetIndices = [];
@@ -331,8 +350,9 @@
       state.dragAxis = 'none';
       state.dragBeforeAtomsSnapshot = null;
       state.dragBeforeBondSnapshot = null;
+      state.dragBeforeVectors = undefined;
       state.dragRecord = null;
-      restoreDragCoordinates(record, beforeAtoms);
+      restoreDragCoordinates(record, beforeAtoms, beforeVectors);
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setMoveHover('');
@@ -448,10 +468,13 @@
       const vol = record && record.vol;
       const baseline = state.rotateOperatorBaseline;
       const afterAtoms = vol ? cloneAtomsSnapshot(vol) : null;
-      if (record && baseline && Array.isArray(baseline.beforeAtoms) && afterAtoms && !atomsSnapshotsEqual(baseline.beforeAtoms, afterAtoms)) {
+      if (record && baseline && Array.isArray(baseline.beforeAtoms) && afterAtoms
+          && (baseline.beforeVectors || !atomsSnapshotsEqual(baseline.beforeAtoms, afterAtoms))) {
         pushEditHistoryEntry(record, baseline.beforeAtoms, afterAtoms, buildHistoryLabel('rotate', baseline.indices.length), {
           beforeBonds: Array.isArray(baseline.beforeBonds) ? baseline.beforeBonds : [],
           afterBonds: vol ? cloneBondSnapshot(vol) : [],
+          beforeVectors: baseline.beforeVectors,
+          afterVectors: baseline.beforeVectors ? cloneVectorState(vol) : undefined,
         });
       }
       rebuildScene({ preserveView: true });
@@ -480,7 +503,7 @@
       state.rotateDragLastClientX = 0;
       state.rotateDragLastClientY = 0;
       clearRotateBaseline();
-      if (baseline) restoreDragCoordinates(baseline.record, baseline.beforeAtoms);
+      if (baseline) restoreDragCoordinates(baseline.record, baseline.beforeAtoms, baseline.beforeVectors);
       const controls = getControls();
       try { if (controls) controls.enabled = true; } catch { }
       setRotateHover('');

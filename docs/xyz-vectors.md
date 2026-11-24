@@ -27,6 +27,20 @@ compare. Zero vectors draw no arrow. Vector input is for a single
 structure. Save a VibeMol session to keep the original vectors when
 sharing the scene. Plain XYZ export writes geometry only.
 
+## Rotating and moving a structure
+
+When an Edit rotation or Align principal axes rotates atoms, the same
+rotation is applied to the vector components attached to those atoms.
+Translating atoms leaves the components unchanged. Non-rigid edits such
+as UFF optimization, symmetrization, and per-atom coordinate typing also
+leave the components unchanged.
+
+A whole-structure rotation also rotates free arrow vectors. A free arrow
+with a fixed point origin follows the structure's full rotation or
+translation. An arrow anchored to the center of mass follows the computed
+center automatically. Edit Undo and Redo restore the stored vector state
+alongside the coordinates.
+
 ## Matching the reference look
 
 Open [the example XYZ](../examples/xyz-vectors.xyz), select

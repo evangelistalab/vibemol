@@ -1325,9 +1325,31 @@
     },
     "applyAtomCoordinationChoice": {
       "before": "c44eed6e6a01c9b172297c5cf337be9679f193c5c2499ac8cc454eacecfe4a9f",
-      "after": "1292f6b398f2a5a9a3f860dda592254899a24e72a676b821cfc0da343c5b7f5a",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
-      "units": []
+      "after": "ddea8849a821b376926d74ddb2321c88a86a2c1ecc672525b325bde7d7ea0125",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyAtomCoordinationChoice",
+          "count": 14,
+          "inputs": [
+            "MODES",
+            "applyCoordinationLigandVectors",
+            "cloneAtomsSnapshot",
+            "cloneVolumeAnnotationsSnapshot",
+            "currentMode",
+            "ensureEditableVolumeRecord",
+            "getAtomCoordinationMeta",
+            "getCoordinationGeometry",
+            "isCoordinationPreferenceCompatibleForAtom",
+            "isEditTargetHidden",
+            "prepareCoordinationLigandMoves",
+            "pushEditHistoryEntry",
+            "refreshCoordinationGeometryPresentation",
+            "setAtomCoordinationMeta"
+          ]
+        }
+      ]
     },
     "applyAtomMetalBondingChoice": {
       "before": "d38b409dc92da07298ed6602f7485b7e8b2190921bac10560b24e4e20e9d9be3",
@@ -1694,8 +1716,8 @@
     },
     "describeMetalLigandMoves": {
       "before": null,
-      "after": "644eecc3c37d8fde01a9a6b683e5426fc516a92c5550abfe00d5e377e5f72a21",
-      "reason": "Build and display transition-metal ligands using coordination sites.",
+      "after": "7451ed1d4e246556600b79e0494e90eb51de03ef4c9f73cc3a2f93365a947325",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
       "units": [
         {
           "file": "app.js",
@@ -2311,6 +2333,271 @@
           ]
         }
       ]
+    },
+    "cloneCoordinateSnapshot": {
+      "before": "c36a818421844b96ff100225ea143ea966ea505a84e396d635991fdb37597396",
+      "after": "e3388e0ca4deef2ee1021e422d677370409dc336cd9d89f3b571c961f2effbe5",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneCoordinateSnapshot",
+          "count": 3,
+          "inputs": [
+            "cloneAtomsSnapshot",
+            "cloneGridTransformSnapshot",
+            "cloneVectorState"
+          ]
+        }
+      ]
+    },
+    "cloneVectorState": {
+      "before": null,
+      "after": "0e169a480b33e4e874992800fc3c9cf8f3326091ff6a28fe8484213193b76ecd",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "vectorStatesEqual": {
+      "before": null,
+      "after": "88edd44e5984de7613f5442cd3e982e624947c27357ca9d1e774018d1d4fff61",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "vectorStatesEqual",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "transformVectorState": {
+      "before": null,
+      "after": "f78cb223b8b9ddc6ed76e784860f5a91b8efbb92412b37a5752d94e88554a750",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "transformVectorState",
+          "count": 1,
+          "inputs": [],
+          "parameterCallbacks": [
+            "rotate"
+          ]
+        }
+      ]
+    },
+    "applyQuaternionVectorTransform": {
+      "before": null,
+      "after": "0b7894240631e0d37670490f6d633f65eec3af671709527f241245064966c5f2",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "syncTransformedAtomArrows": {
+      "before": null,
+      "after": "8c3db028e2943a247b89b37535ffcb2f4c2c5be73d007fcc81265fc120c856a8",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncTransformedAtomArrows",
+          "count": 1,
+          "inputs": [
+            "THREE"
+          ]
+        }
+      ]
+    },
+    "coordinateSnapshotsEqual": {
+      "before": "9b0fe8e5993bd5f77077ea59eb68f44c7956da8c27b23c1478d08b8fa66383b5",
+      "after": "9c6cdb1e972b32f26320541189e71475ebe483292e1cabd1827e436db19b9bac",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "coordinateSnapshotsEqual",
+          "count": 3,
+          "inputs": [
+            "atomsSnapshotsEqual",
+            "gridSnapshotsEqual",
+            "vectorStatesEqual"
+          ]
+        }
+      ]
+    },
+    "applyTransformWorldPositions": {
+      "before": "8469ffda049b7a14aff793d47eac73ecd64cde523ace262c1ee48bdd6e255549",
+      "after": "756ed42181edc7be7d6a03de9354875be4dd936839e3ee1b4139f38eb9791d88",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyTransformWorldPositions",
+          "count": 8,
+          "inputs": [
+            "applyQuaternionVectorTransform",
+            "atomGroup",
+            "moleculePickCache",
+            "transformBeforeSnapshot",
+            "transformPivotWorld",
+            "transformRotateAccumulatedQuaternion",
+            "transformRotateGesture",
+            "worldToAtomUnits"
+          ]
+        }
+      ]
+    },
+    "translateVolumetricGrid": {
+      "before": "9897eaeee2999a21c7c4894db8aeb61c9c2020128316343a9093b0ea4eb3c4c2",
+      "after": "2fe6e0033b80b0d9d9d3c7faefcd6db82d24abd92306f95cb3377142114651ee",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "translateVolumetricGrid",
+          "count": 3,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "hasVolumetricGrid",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "rotateVolumetricGridAboutPoint": {
+      "before": "c34cab17bf6d1a39c751b387c9489b08c1fd66328d6535d76c76730f3049a746",
+      "after": "0dc1dabde293798bf6062b72941b579cdf065885a60377134e5075bdc20a891a",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "rotateVolumetricGridAboutPoint",
+          "count": 4,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "applyBasisRowsToVector",
+            "hasVolumetricGrid",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "statement:editTransformController": {
+      "before": "fac2a011fcb85dc88b0839d23a0f195dffb658360fd0e1826ecee974dfb79c9f",
+      "after": "ca77e52f6290e3323ab1db4cd4c87e71b8ac32e7bcbc729956ccaf45b6fb7b2a",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        },
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "statement:editPlacement": {
+      "before": "22694253869fb2b3b7411aa632d8b0a388040386270cf359ae642f2984a90f81",
+      "after": "f518e73fccf453d154f37dc1adbec6265b8e0d40b8911d5d0af3aefb68514763",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "cloneVectorState",
+          "count": 0,
+          "inputs": []
+        },
+        {
+          "file": "app.js",
+          "name": "applyQuaternionVectorTransform",
+          "count": 3,
+          "inputs": [
+            "THREE",
+            "syncTransformedAtomArrows",
+            "transformVectorState"
+          ]
+        }
+      ]
+    },
+    "prepareCoordinationLigandMoves": {
+      "before": null,
+      "after": "0d47e95fe37308b2a8e928539ed78b9b40196c26f74de491e6a78aeb6e74c40b",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "prepareCoordinationLigandMoves",
+          "count": 3,
+          "inputs": [
+            "describeMetalLigandMoves",
+            "getCoordinationProfile",
+            "setHintMessage"
+          ]
+        }
+      ]
+    },
+    "applyCoordinationLigandVectors": {
+      "before": null,
+      "after": "5b6e6c3cc6b1e917ce889c203de6774b5fa235a48d3b63e7ef4179fb44b59bba",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyCoordinationLigandVectors",
+          "count": 2,
+          "inputs": [
+            "applyQuaternionVectorTransform",
+            "cloneVectorState"
+          ]
+        }
+      ]
+    },
+    "refreshCoordinationGeometryPresentation": {
+      "before": null,
+      "after": "a89a403716b50ade5b2cc3906226ef93e49420677e9c288ccc0259197170152d",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "refreshCoordinationGeometryPresentation",
+          "count": 7,
+          "inputs": [
+            "editHaloController",
+            "getElementSymbol",
+            "rebuildScene",
+            "setHintMessage",
+            "updateEditAdaptiveMenuUi",
+            "updateSelectedHalos",
+            "updateSidePanel"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {
@@ -2328,11 +2615,13 @@
     },
     "finalizeAddAtomOperatorSession": {
       "before": "9474af352ad6c9f7bbfcdd7d13dd725208e3c15663b9e2cc268e2af51cf3f483",
-      "after": "9decb5ae77977b50fa4dbc337f1f4a9cee2edc530d361553c35207bac44c0698"
+      "after": "6dbc082346a0d30b14838e86f4c6ccc602c295505ee27e56eb79885d56aeb9c8",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b)."
     },
     "setAddAtomOperatorWorldPosition": {
       "before": "61eb5ffe5303cb577dd40a51a839c65c3aadb3646f75c84178c08a1a81acc339",
-      "after": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974"
+      "after": "8185ae5813cbf8a1851079682ad12e981ecba6f080bbd24699f2e921f229ddf0",
+      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b)."
     }
   },
   "haloChanges": {

@@ -1377,11 +1377,11 @@
         expected = deps.canonicalize(realized.result);
         record = plan.snapshot.record || deps.createRecord();
         if(!record)throw new Error('Could not create editable system.');
-        deps.apply(record,expected);
+        const vectorHistory = deps.apply(record, expected, plan.request);
         actual=deps.capture(record.vol);
         const diff=editApiDifference(actual,expected);
         if(diff)editApiFault('APPLIED_MISMATCH',diff.path,diff.actual,diff.expected,'Structural owner did not apply the complete candidate.');
-        deps.history(record,plan.snapshot.snapshot,actual,plan.result.label);
+        deps.history(record, plan.snapshot.snapshot, actual, plan.result.label, vectorHistory);
         const after=deps.readSystem();
         return { value: { operation: plan.request.operation, created: actual.atoms.filter(a=>!plan.request.originalIds.includes(a.id)).map(a=>a.id), removed: plan.request.originalIds.filter(id=>!actual.atoms.some(a=>a.id===id)), warnings: plan.result.warnings||{}, policy:plan.result.policy||null, idMap:realized.ids },
           context:after.context, requested:expected, applied:actual, mutation:{state:'applied'}, changed:!!editApiDifference(actual,plan.snapshot.snapshot) };
@@ -13180,7 +13180,72 @@
     return {
       atoms: cloneAtomsSnapshot(vol),
       grid: cloneGridTransformSnapshot(vol),
+      vectors: cloneVectorState(vol),
     };
+  }
+
+  function cloneVectorState(vol) {
+    if (!vol?.xyzVectors && !vol?.arrows) return undefined;
+    return structuredClone({
+      ...(vol.xyzVectors ? { xyzVectors: vol.xyzVectors } : {}),
+      ...(vol.arrows ? { arrows: vol.arrows } : {}),
+    });
+  }
+
+  function vectorStatesEqual(a, b) {
+    if (Object.is(a, b)) return true;
+    if (!a || !b || typeof a !== 'object' || typeof b !== 'object') return false;
+    const keys = Object.keys(a);
+    return keys.length === Object.keys(b).length
+      && keys.every(key => Object.hasOwn(b, key) && vectorStatesEqual(a[key], b[key]));
+  }
+
+  // The rotation and pivot come from the same operation that moves the atoms.
+  // Points and displacements are in Å. Vector components retain their input units.
+  function transformVectorState(vol, before, indices, rotate, pivot = [0, 0, 0], delta = [0, 0, 0]) {
+    if (!before) return;
+    if (rotate && before.xyzVectors) {
+      const byAtomId = { ...before.xyzVectors.byAtomId };
+      const atoms = indices ? indices.map(index => vol.atoms[index]) : vol.atoms;
+      for (const atom of atoms) {
+        if (Object.hasOwn(byAtomId, atom.id)) byAtomId[atom.id] = byAtomId[atom.id].map(rotate);
+      }
+      vol.xyzVectors = { ...before.xyzVectors, byAtomId };
+    }
+    if ((!indices || indices.length === vol.atoms.length) && before.arrows) {
+      vol.arrows = { items: before.arrows.items.map(arrow => {
+        const next = { ...arrow };
+        if (rotate) next.vector = rotate(arrow.vector);
+        if (arrow.anchor === 'point') {
+          const offset = arrow.origin.map((value, axis) => value - pivot[axis]);
+          const point = rotate ? rotate(offset) : offset;
+          next.origin = point.map((value, axis) => value + pivot[axis] + delta[axis]);
+        }
+        return next;
+      }) };
+    }
+  }
+
+  function applyQuaternionVectorTransform(vol, before, indices, rotation, pivot, delta, meshes) {
+    const rotate = rotation ? (components => new THREE.Vector3(...components).applyQuaternion(rotation).toArray()) : null;
+    transformVectorState(vol, before, indices, rotate, pivot?.toArray(), delta?.toArray());
+    if (before?.xyzVectors && meshes && rotation) syncTransformedAtomArrows(vol, indices, meshes);
+  }
+
+  function syncTransformedAtomArrows(vol, indices, meshes) {
+    const { byAtomId, sets } = vol.xyzVectors;
+    const setIndices = new Map(sets.map((set, index) => [set.name, index]));
+    const up = new THREE.Vector3(0, 1, 0);
+    for (const index of indices) {
+      const row = byAtomId[vol.atoms[index].id];
+      const children = meshes.children[index]?.children;
+      if (!row || !children) continue;
+      for (const arrow of children) {
+        if (arrow.userData.type !== 'xyzVectorArrow') continue;
+        const direction = new THREE.Vector3(...row[setIndices.get(arrow.name)]).normalize();
+        arrow.quaternion.setFromUnitVectors(up, direction);
+      }
+    }
   }
 
   /**
@@ -13224,7 +13289,7 @@
     if (!a || !b) return false;
     if (!atomsSnapshotsEqual(a.atoms, b.atoms)) return false;
     if (!gridSnapshotsEqual(a.grid, b.grid)) return false;
-    return true;
+    return vectorStatesEqual(a.vectors, b.vectors);
   }
 
   const editState = createEditStateController({
@@ -13936,6 +14001,8 @@
     cloneAtomsSnapshot,
     cloneBondSnapshot,
     cloneVolumeAnnotationsSnapshot,
+    cloneVectorState,
+    applyQuaternionVectorTransform,
     cloneJsonLike,
     allocateBuilderGroupId,
     allocateBuilderOpId,
@@ -15651,6 +15718,10 @@
       atom.z = coords[2];
       const mesh = atomGroup && atomGroup.children ? atomGroup.children[atomIdx] : null;
       if (mesh && mesh.position) mesh.position.copy(world);
+    }
+    if (transformBeforeSnapshot?.vectors && transformRotateGesture !== 'bondDistanceHorizontal') {
+      applyQuaternionVectorTransform(vol, transformBeforeSnapshot.vectors, indices,
+        transformRotateAccumulatedQuaternion, transformPivotWorld, undefined, atomGroup);
     }
   }
 
@@ -18326,6 +18397,8 @@
     cloneBondSnapshot,
     atomsSnapshotsEqual,
     pushEditHistoryEntry,
+    cloneVectorState,
+    applyQuaternionVectorTransform,
     rebuildBondsFromAtoms,
     updateBondsInPlace,
     rebuildScene,
@@ -25188,12 +25261,29 @@
       }
       const current = atomUnitsToAng(vol, vol.atoms[site.atomIndex]).sub(center).normalize();
       const rotation = new THREE.Quaternion().setFromUnitVectors(current, new THREE.Vector3(...site.direction));
-      for (const index of ligand) {
+      const positions = Array.from(ligand, index => {
         const world = atomUnitsToAng(vol, vol.atoms[index]).sub(center).applyQuaternion(rotation).add(center);
-        moves.push([index, worldToAtomUnits(vol, world)]);
-      }
+        return [index, worldToAtomUnits(vol, world)];
+      });
+      moves.push({ rotation, indices: [...ligand], positions });
     }
     return moves;
+  }
+
+  function prepareCoordinationLigandMoves(vol, index, geometryId) {
+    if (!getCoordinationProfile(vol.atoms[index].Z)?.isTransitionMetal) return [];
+    const moves = describeMetalLigandMoves(vol, index, geometryId);
+    if (!moves) setHintMessage('This geometry change would move a bridging or multidentate ligand.');
+    return moves;
+  }
+
+  function applyCoordinationLigandVectors(vol, moves) {
+    if (!moves.length || !vol.xyzVectors) return undefined;
+    const beforeVectors = cloneVectorState(vol);
+    for (const { rotation, indices } of moves) {
+      applyQuaternionVectorTransform(vol, vol, indices, rotation);
+    }
+    return { beforeVectors, afterVectors: cloneVectorState(vol) };
   }
 
   function applyAtomCoordinationChoice(atomIndex, geometryId) {
@@ -25209,13 +25299,12 @@
     const prev = getAtomCoordinationMeta(vol, atom);
     if (String(prev.geometryId || '') === nextGeometryId) return false;
     if (!isCoordinationPreferenceCompatibleForAtom(vol, idx, nextGeometryId)) return false;
-    const metal = getCoordinationProfile(atom.Z)?.isTransitionMetal;
-    const moves = metal ? describeMetalLigandMoves(vol, idx, nextGeometryId) : [];
-    if (!moves) {
-      setHintMessage('This geometry change would move a bridging or multidentate ligand.');
-      return false;
+    const moves = prepareCoordinationLigandMoves(vol, idx, nextGeometryId);
+    if (!moves) return false;
+    for (const { positions } of moves) {
+      for (const [index, [x, y, z]] of positions) Object.assign(vol.atoms[index], { x, y, z });
     }
-    for (const [index, [x, y, z]] of moves) Object.assign(vol.atoms[index], { x, y, z });
+    const vectorHistory = applyCoordinationLigandVectors(vol, moves);
     setAtomCoordinationMeta(vol, atom, { geometryId: nextGeometryId });
     const afterAnnotations = cloneVolumeAnnotationsSnapshot(vol);
     const geometry = getCoordinationGeometry(nextGeometryId);
@@ -25223,14 +25312,19 @@
     pushEditHistoryEntry(record, beforeAtoms, cloneAtomsSnapshot(vol), `Set coordination ${labelText}`, {
       beforeAnnotations,
       afterAnnotations,
+      ...vectorHistory,
     });
+    refreshCoordinationGeometryPresentation(atom, labelText);
+    return true;
+  }
+
+  function refreshCoordinationGeometryPresentation(atom, labelText) {
     if (editHaloController) editHaloController.refresh();
     updateSelectedHalos();
     updateEditAdaptiveMenuUi();
     rebuildScene({ preserveView: true });
     updateSidePanel();
     setHintMessage(`Coordination set to ${labelText} for ${getElementSymbol(atom.Z)}.`);
-    return true;
   }
 
   /**
@@ -25334,6 +25428,10 @@
    * @param {number} dz
    */
   function translateVolumetricGrid(vol, dx, dy, dz) {
+    if (vol.arrows) {
+      const scale = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+      transformVectorState(vol, vol, null, null, undefined, [dx * scale, dy * scale, dz * scale]);
+    }
     if (!hasVolumetricGrid(vol)) return;
     const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
     vol.origin = [
@@ -25354,6 +25452,11 @@
    * @param {THREE.Vector3} ez
    */
   function rotateVolumetricGridAboutPoint(vol, comX, comY, comZ, ex, ey, ez) {
+    if (vol.xyzVectors || vol.arrows) {
+      const scale = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+      transformVectorState(vol, vol, null, components => applyBasisRowsToVector(ex, ey, ez, ...components),
+        [comX * scale, comY * scale, comZ * scale]);
+    }
     if (!hasVolumetricGrid(vol)) return;
     const origin = Array.isArray(vol.origin) ? vol.origin : [0, 0, 0];
     const axes = Array.isArray(vol.axes) ? vol.axes : [[1, 0, 0], [0, 1, 0], [0, 0, 1]];
@@ -33761,9 +33864,10 @@
     applyHydroxylAttachmentGeometry(vol,fragment,indices,geometry.anchorWorld,geometry.connectionWorld);
     applyLocalFragmentCleanup(vol,anchorIndex,indices,connectionIndex,geometry.bondLength,oldSet,geometry.direction);
   }
-  function editApiHistory(record,before,after,label) {
+  function editApiHistory(record,before,after,label,vectorHistory) {
     pushEditHistoryEntry(record,before.atoms,after.atoms,label,{beforeFragmentOps:before.fragmentOps,afterFragmentOps:after.fragmentOps,
-      beforeBonds:before.bonds,afterBonds:after.bonds,beforeAnnotations:before.annotations,afterAnnotations:after.annotations});
+      beforeBonds:before.bonds,afterBonds:after.bonds,beforeAnnotations:before.annotations,afterAnnotations:after.annotations,
+      ...vectorHistory});
   }
   function editApiSyncSelection() {
     updateSelectedHalos(); updateEditSelectionVisuals(); updateEditAdaptiveMenuUi();
@@ -33792,7 +33896,12 @@
   const editApiRealizer=createEditApiIdRealizer({atom:allocateBuilderAtomId,group:allocateBuilderGroupId,operation:allocateBuilderOpId,bondId:buildVolumeBondId});
   const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),realize:editApiRealizer,
     canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
-    apply:(record,vol)=>editState.applyAtomsSnapshotToRecord(record,vol.atoms,vol.fragmentOps,vol.bonds,vol.annotations),capture:editApiCapture,history:editApiHistory});
+    apply:(record,vol,request)=>{
+      const beforeVectors = request.operation === 'translate' && record.vol.xyzVectors
+        ? { xyzVectors: structuredClone(record.vol.xyzVectors) } : undefined;
+      editState.applyAtomsSnapshotToRecord(record, vol.atoms, vol.fragmentOps, vol.bonds, vol.annotations);
+      return beforeVectors ? { beforeVectors, afterVectors: beforeVectors } : undefined;
+    },capture:editApiCapture,history:editApiHistory});
   const editApiPrepare = createEditApiBuildPreparation({readSystem:editApiReadSystem,newSnapshot:editApiNewSnapshot,validate:editApiValidator.validate,makeDraft:editApiMakeDraft,
     place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});
   const editApiBuild = createEditApiBuildService({prepare:editApiPrepare,readSystem:editApiReadSystem,makeDraft:editApiMakeDraft,validateCandidate:editApiValidateCandidate,commit:editApiCommit,inspectResolution:editApiSelection.inspectResolution});

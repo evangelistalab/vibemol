@@ -3,6 +3,7 @@
 import premerge as p
 import build_bonds as bonds
 from surface_shadows import settings, settle
+from vector_transforms import vectors_follow_rigid_edits
 
 
 def source():
@@ -100,6 +101,7 @@ def run(page, url):
         page.screenshot(path=str(p.ARTIFACTS/f'transform-selection-{projection}.png'))
         clear(page);assert not state(page)['selection'] and not state(page)['center']
     print('[transform] atom/center/end selection, Shift toggles, scope switching, right orbit and geometry preservation: passed', flush=True)
+    vectors_follow_rigid_edits(page)
 
 
 def main():

@@ -35,17 +35,19 @@
       afterBonds: getOptionalArray('afterBonds'),
       beforeAnnotations: getOptionalObject('beforeAnnotations'),
       afterAnnotations: getOptionalObject('afterAnnotations'),
+      beforeVectors: getOptionalObject('beforeVectors'),
+      afterVectors: getOptionalObject('afterVectors'),
       label: String((options && options.label) || 'Edit'),
       at: Number.isFinite(options && options.at) ? Number(options.at) : Date.now(),
       undo(ctx) {
         const apply = ctx && ctx.applyAtomsSnapshotToRecord;
         if (typeof apply !== 'function') return false;
-        return !!apply(record, before, this.beforeFragmentOps, this.beforeBonds, this.beforeAnnotations);
+        return !!apply(record, before, this.beforeFragmentOps, this.beforeBonds, this.beforeAnnotations, this.beforeVectors);
       },
       redo(ctx) {
         const apply = ctx && ctx.applyAtomsSnapshotToRecord;
         if (typeof apply !== 'function') return false;
-        return !!apply(record, after, this.afterFragmentOps, this.afterBonds, this.afterAnnotations);
+        return !!apply(record, after, this.afterFragmentOps, this.afterBonds, this.afterAnnotations, this.afterVectors);
       },
     };
   }
