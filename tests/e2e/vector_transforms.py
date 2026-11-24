@@ -4,6 +4,7 @@ import json
 import math
 
 from premerge import ROOT, load
+from step3b_product_apis import check, check_vector_history_path, vector_history_command, vector_history_snapshot
 
 TOLERANCE = 1e-9
 METAL_VECTORS = '''5
@@ -113,15 +114,17 @@ def vectors_follow_rigid_edits(page):
     assert source.count(marker) == 1
     script = """
       // Drive the same Edit drag controller as the native pointer handlers.
-      window.__vmTestVectorRotate = indices => {
+      window.__vmTestVectorRotate = (indices, keepDragging = false) => {
         const original = { clientX: 650, clientY: 450 };
         const target = { clientX: 687, clientY: 422 };
         const started = editTransformController.startRotateDrag(original, indices, { axis: 'none' });
         if (!started) return { started };
         const updated = editTransformController.updateRotateDrag(target);
+        if (keepDragging) return { started, updated };
         const finished = editTransformController.finishRotateDrag();
         return { started, updated, finished };
       };
+      window.__vmTestCancelVectorRotate = () => editTransformController.cancelRotateDrag();
       window.__vmTestBondVectorRotate = ({ index, anchor }) => {
         const vol = volumes[currentIndex].vol;
         const original = { clientX: 650, clientY: 450 };
@@ -196,6 +199,52 @@ def vectors_follow_rigid_edits(page):
         assert all(rotated[atom_id] == values for atom_id, values in original.items() if atom_id not in atom_ids)
         assert any(rotated[atom_id] != original[atom_id] for atom_id in atom_ids)
         check_undo_redo(original, rotated)
+
+    before = load_fixture()
+    unaligned = vector_history_snapshot(page)
+    page.locator('#canvas').focus()
+    page.keyboard.press('p')
+    aligned = vector_history_snapshot(page)
+    check('First rotation changes coordinates', aligned['atoms'] != unaligned['atoms'], True)
+    vector_history_command(page, 'setArrow', {'name':'between', 'color':'#AA2288', 'vector':[0,1,0], 'scale':1})
+    with_arrow = vector_history_snapshot(page)
+    check('The intervening command preserves aligned atoms', with_arrow['atoms'], aligned['atoms'])
+    indices = list(range(len(before['atoms'])))
+    check('Select atoms for the second rotation', page.evaluate(
+        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), True)
+    check('Apply second native rotation', page.evaluate('indices => __vmTestVectorRotate(indices)', indices),
+          {'started':True, 'updated':True, 'finished':True})
+    rotated = vector_history_snapshot(page)
+    check('Second rotation changes the new arrow and atoms', [
+        rotated['vectors']['arrows'] != with_arrow['vectors']['arrows'], rotated['atoms'] != with_arrow['atoms'],
+    ], [True, True])
+    check_vector_history_path(page, [(unaligned,None),(aligned,'Align principal axes'),(with_arrow,'Vectors'),
+                                     (rotated,f'Rotate {len(indices)} atoms')])
+
+    before = load_fixture()
+    original = vector_history_snapshot(page)
+    vector_history_command(page, 'setArrow', {
+        'name': 'drag arrow', 'color': '#AA2288', 'anchor': 'point',
+        'origin': [1, 2, 3], 'vector': [0, 1, 0], 'scale': 1,
+    })
+    before_drag = vector_history_snapshot(page)
+    before_bits = vector_bits(page)
+    indices = list(range(len(before['atoms'])))
+    check('Select atoms for cancelled drag', page.evaluate(
+        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), True)
+    check('Rotate without releasing the drag', page.evaluate(
+        'indices => __vmTestVectorRotate(indices, true)', indices), {'started': True, 'updated': True})
+    during_drag = vector_history_snapshot(page)
+    print('[vector-cancel] ' + json.dumps({'before': before_drag, 'during': during_drag}), flush=True)
+    check('Active drag changes coordinates, atom vectors and free arrows', [
+        during_drag['atoms'] != before_drag['atoms'],
+        during_drag['vectors']['xyzVectors'] != before_drag['vectors']['xyzVectors'],
+        during_drag['vectors']['arrows'] != before_drag['vectors']['arrows'],
+    ], [True, True, True])
+    check('Cancel an active Edit drag', page.evaluate('() => __vmTestCancelVectorRotate()'), True)
+    check('Cancel restores the complete pre-drag state', vector_history_snapshot(page), before_drag)
+    check('Cancel restores vector component bits', vector_bits(page), before_bits)
+    check_vector_history_path(page, [(original, None), (before_drag, 'Vectors')])
 
     before = load_fixture()
     original = vector_bits(page)

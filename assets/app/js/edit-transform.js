@@ -328,7 +328,7 @@
         const atom = atoms[index];
         Object.assign(atom, { x: before.x, y: before.y, z: before.z });
       }
-      if (beforeVectors) Object.assign(record.vol, structuredClone(beforeVectors));
+      if (beforeVectors !== undefined) global.VibeMolVectorsModel.restore(record.vol, beforeVectors);
       if (record === getActiveRecord()) rebuildScene({ preserveView: true });
     }
 

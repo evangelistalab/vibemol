@@ -312,6 +312,24 @@
       "expectedStatus": "passed"
     },
     {
+      "label": "Step 3b vector history for command edits",
+      "before": "f1b0a96fa3d5ec560e0d221a6c43008c6250b0dc",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/vectors-model.js"
+      ],
+      "consumers": [
+        "assets/app/js/edit-state.js",
+        "assets/app/js/edit-transform.js",
+        "assets/app/js/edit-placement.js"
+      ],
+      "recheck": [
+        "applyVectorProductState",
+        "changeProductVectors"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
       "label": "Step 3b orbital, view and vector command registration",
       "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
       "worktree": ".",

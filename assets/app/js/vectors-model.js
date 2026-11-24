@@ -146,6 +146,44 @@
     }
   }
 
+  function isRecord(value) {
+    if (!value || typeof value !== 'object') return false;
+    const prototype = Object.getPrototypeOf(value);
+    return prototype === null || Object.getPrototypeOf(prototype) === null;
+  }
+
+  function validateAtomSets(xyzVectors) {
+    const sets = xyzVectors?.sets;
+    if (!isRecord(xyzVectors) || !Array.isArray(sets) || !sets.length || !isRecord(xyzVectors.byAtomId)) {
+      invalid('xyzVectors', 'expected nonempty sets and vector rows keyed by atom ID');
+    }
+    if (![...sets].every(set => isRecord(set) && validName(set.name) && validColor(set.color)
+        && Number.isFinite(set.scale) && set.scale > 0)
+        || new Set(sets.map(set => set.name)).size !== sets.length) {
+      invalid('xyzVectors', 'expected unique names, colors and positive finite scales');
+    }
+    for (const row of Object.values(xyzVectors.byAtomId)) {
+      if (!Array.isArray(row) || row.length !== sets.length
+          || ![...row].every((value, index) => isVector(value) && Number.isFinite(magnitude(value) * sets[index].scale))) {
+        invalid('xyzVectors', 'expected a finite 3-vector with finite scaled length for each set in a row');
+      }
+    }
+  }
+
+  function restore(vol, state) {
+    if (state === undefined) return;
+    if (!isRecord(state) || Object.keys(state).some(key => key !== 'xyzVectors' && key !== 'arrows')) {
+      invalid('vectors', 'expected a vector state object');
+    }
+    const snapshot = structuredClone(state);
+    if (snapshot.xyzVectors !== undefined) validateAtomSets(snapshot.xyzVectors);
+    if (snapshot.arrows !== undefined) validateArrows(snapshot.arrows, snapshot.xyzVectors);
+    for (const key of ['xyzVectors', 'arrows']) {
+      if (snapshot[key] === undefined) delete vol[key];
+      else vol[key] = snapshot[key];
+    }
+  }
+
   function transform(vol, before, indices, rotate, pivot, delta) {
     const next = {};
     if (rotate && before.xyzVectors) {
@@ -172,6 +210,6 @@
   }
 
   global.VibeMolVectorsModel = Object.freeze({
-    describe, atomSetPlan, arrowPlan, remove, validateArrows, transform,
+    describe, atomSetPlan, arrowPlan, remove, validateArrows, transform, restore,
   });
 })(typeof window === 'undefined' ? globalThis : window);

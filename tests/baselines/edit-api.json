@@ -3039,40 +3039,45 @@
     },
     "applyVectorProductState": {
       "before": null,
-      "after": "82557e29257702fd40609195b2baefa17b0d95ab1ac14602cb04a6db2903cff9",
-      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "after": "c423ef98d7398da194a4d7be0b7e358666b1167e58cbf080f5a3b097279101a0",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
       "units": [
         {
           "file": "app.js",
           "name": "applyVectorProductState",
-          "count": 2,
+          "count": 5,
           "inputs": [
+            "cloneAtomsSnapshot",
+            "editState",
             "markSessionChanged",
-            "rebuildAppearanceMolecules"
+            "rebuildAppearanceMolecules",
+            "volumes"
           ]
         }
       ]
     },
     "changeProductVectors": {
       "before": null,
-      "after": "6bcc791977aa2926cc050c5b12c3b8def3efaa42761a1381c79dc3ec2b98c863",
-      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "after": "5dca885626cea98fe9bc98a4e2b8f20ba12fbf653c901272c920e4d036ca9fd1",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
       "units": [
         {
           "file": "app.js",
           "name": "changeProductVectors",
-          "count": 8,
+          "count": 12,
           "inputs": [
+            "addAtomOperatorSession",
             "applyVectorProductState",
+            "cloneVectorState",
             "editApiCall",
+            "editApiFault",
+            "editApiPointerInterlocks",
             "readVectorProductTarget",
             "step3bRequest",
             "step3bRequireIdle",
             "validateVectorProductPlan",
-            "vectorProductTarget"
-          ],
-          "parameterCallbacks": [
-            "plan"
+            "vectorProductTarget",
+            "vectorStatesEqual"
           ]
         }
       ]
@@ -3292,8 +3297,8 @@
     },
     "finalizeAddAtomOperatorSession": {
       "before": "9474af352ad6c9f7bbfcdd7d13dd725208e3c15663b9e2cc268e2af51cf3f483",
-      "after": "6dbc082346a0d30b14838e86f4c6ccc602c295505ee27e56eb79885d56aeb9c8",
-      "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b)."
+      "after": "d9093dc8ab69ca39152dbd2ce580aceda5cbec403d1535f54c08cebfc001a3f8",
+      "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review)."
     },
     "setAddAtomOperatorWorldPosition": {
       "before": "61eb5ffe5303cb577dd40a51a839c65c3aadb3646f75c84178c08a1a81acc339",
@@ -3305,5 +3310,458 @@
     "before": "395b6df54c0576233b9ef86f3748d1478311d353cff0db3507a44c995731b807",
     "after": "cf17f21d03919bf7574e5f6587d292e2907a8f40622c2f5cb2727d80ab18b7ff",
     "reason": "Share the aligned coordination template with atom drag and metal rearrangement."
+  },
+  "vectorHistoryChanges": {
+    "edit-state.js": {
+      "before": "e59b8661a1bce4672cb095069a3e03fd1f203dc4229d5e168203a7ca17f7e647",
+      "after": "5eb630994ef8f36f5e307d09bd6eb7a1d4ed5e0598350657d5fb0f710af8cfff",
+      "functions": {
+        "createEditStateController": {
+          "before": "99ba89cd3440f0add89a4cccd84e56c2d5f8af1a4e6ae3cba14c7208db27a892",
+          "after": "2a53ca96b553dd3da19d58945a1713a8ebd97e7f6873e2e2d998b124dbfaff8f",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "createEditStateController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "pushEditHistoryEntry": {
+          "before": "a38d221c5aede32516eeb67e5f07c88b7a093d25bdf9d5ba331297f41c070631",
+          "after": "df7b090cfacfbbe8addd96429159326b117810dd9bfd6d853e66947c9d7338d3",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "pushEditHistoryEntry",
+            "count": 5,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "cloneJsonLike",
+              "coordinateSnapshotsEqual",
+              "createAtomSnapshotCommand",
+              "pushHistoryCommand"
+            ]
+          }
+        },
+        "pushCoordinateSnapshotHistoryEntry": {
+          "before": "7166100ca6ba0ac4a382f6cd57021c085079cf04138c1444eff5617d19f36a89",
+          "after": "a31dd86d9f3740dda940a946b865d1f6b392449b62cf4cdedac52794bb64bbd6",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "pushCoordinateSnapshotHistoryEntry",
+            "count": 2,
+            "inputs": [
+              "coordinateSnapshotsEqual",
+              "pushHistoryCommand"
+            ]
+          }
+        },
+        "applyRecordSpatialState": {
+          "before": "58d8d661372107388688463e514eaf30f76904c704af20813acc9c428a224aa3",
+          "after": "6bbfb082ea5de469fe884d453ea571277aa5c578e93e9e8eeb2e19c6673cb39d",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyRecordSpatialState",
+            "count": 13,
+            "inputs": [
+              "clearTransientInteractionState",
+              "cloneJsonLike",
+              "ensureVolumeSchema",
+              "getVolumes",
+              "global",
+              "hasVolumetricGrid",
+              "normalizeVolumeAtom",
+              "pruneBuilderOperationsForVolume",
+              "rebuildScene",
+              "setCurrentIndex",
+              "syncActiveVolumeControls",
+              "syncBuilderExtensionFromVolumes",
+              "updateSidePanel"
+            ]
+          }
+        },
+        "applyAtomsSnapshotToRecord": {
+          "before": "5544ab0dc3eadf1a530502a199c29c6c66a90dd74be583233c2cf931a921e628",
+          "after": "1aa02502acfa02982263393d5ed3b232b260944f785db275363486099065df3c",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyAtomsSnapshotToRecord",
+            "count": 1,
+            "inputs": [
+              "applyRecordSpatialState"
+            ]
+          }
+        },
+        "applyStructureSnapshotToRecord": {
+          "before": "a4b0a6deb4d52dac58d101b6198fe977f65f3571eaa4be1d402907aa6a89ecdf",
+          "after": "65a207e5c6271507b3b7e6d8d018d0b16c47b175a898cccd796f4edd5bcf4640",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-state.js",
+            "name": "applyStructureSnapshotToRecord",
+            "count": 1,
+            "inputs": [
+              "applyRecordSpatialState"
+            ]
+          }
+        }
+      }
+    },
+    "edit-commands.js": {
+      "before": "b339c41b5632d285f6e721171480984bff561cb9b4b1f5458da6f29437850a73",
+      "after": "660ab6f94b414656742a05260fbff622e562953888a78b06c8a43bf92a54d254",
+      "functions": {
+        "createAtomSnapshotCommand": {
+          "before": "5601aa64842b019ca6106d42bffb65a740adbcd01c5e0b470f0f2286e030c050",
+          "after": "1e58d70c36b60e80f1336b6ce2d55547ef156d694ebe493d05856f43327e3e6b",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-commands.js",
+            "name": "createAtomSnapshotCommand",
+            "count": 0,
+            "inputs": []
+          }
+        }
+      }
+    },
+    "edit-transform.js": {
+      "before": "fb359cf5f83b415fc4ba92e3ad020102d634a68f8770b544aa4622bff757d6cd",
+      "after": "eaeed10a67f36e25f497ef2d83c583712a1b83ec3d3ad86dc6a101428b4069c5",
+      "functions": {
+        "createEditTransformController": {
+          "before": "9f3f6f71228067ed431773424748a60291de3370a2568b73ed32e900db11654b",
+          "after": "f799af17190fd77cdfe66c0ebc067fb429eaea282125d2d353938a9af453eb5e",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "createEditTransformController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "buildRotateBaseline": {
+          "before": "c93bacbfd547ab7cc17af4c71236dac81352d5e66f0bb2e57b8219099d725f81",
+          "after": "84d132af08d887d39e0bb5149543dcd06d805f631e1238b743720d93d6ecd472",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "buildRotateBaseline",
+            "count": 14,
+            "inputs": [
+              "MODES",
+              "THREE",
+              "atomUnitsToAng",
+              "buildSelectionKey",
+              "clearRotateBaseline",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getMode",
+              "getSelection",
+              "getSelectionCenterWorld",
+              "state"
+            ]
+          }
+        },
+        "applyRotateQuaternion": {
+          "before": "e339622344a17afb2000336742e1f054c728b698b9e14f7168e3c73aa413a769",
+          "after": "f844c5521f889b1078a94470c56209f8bd8879c54aab92f87da31d8f87b2f64e",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "applyRotateQuaternion",
+            "count": 9,
+            "inputs": [
+              "applyQuaternionVectorTransform",
+              "ensureRotateBaseline",
+              "getAtomGroup",
+              "getBondGroup",
+              "updateBondsInPlace",
+              "updateMoveGizmo",
+              "updateRotateGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "setSelectionPosition": {
+          "before": "bb3f695ad9145863524b22f3954b75b55036b81d9850cba2a265fe90c72ecc51",
+          "after": "6546edbcb85caf0ac4b7df0e59854192a4c10bcb110f3e8fcf4dc07fc3a4ec8f",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "setSelectionPosition",
+            "count": 22,
+            "inputs": [
+              "MODES",
+              "THREE",
+              "applyQuaternionVectorTransform",
+              "atomUnitsToAng",
+              "buildHistoryLabel",
+              "clearRotateBaseline",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getMode",
+              "getSelection",
+              "getSelectionCenterWorld",
+              "pushEditHistoryEntry",
+              "rebuildBondsFromAtoms",
+              "rebuildScene",
+              "state",
+              "updateMoveGizmo",
+              "updateRotateGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "startMoveDrag": {
+          "before": "d0685e1a5611c87b223f7aeb295c1a955e590f2f09ba8aaec329a207dca53d79",
+          "after": "eed8e8c7747a9d7ad6e8aaa399eaaf34935f46f6a9a709f4eea03c83f89d2a79",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "startMoveDrag",
+            "count": 15,
+            "inputs": [
+              "THREE",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getCamera",
+              "getControls",
+              "getRaycaster",
+              "getSelectionCenterWorld",
+              "setMoveHover",
+              "setRaycasterFromEvent",
+              "state",
+              "updateMoveGizmo"
+            ]
+          }
+        },
+        "updateMoveDrag": {
+          "before": "e7feeaa6af51f918c26d6e3777db797da4894f6d10375f7273203f79724a4444",
+          "after": "93f49ebe05b22843a2454238638907bc4f1f456d36c699be564f7ed5514c3bc7",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "updateMoveDrag",
+            "count": 12,
+            "inputs": [
+              "THREE",
+              "applyQuaternionVectorTransform",
+              "getActiveRecord",
+              "getAtomGroup",
+              "getBondGroup",
+              "getRaycaster",
+              "rebuildBondsFromAtoms",
+              "setRaycasterFromEvent",
+              "state",
+              "updateMoveGizmo",
+              "updateSelectionVisuals",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "finishMoveDrag": {
+          "before": "519007c6b691459e8d87f6e5b08403714f57aa11f2d8091c62f2028cf1956995",
+          "after": "e8825e292abc466ff6f8704a98443f3dd9e81f2640f751d81c37c199f65eee0b",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "finishMoveDrag",
+            "count": 15,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "buildHistoryLabel",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getControls",
+              "isEditMode",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "renderRibbon",
+              "setMoveHover",
+              "state",
+              "updateMoveGizmo",
+              "updateSelectionVisuals"
+            ]
+          }
+        },
+        "restoreDragCoordinates": {
+          "before": "92e074ff8dbf24d02ae52584c506eb1c2f6feb15e5fea976f5fe1c837354c6e2",
+          "after": "25728fd99b7de50a40a7c3e6e9d08952ec15a424597bec88ea02364ed5fc48a0",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "restoreDragCoordinates",
+            "count": 3,
+            "inputs": [
+              "getActiveRecord",
+              "global",
+              "rebuildScene"
+            ]
+          }
+        },
+        "cancelMoveDrag": {
+          "before": "41a26e9c2b2937bd1af4d38046f6ae81b41bf2122ada5645b2332c5b2b7c398e",
+          "after": "c3c9f44e8e628721e7e696187bd0f9d0c5b843a525549a536cbd9e9782776928",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "cancelMoveDrag",
+            "count": 5,
+            "inputs": [
+              "getControls",
+              "restoreDragCoordinates",
+              "setMoveHover",
+              "state",
+              "updateMoveGizmo"
+            ]
+          }
+        },
+        "finishRotateDrag": {
+          "before": "466c341d2e8b00f5486d51ea9ac80decaed24c0a06ac02253ba5f791c2cf20f5",
+          "after": "9bb1f0fa1c2d6b7ec12f0805b6736123c40c858cf0ed61f07c88f047488c2540",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "finishRotateDrag",
+            "count": 16,
+            "inputs": [
+              "atomsSnapshotsEqual",
+              "buildHistoryLabel",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVectorState",
+              "getActiveRecord",
+              "getControls",
+              "isEditMode",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "renderRibbon",
+              "resetRotateBaseline",
+              "setRotateHover",
+              "state",
+              "updateRotateGizmo",
+              "updateSelectionVisuals"
+            ]
+          }
+        },
+        "cancelRotateDrag": {
+          "before": "fd14d050961e21703370b7ce766b546d756c0fce829bdbfa7a02cf29a523524f",
+          "after": "6dace7074b00e69f9f2ff722b90af3406780b93e02595b9531dd1129d23fce50",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-transform.js",
+            "name": "cancelRotateDrag",
+            "count": 6,
+            "inputs": [
+              "clearRotateBaseline",
+              "getControls",
+              "restoreDragCoordinates",
+              "setRotateHover",
+              "state",
+              "updateRotateGizmo"
+            ]
+          }
+        }
+      }
+    },
+    "edit-placement.js": {
+      "before": "9cf0ff37f39fa7b49142849051f420f5f2029139a5a9af19b73d054d8627cdeb",
+      "after": "0abbd6c766e10805b9714bbadb280e5bfc198ffbc88b6b93ea4b39cedfafaf99",
+      "functions": {
+        "createEditPlacementController": {
+          "before": "348e6b3f1b159f2a1b277c4980119ab81099946656dce6073a6f4070e40489d0",
+          "after": "f87905b6a89801bd2d730c77c2e2cb5a68ca55d216e976b437ad233394dc5a9d",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "createEditPlacementController",
+            "count": 1,
+            "inputs": [
+              "global"
+            ]
+          }
+        },
+        "setAddAtomOperatorWorldPosition": {
+          "before": "be5d2b3d9948a57fc45df10573dc28d891df2d57eeac0ade52535b99ca433974",
+          "after": "8185ae5813cbf8a1851079682ad12e981ecba6f080bbd24699f2e921f229ddf0",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "setAddAtomOperatorWorldPosition",
+            "count": 15,
+            "inputs": [
+              "THREE",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVolumeAnnotationsSnapshot",
+              "collectDirectlyBondedHydrogenIndices",
+              "ensureAtomId",
+              "ensureVolumeSchema",
+              "options",
+              "rebuildScene",
+              "resolveAddAtomOperatorSession",
+              "state",
+              "translateAtomsByWorldDelta",
+              "updateAddAtomOperatorUi",
+              "worldToAtomUnits"
+            ]
+          }
+        },
+        "finalizeAddAtomOperatorSession": {
+          "before": "9decb5ae77977b50fa4dbc337f1f4a9cee2edc530d361553c35207bac44c0698",
+          "after": "d9093dc8ab69ca39152dbd2ce580aceda5cbec403d1535f54c08cebfc001a3f8",
+          "reason": "Make vector commands Undo steps so restores never overwrite newer vector state (Step 3b review).",
+          "unit": {
+            "file": "edit-placement.js",
+            "name": "finalizeAddAtomOperatorSession",
+            "count": 19,
+            "inputs": [
+              "THREE",
+              "applyAutomaticHydrogenAdjustment",
+              "applyEditAddCoordinationToAtom",
+              "atomUnitsToAng",
+              "cloneAtomsSnapshot",
+              "cloneBondSnapshot",
+              "cloneVolumeAnnotationsSnapshot",
+              "findAtomIndexById",
+              "getElementSymbol",
+              "global",
+              "options",
+              "pushEditHistoryEntry",
+              "rebuildScene",
+              "resolveAddAtomOperatorSession",
+              "setHintMessage",
+              "state",
+              "updateAddAtomOperatorUi",
+              "updateEditToolboxUi",
+              "updateSidePanel"
+            ]
+          }
+        }
+      }
+    }
   }
 }

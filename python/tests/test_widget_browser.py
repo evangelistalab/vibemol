@@ -1,4 +1,5 @@
 from base64 import b64decode
+import json
 from pathlib import Path
 import re
 from urllib.parse import urlsplit
@@ -6,6 +7,7 @@ from urllib.parse import urlsplit
 from playwright.sync_api import expect
 
 from helpers import read_app_version
+from vibemol import Viewer
 
 VIEWER_PATH = re.compile(r"/\?from=notebook&embed=commands$")
 MOLDEN = Path(__file__).parent / "data" / "cyclopropene_cas43.molden"
@@ -152,6 +154,73 @@ def test_iframe_mode_switch_and_orbital_refusal(page, app_url):
     assert b64decode(snap["dataBase64"]).startswith(b"\x89PNG\r\n\x1a\n")
     assert [row["name"] for row in run("vectors.remove", name="forces")["sets"]] == ["dipole"]
     assert run("vectors.clear")["sets"] == []
+
+
+def test_python_widget_vector_commands_follow_edit_history(page, app_url, monkeypatch, capsys):
+    page.goto(app_url + "python/tests/harness.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.harness?.model.get('ready')")
+    frame = page.frame_locator("#first iframe")
+    water = "3\nVector history water\nO 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0"
+
+    def check(label, actual, expected):
+        with capsys.disabled():
+            print("[widget-vector-history] " + json.dumps(
+                {"label": label, "actual": actual, "expected": expected}, sort_keys=True), flush=True)
+        assert actual == expected, (label, actual, expected)
+
+    model = Viewer(url=app_url)
+    requests = []
+
+    def bridge(request):
+        requests.append(request)
+        send(page, request["id"], request["command"], **request["params"])
+
+    def complete(future):
+        request = requests[-1]
+        raw = response(page, request["id"])
+        check(f'{request["command"]} widget success', raw if raw.get("ok") is not True else True, True)
+        model._handle_custom_msg({"kind": "response", "id": request["id"], "result": raw}, [])
+        return future.result()
+
+    def state():
+        volume = json.loads(complete(model.run("session.export")))["sources"][0]["volume"]
+        return {"atoms": volume["atoms"], "vectors": {
+            field: volume[field] for field in ("xyzVectors", "arrows") if field in volume
+        }}
+
+    def press(key):
+        frame.locator("#canvas").focus()
+        page.keyboard.press(key)
+
+    try:
+        monkeypatch.setattr(model, "send", bridge)
+        complete(model.load(("water.xyz", water)))
+        complete(model.set_mode("edit"))
+        values = [[1,0,0],[0,1,0],[0,0,1]]
+        complete(model.set_atom_vectors("initial", values, "#228844", scale=1))
+        original = state()
+        press("p")
+        rotated = state()
+        check("Align changed atoms and vector components", [
+            original["atoms"] != rotated["atoms"], original["vectors"] != rotated["vectors"],
+        ], [True, True])
+        complete(model.set_atom_vectors("late", values, "#9933AA", scale=1))
+        with_atoms = state()
+        complete(model.set_arrow("dipole", [0,1,0], "#AA2277", scale=2))
+        with_arrow = state()
+        check("Widget mutations leave atoms unchanged", [with_atoms["atoms"], with_arrow["atoms"]],
+              [rotated["atoms"], rotated["atoms"]])
+        for action, key, steps in (
+            ("Undo", "ControlOrMeta+z", ((with_atoms,"Vectors"),(rotated,"Vectors"),(original,"Align principal axes"))),
+            ("Redo", "ControlOrMeta+Shift+z", ((rotated,"Align principal axes"),(with_atoms,"Vectors"),(with_arrow,"Vectors"))),
+        ):
+            for index, (expected, label) in enumerate(steps):
+                press(key)
+                check(f"{action} widget history step {index + 1}",
+                      {"hint": frame.locator("#hint .vm-edit-tool-status").text_content(), "state": state()},
+                      {"hint": f"{action}: {label}", "state": expected})
+    finally:
+        model.close()
 
 
 def test_incompatible_viewer_never_gets_a_queued_request(page, app_url):

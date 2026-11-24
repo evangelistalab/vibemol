@@ -34300,13 +34300,21 @@
     });
   }
 
-  function applyVectorProductState(vol, state) {
-    for (const field of ['xyzVectors', 'arrows']) {
-      if (state[field] === undefined) delete vol[field];
-      else vol[field] = state[field];
+  function applyVectorProductState(record, afterVectors, beforeVectors) {
+    window.VibeMolVectorsModel.restore(record.vol, afterVectors);
+    if (beforeVectors !== undefined && volumes.includes(record)) {
+      const atoms = cloneAtomsSnapshot(record.vol);
+      // Vector-only history leaves coordinates, including live trajectory frames, untouched.
+      editState.pushHistoryCommand({
+        type: 'vector_snapshot', record, before: atoms, after: atoms, beforeVectors, afterVectors,
+        label: 'Vectors', at: Date.now(),
+        undo() { return applyVectorProductState(record, beforeVectors); },
+        redo() { return applyVectorProductState(record, afterVectors); },
+      });
     }
     rebuildAppearanceMolecules();
     markSessionChanged();
+    return true;
   }
 
   function changeProductVectors(input, fields, plan) {
@@ -34316,7 +34324,14 @@
       step3bRequireIdle();
       const vol = target.record.vol;
       const requested = validateVectorProductPlan(plan, vol, input);
-      applyVectorProductState(vol, requested);
+      const before = cloneVectorState(vol) ?? {};
+      const after = cloneVectorState(requested) ?? {};
+      if (!vectorStatesEqual(before, after)) {
+        if (addAtomOperatorSession || Object.values(editApiPointerInterlocks()).some(Boolean)) {
+          editApiFault('not-available', 'interactions', 'busy', 'idle', 'Finish the current edit before changing vectors.');
+        }
+        applyVectorProductState(target.record, after, before);
+      }
       return { value: readVectorProductTarget(target) };
     });
   }

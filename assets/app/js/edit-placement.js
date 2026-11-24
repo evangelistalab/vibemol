@@ -823,7 +823,7 @@
       updateEditToolboxUi({ syncSearch: false });
       if (!resolved || !session.beforeAtoms) return true;
       if (!effectiveCommit) {
-        if (session.beforeVectors) Object.assign(resolved.vol, structuredClone(session.beforeVectors));
+        if (session.beforeVectors !== undefined) global.VibeMolVectorsModel.restore(resolved.vol, session.beforeVectors);
         options.applyAtomsSnapshotToRecord(session.record, session.beforeAtoms, undefined, session.beforeBonds, session.beforeAnnotations);
         if (announce) setHintMessage(session.source === 'selection' ? 'Canceled atom move.' : 'Canceled atom add.');
         return true;

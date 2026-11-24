@@ -2,7 +2,8 @@
   /**
    * Build one reversible snapshot command for atom/topology edits.
    * Optional annotations, builder metadata, and bond snapshots are applied alongside atoms only when supplied.
-   * Omitted optional snapshots leave the current record state untouched; explicit `null` clears that state.
+   * Omitted metadata snapshots leave the current record state untouched; explicit `null` clears that state.
+   * A vector snapshot is complete. An empty object clears both vector fields.
    * @param {{record:*,before:Array<object>,after:Array<object>,beforeFragmentOps?:Array<object>|null,afterFragmentOps?:Array<object>|null,beforeBonds?:Array<object>|null,afterBonds?:Array<object>|null,beforeAnnotations?:object|null,afterAnnotations?:object|null,label:string,at?:number}} options
    * @returns {{type:string,record:*,before:Array<object>,after:Array<object>,beforeFragmentOps:Array<object>|null|undefined,afterFragmentOps:Array<object>|null|undefined,beforeBonds:Array<object>|null|undefined,afterBonds:Array<object>|null|undefined,beforeAnnotations:object|null|undefined,afterAnnotations:object|null|undefined,label:string,at:number,undo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>,fragmentOps?:Array<object>|null,bonds?:Array<object>|null,annotations?:object|null)=>boolean})=>boolean,redo:(ctx:{applyAtomsSnapshotToRecord:(record:*,atoms:Array<object>,fragmentOps?:Array<object>|null,bonds?:Array<object>|null,annotations?:object|null)=>boolean})=>boolean}|null}
    */

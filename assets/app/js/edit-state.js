@@ -99,7 +99,13 @@
       const afterBonds = cloneOptionalArray('afterBonds');
       const beforeAnnotations = cloneOptionalObject('beforeAnnotations');
       const afterAnnotations = cloneOptionalObject('afterAnnotations');
-      const { beforeVectors, afterVectors } = historyOptions;
+      const { beforeVectors: before, afterVectors: after } = historyOptions;
+      const { xyzVectors, arrows } = record.vol;
+      const unchangedVectors = before === undefined && after === undefined
+        ? (xyzVectors || arrows ? structuredClone({ xyzVectors, arrows }) : undefined)
+        : {};
+      const beforeVectors = before === undefined ? unchangedVectors : structuredClone(before ?? {});
+      const afterVectors = after === undefined ? unchangedVectors : structuredClone(after ?? {});
       if (atomsSnapshotsEqual(beforeAtoms, afterAtoms)) {
         const beforeJson = serializeOptionalSnapshot(beforeFragmentOps);
         const afterJson = serializeOptionalSnapshot(afterFragmentOps);
@@ -133,23 +139,26 @@
     function pushCoordinateSnapshotHistoryEntry(record, before, after, label) {
       if (!record || !record.vol || !before || !after) return;
       if (!Array.isArray(before.atoms) || !Array.isArray(after.atoms)) return;
-      if (coordinateSnapshotsEqual(before, after)) return;
+      const tracksVectors = before.vectors !== undefined || after.vectors !== undefined;
+      const previous = tracksVectors ? { ...before, vectors: before.vectors ?? {} } : before;
+      const next = tracksVectors ? { ...after, vectors: after.vectors ?? {} } : after;
+      if (coordinateSnapshotsEqual(previous, next)) return;
       pushHistoryCommand({
         type: 'coordinate_snapshot',
         record,
-        before,
-        after,
+        before: previous,
+        after: next,
         label: String(label || 'Edit'),
         at: Date.now(),
         undo(ctx) {
           const apply = ctx && ctx.applyStructureSnapshotToRecord;
           if (typeof apply !== 'function') return false;
-          return !!apply(record, before);
+          return !!apply(record, previous);
         },
         redo(ctx) {
           const apply = ctx && ctx.applyStructureSnapshotToRecord;
           if (typeof apply !== 'function') return false;
-          return !!apply(record, after);
+          return !!apply(record, next);
         },
       });
     }
@@ -190,9 +199,7 @@
       } else if (annotations && typeof annotations === 'object') {
         record.vol.annotations = cloneJsonLike(annotations) || {};
       }
-      if (vectors !== undefined) {
-        Object.assign(record.vol, structuredClone(vectors));
-      }
+      if (vectors !== undefined) global.VibeMolVectorsModel.restore(record.vol, vectors);
       record.vol.natoms = record.vol.atoms.length;
       ensureVolumeSchema(record.vol, { inferMissingBonds: false });
       syncBuilderExtensionFromVolumes();

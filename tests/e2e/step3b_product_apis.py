@@ -352,6 +352,92 @@ def vector_session_volume(page):
     return page.evaluate('async () => (await VibeMolSession.export()).sources[0].volume')
 
 
+def vector_history_snapshot(page):
+    volume = vector_session_volume(page)
+    return {'atoms': volume['atoms'], 'vectors': {field: volume[field] for field in ('xyzVectors', 'arrows')
+                                                  if field in volume}}
+
+
+def vector_history_command(page, name, params=None):
+    result = page.evaluate('([id, params]) => VibeMolCommands.run(id, params)', [f'vectors.{name}', params or {}])
+    check(f'vectors.{name} history command', result if result.get('ok') is not True else True, True)
+    return result['value']
+
+
+def check_vector_history_path(page, states):
+    for action, key, indices in (
+        ('Undo', 'ControlOrMeta+z', reversed(range(1, len(states)))),
+        ('Redo', 'ControlOrMeta+Shift+z', range(1, len(states))),
+    ):
+        for index in indices:
+            page.locator('#canvas').focus()
+            page.keyboard.press(key)
+            label = states[index][1]
+            expected = states[index - 1 if action == 'Undo' else index][0]
+            check(f'{action} history step {index}', {
+                'hint': page.locator('#hint .vm-edit-tool-status').text_content(), 'state': vector_history_snapshot(page),
+            }, {'hint': f'{action}: {label}', 'state': expected})
+
+
+def vector_history_cases(page):
+    load_vector_water(page)
+    check('enter Edit for vector history', page.evaluate('() => VibeMolEdit.enter()')['ok'], True)
+    seed = {'name':'initial', 'color':'#228844', 'values':[[1,0,0],[0,1,0],[0,0,1]], 'scale':1}
+    late = {**seed, 'name':'late', 'values':[[0,1,0],[0,0,1],[1,0,0]]}
+    arrow = {'name':'dipole', 'color':'#AA2277', 'anchor':'point', 'origin':[1,2,3], 'vector':[0,1,0], 'scale':2}
+    vector_history_command(page, 'setAtoms', seed)
+    original = vector_history_snapshot(page)
+    page.locator('#canvas').focus()
+    page.keyboard.press('p')
+    rotated = vector_history_snapshot(page)
+    check('Align changed the seeded coordinates and components',
+          [original['atoms'] != rotated['atoms'], original['vectors'] != rotated['vectors']], [True,True])
+    changed_atoms = vector_history_command(page, 'setAtoms', late)['sets']
+    check('Align then a new atom set', [(row['name'],row['kind']) for row in changed_atoms],
+          [('initial','atoms'),('late','atoms')])
+    with_atoms = vector_history_snapshot(page)
+    changed_arrow = vector_history_command(page, 'setArrow', arrow)['sets']
+    check('Add a point arrow after the atom set', [(row['name'],row['kind']) for row in changed_arrow],
+          [('initial','atoms'),('late','atoms'),('dipole','arrow')])
+    both = vector_history_snapshot(page)
+    check('Adding either kind preserves the aligned atoms',
+          [with_atoms['atoms'], both['atoms']], [rotated['atoms'], rotated['atoms']])
+    check('Setting either kind again is a no-op', [vector_history_command(page, 'setAtoms', late)['sets'],
+          vector_history_command(page, 'setArrow', arrow)['sets']], [changed_arrow, changed_arrow])
+    check_vector_history_path(page, [(original,None),(rotated,'Align principal axes'),
+                                     (with_atoms,'Vectors'),(both,'Vectors')])
+
+    vector_history_command(page, 'remove', {'name':'dipole'})
+    removed = vector_history_snapshot(page)
+    check('Remove deletes the entire arrow field', removed, with_atoms)
+    check('Remove of absent arrow changes nothing', vector_history_command(page, 'remove', {'name':'dipole'})['sets'],
+          changed_atoms)
+    vector_history_command(page, 'clear')
+    cleared = {'atoms':both['atoms'], 'vectors':{}}
+    check('Clear removes both fields', vector_history_snapshot(page), cleared)
+    check('Clear of absent fields changes nothing', vector_history_command(page, 'clear')['sets'], [])
+    check_vector_history_path(page, [(both,None),(removed,'Vectors'),(cleared,'Vectors')])
+    page.keyboard.press('ControlOrMeta+z')
+    check('Undo clear before a no-op', vector_history_snapshot(page), removed)
+    vector_history_command(page, 'remove', {'name':'absent'})
+    page.keyboard.press('ControlOrMeta+Shift+z')
+    check('A no-op does not invalidate Redo', vector_history_snapshot(page), cleared)
+
+    load_vector_water(page)
+    check('enter Edit for absent vector snapshot', page.evaluate('() => VibeMolEdit.enter()')['ok'], True)
+    no_vectors = vector_history_snapshot(page)
+    page.locator('#canvas').focus()
+    page.keyboard.press('p')
+    aligned_empty = vector_history_snapshot(page)
+    check('Align before any vectors', [aligned_empty['atoms'] != no_vectors['atoms'], aligned_empty['vectors']],
+          [True,{}])
+    vector_history_command(page, 'setArrow', arrow)
+    first_arrow = vector_history_snapshot(page)
+    check('The first vector command only adds its arrow', list(first_arrow['vectors']), ['arrows'])
+    check_vector_history_path(page, [(no_vectors,None),(aligned_empty,'Align principal axes'),
+                                     (first_arrow,'Vectors')])
+
+
 def vector_product_cases(page):
     load_vector_water(page)
     initial = call_vectors(page, 'list')
@@ -389,7 +475,7 @@ def vector_product_cases(page):
     check('enter Edit', page.evaluate('() => VibeMolEdit.enter().ok'), True)
     page.locator('#canvas').focus()
     page.keyboard.press('ControlOrMeta+z')
-    check('vector commands create no Edit history', call_vectors(page, 'list'), saved)
+    check('Session import starts with empty Edit history', call_vectors(page, 'list'), saved)
 
     def translate(selector, delta):
         result = page.evaluate('''({selector,delta}) => {
@@ -600,6 +686,7 @@ def step3b_command_cases(page):
     check('view.snapshot PNG and dimensions', [b64decode(png['dataBase64'])[:8].hex(), png['width'], png['height']],
           ['89504e470d0a1a0a',240,200])
     refusal('view.snapshot', {'width':32,'height':32}, 'failed', 'snapshot', encode_failure=True)
+    vector_history_cases(page)
 
     page.goto(urljoin(page.url, '?workspaceLab=0'), wait_until='domcontentloaded')
     page.wait_for_function('() => !!window.VibeMolCommands')

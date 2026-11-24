@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { loadGlobalModule } from './load-global-module.mjs';
 
-const model = loadGlobalModule('assets/app/js/vectors-model.js').VibeMolVectorsModel;
+const model = loadGlobalModule('assets/app/js/vectors-model.js', { globals: { structuredClone } }).VibeMolVectorsModel;
 const vol = { atoms: [{ id: 'a', Z: 8 }, { id: 'b', Z: 1 }] };
 const plain = value => structuredClone(value);
 const input = { name: 'forces', color: '#4400FF', values: [[0, 0, 0], [0.25, -0, 0]],
@@ -59,4 +59,76 @@ test('free arrow origins translate only on a whole structure and rotation affect
     error => error.field === 'name');
   assert.equal(model.remove({ ...vol, ...free }, { name: arrow.name }).arrows, undefined);
   assert.equal(model.remove({ ...vol, ...free }, { name: input.name }).xyzVectors, undefined);
+});
+
+function savedVectors() {
+  const atoms = model.atomSetPlan(vol, input);
+  return model.arrowPlan({ ...vol, ...atoms }, { ...arrow, anchor: 'point', origin: [2, 1, 0] });
+}
+
+test('restore replaces vector sets and arrows while preserving other volume fields', () => {
+  const state = savedVectors();
+  const record = { ...vol, ...savedVectors() };
+  record.xyzVectors.sets[0].name = 'old set';
+  record.arrows.items[0].name = 'old arrow';
+  model.restore(record, state);
+  assert.deepEqual(plain(record), plain({ ...vol, ...state }));
+  assert.equal(record.atoms, vol.atoms);
+  assert.deepEqual(Object.keys(model), ['describe', 'atomSetPlan', 'arrowPlan', 'remove', 'validateArrows', 'transform', 'restore']);
+  assert.equal(Object.isFrozen(model), true);
+});
+
+test('restore deletes whichever vector fields the snapshot omits', () => {
+  const { xyzVectors, arrows } = savedVectors();
+  const record = { ...vol, xyzVectors, arrows };
+  model.restore(record, { xyzVectors });
+  assert.equal(Object.hasOwn(record, 'arrows'), false);
+  assert.deepEqual(plain(record.xyzVectors), plain(xyzVectors));
+  model.restore(record, { arrows });
+  assert.equal(Object.hasOwn(record, 'xyzVectors'), false);
+  assert.deepEqual(plain(record.arrows), plain(arrows));
+  model.restore(record, {});
+  assert.deepEqual(record, vol);
+});
+
+test('restore leaves existing field references untouched for an undefined snapshot', () => {
+  const { xyzVectors, arrows } = savedVectors();
+  const record = { ...vol, xyzVectors, arrows };
+  model.restore(record, undefined);
+  assert.equal(record.xyzVectors, xyzVectors);
+  assert.equal(record.arrows, arrows);
+  assert.equal(record.atoms, vol.atoms);
+});
+
+test('restore validates the entire snapshot before changing any field', () => {
+  const { xyzVectors, arrows } = savedVectors();
+  const record = { ...vol, xyzVectors, arrows };
+  const invalidArrow = savedVectors();
+  invalidArrow.xyzVectors.sets[0].name = 'replacement';
+  invalidArrow.arrows.items[0].origin = [Infinity, 0, 0];
+  const invalidVector = savedVectors();
+  invalidVector.xyzVectors.byAtomId.a = [];
+  const expected = plain(record);
+  for (const [invalid, field] of [[invalidArrow, 'origin'], [invalidVector, 'xyzVectors'], [null, 'vectors']]) {
+    assert.throws(() => model.restore(record, invalid), error => error.field === field);
+    assert.equal(record.xyzVectors, xyzVectors);
+    assert.equal(record.arrows, arrows);
+    assert.deepEqual(plain(record), expected);
+  }
+});
+
+test('restore does not alias the input sets, vector components or arrow origins', () => {
+  const record = { ...vol };
+  const state = savedVectors();
+  model.restore(record, state);
+  state.xyzVectors.sets[0].color = '#FFFFFF';
+  state.xyzVectors.byAtomId.b[0][1] = 2;
+  state.arrows.items[0].origin[0] = 9;
+  assert.equal(record.xyzVectors.sets[0].color, input.color);
+  assert.equal(record.xyzVectors.byAtomId.b[0][1], -0);
+  assert.equal(record.arrows.items[0].origin[0], 2);
+  record.xyzVectors.byAtomId.b[0][0] = 7;
+  record.arrows.items[0].vector[0] = 3;
+  assert.equal(state.xyzVectors.byAtomId.b[0][0], 0.25);
+  assert.equal(state.arrows.items[0].vector[0], 1);
 });
