@@ -211,7 +211,7 @@ def vectors_follow_rigid_edits(page):
     check('The intervening command preserves aligned atoms', with_arrow['atoms'], aligned['atoms'])
     indices = list(range(len(before['atoms'])))
     check('Select atoms for the second rotation', page.evaluate(
-        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), True)
+        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), {'changed': True, 'count': len(indices)})
     check('Apply second native rotation', page.evaluate('indices => __vmTestVectorRotate(indices)', indices),
           {'started':True, 'updated':True, 'finished':True})
     rotated = vector_history_snapshot(page)
@@ -231,7 +231,7 @@ def vectors_follow_rigid_edits(page):
     before_bits = vector_bits(page)
     indices = list(range(len(before['atoms'])))
     check('Select atoms for cancelled drag', page.evaluate(
-        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), True)
+        'indices => VibeMolTesting.setEditSelectionIndices(indices)', indices), {'changed': True, 'count': len(indices)})
     check('Rotate without releasing the drag', page.evaluate(
         'indices => __vmTestVectorRotate(indices, true)', indices), {'started': True, 'updated': True})
     during_drag = vector_history_snapshot(page)
