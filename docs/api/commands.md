@@ -93,6 +93,25 @@ Enter Edit explicitly before changing atom selection. `edit.setSelection` accept
 
 While the current mode suppresses surfaces, `orbitals.show` and `orbitals.configure` return `not-available` with `{mode, surfacesSuppressed: true}` and leave the scene unchanged. Call `view.setMode` with `mode: 'view'` before showing or configuring orbitals. Listing and hiding orbitals work in every mode.
 
+`orbitals.list` reports the active Molden source and its orbitals, including one-based
+indices and occupations. `orbitals.show` accepts one to eight distinct indices and
+defaults to exclusive visibility. `orbitals.hide` hides all when indices are
+omitted. `orbitals.configure` applies iso and opacity and returns the applied values.
+
+`view.snapshot` returns an image/png payload with `width`, `height` and `dataBase64`.
+Optional dimensions range from 1 to 4096 pixels per side. Use `transparent: true`
+for an alpha background. Encoded responses over 40 MB return `failed`.
+
+A change from `vectors.setAtoms`, `vectors.setArrow`, `vectors.remove` or
+`vectors.clear` adds one **Vectors** entry to Edit history for the affected
+structure. Undo and Redo restore the complete vector state. Unchanged commands
+preserve history, including Redo. The [vector guide](../xyz-vectors.md) covers
+atom order, shared scales and free-arrow anchors.
+
+The 0.10.16 release records 19 named members across `VibeMolOrbitals`,
+`VibeMolVectors` and `VibeMolVectorsModel`. Edit history uses the model's
+`restore` method.
+
 ### Proposed follow-up
 
 A separately authorized product change could add a `units: 'prompt' | 'angstrom' | 'bohr'` option so clients can give a unit explicitly.
