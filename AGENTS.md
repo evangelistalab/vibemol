@@ -1,12 +1,20 @@
 # AGENTS.md
 
-## Current handoff — 2026-11-23
+## Current handoff — 2026-11-24
 
 Read [NEXT_AGENT_INTRO.md](NEXT_AGENT_INTRO.md), [VIBEMOL_CONTEXT.md](VIBEMOL_CONTEXT.md)
 and [the roadmap](docs/roadmap.md) before selecting work. The historical receipts
 below preserve their actual counts and rejected candidates; their old “next”
 instructions do not select a new task.
 
+- **0.10.15 camera fix.** The first visible Molden surface preserves the view
+  direction and camera up vector in perspective and orthographic projection.
+  Reset view restores the diagonal at the new fit distance. Premerge requires
+  four native-drag cases across the Orbitals panel and outliner.
+  [Release notes](docs/releases/v0.10.15.md)
+- [Recording 45472030305](https://github.com/evangelistalab/vibemol/actions/runs/45472030305)
+  reproduced exactly 204 version leaves in 102 captures on both workers and
+  both repetitions, with zero other changes. PR #115 targets the later 0.10.16 release.
 - **0.10.14** is released at `5537d9810b8691820c7f8e2893c6786501c13732`
   (PR #111). It includes [command registry v0](docs/api/commands.md), the
   [opt-in embed bridge](docs/api/embed.md), and the [notebook widget](python/README.md)
