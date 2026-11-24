@@ -1,21 +1,41 @@
 # AGENTS.md
 
-## Step 3b release candidate — 2026-11-24
+## 0.10.16 release — 2026-11-24
 
-- PR #115 targets 0.10.16 and is rebuilt from the 0.10.15 camera fix at
-  `7f3c0c9`. Keep the camera fix and its four native premerge cases.
+- **0.10.16** is live at merge `082bc6b6b3c4ef2b404b20bd79ff4be71025336b`
+  from [PR #115](https://github.com/evangelistalab/vibemol/pull/115). Its
+  tree matches tested head `13789e92`. [PR run
+  45501886299](https://github.com/evangelistalab/vibemol/actions/runs/45501886299)
+  passed 37/0/37 with an empty accepted set, the 115/26 Edit API matrix,
+  all completion records, 102 captures twice with exact repeat, eight identity
+  contexts with all minima, units, WebKit, construction, and 32 widget tests.
+  [Pages run 45510050986](https://github.com/evangelistalab/vibemol/actions/runs/45510050986)
+  deployed the merge. The automatic [main run
+  45510051314](https://github.com/evangelistalab/vibemol/actions/runs/45510051314)
+  is monitored separately.
+- Live `index.html`, `asset-urls.js` and `vectors-model.js` matched the merge
+  byte-for-byte and served 0.10.16. The embed's `ready` and successful
+  `app.info` reported app version 0.10.16 and command version 1. The
+  cyclopropene SA2-CAS fixture returned three active occupations of 1.989,
+  1.480 and 0.530 to three decimals. `view.snapshot` returned a 640 × 460
+  PNG with 40,708 non-background pixels. App Undo removed the arrow added
+  through `vectors.setArrow` and restored the previous empty vector list.
+- When the merge tree equals the tested PR tree, use the PR CI run as
+  acceptance evidence. Monitor the automatic main run and report any
+  failure. Release verification proceeds while that run is active.
+- For version bumps, project the two approved version leaves per capture
+  with `tools/project_version_goldens.py` and verify the projected goldens
+  in candidate CI. Preserve the original capture provenance. The 0.10.16
+  receipt records 204 version leaves in
+  `tests/baselines/version-projection-0.10.16.json`.
 - The three Step 3b namespaces contain 19 named members. [Restore recording
   45469321152](https://github.com/evangelistalab/vibemol/actions/runs/45469321152)
   added only `VibeMolVectorsModel.restore` to the previous #115 captures.
-  Four serializations matched exactly across 102 captures. The version
-  projection changes 204 version leaves and retains the source capture
-  provenance. See `tests/baselines/version-projection-0.10.16.json`.
+  All four serializations matched across 102 captures.
 - Vector mutations add one **Vectors** step to Edit history. Undo and Redo
-  restore the complete vector state. Unchanged commands preserve Redo.
+  restore complete vector state. Unchanged commands preserve Redo.
   A 0.10.16 session opened in 0.10.15 or earlier keeps per-atom vectors
-  and drops free arrows.
-- Review the candidate CI and notebook screenshots before merging or tagging.
-  The 115/26 Edit API matrix and the standing CI conjunction remain required.
+  and drops free arrows. [Release notes](docs/releases/v0.10.16.md)
 
 ## Current handoff — 2026-11-24
 
