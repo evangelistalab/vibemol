@@ -8987,7 +8987,7 @@
     const vol = record && record.vol;
     const molden = vol && vol.kind === 'molden' && vol.molden ? vol.molden : null;
     if (!molden || !Array.isArray(molden.mos) || molden.mos.length === 0) return [];
-    return molden.mos.map((mo, index) => {
+    const rows = molden.mos.map((mo, index) => {
       const energyEh = Number.isFinite(Number(mo && mo.energy)) ? Number(mo.energy) : 0;
       const occValue = Number.isFinite(Number(mo && mo.occupation)) ? Number(mo.occupation) : 0;
       return {
@@ -8999,6 +8999,18 @@
         spinGlyph: formatOrbitalSpinGlyph(mo && mo.spin),
         isOccupied: occValue > 0,
       };
+    });
+    const tolerance = 1e-6;
+    // Molden also labels restricted MOs Alpha. A Beta channel denotes spin orbitals.
+    const fullOccupation = rows.some(row => row.spinGlyph === 'β') ? 1 : 2;
+    const fractionalChannels = new Set(rows
+      .filter(row => Math.abs(row.occValue - Math.round(row.occValue)) > tolerance)
+      .map(row => row.spinGlyph));
+    return rows.map(row => {
+      const fractional = fractionalChannels.has(row.spinGlyph);
+      if (!fractional) return { ...row, fractional, orbitalClass: row.isOccupied ? 'occupied' : 'virtual' };
+      if (row.occValue >= fullOccupation - tolerance) return { ...row, fractional, orbitalClass: 'core' };
+      return { ...row, fractional, orbitalClass: row.occValue <= tolerance ? 'virtual' : 'active' };
     });
   }
 
@@ -9017,7 +9029,7 @@
   }
 
   /**
-   * Return the HOMO/LUMO divider label if one should appear before a row.
+   * Return the occupation divider label, preserving the integer-file boundary.
    * @param {number} rowIndex
    * @param {Array<object>} items
    * @param {number[]} visibleRowIndices
@@ -9025,11 +9037,49 @@
    */
   function getMoldenOrbitalDividerLabel(rowIndex, items, visibleRowIndices) {
     const visible = Array.isArray(visibleRowIndices) ? visibleRowIndices : [];
-    const occupiedVisible = visible.filter((index) => items[index] && items[index].isOccupied);
-    const virtualVisible = visible.filter((index) => items[index] && !items[index].isOccupied);
+    const row = items[rowIndex];
+    if (row?.fractional) {
+      const label = { active: 'Core / Active', virtual: 'Active / Virtual' }[row.orbitalClass];
+      if (!label) return '';
+      const first = visible.find(index => items[index]?.spinGlyph === row.spinGlyph
+        && items[index].orbitalClass === row.orbitalClass);
+      return first === rowIndex ? label : '';
+    }
+    const integerVisible = visible.filter(index => items[index] && !items[index].fractional);
+    const occupiedVisible = integerVisible.filter(index => items[index].isOccupied);
+    const virtualVisible = integerVisible.filter(index => !items[index].isOccupied);
     if (!occupiedVisible.length || !virtualVisible.length) return '';
     const firstVisibleVirtualIndex = virtualVisible[0];
     return rowIndex === firstVisibleVirtualIndex ? 'HOMO / LUMO' : '';
+  }
+
+  // The shared popover places the first divider. Molden adds any remaining
+  // occupation boundaries after the table render or energy filter update.
+  function syncMoldenOccupationDividers(items) {
+    if (!items.some(row => row.fractional)) return;
+    const tbody = moldenInspectorBody.querySelector('tbody');
+    if (!tbody) return;
+    const rows = new Map();
+    for (const element of tbody.querySelectorAll('tr[data-row-index]')) {
+      const index = Number(element.dataset.rowIndex);
+      rows.set(index, element);
+      if (items[index]?.fractional) element.dataset.occupationClass = items[index].orbitalClass;
+    }
+    tbody.querySelectorAll('[data-molden-extra-divider]').forEach(row => row.remove());
+    const template = tbody.querySelector('.vm-list-popover__divider');
+    if (!template) return;
+    const visible = getVisibleMoldenOrbitalIndices(items);
+    const boundaries = visible.map(index => ({
+      index, label: getMoldenOrbitalDividerLabel(index, items, visible),
+    })).filter(boundary => boundary.label);
+    for (const { index, label } of boundaries.slice(1)) {
+      const target = rows.get(index);
+      if (!target) continue;
+      const divider = template.cloneNode(true);
+      divider.dataset.moldenExtraDivider = '';
+      divider.firstElementChild.textContent = label;
+      tbody.insertBefore(divider, target);
+    }
   }
 
   /**
@@ -9298,6 +9348,7 @@
       moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
     }
     moldenListPopover.render();
+    syncMoldenOccupationDividers(items);
     updateDisplayWindowAdaptiveMenuUi();
   }
 
@@ -27248,13 +27299,16 @@
     };
   }
   if (moldenEnergyFilter) {
-    const applyMoldenEnergyFilter = () => {
+    function applyMoldenEnergyFilter() {
       const raw = String(moldenEnergyFilter.value || '').trim();
       const next = raw ? Number(raw) : 0;
       moldenEnergyThresholdEh = Number.isFinite(next) && next > 0 ? next : 0;
       if (document.activeElement !== moldenEnergyFilter) moldenEnergyFilter.value = String(moldenEnergyThresholdEh || 0);
-      if (moldenListPopover) moldenListPopover.syncVisibleRows();
-    };
+      if (moldenListPopover) {
+        moldenListPopover.syncVisibleRows();
+        syncMoldenOccupationDividers(buildMoldenOrbitalItems(currentIndex >= 0 ? volumes[currentIndex] : null));
+      }
+    }
     moldenEnergyFilter.addEventListener('input', () => {
       if (moldenFilterDebounceTimer) clearTimeout(moldenFilterDebounceTimer);
       moldenFilterDebounceTimer = window.setTimeout(() => {

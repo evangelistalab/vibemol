@@ -2217,6 +2217,100 @@
           ]
         }
       ]
+    },
+    "buildMoldenOrbitalItems": {
+      "before": "4c752bbfc2be84847dadd3f03d2b85f774440239e6f25b10d9db229358800a92",
+      "after": "2f58f88819c5e30ed23edbd2e4ea12fe9e1264648995107d4565229bebf1cfc6",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "buildMoldenOrbitalItems",
+          "count": 1,
+          "inputs": [
+            "formatOrbitalSpinGlyph"
+          ]
+        }
+      ]
+    },
+    "getMoldenOrbitalDividerLabel": {
+      "before": "d38b313f269568d2aa5fca2af3a4b326ec02f0a54819e54ae17fedc654e7add4",
+      "after": "61119495573ca2bc3e0e78a79e352483ca1be030187ffd8a2386659425fa89df",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "getMoldenOrbitalDividerLabel",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "syncMoldenOccupationDividers": {
+      "before": null,
+      "after": "59325d1581e80963ee9ccb1bb76642bd9fbf086fdc5d6bc573b11dbeb9f30bcb",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncMoldenOccupationDividers",
+          "count": 3,
+          "inputs": [
+            "getMoldenOrbitalDividerLabel",
+            "getVisibleMoldenOrbitalIndices",
+            "moldenInspectorBody"
+          ]
+        }
+      ]
+    },
+    "syncMoldenOrbitalsPanel": {
+      "before": "6392de4804cf76a4b379f1deffa1f7665eb51ef988fa3a1710fa19bf0380e67d",
+      "after": "9a7f8cc79bbb6bc26a3edb934671f2c128c7e973e48df12910ed567514ee4759",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "syncMoldenOrbitalsPanel",
+          "count": 14,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "ensureListPopovers",
+            "formatMoldenGridSummary",
+            "getMoldenGridSettings",
+            "moldenEnergyFilter",
+            "moldenEnergyThresholdEh",
+            "moldenGridPaddingEl",
+            "moldenGridStepEl",
+            "moldenGridSummary",
+            "moldenInspectorControls",
+            "moldenListPopover",
+            "setMoldenInspectorOpen",
+            "syncMoldenOccupationDividers",
+            "updateDisplayWindowAdaptiveMenuUi"
+          ]
+        }
+      ]
+    },
+    "statement:moldenEnergyFilter": {
+      "before": "992ac6aca36e12fd012986a8dd4257036331ef6d98d3a510524e75e9dbfe0883",
+      "after": "79139dd5a2358575c72377751a23000d1566d57a2d832d2cfd861b29e6927c3f",
+      "reason": "Classify fractional Molden occupations into core, active and virtual groups (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyMoldenEnergyFilter",
+          "count": 7,
+          "inputs": [
+            "buildMoldenOrbitalItems",
+            "currentIndex",
+            "moldenEnergyFilter",
+            "moldenEnergyThresholdEh",
+            "moldenListPopover",
+            "syncMoldenOccupationDividers",
+            "volumes"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {

@@ -25,12 +25,12 @@ class PremergeEntrypointTests(unittest.TestCase):
                           'psi4_frequencies', 'cfour_frequencies', 'xyz_units', 'clipboard_roundtrip',
                           'clipboard_edit_selection',
                           'persistence', 'batch_export', 'orbital_group_appearance', 'molden_group_appearance',
-                          'molden_browsing', 'arithmetic', 'synchronized_trajectories')
+                          'molden_browsing', 'molden_fractional_occupations', 'arithmetic', 'synchronized_trajectories')
         calls = []
         def commands(original_browser, url):
             self.assertIs(original_browser, browser)
             self.assertEqual(url, 'http://fixture')
-            self.assertEqual(browser.new_context.call_count, 17)
+            self.assertEqual(browser.new_context.call_count, 18)
             calls.append('commands')
         def embed_bridge(original_browser, url):
             self.assertIs(original_browser, browser)
@@ -59,7 +59,7 @@ class PremergeEntrypointTests(unittest.TestCase):
             stack.enter_context(patch.object(edit_testing_adapters, 'run_matrix', bridges))
             self.assertEqual(premerge.main(), 0)
         self.assertEqual(calls, ['commands', 'embed bridge', 'matrix', 'bridges'])
-        self.assertEqual(browser.new_context.call_count, 17)
+        self.assertEqual(browser.new_context.call_count, 18)
 
     def test_commands_completion_is_required_exactly_once(self):
         manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())

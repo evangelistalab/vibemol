@@ -57,6 +57,18 @@ test('a Testing getter conversion cannot masquerade as an additive API',()=>{
 test('an unrelated legacy product change is rejected',()=>{
  const changed=source.replace("window.addEventListener('keydown', handleApplicationEscape, true);","window.addEventListener('keydown', handleApplicationEscape, false);");assert.notEqual(changed,source);assert.throws(()=>audit(changed),/Existing app statements changed/);
 });
+test('a fingerprint cannot authorize an unlisted new product function',()=>{
+ const name='step3bUnlistedHelper';
+ const declaration=`function ${name}() { return true; }`;
+ const anchor='const BOHR_TO_ANG = 0.529177210903;';
+ const changed=source.replace(anchor,`${anchor}\n  ${declaration}`);
+ assert.notEqual(changed,source);
+ const after=require('node:crypto').createHash('sha256').update(declaration).digest('hex');
+ const changes={...contract.productChanges,[name]:{
+  before:null,after,reason:'Attempt to authorize an unlisted function.',units:[],
+ }};
+ assert.throws(()=>audit(changed,changes),/Only the enumerated private product statements may be added/);
+});
 test('a newly mutable API binding is rejected',()=>{
  const changed=source.replace('const editApiReadSystem','let editApiReadSystem');assert.notEqual(changed,source);assert.throws(()=>audit(changed),/module let/);
 });

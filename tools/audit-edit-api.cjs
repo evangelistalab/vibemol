@@ -109,6 +109,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
       'selectMetalBuildAnchor','setSelectedAtomFormalCharge','updateGrowPlacementPreview',
       'rejectTrajectoryStructureEdit','statement:trajectoryEditHint',
       'resetAppOptions','resetSceneDisplayOptions','resetVisualizationOptions','statement:defaultAppOptions',
+      'syncMoldenOccupationDividers',
     ].includes(name),
      'Only the enumerated private product statements may be added');
     assert(!previousFunctions.has(name),'A new function may not replace a legacy statement');
