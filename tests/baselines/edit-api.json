@@ -956,8 +956,8 @@
     },
     "fitCameraToScene": {
       "before": "f3251df5119af77ff1711782703c14385bc74c1869617556a1ab3d37882aa777",
-      "after": "a92f9b1b8bd3968262391cbc03ff922bf62a7aa79276ac750e67ce6a3c57fe14",
-      "reason": "Reserve enough framing space for an initial atom and its Build halo.",
+      "after": "006668b951629b083e680eff2b7e1c03b084912da38c0f37fe5da99a9eeb4c14",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
       "units": [
         {
           "file": "app.js",
@@ -977,14 +977,15 @@
     },
     "applyCameraStrategy": {
       "before": "3a746c06dc91057ecd244ecdde0ec87873d89f2f7c0fc1589a4bec2c6381fd3e",
-      "after": "67208e34b217f74adb05e8f24c1528474a1cd2ea89e019e509f5426f255f1cfb",
-      "reason": "Use the Build workspace size on the first-atom refit.",
+      "after": "65d9fc399891fe3fe2ac17e776c88d363a6bf1a966b9ece3b4e40b146caf17c9",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
       "units": [
         {
           "file": "app.js",
           "name": "applyCameraStrategy",
-          "count": 6,
+          "count": 7,
           "inputs": [
+            "DEFAULT_VIEW_UP",
             "camera",
             "contentGroup",
             "controls",
@@ -1138,8 +1139,8 @@
     },
     "setActiveSceneGraphLayer": {
       "before": "3a098bc23a47d6aea86c868dc1f30a1856c7404a9840f374d6dffae1a6f122e5",
-      "after": "bb87d8ad45a7c8bc5def52982703217cebe1d013eeac99757f0f0c7ec0c60dcc",
-      "reason": "Reveal and rebuild the explicitly selected Edit scene or molecule layer. Fit the camera when the first Molden surface becomes visible.",
+      "after": "33ef8e7c7285e03859008c97267baff8527d87028f3d346c247eceb5eba3a86f",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
       "units": []
     },
     "setMode": {
@@ -1372,8 +1373,8 @@
     },
     "rebuildScene": {
       "before": "cfc7c8c6876cbadb4b7f8af148a4cd242b232174d9d761dd46a5d7871651c11f",
-      "after": "1eae0538275e4434e60585f8f59e0b573d957824743607784d266ea46ec83bb8",
-      "reason": "Pass the initial Build framing option through the existing camera owner.",
+      "after": "00e70c756f8986b02fe9cecc70918085237a7bfdd0a21462f8f67771698e198a",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
       "units": []
     },
     "getDisplayedMetalBondStyle": {
@@ -2081,8 +2082,8 @@
     },
     "requestMoldenOrbitalRender": {
       "before": "6389d73db2539f11f5d0e3085061de303547e6e58b04a9ae3b923748c2434517",
-      "after": "6df248e448dd914e11f3a51d9133696ebd588ac0867ef349b6b93371e24bd688",
-      "reason": "Fit the camera when the first Molden surface is selected.",
+      "after": "730b7f9e7b886a7ce97a045282f2a980d45820ae01c2781105096323030fef58",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
       "units": []
     },
     "createAutoHydrogenGeometryResolver": {
@@ -2192,6 +2193,30 @@
       "after": "3287651df92d387a6712e6629cc8c9a0d1a478bc297026bee7f6aa199eb2b619",
       "reason": "Keep the saved vibration atom-order warning visible through scene and session changes.",
       "units": []
+    },
+    "applySceneCameraFit": {
+      "before": "e1d2b2800113337b82dc3377fd4fcc6c7ee1a9ef3e08f6f8af74332fb48997eb",
+      "after": "bd03d5193140d27fcfb8cce911e7be63de0f5ef9397002c443f220952e671da4",
+      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applySceneCameraFit",
+          "count": 10,
+          "inputs": [
+            "DEFAULT_VIEW_UP",
+            "calculationsRenderer",
+            "camera",
+            "cameraDepthController",
+            "contentGroup",
+            "controls",
+            "currentViewportMetrics",
+            "orthographicCamera",
+            "perspectiveCamera",
+            "updateActiveCameraProjection"
+          ]
+        }
+      ]
     }
   },
   "placementChanges": {
