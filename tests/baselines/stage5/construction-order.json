@@ -275,6 +275,38 @@
         "snapshotProductView"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b vector model, renderer and product API construction",
+      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "worktree": ".",
+      "modules": [
+        "assets/app/js/vectors-model.js"
+      ],
+      "consumers": [
+        "assets/app/js/session-format.js",
+        "assets/app/js/session.js"
+      ],
+      "recheck": [
+        "vectorProductApi",
+        "editApiCommit",
+        "vectorProductTarget",
+        "readVectorProductTarget",
+        "listProductVectors",
+        "applyVectorProductState",
+        "changeProductVectors",
+        "validateVectorProductPlan",
+        "setProductAtomVectors",
+        "setProductFreeArrow",
+        "removeProductVectors",
+        "clearProductVectors",
+        "buildXyzVectorArrows",
+        "buildFreeArrowDisplay",
+        "applyPostGeometry",
+        "collectVisibleSceneBounds",
+        "transformVectorState"
+      ],
+      "expectedStatus": "passed"
     }
   ]
 }

@@ -81,6 +81,15 @@ test('the orbital exposure cannot publish an extra method',()=>{
  assert.notEqual(changed,source);
  assert.throws(()=>audit(changed),/Exact VibeMolOrbitals exposure/);
 });
+test('a mutable vector product API binding is rejected',()=>{
+ const changed=source.replace('const vectorProductApi','let vectorProductApi');assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/module let/);
+});
+test('the vector exposure cannot publish an extra method',()=>{
+ const changed=source.replace('clear:vectorProductApi.clear});','clear:vectorProductApi.clear,extra:vectorProductApi.list});');
+ assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/Exact VibeMolVectors exposure/);
+});
 test('an authorized member cannot change past its declared fingerprint',()=>{
  const changed=source.replace("callEditApiTesting('selection', indices)","callEditApiTesting('selection', [])");assert.notEqual(changed,source);assert.throws(()=>audit(changed),/changed fingerprint/);
 });

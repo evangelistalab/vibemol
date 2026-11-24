@@ -1,4 +1,6 @@
 """Direct browser contracts for Step 3b product APIs."""
+import argparse
+from base64 import b64encode
 from hashlib import sha256
 import json
 import math
@@ -271,7 +273,168 @@ def orbitals_and_view_cases(page):
           [(5, 'HOMO'), (6, 'LUMO')])
 
 
+def call_vectors(page, method, params=None, code=None):
+    result = page.evaluate('([method, input]) => VibeMolVectors[method](input)', [method, params or {}])
+    if code:
+        check(f'vectors.{method} rejection', [result.get('ok'), result.get('error', {}).get('code'),
+                                               result.get('error', {}).get('path')], [False, *code])
+        return None
+    assert result['ok'], (method, params, result)
+    return result['value']
+
+
+def load_vector_water(page):
+    loaded = page.evaluate('''text => VibeMolEmbed.loadFiles([{name:'water.xyz',text}], {clearFirst:true})''',
+                           '3\nStep 3b water\nO 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0')
+    check('load water vector fixture', loaded['ok'], True)
+
+
+def magenta_pixels(page, image_base64=None):
+    return page.evaluate('''async data => {
+      const blob = data === null ? await VibeMolFigure.compose({width:400, cols:1, background:'transparent'})
+        : await (await fetch('data:image/png;base64,' + data)).blob();
+      const image = await createImageBitmap(blob);
+      const canvas = document.createElement('canvas');
+      canvas.width = image.width;
+      canvas.height = image.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(image, 0, 0);
+      const pixels = context.getImageData(0, 0, image.width, image.height).data;
+      let count = 0;
+      for (let index = 0; index < pixels.length; index += 4) {
+        const [r,g,b,a] = pixels.subarray(index, index + 4);
+        if (a > 127 && r > g + 40 && b > g + 40) count++;
+      }
+      return count;
+    }''', image_base64)
+
+
+def check_arrow_depth_and_pixels(page):
+    page.evaluate('''() => {
+      const previous = THREE.Mesh.prototype.onBeforeRender;
+      THREE.Mesh.prototype.onBeforeRender = function(renderer, scene, camera, ...args) {
+        if (this.parent?.userData.type === 'freeVectorArrow' && this.parent.name === 'point') {
+          window.__step3bArrowState = {arrow: this.parent, camera};
+        }
+        return previous.call(this, renderer, scene, camera, ...args);
+      };
+    }''')
+    page.evaluate("""() => VibeMolPreset.import({kind:'vibemol.preset',presetVersion:1,
+      settings:{'global.showAxes':false}},{mode:'strict'})""")
+    for projection in ('perspective', 'orthographic'):
+        view = value(page, 'setView', {'projection':projection, 'fit':True, 'axis':'-z'})
+        wait_for_presented_state(page, '() => window.__step3bArrowState?.arrow.parent?.parent !== null && !!window.__step3bArrowState')
+        depth = page.evaluate('''() => {
+          const {arrow, camera} = window.__step3bArrowState;
+          const point = arrow.localToWorld(new THREE.Vector3(0,10,0));
+          return { tipDepth:-point.applyMatrix4(camera.matrixWorldInverse).z,
+            near:camera.near, far:camera.far, pickable:arrow.children.some(mesh => mesh.raycast === THREE.Mesh.prototype.raycast) };
+        }''')
+        print('[step3b-arrow-depth] ' + json.dumps({'projection': view['projection'], **depth}), flush=True)
+        assert depth['near'] < depth['tipDepth'] < depth['far'] and not depth['pickable'], depth
+        value(page, 'setView', {'axis':'+x'})
+        snap = value(page, 'snapshot', {'width':400, 'height':400})
+        count = magenta_pixels(page, snap['dataBase64'])
+        print('[step3b-arrow-png] ' + json.dumps({'projection': projection, 'arrowPixels': count}), flush=True)
+        assert count > 0, (projection, count)
+    with page.expect_download() as download:
+        page.locator('#saveBtn').evaluate('button => button.click()')
+    png = Path(download.value.path()).read_bytes()
+    check('native Save PNG signature', png[:8].hex(), '89504e470d0a1a0a')
+    counts = {'native':magenta_pixels(page, b64encode(png).decode()), 'figure':magenta_pixels(page)}
+    print('[step3b-arrow-png] ' + json.dumps(counts), flush=True)
+    assert all(count > 0 for count in counts.values()), counts
+
+
+def vector_session_volume(page):
+    return page.evaluate('async () => (await VibeMolSession.export()).sources[0].volume')
+
+
+def vector_product_cases(page):
+    load_vector_water(page)
+    initial = call_vectors(page, 'list')
+    check('vector atomic numbers', initial['atomicNumbers'], [8,1,1])
+    atoms = {'name':'forces', 'color':'#22CC44', 'values':[[0.25,0,0], [0,0,0], [0,0.5,0]], 'maxLength':1}
+    point = {'name':'point', 'color':'#FF00FF', 'vector':[0,0,1], 'length':10, 'anchor':'point', 'origin':[0,0,0]}
+    transition = {'name':'transition', 'color':'#00AAFF', 'vector':[1,0,0], 'scale':2, 'heads':'both'}
+    force_set = call_vectors(page, 'setAtoms', {**atoms, 'atomicNumbers':initial['atomicNumbers']})['sets'][0]
+    check('longest atom vector uses requested size', [force_set['scale'],force_set['drawnMaxLengthAngstrom']], [2,1])
+    call_vectors(page, 'setArrow', point)
+    sets = call_vectors(page, 'setArrow', transition)['sets']
+    check('free arrow anchors and heads', [(row['anchor'], row['heads']) for row in sets if row['kind']=='arrow'],
+          [('point','tip'), ('centerOfMass','both')])
+    check_finite_readback(page, 'VibeMolVectors', 'list', {})
+    saved = call_vectors(page, 'list')
+    for method, params, field in (
+        ('setAtoms', {**atoms, 'scale': 1}, 'scale'),
+        ('setAtoms', {**atoms, 'values':[[0,0,0]]}, 'values'),
+        ('setAtoms', {**atoms, 'atomicNumbers':[1,8,1]}, 'atomicNumbers'),
+        ('setArrow', {**point, 'anchor':'centerOfMass'}, 'origin'),
+        ('setArrow', {**transition, 'anchor':'point'}, 'origin'),
+        ('setArrow', {**transition, 'name':'forces'}, 'name'),
+        ('setArrow', {**transition, 'color':'red'}, 'color'),
+    ):
+        call_vectors(page, method, params, ('invalid-params', field))
+    check('invalid vector writes preserve the full state', call_vectors(page, 'list'), saved)
+    check_arrow_depth_and_pixels(page)
+    old_session = page.evaluate('() => VibeMolSession.exportText()')
+    before_volume = vector_session_volume(page)
+    check('session import', page.evaluate('text => VibeMolSession.importText(text)', old_session)['ok'], True)
+    restored = vector_session_volume(page)
+    for field in ('xyzVectors', 'arrows'):
+        check(f'session round-trip {field}', restored[field], before_volume[field])
+
+    check('enter Edit', page.evaluate('() => VibeMolEdit.enter().ok'), True)
+    page.locator('#canvas').focus()
+    page.keyboard.press('ControlOrMeta+z')
+    check('vector commands create no Edit history', call_vectors(page, 'list'), saved)
+
+    def translate(selector, delta):
+        result = page.evaluate('''({selector,delta}) => {
+          const resolution = VibeMolEdit.resolveSelection(selector);
+          return resolution.ok ? VibeMolEdit.translate(resolution.value, delta) : resolution;
+        }''', {'selector':selector, 'delta':delta})
+        check('Edit translate', result['ok'], True)
+
+    translate({'kind':'all'}, [1,2,3])
+    shifted = call_vectors(page, 'list')
+    check('whole translation moves only the point origin', shifted['sets'], [
+        {**row, 'origin':[1,2,3]} if row['name']=='point' else row for row in saved['sets']
+    ])
+    page.keyboard.press('ControlOrMeta+z')
+    check('Undo restores exact vector state', call_vectors(page, 'list'), saved)
+    page.keyboard.press('ControlOrMeta+Shift+z')
+    check('Redo restores exact translated vector state', call_vectors(page, 'list'), shifted)
+    translate({'kind':'labels', 'labels':['O1']}, [0.25,0,0])
+    check('partial translation preserves both vector kinds', call_vectors(page, 'list'), shifted)
+    call_vectors(page, 'remove', {'name':'forces'})
+    check('last per-atom set removes the session field', 'xyzVectors' in vector_session_volume(page), False)
+    check('clear vectors and free arrows', call_vectors(page, 'clear')['sets'], [])
+    check('empty free-arrow field is omitted', 'arrows' in vector_session_volume(page), False)
+    return old_session, before_volume
+
+
+def old_release_vector_session(browser, old_source, session_text, volume):
+    with run_http_server(old_source) as url:
+        context = browser.new_context(viewport={'width':1280, 'height':900})
+        try:
+            page = context.new_page()
+            page.goto(url, wait_until='domcontentloaded')
+            page.wait_for_function('() => window.VibeMolSession && window.VibeMolAssets')
+            check('old session probe version', page.evaluate('() => VibeMolAssets.version'), '0.10.14')
+            result = page.evaluate('text => VibeMolSession.importText(text)', session_text)
+            check('0.10.14 imports the session', result['ok'] and not result.get('vibrationWarning'), True)
+            old_volume = vector_session_volume(page)
+            check('0.10.14 retains atom vectors', old_volume['xyzVectors'], volume['xyzVectors'])
+            check('0.10.14 omits arrows on session export', 'arrows' in old_volume, False)
+        finally:
+            context.close()
+
+
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--old-source', type=Path)
+    args = parser.parse_args()
     with run_http_server(ROOT) as url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True, args=[
             '--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'])
@@ -282,8 +445,11 @@ def main():
         page.goto(url, wait_until='domcontentloaded')
         page.wait_for_function('() => window.VibeMolOrbitals && window.VibeMolWorkbench')
         orbitals_and_view_cases(page)
+        session_text, volume = vector_product_cases(page)
         check('page errors', errors, [])
         context.close()
+        if args.old_source:
+            old_release_vector_session(browser, args.old_source, session_text, volume)
         browser.close()
 
 

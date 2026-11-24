@@ -52,6 +52,13 @@
     requireValue(vol.units === 'angstrom' || vol.units === 'bohr' || vol.units == null, `${label}: unsupported units.`);
     const atoms = uniqueMap(vol.atoms, `${label} atoms`);
     if (vol.xyzVectors !== undefined) validateXyzVectors(vol.xyzVectors, label);
+    if (vol.arrows !== undefined) {
+      try {
+        global.VibeMolVectorsModel.validateArrows(vol.arrows, vol.xyzVectors);
+      } catch (error) {
+        throw new Error(`${label}: ${error.message}`);
+      }
+    }
     for (const atom of vol.atoms) {
       // Same bundled identity domain as file/structure import, including X/Dummy.
       requireValue(integer(atom.Z, 0) && atom.Z <= 100 && [atom.x, atom.y, atom.z].every(finite), `${label}: invalid atom identity or coordinates.`);

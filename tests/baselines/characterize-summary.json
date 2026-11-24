@@ -797,6 +797,21 @@
       "VIBRATION_KIND",
       "createVibrationController"
     ],
+    "VibeMolVectors": [
+      "clear",
+      "list",
+      "remove",
+      "setArrow",
+      "setAtoms"
+    ],
+    "VibeMolVectorsModel": [
+      "arrowPlan",
+      "atomSetPlan",
+      "describe",
+      "remove",
+      "transform",
+      "validateArrows"
+    ],
     "VibeMolViewUtils": [
       "computeOrthographicFrustum",
       "computePerspectiveFitDistance",

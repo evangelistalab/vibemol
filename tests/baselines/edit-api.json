@@ -1420,8 +1420,8 @@
     },
     "buildXyzVectorArrows": {
       "before": null,
-      "after": "d491cdb509c43dfadedfa8771d6dcb4d53262a5c2a6072dc32f41039eb72810e",
-      "reason": "Render XYZ vector fields with the molecule.",
+      "after": "5603282d33b75c1c97294e816df1ce375c05aa61a2f8d4871aca97655354e692",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
       "units": [
         {
           "file": "app.js",
@@ -2379,7 +2379,7 @@
     },
     "transformVectorState": {
       "before": null,
-      "after": "f78cb223b8b9ddc6ed76e784860f5a91b8efbb92412b37a5752d94e88554a750",
+      "after": "a9128ec1546de7f5c8b8d2f7cf8ab2f51f521b93623d3c0069ed7a21f940e9ee",
       "reason": "Carry vector components and free arrows through rigid transforms and their Undo snapshots (Step 3b).",
       "units": [
         {
@@ -2984,6 +2984,239 @@
           "count": 1,
           "inputs": [
             "renderer"
+          ]
+        }
+      ]
+    },
+    "vectorProductTarget": {
+      "before": null,
+      "after": "b34cbd3d5bf1da2b5dea6b470f1d5e1e4c56e28b78f5ce141ab69d3115d1c49b",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "vectorProductTarget",
+          "count": 3,
+          "inputs": [
+            "editApiFault",
+            "getFocusedScene",
+            "sceneSources"
+          ]
+        }
+      ]
+    },
+    "readVectorProductTarget": {
+      "before": null,
+      "after": "07d93787f1e5f7e25f6bbe7d2580a0a5db0ea778fb2774b71b63d1285dbb036a",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readVectorProductTarget",
+          "count": 0,
+          "inputs": []
+        }
+      ]
+    },
+    "listProductVectors": {
+      "before": null,
+      "after": "fb0d91314c4a85eb9519537cd840fd644b406c795060b14b88683c2bddbcf618",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "listProductVectors",
+          "count": 4,
+          "inputs": [
+            "editApiCall",
+            "readVectorProductTarget",
+            "step3bRequest",
+            "vectorProductTarget"
+          ]
+        }
+      ]
+    },
+    "applyVectorProductState": {
+      "before": null,
+      "after": "82557e29257702fd40609195b2baefa17b0d95ab1ac14602cb04a6db2903cff9",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyVectorProductState",
+          "count": 2,
+          "inputs": [
+            "markSessionChanged",
+            "rebuildAppearanceMolecules"
+          ]
+        }
+      ]
+    },
+    "changeProductVectors": {
+      "before": null,
+      "after": "6bcc791977aa2926cc050c5b12c3b8def3efaa42761a1381c79dc3ec2b98c863",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "changeProductVectors",
+          "count": 8,
+          "inputs": [
+            "applyVectorProductState",
+            "editApiCall",
+            "readVectorProductTarget",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "validateVectorProductPlan",
+            "vectorProductTarget"
+          ],
+          "parameterCallbacks": [
+            "plan"
+          ]
+        }
+      ]
+    },
+    "validateVectorProductPlan": {
+      "before": null,
+      "after": "6e43730a8077d7efd1436340e0069f36839d2f5e7abb15bf3a1c89df73f8f50e",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "validateVectorProductPlan",
+          "count": 2,
+          "inputs": [
+            "editApiFault"
+          ],
+          "parameterCallbacks": [
+            "plan"
+          ]
+        }
+      ]
+    },
+    "setProductAtomVectors": {
+      "before": null,
+      "after": "852fbac05bbe1f9ccf69fb25d34d249bdf3800b984a0f0094989f248db5e8a75",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductAtomVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "setProductFreeArrow": {
+      "before": null,
+      "after": "bb638e19fe18790b190cc3cb88319519ed3c2e0ce0c85a74c07ce4f36e527992",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductFreeArrow",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "removeProductVectors": {
+      "before": null,
+      "after": "939d1be26ca58e24378909eac92c51b21a9c8b37b411d60d4dbbab51af3204ee",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "removeProductVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "clearProductVectors": {
+      "before": null,
+      "after": "d976cf3be7341eed827d5d1e6ad3762ccf0f4fb50e1bb2168e247ac0843ed7fb",
+      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "clearProductVectors",
+          "count": 1,
+          "inputs": [
+            "changeProductVectors"
+          ]
+        }
+      ]
+    },
+    "buildFreeArrowDisplay": {
+      "before": null,
+      "after": "b7e216a57a813d2a787072dc7f6cdc85d1338c79532700d82d50fcc1959a07ce",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "buildFreeArrowDisplay",
+          "count": 6,
+          "inputs": [
+            "BOHR_TO_ANG",
+            "THREE",
+            "buildXyzVectorArrows",
+            "computeMassProperties",
+            "contentGroup",
+            "extraMoleculeRenderGroups"
+          ]
+        }
+      ]
+    },
+    "applyPostGeometry": {
+      "before": "46880b8fdc629d2b7866b0a20ae23d9614bee288f794c0bd761bb107ff9ec201",
+      "after": "0532bb22d595dd51f988ee3943f284be40e7a7c2b02b1fb7e383247e374eb559",
+      "reason": "Render free arrows with the shared vector-arrow geometry (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "applyPostGeometry",
+          "count": 12,
+          "inputs": [
+            "applyShadowParticipation",
+            "buildAtoms",
+            "buildBonds",
+            "buildBox",
+            "buildFreeArrowDisplay",
+            "contentGroup",
+            "extraBoxHelpers",
+            "extraMoleculeRenderGroups",
+            "getMoleculeDisplay",
+            "isCubeDebugLoggingEnabled",
+            "showSimulationBoxes",
+            "workspaceEnabled"
+          ]
+        }
+      ]
+    },
+    "collectVisibleSceneBounds": {
+      "before": "c876d386f5146c3af7341cc4c32112ce2517083a3b8c1d485d1b378a9c71a783",
+      "after": "62533abef16aeee9da0ee43fbb475c7c0cdcb653577c9a48988dcef8d631ffcf",
+      "reason": "Expose view.set and view.snapshot through the existing camera and PNG paths (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "collectVisibleSceneBounds",
+          "count": 7,
+          "inputs": [
+            "THREE",
+            "atomGroup",
+            "bondGroup",
+            "boxHelper",
+            "cloudGroup",
+            "extraMoleculeRenderGroups",
+            "meshes"
           ]
         }
       ]

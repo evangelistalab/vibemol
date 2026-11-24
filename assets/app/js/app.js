@@ -1252,7 +1252,7 @@
         const scale=snapshot.snapshot.units==='angstrom'?1:0.529177210903,ids=new Set(resolved.atomIds);
         for(const atom of draft.vol.atoms)if(ids.has(atom.id)){atom.x+=vector[0]/scale;atom.y+=vector[1]/scale;atom.z+=vector[2]/scale;}
         draft.vol=deps.validateCandidate(draft.vol);
-        return deps.commit({snapshot,request:{operation:'translate',originalIds:snapshot.snapshot.atoms.map(a=>a.id),delta:vector},draft,result:{label:'API translate',warnings:{}}});
+        return deps.commit({snapshot,request:{operation:'translate',originalIds:snapshot.snapshot.atoms.map(a=>a.id),delta:vector,wholeStructure:ids.size===draft.vol.atoms.length},draft,result:{label:'API translate',warnings:{}}});
       }),
     });
   }
@@ -4904,51 +4904,83 @@
     return mat;
   }
 
-  // Share the arrow geometry and materials across all atoms in this group.
-  function buildXyzVectorArrows(vectors) {
-    if (!vectors?.sets?.length || !vectors.byAtomId) return null;
+  // Share the shaft, head and outline resources across each arrow group.
+  function buildXyzVectorArrows(vectors, freeItems = []) {
+    const sets = vectors?.sets || [];
+    if (!sets.length && !freeItems.length) return null;
     const shaft = new THREE.CylinderGeometry(1, 1, 1, 12);
     const head = new THREE.ConeGeometry(1, 1, 12);
     const outline = new THREE.MeshBasicMaterial({ color: 0x292d32, side: THREE.BackSide });
-    const materials = vectors.sets.map(({ color }) => new THREE.MeshPhongMaterial({ color, shininess: 36 }));
+    const materials = [...sets, ...freeItems].map(({ color }) => new THREE.MeshPhongMaterial({ color, shininess: 36 }));
     let attached = false;
-    function addPart(group, geometry, material, radius, length, y) {
+    function addPart(group, geometry, material, radius, length, y, reverse = false) {
       const part = new THREE.Mesh(geometry, material);
       const border = new THREE.Mesh(geometry, outline);
       part.position.y = border.position.y = y;
       part.scale.set(radius, length, radius);
       border.scale.set(radius + 0.008, length + 0.012, radius + 0.008);
+      if (reverse) part.rotation.z = border.rotation.z = Math.PI;
+      if (group.userData.type === 'freeVectorArrow') part.raycast = border.raycast = () => {};
       part.userData.type = border.userData.type = 'xyzVector';
       group.add(part, border);
+    }
+    function appendArrow(parent, components, descriptor, material, atomScale, origin = null) {
+      const magnitude = Math.hypot(...components);
+      const length = magnitude * descriptor.scale;
+      if (!(length > 1e-8)) return;
+      const arrow = new THREE.Group();
+      arrow.name = descriptor.name;
+      arrow.userData.type = origin ? 'freeVectorArrow' : 'xyzVectorArrow';
+      arrow.scale.setScalar(1 / atomScale);
+      if (origin) arrow.position.fromArray(origin);
+      arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...components.map(value => value / magnitude)));
+      const tip = Math.min(0.24, length * 0.29);
+      const width = Math.min(0.035, tip * 0.35);
+      if (descriptor.heads === 'both') {
+        const stem = length - 2 * tip;
+        addPart(arrow, shaft, material, width, stem, 0);
+        addPart(arrow, head, material, width * 2.3, tip, (stem + tip) / 2);
+        addPart(arrow, head, material, width * 2.3, tip, -(stem + tip) / 2, true);
+      } else {
+        const stem = length - tip;
+        addPart(arrow, shaft, material, width, stem, stem / 2);
+        addPart(arrow, head, material, width * 2.3, tip, stem + tip / 2);
+      }
+      parent.add(arrow);
+      attached = true;
     }
     return {
       addToAtom(mesh, atomId, atomScale) {
         if (!Object.hasOwn(vectors.byAtomId, atomId)) return;
-        const row = vectors.byAtomId[atomId];
-        row.forEach((components, i) => {
-          const magnitude = Math.hypot(...components);
-          const length = magnitude * vectors.sets[i].scale;
-          if (!(length > 1e-8)) return;
-          const arrow = new THREE.Group();
-          arrow.name = vectors.sets[i].name;
-          arrow.userData.type = 'xyzVectorArrow';
-          arrow.scale.setScalar(1 / atomScale);
-          arrow.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(...components.map(value => value / magnitude)));
-          const tip = Math.min(0.24, length * 0.29);
-          const stem = length - tip;
-          const width = Math.min(0.035, tip * 0.35);
-          addPart(arrow, shaft, materials[i], width, stem, stem / 2);
-          addPart(arrow, head, materials[i], width * 2.3, tip, stem + tip / 2);
-          mesh.add(arrow);
-          attached = true;
-        });
+        vectors.byAtomId[atomId].forEach((components, index) =>
+          appendArrow(mesh, components, sets[index], materials[index], atomScale));
+      },
+      addToStructure(group, center) {
+        freeItems.forEach((arrow, index) => appendArrow(group, arrow.vector, arrow,
+          materials[sets.length + index], 1, arrow.origin || center));
       },
       disposeUnused() {
-        // Resources shared by all arrows are retired with their atom group.
         if (attached) return;
         [shaft, head, outline, ...materials].forEach(resource => resource.dispose());
       },
     };
+  }
+
+  function buildFreeArrowDisplay(vol) {
+    const items = vol?.arrows?.items;
+    if (!items?.length) return;
+    const center = computeMassProperties(vol);
+    const units = vol.units === 'angstrom' ? 1 : BOHR_TO_ANG;
+    const origin = center ? [center.comX * units, center.comY * units, center.comZ * units] : [0, 0, 0];
+    const group = new THREE.Group();
+    group.userData.type = 'freeVectorArrows';
+    const builder = buildXyzVectorArrows(null, items);
+    builder.addToStructure(group, origin);
+    builder.disposeUnused();
+    if (group.children.length) {
+      contentGroup.add(group);
+      extraMoleculeRenderGroups.push(group);
+    }
   }
 
   /**
@@ -6367,6 +6399,12 @@
     if (boxHelper) {
       contentBox.expandByObject(boxHelper);
       hasContent = true;
+    }
+    for (const group of extraMoleculeRenderGroups) {
+      if (group.visible && group.userData.type === 'freeVectorArrows') {
+        contentBox.expandByObject(group);
+        hasContent = true;
+      }
     }
     return { contentBox, atomBox, hasContent, hasAtoms };
   }
@@ -13204,26 +13242,7 @@
   // Points and displacements are in Å. Vector components retain their input units.
   function transformVectorState(vol, before, indices, rotate, pivot = [0, 0, 0], delta = [0, 0, 0]) {
     if (!before) return;
-    if (rotate && before.xyzVectors) {
-      const byAtomId = { ...before.xyzVectors.byAtomId };
-      const atoms = indices ? indices.map(index => vol.atoms[index]) : vol.atoms;
-      for (const atom of atoms) {
-        if (Object.hasOwn(byAtomId, atom.id)) byAtomId[atom.id] = byAtomId[atom.id].map(rotate);
-      }
-      vol.xyzVectors = { ...before.xyzVectors, byAtomId };
-    }
-    if ((!indices || indices.length === vol.atoms.length) && before.arrows) {
-      vol.arrows = { items: before.arrows.items.map(arrow => {
-        const next = { ...arrow };
-        if (rotate) next.vector = rotate(arrow.vector);
-        if (arrow.anchor === 'point') {
-          const offset = arrow.origin.map((value, axis) => value - pivot[axis]);
-          const point = rotate ? rotate(offset) : offset;
-          next.origin = point.map((value, axis) => value + pivot[axis] + delta[axis]);
-        }
-        return next;
-      }) };
-    }
+    Object.assign(vol, window.VibeMolVectorsModel.transform(vol, before, indices, rotate, pivot, delta));
   }
 
   function applyQuaternionVectorTransform(vol, before, indices, rotation, pivot, delta, meshes) {
@@ -32763,6 +32782,7 @@
       if (asActive) bondGroup = nextBondGroup;
       else extraMoleculeRenderGroups.push(nextBondGroup);
     }
+    buildFreeArrowDisplay(vol);
     if (!workspaceEnabled && showSimulationBoxes && hasGrid) {
       const nextBoxHelper = buildBox(vol);
       contentGroup.add(nextBoxHelper);
@@ -33897,10 +33917,12 @@
   const editApiCommit = createEditApiCommitter({readSystem:editApiReadSystem,checkNew:()=>editApiWritable(editApiNewSnapshot()),realize:editApiRealizer,
     canonicalize:editApiCanonicalize,createRecord:()=>editState.createNewEditableVolumeRecord(),
     apply:(record,vol,request)=>{
-      const beforeVectors = request.operation === 'translate' && record.vol.xyzVectors
-        ? { xyzVectors: structuredClone(record.vol.xyzVectors) } : undefined;
-      editState.applyAtomsSnapshotToRecord(record, vol.atoms, vol.fragmentOps, vol.bonds, vol.annotations);
-      return beforeVectors ? { beforeVectors, afterVectors: beforeVectors } : undefined;
+      const beforeVectors = request.operation === 'translate' ? cloneVectorState(record.vol) : undefined;
+      const afterVectors = beforeVectors && request.wholeStructure
+        ? { ...beforeVectors, ...window.VibeMolVectorsModel.transform(record.vol, beforeVectors, null, null, [0, 0, 0], request.delta) }
+        : beforeVectors;
+      editState.applyAtomsSnapshotToRecord(record, vol.atoms, vol.fragmentOps, vol.bonds, vol.annotations, afterVectors);
+      return beforeVectors ? { beforeVectors, afterVectors } : undefined;
     },capture:editApiCapture,history:editApiHistory});
   const editApiPrepare = createEditApiBuildPreparation({readSystem:editApiReadSystem,newSnapshot:editApiNewSnapshot,validate:editApiValidator.validate,makeDraft:editApiMakeDraft,
     place:editApiPlace,attach:editApiAttach,fuse:editApiFuse,insert:editApiInsert,validateCandidate:editApiValidateCandidate});
@@ -34213,6 +34235,81 @@
     setView: setProductView, snapshot: snapshotProductView,
   });
   window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,snapshot:orbitalProductApi.snapshot});
+
+
+  function vectorProductTarget() {
+    const record = getFocusedScene()?.moleculeRecord;
+    const source = sceneSources.getSources().find(item => item.record === record);
+    if (!record?.vol?.atoms?.length || !source) {
+      editApiFault('not-available', 'structure', null, 'structure with atoms', 'There is no active structure with atoms.');
+    }
+    return { record, structure: { id: source.id, name: record.name } };
+  }
+
+  function readVectorProductTarget({ record, structure }) {
+    return { structure, ...window.VibeMolVectorsModel.describe(record.vol) };
+  }
+
+  function listProductVectors(input = {}) {
+    return editApiCall(() => {
+      step3bRequest(input, []);
+      return { value: readVectorProductTarget(vectorProductTarget()) };
+    });
+  }
+
+  function applyVectorProductState(vol, state) {
+    for (const field of ['xyzVectors', 'arrows']) {
+      if (state[field] === undefined) delete vol[field];
+      else vol[field] = state[field];
+    }
+    rebuildAppearanceMolecules();
+    markSessionChanged();
+  }
+
+  function changeProductVectors(input, fields, plan) {
+    return editApiCall(() => {
+      step3bRequest(input, fields);
+      const target = vectorProductTarget();
+      step3bRequireIdle();
+      const vol = target.record.vol;
+      const requested = validateVectorProductPlan(plan, vol, input);
+      applyVectorProductState(vol, requested);
+      return { value: readVectorProductTarget(target) };
+    });
+  }
+
+  function validateVectorProductPlan(plan, vol, input) {
+    try {
+      return plan(vol, input);
+    } catch (error) {
+      if (!error.field) throw error;
+      editApiFault('invalid-params', error.field, input[error.field], null, error.message);
+    }
+  }
+
+  function setProductAtomVectors(input = {}) {
+    return changeProductVectors(input, ['name', 'color', 'values', 'scale', 'maxLength', 'atomicNumbers'],
+      (vol, request) => window.VibeMolVectorsModel.atomSetPlan(vol, request));
+  }
+
+  function setProductFreeArrow(input = {}) {
+    return changeProductVectors(input, ['name', 'color', 'vector', 'scale', 'length', 'anchor', 'origin', 'heads'],
+      (vol, request) => window.VibeMolVectorsModel.arrowPlan(vol, request));
+  }
+
+  function removeProductVectors(input = {}) {
+    return changeProductVectors(input, ['name'], (vol, request) => window.VibeMolVectorsModel.remove(vol, request));
+  }
+
+  function clearProductVectors(input = {}) {
+    return changeProductVectors(input, [], () => ({}));
+  }
+
+  const vectorProductApi = Object.freeze({
+    list: listProductVectors, setAtoms: setProductAtomVectors, setArrow: setProductFreeArrow,
+    remove: removeProductVectors, clear: clearProductVectors,
+  });
+  window.VibeMolVectors=Object.freeze({list:vectorProductApi.list,setAtoms:vectorProductApi.setAtoms,setArrow:vectorProductApi.setArrow,remove:vectorProductApi.remove,clear:vectorProductApi.clear});
 
   function readForte2MinaoSnapshot(context, planeResolutions) {
     // This is an identity boundary, not a derived numeric comparison.

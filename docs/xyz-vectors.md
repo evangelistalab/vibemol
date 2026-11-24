@@ -41,6 +41,20 @@ translation. An arrow anchored to the center of mass follows the computed
 center automatically. Edit Undo and Redo restore the stored vector state
 alongside the coordinates.
 
+## Vector commands and sessions
+
+Use `vectors.setAtoms` for components in the current atom order and
+`vectors.setArrow` for a free arrow. Each name is unique within the
+structure. A free arrow can start at a point in angstroms or follow
+the center of mass. With `heads: 'both'`, the named length spans the
+two tips, with the anchor at their midpoint. A zero vector draws
+no arrow.
+
+Vector commands update the display and are saved in sessions. They create
+no Edit Undo steps. A session opened in VibeMol 0.10.14 keeps per-atom
+vectors. Free arrows are omitted when that release saves the session
+again.
+
 ## Matching the reference look
 
 Open [the example XYZ](../examples/xyz-vectors.xyz), select
