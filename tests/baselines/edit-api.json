@@ -2758,8 +2758,8 @@
     },
     "showProductOrbitals": {
       "before": null,
-      "after": "c24f331c09f14f94a269c6dd4107c4b2ceb02f143fd1f99872f86a11cbaf9b91",
-      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "after": "b7bf2316b6606ddd2d564c3e18ef527a51b746ca42925dd8e189ebe7633477f6",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
       "units": [
         {
           "file": "app.js",
@@ -2772,10 +2772,10 @@
             "moldenProductSource",
             "presentMoldenProductSelection",
             "readVisibleMoldenProductIndices",
+            "requireProductOrbitalSurfaces",
             "showSurfaces",
             "step3bRequest",
             "step3bRequireIdle",
-            "surfaceRenderSuppressed",
             "validateMoldenProductIndices"
           ]
         }
@@ -2806,19 +2806,20 @@
     },
     "configureProductOrbitals": {
       "before": null,
-      "after": "fc011176c8d0b8b7c13321fe73509eec230d8f125c75d8ab0f7a2d2125b09398",
-      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "after": "74092db76cdb942823ff6e6daa255c279d9452db6756cf7715a5f888ebef502a",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
       "units": [
         {
           "file": "app.js",
           "name": "configureProductOrbitals",
-          "count": 8,
+          "count": 9,
           "inputs": [
             "applyMoldenProductAppearance",
             "editApiCall",
             "editApiFault",
             "moldenProductSource",
             "readVisibleMoldenProductIndices",
+            "requireProductOrbitalSurfaces",
             "step3bRequest",
             "step3bRequireIdle",
             "validateMoldenProductIndices"
@@ -3217,6 +3218,60 @@
             "cloudGroup",
             "extraMoleculeRenderGroups",
             "meshes"
+          ]
+        }
+      ]
+    },
+    "readProductMode": {
+      "before": null,
+      "after": "cc81b862d47332d782e59b246c32c1afaeac9e2965bd8f39eaee04f63ef0b66f",
+      "reason": "Expose the existing mode switch to command clients (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "readProductMode",
+          "count": 3,
+          "inputs": [
+            "MODES",
+            "currentMode",
+            "surfaceRenderSuppressed"
+          ]
+        }
+      ]
+    },
+    "setProductMode": {
+      "before": null,
+      "after": "69c70357a215516f178d61c2394fef87d3e2fec60e39c38f54fe9afe52610de9",
+      "reason": "Expose the existing mode switch to command clients (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "setProductMode",
+          "count": 8,
+          "inputs": [
+            "MODES",
+            "editApiCall",
+            "editApiFault",
+            "readProductMode",
+            "setMode",
+            "step3bRequest",
+            "step3bRequireIdle",
+            "workspaceEnabled"
+          ]
+        }
+      ]
+    },
+    "requireProductOrbitalSurfaces": {
+      "before": null,
+      "after": "579ec0ffdfebdeb4d1df833ce2b50d115a395725dd5c4754d47a93c638936dac",
+      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
+      "units": [
+        {
+          "file": "app.js",
+          "name": "requireProductOrbitalSurfaces",
+          "count": 1,
+          "inputs": [
+            "readProductMode"
           ]
         }
       ]

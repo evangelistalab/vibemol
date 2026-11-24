@@ -76,6 +76,7 @@ Every schema specifies a supported `type`. Object and array schemas use `object`
 | `calculations.state` | `VibeMolCalculations.state` | No |
 | `calculations.configure` | `VibeMolCalculations.configure` | Yes |
 | `forte2.export` | `VibeMolForte2.export` | No |
+| `view.setMode` | `VibeMolOrbitals.setMode` | Yes |
 
 Enter Edit explicitly before changing atom selection. `edit.setSelection` accepts a documented selection predicate and gives the original resolver result to Edit inside the same call. See [Edit selection](edit-build-api.md) and [forte2 export](../forte2-interchange.md).
 
@@ -87,6 +88,10 @@ Enter Edit explicitly before changing atom selection. `edit.setSelection` accept
 
 
 `view.set` uses the native axis gizmo's snap. On the +z and −z axes, OrbitControls applies a pole guard of at most 1 × 10⁻⁶ radians. The lateral camera offset is at most the distance to the target multiplied by 1 × 10⁻⁶.
+
+`view.setMode` accepts `view`, `measure`, `edit` or `calculations`. It returns `{mode, surfacesSuppressed}` after the native mode switch and any deferred atom fit. Calculations requires the Workbench interface.
+
+While the current mode suppresses surfaces, `orbitals.show` and `orbitals.configure` return `not-available` with `{mode, surfacesSuppressed: true}` and leave the scene unchanged. Call `view.setMode` with `mode: 'view'` before showing or configuring orbitals. Listing and hiding orbitals work in every mode.
 
 ### Proposed follow-up
 

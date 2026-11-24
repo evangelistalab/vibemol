@@ -496,6 +496,7 @@
       "configure",
       "hide",
       "list",
+      "setMode",
       "setView",
       "show",
       "snapshot"

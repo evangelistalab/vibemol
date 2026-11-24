@@ -56,6 +56,8 @@ const forte2 = { avas: { arguments: { subspace: ['O(2p)'] } } };
 const sessionReceipt = { ok: true, sourceCount: 1, sceneCount: 1 };
 
 const forwarding = [
+  ['view.setMode', { mode: 'measure' }, 'VibeMolOrbitals.setMode', [{ mode: 'measure' }],
+    success({ mode: 'measure', surfacesSuppressed: true }), { mode: 'measure', surfacesSuppressed: true }],
   ['files.load', { files, options: loadOptions }, 'VibeMolEmbed.loadFiles', [files, loadOptions], fileReceipt, fileReceipt],
   ['session.export', { maxBytes: 1024 }, 'VibeMolSession.exportText', [{ maxBytes: 1024 }], 'session', 'session'],
   ['session.import', { text: 'session' }, 'VibeMolSession.importText', ['session'], sessionReceipt, sessionReceipt],
@@ -159,4 +161,46 @@ test('file and preset refusals preserve their product receipts', async () => {
   assert.equal(imported.error.code, 'rejected');
   assert.deepEqual(plain(load.error.details), fileFailure);
   assert.deepEqual(plain(imported.error.details), presetFailure);
+});
+
+test('Step 3b product refusals retain their codes and field readbacks', async () => {
+  for (const [code, expected] of [
+    ['invalid-params','invalid-params'], ['not-available','not-available'],
+    ['failed','failed'], ['APPLY_FAILED','failed'], ['UNREVIEWED','rejected'],
+  ]) {
+    const reason = { code, path:'origin', message:'Origin is required for point anchors' };
+    const { commands, calls } = fixture({ 'VibeMolVectors.setArrow': () => ({ ok:false, error:reason }) });
+    const params = { name:'dipole', color:'#B48833', vector:[1,0,0], scale:1, anchor:'point' };
+    assert.deepEqual(plain(await commands.run('vectors.setArrow', params)),
+      { ok:false, error:{ code:expected, message:reason.message, details:reason } });
+    assert.deepEqual(plain(calls), [['VibeMolVectors.setArrow',[params]]]);
+  }
+});
+
+test('Step 3b domain refusals preserve sibling validation and the legacy rejection behavior', async () => {
+  const reason = { code:'invalid-params', path:'origin', message:'Invalid origin' };
+  const { commands, calls } = fixture({
+    'VibeMolVectors.setArrow': () => ({ ok:false, error:reason }),
+    'VibeMolEdit.enter': () => ({ ok:false, error:reason }),
+  });
+  const invalid = await commands.run('vectors.setArrow', { name:'dipole', color:'#B48833', vector:[1,2] });
+  assert.equal(invalid.error.code, 'invalid-params');
+  assert.equal(invalid.error.details[0].path, '$.vector');
+  assert.deepEqual(calls, []);
+  const legacy = await commands.run('edit.enter');
+  assert.equal(legacy.error.code, 'rejected');
+  assert.deepEqual(plain(legacy.error.details), reason);
+});
+
+test('Step 3b hidden orbital surfaces retain the exact command error envelope', async () => {
+  const message = "Orbital surfaces are hidden in Edit mode; call view.setMode('view') first.";
+  const details = { mode: 'edit', surfacesSuppressed: true };
+  const error = { code: 'not-available', message, details };
+  const refusal = { ok: false, error: { ...error, path: 'surfaces' } };
+  const { commands } = fixture({
+    'VibeMolOrbitals.show': () => refusal,
+    'VibeMolOrbitals.configure': () => refusal,
+  });
+  assert.deepEqual(plain(await commands.run('orbitals.show', { indices: [1] })), { ok: false, error });
+  assert.deepEqual(plain(await commands.run('orbitals.configure', { iso: 0.04 })), { ok: false, error });
 });

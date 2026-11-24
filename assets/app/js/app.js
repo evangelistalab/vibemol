@@ -33980,6 +33980,47 @@
     }
   }
 
+  function readProductMode() {
+    const mode = currentMode === MODES.DISPLAY ? 'view' : currentMode === MODES.MEASURE ? 'measure' : currentMode;
+    return { mode, surfacesSuppressed: surfaceRenderSuppressed };
+  }
+
+  async function setProductMode(input = {}) {
+    const pending = editApiCall(() => {
+      step3bRequest(input, ['mode']);
+      const modes = { view: MODES.DISPLAY, measure: MODES.MEASURE, edit: MODES.EDIT, calculations: MODES.CALCULATIONS };
+      if (typeof input.mode !== 'string' || !Object.hasOwn(modes, input.mode)) {
+        editApiFault('invalid-params', 'mode', input.mode, Object.keys(modes), 'Invalid mode.');
+      }
+      if (input.mode === 'calculations' && !workspaceEnabled) {
+        editApiFault('not-available', 'mode', input.mode, ['view', 'measure', 'edit'], 'Calculations mode is not available in the legacy interface.');
+      }
+      step3bRequireIdle();
+      setMode(modes[input.mode]);
+      return { value: input.mode };
+    });
+    if (!pending.ok) return pending;
+    // The toolbar handler schedules the atom fit on the next frame.
+    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    return editApiCall(() => {
+      const applied = readProductMode();
+      if (applied.mode !== pending.value) {
+        editApiFault('failed', 'mode', applied.mode, pending.value, 'The requested mode was not applied.');
+      }
+      return { value: applied };
+    });
+  }
+
+  function requireProductOrbitalSurfaces() {
+    const details = readProductMode();
+    if (details.surfacesSuppressed) {
+      const label = details.mode[0].toUpperCase() + details.mode.slice(1);
+      const error = new Error(`Orbital surfaces are hidden in ${label} mode; call view.setMode('view') first.`);
+      error.editApi = { code: 'not-available', path: 'surfaces', message: error.message, details };
+      throw error;
+    }
+  }
+
   function moldenProductSource() {
     const record = volumes[currentIndex];
     const items = buildMoldenOrbitalItems(record);
@@ -34059,13 +34100,14 @@
   async function showProductOrbitals(input = {}) {
     const result = editApiCall(() => {
       step3bRequest(input, ['indices', 'exclusive']);
+      requireProductOrbitalSurfaces();
       const target = moldenProductSource();
       const indices = validateMoldenProductIndices(input.indices, target.items.length, 8);
       if (input.exclusive !== undefined && typeof input.exclusive !== 'boolean') {
         editApiFault('invalid-params', 'exclusive', input.exclusive, 'boolean', 'Invalid exclusive: expected a boolean.');
       }
       step3bRequireIdle();
-      if (!showSurfaces || surfaceRenderSuppressed) {
+      if (!showSurfaces) {
         editApiFault('not-available', 'surfaces', 'hidden', 'visible', 'Orbital surfaces are hidden in the current view.');
       }
       for (const index of indices) {
@@ -34097,6 +34139,7 @@
   function configureProductOrbitals(input = {}) {
     return editApiCall(() => {
       step3bRequest(input, ['indices', 'iso', 'opacity']);
+      requireProductOrbitalSurfaces();
       const target = moldenProductSource();
       const indices = input.indices === undefined ? readVisibleMoldenProductIndices(target).map(index => index - 1)
         : validateMoldenProductIndices(input.indices, target.items.length, target.items.length);
@@ -34232,9 +34275,9 @@
 
   const orbitalProductApi = Object.freeze({
     list: listProductOrbitals, show: showProductOrbitals, hide: hideProductOrbitals, configure: configureProductOrbitals,
-    setView: setProductView, snapshot: snapshotProductView,
+    setView: setProductView, setMode: setProductMode, snapshot: snapshotProductView,
   });
-  window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,snapshot:orbitalProductApi.snapshot});
+  window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,setMode:orbitalProductApi.setMode,snapshot:orbitalProductApi.snapshot});
 
 
   function vectorProductTarget() {

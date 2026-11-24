@@ -15,5 +15,10 @@
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "acceptancePhase": "issue53"
+  "acceptancePhase": "issue53",
+  "checkpointCounts": {
+    "tests/e2e/premerge.py": {
+      "step3b-command-completion": 1
+    }
+  }
 }

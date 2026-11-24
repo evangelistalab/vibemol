@@ -15,6 +15,7 @@ from playwright.sync_api import expect, sync_playwright
 from assertion_contract import numbers_close
 from checkpoint_contract import require_phase_counts
 from helpers import ensure_artifact_dir, read_app_version, run_http_server, write_failure_artifacts
+from step3b_product_apis import step3b_command_cases
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 ARTIFACTS = ensure_artifact_dir(pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', str(ROOT / 'out' / 'test-artifacts'))))
@@ -1282,6 +1283,14 @@ def commands(page, dialogs):
     return dict(restoredSceneCount=imported['sceneCount'], restoredSourceCount=imported['sourceCount'], dialogCount=len(dialogs))
 
 
+STEP3B_COMMAND_COMPLETION = {
+    'commands': ['orbitals.configure', 'orbitals.hide', 'orbitals.list', 'orbitals.show',
+                 'vectors.clear', 'vectors.list', 'vectors.remove', 'vectors.setArrow', 'vectors.setAtoms',
+                 'view.set', 'view.setMode', 'view.snapshot'],
+    'successes': 32, 'rejections': 31, 'errorCodes': ['failed', 'invalid-params', 'not-available'],
+}
+
+
 def run_commands(browser, url):
     context = browser.new_context(viewport={'width': 1440, 'height': 1000})
     page = context.new_page()
@@ -1300,6 +1309,11 @@ def run_commands(browser, url):
         row = dict(case='workflow completion', actual=completion, expected=expected)
         print('[premerge commands] ' + json.dumps(row, sort_keys=True), flush=True)
         assert completion == expected, row
+        step3b = step3b_command_cases(page)
+        print('[premerge commands] ' + json.dumps({
+            'case': 'Step 3b workflow completion', 'actual': step3b, 'expected': STEP3B_COMMAND_COMPLETION,
+        }, sort_keys=True), flush=True)
+        assert step3b == STEP3B_COMMAND_COMPLETION, step3b
         print('[premerge commands] ' + json.dumps(dict(case='page errors', actual=errors, expected=[])), flush=True)
         assert not errors, errors
     except Exception:
@@ -1308,6 +1322,7 @@ def run_commands(browser, url):
     finally:
         context.close()
     print('[commands-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
+    print('[step3b-command-completion] ' + json.dumps(step3b, sort_keys=True), flush=True)
 
 
 def embed_bridge(page, url):

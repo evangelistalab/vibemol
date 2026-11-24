@@ -1,13 +1,15 @@
 """Direct browser contracts for Step 3b product APIs."""
 import argparse
-from base64 import b64encode
+from base64 import b64decode, b64encode
 from hashlib import sha256
 import json
 import math
 from pathlib import Path
 import re
+from urllib.parse import urljoin
 
 from playwright.sync_api import sync_playwright
+from assertion_contract import numbers_close
 from helpers import run_http_server, wait_for_presented_state
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -429,6 +431,186 @@ def old_release_vector_session(browser, old_source, session_text, volume):
             check('0.10.14 omits arrows on session export', 'arrows' in old_volume, False)
         finally:
             context.close()
+
+
+def step3b_command_cases(page):
+    completed, rejected = [], []
+
+    def invoke(command, params=None, *, encode_failure=False, observe_fit=False):
+        observed = page.evaluate("""async ({id, params, encodeFailure, observeFit}) => {
+          const canvas = document.querySelector('#canvas');
+          const camera = () => {
+            const live = window.__step3bRenderedCamera;
+            const {x, y, z} = VibeMolTesting.getCameraSnapshot().target;
+            return {position: live.position.toArray(), target: [x, y, z], up: live.up.toArray(),
+                    near: live.near, far: live.far, zoom: live.zoom};
+          };
+          const before = observeFit ? camera() : null;
+          const setFromObject = THREE.Box3.prototype.setFromObject;
+          const fitCalls = [];
+          try {
+            if (encodeFailure) canvas.toDataURL = () => 'data:,';
+            if (observeFit) {
+              // frameMeasurementAtoms fits the atom group's bounding box once per call.
+              THREE.Box3.prototype.setFromObject = function (...args) {
+                if (new Error().stack.split('\\n')[2]?.trim().startsWith('at frameMeasurementAtoms (')) {
+                  fitCalls.push(performance.now());
+                }
+                return setFromObject.apply(this, args);
+              };
+            }
+            const result = await VibeMolCommands.run(id, params);
+            const buttons = {view:'Display', measure:'Measure', edit:'Edit', calculations:'Calculations'};
+            const mode = Object.keys(buttons).find(key =>
+              document.querySelector('#mode' + buttons[key] + 'Btn').classList.contains('active'));
+            if (!observeFit) return {mode, result};
+            const atResponse = camera();
+            const responseAt = performance.now();
+            const countAtResponse = fitCalls.length;
+            await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+            return {mode, result, fit:{before, atResponse, settled:camera(), fitCalls, countAtResponse, responseAt}};
+          } finally {
+            if (encodeFailure) delete canvas.toDataURL;
+            if (observeFit) THREE.Box3.prototype.setFromObject = setFromObject;
+          }
+        }""", {'id': command, 'params': params or {}, 'encodeFailure': encode_failure, 'observeFit': observe_fit})
+        print('[step3b-command-response] ' + json.dumps({'command': command, 'params': params or {},
+                                                         **observed}, sort_keys=True), flush=True)
+        return observed
+
+    def accepted(command, params=None):
+        result = invoke(command, params)['result']
+        check(f'{command} success', result.get('ok'), True)
+        completed.append(command)
+        return result['value']
+
+    def set_mode(mode, *, suppressed=False, observe_fit=False):
+        observed = invoke('view.setMode', {'mode': mode}, observe_fit=observe_fit)
+        expected = {'ok': True, 'value': {'mode': mode, 'surfacesSuppressed': suppressed}}
+        check(f'{mode} mode result', observed['result'], expected)
+        check(f'{mode} active toolbar button', observed['mode'], mode)
+        if observe_fit:
+            fit = observed['fit']
+            check(f'{mode} native fit calls at resolution and two frames later',
+                  [fit['countAtResponse'], len(fit['fitCalls'])], [1, 1])
+            check(f'{mode} native fit ran before resolution', fit['fitCalls'][0] <= fit['responseAt'], True)
+            elements = {
+                f'{key}.{axis}': [fit[sample][key][index] for sample in ('before', 'atResponse', 'settled')]
+                for key in ('position', 'target', 'up') for index, axis in enumerate('xyz')
+            }
+            elements.update({key: [fit[sample][key] for sample in ('before', 'atResponse', 'settled')]
+                             for key in ('near', 'far', 'zoom')})
+            for key, (before, at_response, settled) in elements.items():
+                print('[step3b-fit-numeric] ' + json.dumps({
+                    'mode': mode, 'field': key, 'before': before, 'atResponse': at_response,
+                    'settled': settled, 'difference': at_response - settled,
+                }), flush=True)
+            check(f'{mode} fit changed the camera pose',
+                  any(not numbers_close(before, at_response)
+                      for key, (before, at_response, _) in elements.items()
+                      if key.startswith(('position.', 'target.'))), True)
+            check(f'{mode} fits agree at resolution and two frames later',
+                  {key: numbers_close(at_response, settled) for key, (_, at_response, settled) in elements.items()},
+                  dict.fromkeys(elements, True))
+        completed.append('view.setMode')
+
+    def refusal(command, params, code, path=None, *, expected_error=None, encode_failure=False):
+        observed = invoke(command, params, encode_failure=encode_failure)
+        result = observed['result']
+        error = result.get('error', {})
+        check(f'{command} error code', [result.get('ok'), error.get('code')], [False, code])
+        if path is not None:
+            details = error.get('details')
+            paths = [item['path'] for item in details] if isinstance(details, list) else [details.get('path')]
+            check(f'{command} error field', path in paths, True)
+        if expected_error is not None:
+            check(f'{command} refusal envelope', result, {'ok': False, 'error': expected_error})
+        rejected.append(code)
+        return observed['mode']
+
+    set_mode('view')
+    refusal('view.setMode', {'mode':'display'}, 'invalid-params', '$.mode')
+    refusal('view.setMode', {}, 'invalid-params', '$.mode')
+    load_vector_water(page)
+    for command in ('orbitals.list','orbitals.show','orbitals.hide','orbitals.configure'):
+        refusal(command, {'indices':[1]} if command == 'orbitals.show' else {}, 'not-available', 'source')
+    refusal('view.set', {'axis':'z'}, 'invalid-params', '$.axis')
+    refusal('view.snapshot', {'width':4097}, 'invalid-params', '$.width')
+    refusal('view.snapshot', {'height':0}, 'invalid-params', '$.height')
+    refusal('view.snapshot', {'transparent':1}, 'invalid-params', '$.transparent')
+
+    atoms = {'name':'forces','color':'#2200FF','values':[[2,0,0],[0,0,0],[0,0,0]],'maxLength':1}
+    arrow = {'name':'dipole','color':'#FF00FF','vector':[0,0,2],'length':4}
+    check('vectors.list active atom order', accepted('vectors.list')['atomicNumbers'], [8,1,1])
+    check('vectors.setAtoms applied scale', accepted('vectors.setAtoms', atoms)['sets'][0]['scale'], 0.5)
+    check('vectors.setArrow applied scale', accepted('vectors.setArrow', arrow)['sets'][1]['scale'], 2)
+    before = accepted('vectors.list')
+    for command, request, field in (
+        ('vectors.setAtoms', {**atoms, 'scale':1}, 'scale'),
+        ('vectors.setAtoms', {**atoms, 'atomicNumbers':[1,8,1]}, 'atomicNumbers'),
+        ('vectors.setAtoms', {**atoms, 'values':[[0,0,0]]}, 'values'),
+        ('vectors.setArrow', {**arrow, 'scale':1}, 'scale'),
+        ('vectors.setArrow', {**arrow, 'anchor':'point'}, 'origin'),
+        ('vectors.setArrow', {**arrow, 'origin':[0,0,0]}, 'origin'),
+        ('vectors.setArrow', {**arrow, 'name':'forces'}, 'name'),
+        ('vectors.remove', {'name':''}, 'name'),
+    ):
+        refusal(command, request, 'invalid-params', field)
+    check('vector command failures leave state exact', accepted('vectors.list'), before)
+    check('vectors.remove leaves the other kind', [row['name'] for row in accepted('vectors.remove', {'name':'forces'})['sets']], ['dipole'])
+    check('vectors.clear applied', accepted('vectors.clear')['sets'], [])
+
+    load_product_fixture(page, CYCLOPROPENE)
+    rows = accepted('orbitals.list')['orbitals']
+    check('orbitals.list active count', sum(row['class'] == 'active' for row in rows), 3)
+    for command, request, field in (
+        ('orbitals.show', {'indices':[]}, '$.indices'),
+        ('orbitals.show', {'indices':[10,10]}, 'indices'),
+        ('orbitals.hide', {'indices':[len(rows)+1]}, 'indices'),
+        ('orbitals.configure', {'indices':[10],'iso':0}, 'iso'),
+        ('orbitals.configure', {'indices':[10],'opacity':1.1}, '$.opacity'),
+    ):
+        refusal(command, request, 'invalid-params', field)
+    check('orbitals.show completion', accepted('orbitals.show', {'indices':[10,11]})['visibleIndices'], [10,11])
+    appearance = accepted('orbitals.configure', {'indices':[10],'iso':0.04,'opacity':0.5})
+    check('orbitals.configure readback', appearance['orbitals'], [{'index':10,'iso':0.04,'opacity':0.5}])
+    use_camera_probe(page)
+    wait_for_presented_state(page, '() => window.__step3bRenderedCamera?.isCamera === true')
+    for mode in ('edit', 'calculations', 'measure'):
+        set_mode(mode, suppressed=True, observe_fit=mode in ('calculations', 'measure'))
+        expected_error = {
+            'code': 'not-available',
+            'message': f"Orbital surfaces are hidden in {mode.capitalize()} mode; call view.setMode('view') first.",
+            'details': {'mode': mode, 'surfacesSuppressed': True},
+        }
+        before = graph_snapshot(page)
+        for command, params in (('orbitals.show', {'indices':[12]}),
+                                ('orbitals.configure', {'indices':[10], 'iso':0.09})):
+            refusal(command, params, 'not-available', expected_error=expected_error)
+            check_atomic_graph(before, graph_snapshot(page))
+        check(f'orbital listing in {mode}', accepted('orbitals.list')['orbitals'], rows)
+        check(f'targeted orbital hiding in {mode}', accepted('orbitals.hide', {'indices':[11]})['visibleIndices'], [10])
+        set_mode('view')
+        check('orbitals.show after returning to View', accepted('orbitals.show', {'indices':[10,11]})['visibleIndices'],
+              [10,11])
+    check('orbitals.hide completion', accepted('orbitals.hide')['visibleIndices'], [])
+    view = accepted('view.set', {'projection':'orthographic','fit':True,'axis':'+y'})
+    check('view.set readback', view['projection'], 'orthographic')
+    png = accepted('view.snapshot', {'width':240,'height':200,'transparent':True})
+    check('view.snapshot PNG and dimensions', [b64decode(png['dataBase64'])[:8].hex(), png['width'], png['height']],
+          ['89504e470d0a1a0a',240,200])
+    refusal('view.snapshot', {'width':32,'height':32}, 'failed', 'snapshot', encode_failure=True)
+
+    page.goto(urljoin(page.url, '?workspaceLab=0'), wait_until='domcontentloaded')
+    page.wait_for_function('() => !!window.VibeMolCommands')
+    set_mode('view')
+    set_mode('measure', suppressed=True)
+    set_mode('edit', suppressed=True)
+    mode = refusal('view.setMode', {'mode':'calculations'}, 'not-available', 'mode')
+    check('legacy Calculations refusal leaves Edit selected', mode, 'edit')
+
+    return {'commands':sorted(set(completed)), 'successes':len(completed), 'rejections':len(rejected),
+            'errorCodes':sorted(set(rejected))}
 
 
 def main():

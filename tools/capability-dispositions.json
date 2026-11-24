@@ -33,7 +33,7 @@
     "VibeMolForte2": "Reviewed export-only forte2 geometry/ASET/AVAS API. Strict selection predicates; orbital types from MINAO; no import or execution. The runtime matrix covers this user-facing console/client surface.",
     "VibeMolCommandRegistry": "Public browserless command registry factory and schema validation helper.",
     "VibeMolCommands": "Public command discovery and execution surface over existing APIs.",
-    "VibeMolOrbitals": "Step 3b public Molden orbital inspection, visibility and appearance, camera readback and PNG capture.",
+    "VibeMolOrbitals": "Step 3b public Molden orbital inspection, visibility and appearance, mode switching, camera readback and PNG capture.",
     "VibeMolVectors": "Step 3b public per-atom vector-set and free-arrow inspection and display commands."
   },
   "limits": [

@@ -94,6 +94,7 @@
       "atomic-identity-rejection": 24,
       "edit-testing-case": 84,
       "commands-completion": 1,
+      "step3b-command-completion": 1,
       "embed-bridge-completion": 1,
       "first-molden-surface-camera": 4
     },

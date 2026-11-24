@@ -106,7 +106,7 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'&&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolForte2'){assert.equal(source.slice(n.start,n.end),'window.VibeMolForte2=Object.freeze({export:forte2ProductApi.export});');continue;}
   if(n.type==='ExpressionStatement'&&n.expression.type==='AssignmentExpression'&&n.expression.left.type==='MemberExpression'
     &&n.expression.left.object.name==='window'&&n.expression.left.property.name==='VibeMolOrbitals') {
-   assert.equal(source.slice(n.start,n.end),'window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,snapshot:orbitalProductApi.snapshot});',
+   assert.equal(source.slice(n.start,n.end),'window.VibeMolOrbitals=Object.freeze({list:orbitalProductApi.list,show:orbitalProductApi.show,hide:orbitalProductApi.hide,configure:orbitalProductApi.configure,setView:orbitalProductApi.setView,setMode:orbitalProductApi.setMode,snapshot:orbitalProductApi.snapshot});',
     'Exact VibeMolOrbitals exposure');
    orbitalExposures++;
    continue;
@@ -139,7 +139,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
       'cloneVectorState','vectorStatesEqual','transformVectorState','applyQuaternionVectorTransform',
       'syncTransformedAtomArrows','prepareCoordinationLigandMoves',
       'applyCoordinationLigandVectors','refreshCoordinationGeometryPresentation',
-      'step3bRequest','step3bRequireIdle','moldenProductSource','listProductOrbitals',
+      'step3bRequest','step3bRequireIdle','readProductMode','setProductMode','requireProductOrbitalSurfaces',
+      'moldenProductSource','listProductOrbitals',
       'validateMoldenProductIndices','moldenProductLayers','readVisibleMoldenProductIndices','setMoldenProductLayerVisibility',
       'presentMoldenProductSelection','showProductOrbitals','hideProductOrbitals','configureProductOrbitals',
       'applyMoldenProductAppearance','setProductView','readViewportPng','paintSnapshotFrame',

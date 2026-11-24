@@ -480,6 +480,99 @@
     "target": "VibeMolForte2.export"
   },
   {
+    "id": "orbitals.configure",
+    "title": "Set Molden orbital appearance",
+    "params": {
+      "type": "object",
+      "properties": {
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "minItems": 1
+        },
+        "iso": {
+          "type": "number",
+          "minimum": 0
+        },
+        "opacity": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolOrbitals.configure"
+  },
+  {
+    "id": "orbitals.hide",
+    "title": "Hide selected or all Molden orbitals",
+    "params": {
+      "type": "object",
+      "properties": {
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "minItems": 1
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolOrbitals.hide"
+  },
+  {
+    "id": "orbitals.list",
+    "title": "List orbitals for the active Molden source",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolOrbitals.list"
+  },
+  {
+    "id": "orbitals.show",
+    "title": "Present selected Molden orbitals",
+    "params": {
+      "type": "object",
+      "properties": {
+        "indices": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "minItems": 1,
+          "maxItems": 8
+        },
+        "exclusive": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "indices"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolOrbitals.show"
+  },
+  {
     "id": "preset.export",
     "title": "Export the current preset",
     "params": {
@@ -582,5 +675,244 @@
     },
     "mutates": false,
     "target": "VibeMolStructure.exportActiveText"
+  },
+  {
+    "id": "vectors.clear",
+    "title": "Clear all atom vector sets and free arrows",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolVectors.clear"
+  },
+  {
+    "id": "vectors.list",
+    "title": "List atom vector sets and free arrows",
+    "params": {
+      "type": "object",
+      "properties": {},
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolVectors.list"
+  },
+  {
+    "id": "vectors.remove",
+    "title": "Remove a named vector set or free arrow",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolVectors.remove"
+  },
+  {
+    "id": "vectors.setArrow",
+    "title": "Set a free arrow on the active structure",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "vector": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0
+        },
+        "length": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "anchor": {
+          "type": "string",
+          "enum": [
+            "centerOfMass",
+            "point"
+          ]
+        },
+        "origin": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          },
+          "minItems": 3,
+          "maxItems": 3
+        },
+        "heads": {
+          "type": "string",
+          "enum": [
+            "tip",
+            "both"
+          ]
+        }
+      },
+      "required": [
+        "name",
+        "color",
+        "vector"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolVectors.setArrow"
+  },
+  {
+    "id": "vectors.setAtoms",
+    "title": "Set one vector per atom in structure order",
+    "params": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0
+        },
+        "maxLength": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 20
+        },
+        "atomicNumbers": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        }
+      },
+      "required": [
+        "name",
+        "color",
+        "values"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolVectors.setAtoms"
+  },
+  {
+    "id": "view.set",
+    "title": "Set the viewport projection, framing or axis",
+    "params": {
+      "type": "object",
+      "properties": {
+        "axis": {
+          "type": "string",
+          "enum": [
+            "+x",
+            "-x",
+            "+y",
+            "-y",
+            "+z",
+            "-z"
+          ]
+        },
+        "fit": {
+          "type": "boolean"
+        },
+        "projection": {
+          "type": "string",
+          "enum": [
+            "perspective",
+            "orthographic"
+          ]
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolOrbitals.setView"
+  },
+  {
+    "id": "view.setMode",
+    "title": "Switch the viewport interaction mode",
+    "params": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "view",
+            "measure",
+            "edit",
+            "calculations"
+          ]
+        }
+      },
+      "required": [
+        "mode"
+      ],
+      "additionalProperties": false
+    },
+    "mutates": true,
+    "target": "VibeMolOrbitals.setMode"
+  },
+  {
+    "id": "view.snapshot",
+    "title": "Capture the current view as a PNG",
+    "params": {
+      "type": "object",
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 4096
+        },
+        "transparent": {
+          "type": "boolean"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    },
+    "mutates": false,
+    "target": "VibeMolOrbitals.snapshot"
   }
 ]

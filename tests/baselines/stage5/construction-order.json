@@ -256,6 +256,9 @@
         "orbitalProductApi",
         "step3bRequest",
         "step3bRequireIdle",
+        "readProductMode",
+        "setProductMode",
+        "requireProductOrbitalSurfaces",
         "moldenProductSource",
         "listProductOrbitals",
         "validateMoldenProductIndices",
@@ -305,6 +308,15 @@
         "applyPostGeometry",
         "collectVisibleSceneBounds",
         "transformVectorState"
+      ],
+      "expectedStatus": "passed"
+    },
+    {
+      "label": "Step 3b orbital, view and vector command registration",
+      "before": "90bd726447354f0024fe6fd04810460ff6ba49fa",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/commands.js"
       ],
       "expectedStatus": "passed"
     }
