@@ -1,6 +1,6 @@
 # CI execution and evidence
 
-Checks/unit, five Chromium suite shards, two characterization workers and the WebKit Properties check start independently. Neither matrix cancels siblings when a worker fails. Chromium jobs install only Chromium; the WebKit job installs only WebKit. The binary cache key includes the installed Playwright package version, OS, architecture and browser. Each job still runs `playwright install --with-deps` so Linux system dependencies are present on cache hits, as required by the [Playwright CI guidance](https://playwright.dev/python/docs/ci).
+Checks/unit, eleven Chromium suite shards, two characterization workers and the WebKit Properties check start independently. Neither matrix cancels siblings when a worker fails. Chromium jobs install only Chromium; the WebKit job installs only WebKit. The binary cache key includes the installed Playwright package version, OS, architecture and browser. Each job still runs `playwright install --with-deps` so Linux system dependencies are present on cache hits, as required by the [Playwright CI guidance](https://playwright.dev/python/docs/ci).
 
 `browser_suite.py` measures each suite's subprocess wall time with `time.monotonic()`, including browser/server startup. It writes `wallTimeSeconds` per suite and for the batch; `seconds` remains a compatibility alias. The committed scheduling measurements in `tests/baselines/browser-suite-timings.json` came from run [38763532071](https://github.com/evangelistalab/vibemol/actions/runs/38763532071), attempt 1, with exact source and browser provenance. These are scheduling data, not acceptance evidence for a different candidate. That run's aggregate was 33/4/37 because of the separately recorded accessibility finding; the historical restored gate was34/3/37 after#21 was closed as test synchronization; the authorized#11/#45 repair later used35/2/37. Subsequent#52/#53 repairs brought the current gate to37/0/37 with an intentionally empty accepted set; the historical accessibility failure was never accepted.
 
@@ -14,7 +14,7 @@ Checks/unit, five Chromium suite shards, two characterization workers and the We
 
 The serial workflow took **10,278 s (171.30 min)** including setup, two characterization runs and WebKit. Its browser batch took 8,270 s; serial characterization took 1,880 s. `browser-shards.json` isolates Smoke and Looks. The other 35 suites use longest-processing-time allocation to the least-loaded of three shards (ties by suite/shard name): 1,867.74, 1,874.67 and 1,874.50 seconds. The projected suite critical path is Looks at 31.97 minutes, before setup, artifact transport and joins. Actual before/after workflow wall time and the candidate run are recorded in the PR after CI; estimates are not presented as measurements.
 
-Workers run each assigned suite once and retain its actual nonzero exit code and raw log. Completing evidence collection does not certify the gate. `join_browser_shards.py` requires every planned shard and all 37 unique suites, verifies test hashes, recomputes each failure classification from raw logs and current workflow source, then checks exactly **37 passing /0 failing /37**. The accepted set is intentionally empty after#11/#45 and#52/#53 were repaired. Both exporter completion/activation records remain required by the policy check, including four fresh Save readbacks per site. Any failure, omission, duplication or different arithmetic blocks; the semantic matcher stays for attribution and negative controls, not as an allowance. [Diagnostic39129507791](https://github.com/evangelistalab/vibemol/actions/runs/39129507791) invalidated Edit320's fixed-sleep expectation: observable compact readiness and a presentation boundary now precede the unchanged overflow comparison and comparand log. #21 is closed as test synchronization; diagnostic results never supply merge acceptance.
+Workers run each assigned suite once and retain its actual nonzero exit code and raw log. Completing evidence collection does not certify the gate. `join_browser_shards.py` requires every planned shard and all 39 unique suites, verifies test hashes, recomputes each failure classification from raw logs and current workflow source, then checks exactly **39 passing /0 failing /39**. The accepted set is intentionally empty after#11/#45 and#52/#53 were repaired. Both exporter completion/activation records remain required by the policy check, including four fresh Save readbacks per site. Any failure, omission, duplication or different arithmetic blocks; the semantic matcher stays for attribution and negative controls, not as an allowance. [Diagnostic39129507791](https://github.com/evangelistalab/vibemol/actions/runs/39129507791) invalidated Edit320's fixed-sleep expectation: observable compact readiness and a presentation boundary now precede the unchanged overflow comparison and comparand log. #21 is closed as test synchronization; diagnostic results never supply merge acceptance.
 
 Each characterization worker runs one full 102-capture pass, checks unchanged committed goldens using the existing float-only tolerance, exercises four fresh launch/theme identity contexts and verifies session camera pinning. It explicitly leaves repeat certification pending. `join_characterize.py` independently checks both golden comparisons, exact serialized capture equality, the current48-slot compositions and all reason minima in eight contexts. Workbench has47live+1legacy-only known absence; legacy has48live+0absent. PR75 removed four explicitly retired null slots; earlier52-slot results retain their historical compositions. Pixel hashes remain diagnostic. The default local two-run command and the separate original-tag baseline recording workflow retain their behavior.
 
@@ -37,7 +37,7 @@ The widget smoke waits for an idle JupyterLab kernel and a dialog-free notebook 
 
 The eleven-job layout and both aggregate joins remain unchanged. The checks/unit job now requires the inverse construction-order audit in `tests/baselines/stage5/construction-order.json`; its separate artifact makes ten core artifacts, plus optional WebKit output. The self-test includes old-wrapper parameters and an early reading closure inside an existing callback. Unresolved early activation is a failed gate.
 
-Historical trajectory5a/vibration5b gates required an unchanged#11 failure signature. Those strict policy fixtures remain tested. The current post-release policy explicitly requires37/0/37, every suite passed, an intentionally empty accepted set, and both complete exporter records. The earlier35/2/37 two-workflow allowance belongs to the historical#11/#45 repair, not the current gate. The join independently recomputes the records from raw logs; `tools/check-refactor-run.py` checks both sites and all activation/fresh-Save fields. Historical strictness never substitutes for the newly authorized composition.
+Historical trajectory5a/vibration5b gates required an unchanged#11 failure signature. Those strict policy fixtures remain tested. The current post-release policy explicitly requires39/0/39, every suite passed, an intentionally empty accepted set, and both complete exporter records. The earlier35/2/37 two-workflow allowance belongs to the historical#11/#45 repair, not the current gate. The join independently recomputes the records from raw logs; `tools/check-refactor-run.py` checks both sites and all activation/fresh-Save fields. Historical strictness never substitutes for the newly authorized composition.
 
 Report Looks wall time and the actual completion of BOTH Studio and Properties material-family paths for every group run. If either path was not reached, record coverage as not exercised rather than absence of recurrence. The material-preset intermittent remains open after a passing run.
 
@@ -91,9 +91,48 @@ Sources: https://docs.github.com/en/actions/reference/runners/github-hosted-runn
 and https://docs.github.com/en/actions/concepts/runners/larger-runners and
 https://docs.github.com/en/actions/reference/runners/larger-runners.
 
+## Verification tiers and local diagnostics
+
+Run the source checks, units and audits in Tier 1. `make test-affected` prints
+the matched paths and suite selections, then runs the corresponding shards in
+parallel. The default comparison is against `origin/main`. To change it, pass
+`BASE=<ref>`. Supply `FAILED_REPORT=<path-to-browser-results.json>` from the
+latest CI run to include its failing suites. The suite-map unit checks all
+tracked app, source and browser-harness paths.
+
+Use `python3 tools/run_browser_shards_parallel.py` for a full local browser
+diagnostic, or pass explicit suite paths. The launcher prints its `--jobs`
+setting and defaults to two parallel shards, including with `--hardware-gl`.
+Each shard has a loopback static server and separate
+artifacts. The existing suites keep their browser and fresh-context lifecycles.
+Specialized servers such as the Asset Cache deployment simulation keep their
+own handlers. The standard join verifies evidence for the selected scope.
+
+Only one session runs local browser suites on a machine at a time. The runner
+records the one-minute host load at launch and every 30 seconds. A sample
+above the logical core count triggers a warning and marks the run `contended`
+in `run-summary.json`. Its results are not timing evidence. Pass `--max-load N`
+to refuse to start when the initial load exceeds N.
+
+For local Tier 1, use `--hardware-gl` or `VIBEMOL_LOCAL_GL=hardware` to opt
+into hardware Chromium. The checks still execute. CI owns pixel-dependent
+acceptance and uses SwiftShader for ordinary Chromium tests.
+
+The 20 Looks cases now run in three parts, Materials, Surfaces and Presets.
+The split unit checks each original case exactly once, original case bodies
+and the original checkpoint inventory. The shard plan uses suite durations
+from [45501886299](https://github.com/evangelistalab/vibemol/actions/runs/45501886299).
+The three Looks weights are scheduling estimates partitioning the historical
+1,917.99 s total. Case timings are logged separately. The estimated suite
+critical path is the intact Look References suite at **932.54 s (15.54 min)**,
+compared with the historical plan's **1,917.99 s (31.97 min)**. These are suite
+estimates before setup, artifact transport and joins.
+
+TODO: Split `calculations.py` in a follow-up after the concurrent product work.
+
 ## Browser worker configuration
 
-All 37 entrypoints uses the direct synchronous Python Playwright
+The historical 37-entrypoint plan used the direct synchronous Python Playwright
 library. There is no Playwright Test/pytest worker pool or half-CPU worker
 default in this execution path. `browser_suite.py` starts one suite with blocking
 `subprocess.run` and waits for it to exit before starting the next. Per runner:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Join every planned shard, validate raw evidence and enforce37/0/37 with an intentionally empty accepted set."""
+"""Join every planned shard, validate raw evidence and enforce the complete browser gate with an intentionally empty accepted set."""
 import argparse
 import json
 import math
@@ -8,17 +8,23 @@ import shutil
 
 import browser_suite as suite
 from ci_evidence import artifact_identity, digest, require_same_artifact
-from checkpoint_contract import require_checkpoint_counts, require_counts
+from checkpoint_contract import require_checkpoint_counts
 
 
-def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
+def join_reports(inputs, output, root=suite.ROOT, expected_identity=None, *, selected=None):
     manifest = json.loads((root / 'tests/baselines/browser-suite.json').read_text())
-    step3b_checkpoints = {'tests/e2e/premerge.py': {'step3b-command-completion': 1}}
-    for test, expected in step3b_checkpoints.items():
-        declared = manifest.get('checkpointCounts', {}).get(test, {})
-        require_counts({marker: declared.get(marker) for marker in expected}, expected, suite=test)
     plan_path = root / 'tests/baselines/browser-shards.json'
     assignments = suite.shard_assignments(json.loads(plan_path.read_text()), manifest)
+    if selected is not None:
+        import os
+        assert 'CI' not in os.environ, 'Subset joins are local diagnostics only'
+        assert selected and selected <= set(manifest['suites'])
+        manifest = {**manifest, 'suites': [test for test in manifest['suites'] if test in selected],
+                    'expected': dict(passed=len(selected), failed=0, total=len(selected)),
+                    'knownDefects': {test: known for test, known in manifest['knownDefects'].items()
+                                     if test in selected}}
+        assignments = {name: [test for test in tests if test in selected]
+                       for name, tests in assignments.items() if selected.intersection(tests)}
     paths = sorted(inputs.glob('browser-suite-*/browser-suite/browser-results.json'))
     reports = [json.loads(p.read_text()) for p in paths]
     require_same_artifact(reports, expected_identity or artifact_identity(root))
@@ -39,8 +45,6 @@ def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
             raw = path.parent / pathlib.Path(test).stem / 'run.log'
             log = raw.read_text()
             counts = require_checkpoint_counts(log, test, manifest.get('checkpointCounts', {}))
-            if test in step3b_checkpoints:
-                require_checkpoint_counts(log, test, step3b_checkpoints)
             assert entry['checkpointCounts'] == counts['actual'], 'Recorded checkpoint counts differ from raw log: ' + test
             assert entry['checkpointEvidence'] == counts, 'Recorded checkpoint evidence differs from raw log: ' + test
             assert entry['exitCode'] == (entry['processExitCode'] or (0 if counts['passed'] else 1)), 'Incorrect suite outcome: ' + test
@@ -63,6 +67,8 @@ def join_reports(inputs, output, root=suite.ROOT, expected_identity=None):
               'shardWallTimeSeconds': {r['shard']: r['wallTimeSeconds'] for r in reports},
               'suiteWallTimeSecondsTotal': round(sum(e['wallTimeSeconds'] for e in entries.values()), 2)}
     gate = suite.finish_report(report, manifest)
+    if selected is not None:
+        report['diagnostic'] = True
     output.mkdir(parents=True, exist_ok=True)
     (output / 'browser-results.json').write_text(json.dumps(report, indent=2) + '\n')
     print(f"[browser-join] {report['passed']} passing / {report['failed']} failing / {report['total']}; accepted workflows: {gate}")

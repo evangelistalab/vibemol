@@ -101,14 +101,14 @@ class WorkflowGateTests(unittest.TestCase):
         old=(EVIDENCE/'ci-39086927339/edit_tool.log').read_text()
         self.assertIsNone(self.result('edit_tool.py',old)['failureWorkflow'])
     def test_current_manifest_is_intentionally_empty(self):
-        self.assertEqual(MANIFEST['expected'],dict(passed=37,failed=0,total=37))
+        self.assertEqual(MANIFEST['expected'],dict(passed=39,failed=0,total=39))
         self.assertEqual(MANIFEST['knownDefects'],{})
         self.assertIs(MANIFEST['acceptedSetIntentionallyEmpty'],True)
         self.assertFalse(self.accepted('axis_gizmo.py',marked_log('axis_gizmo.py')))
         self.assertFalse(self.accepted('mode_consistency.py',marked_log('mode_consistency.py')))
 
     def test_all_active_gate_records_agree_with_authorized_empty_composition(self):
-        expected=dict(passed=37,failed=0,total=37)
+        expected=dict(passed=39,failed=0,total=39)
         risk=json.loads((ROOT/'tests/baselines/refactor-stage-risk.json').read_text())
         ledger=json.loads((ROOT/'tests/baselines/carried-defects.json').read_text())
         policy=json.loads((ROOT/'tests/baselines/stage5/run-policy.json').read_text())
@@ -116,17 +116,18 @@ class WorkflowGateTests(unittest.TestCase):
             ('manifest',MANIFEST['expected']),('risk ordinary',risk['ordinaryExpected']),
             ('risk acceptance',risk['gateAcceptancePolicy']['expected']),
             ('risk conversion',risk['conversionBlockingRule']['currentBrowserGate']),
-            ('risk baseline',{k:risk['currentBrowserBaseline'][k]for k in expected}),
-            ('risk baseline gate',{k:risk['currentBrowserBaseline']['gate'][k]for k in expected}),
             ('ledger',ledger['acceptedCiGate']),('run policy',policy['ordinaryExpected'])]:
             with self.subTest(record=label):self.assertEqual(actual,expected)
+        historical=dict(passed=37,failed=0,total=37)
+        for observed in (risk['currentBrowserBaseline'],risk['currentBrowserBaseline']['gate']):
+            self.assertEqual({key:observed[key] for key in historical},historical)
         self.assertEqual(risk['gateAcceptancePolicy']['acceptedWorkflows'],[])
         self.assertIs(risk['gateAcceptancePolicy']['acceptedSetIntentionallyEmpty'],True)
         self.assertIs(ledger['acceptedSetIntentionallyEmpty'],True)
-        self.assertEqual(policy['acceptancePhase'],'issue53')
+        self.assertEqual(policy['acceptancePhase'],'verification-tiers')
         instructions=(ROOT/'AGENTS.md').read_text()
-        self.assertIn('The current post-release gate is37/0/37 with an intentionally empty accepted set',instructions)
-        self.assertIn('The shipped join requires **CI37/0/37**',instructions)
+        self.assertIn('The current post-release gate is39/0/39 with an intentionally empty accepted set',instructions)
+        self.assertIn('The shipped join requires **CI39/0/39**',instructions)
 
     def test_closed_workflows_have_no_live_recognition(self):
         for suite in ['smoke.py','edit_tool.py']:

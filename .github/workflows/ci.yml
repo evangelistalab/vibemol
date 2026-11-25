@@ -78,11 +78,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [smoke, looks, balanced-1, balanced-2, balanced-3]
+        shard: [smoke, balanced-1, balanced-2, balanced-3, balanced-4, balanced-5, balanced-6, balanced-7, balanced-8, balanced-9, balanced-10]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        if: matrix.shard == 'balanced-3'
+        if: matrix.shard == 'balanced-5'
         with:
           node-version: '22'
       - uses: actions/setup-python@v5
@@ -121,7 +121,7 @@ jobs:
           if-no-files-found: error
 
   browser-gate:
-    name: Aggregate browser gate (37/0/37)
+    name: Aggregate browser gate (39/0/39)
     runs-on: ubuntu-24.04
     needs: [e2e]
     if: ${{ always() && !cancelled() }}
@@ -136,17 +136,6 @@ jobs:
           path: out/ci/browser-shards
       - name: Verify all suites once, raw failure workflows and aggregate counts
         run: python tests/e2e/join_browser_shards.py --input out/ci/browser-shards
-      - name: Require the Step 3b premerge completion record
-        run: |
-          PYTHONPATH=tests/e2e python - <<'PY'
-          from pathlib import Path
-          from checkpoint_contract import require_checkpoint_counts
-
-          suite = 'tests/e2e/premerge.py'
-          expected = {'tests/e2e/premerge.py': {'step3b-command-completion': 1}}
-          log = Path('out/test-artifacts/browser-suite/premerge/run.log').read_text()
-          require_checkpoint_counts(log, suite, expected)
-          PY
       - name: Require applicable Stage 5 exporter-defect policy
         run: python tools/check-refactor-run.py --policy tests/baselines/stage5/run-policy.json --browser-result out/test-artifacts/browser-suite/browser-results.json
       - name: Upload aggregate browser result

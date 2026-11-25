@@ -20,14 +20,6 @@
   1.480 and 0.530 to three decimals. `view.snapshot` returned a 640 × 460
   PNG with 40,708 non-background pixels. App Undo removed the arrow added
   through `vectors.setArrow` and restored the previous empty vector list.
-- When the merge tree equals the tested PR tree, use the PR CI run as
-  acceptance evidence. Monitor the automatic main run and report any
-  failure. Release verification proceeds while that run is active.
-- For version bumps, project the two approved version leaves per capture
-  with `tools/project_version_goldens.py` and verify the projected goldens
-  in candidate CI. Preserve the original capture provenance. The 0.10.16
-  receipt records 204 version leaves in
-  `tests/baselines/version-projection-0.10.16.json`.
 - The three Step 3b namespaces contain 19 named members. [Restore recording
   45469321152](https://github.com/evangelistalab/vibemol/actions/runs/45469321152)
   added only `VibeMolVectorsModel.restore` to the previous #115 captures.
@@ -36,6 +28,38 @@
   restore complete vector state. Unchanged commands preserve Redo.
   A 0.10.16 session opened in 0.10.15 or earlier keeps per-atom vectors
   and drops free arrows. [Release notes](docs/releases/v0.10.16.md)
+
+## Verification tiers (standing rule, 2026-11-24)
+
+- **Tier 1 — inner loop, every change.** Run `make check`, `make test-unit`,
+  every source audit, the browser suites selected by `make test-affected`,
+  and any suite that failed in the latest CI run.
+- **Tier 2 — targeted diagnostics.** Run the local characterization pair
+  when changes can affect captured sessions, DOM, geometry, cameras or APIs,
+  or when diagnosing a CI characterization failure. Use
+  `tools/run_browser_shards_parallel.py` for full local browser diagnostics.
+  Only one session runs local browser suites on a machine at a time.
+  The runner defaults to two parallel shards and samples the one-minute host
+  load at launch and every 30 seconds. Samples above the logical core count
+  mark the run contended and invalidate its timings. Use `--max-load N` to
+  refuse to start above N.
+- **Tier 3 — acceptance.** Require the complete CI conjunction on the
+  candidate's first run. Only Tier 3 supplies acceptance evidence.
+- **Merge rule.** If the merge tree equals the tested PR tree, use the PR run
+  as acceptance evidence and monitor the automatic main run while release
+  verification proceeds. If the trees differ, require a new CI run.
+- **Version bumps.** Use `tools/project_version_goldens.py` to project exactly
+  204 version leaves and record a receipt. Verify the projection in candidate
+  CI. Record in CI when captures genuinely change, for example for new API
+  members or DOM changes. Preserve capture provenance.
+- **Hardware WebGL.** Tier 1 may use `VIBEMOL_LOCAL_GL=hardware` locally.
+  CI uses SwiftShader and supplies the result for pixel-dependent assertions.
+- **Rule A and existing stop conditions remain in force.** Correct a newly
+  written test only when logged comparands show correct product behavior and
+  the replacement expectation is derived from a shared comparator or a
+  documented constant. Record the original expectation, replacement and
+  evidence. Stop for inherited failures, unexplained behavior, or a change
+  outside the authorization.
 
 ## Current handoff — 2026-11-24
 
@@ -856,7 +880,7 @@ Repo checks:
 - The decomposition starts at `v0.9.5-pre-refactor` (`1c609b338344aaa49ffd11b9ee2ad834a6e0d85d`). Stage 0 moves no production functions; its optional `qa-characterize.js` loads after Workbench only with `?qa=1`.
 - Run `tests/e2e/characterize.py` for the two-run structured determinism gate. Committed captures and validation evidence live under `tests/baselines/`; generated browser output belongs in ignored `out/test-artifacts/`.
 - Characterization compares float leaves with `math.isclose(rel_tol=1e-9, abs_tol=1e-12)` after an exact type check; integers, booleans, strings, keys, lengths and structure remain exact. Same-machine repeats still require exact equality. The initial goldens were recorded on GitHub CI against the tagged original app. The explicitly authorized post-publication refresh records the published v0.10.0 tag; further re-recording requires separate authorization. Metadata records OS, architecture, browser name/version and the CI run. The baseline is expected to hold across machines. `characterization-baseline.yml` requires two independent CI jobs, each capturing twice, to agree exactly before promotion.
-- `browser_suite.py` executes all37 suites once. The shipped join requires **CI37/0/37**, with an **intentionally empty accepted set**. Axis52, Coordinates53 and Smoke11 are must-pass; all original regression assertions remain. Any failure, different total, missing/repeated suite or changed workflow stops. Historical34/3/37,35/2/37 and36/1/37 observations remain historical; matcher/join machinery stays.
+- `browser_suite.py` executes all39 suites once. The shipped join requires **CI39/0/39**, with an **intentionally empty accepted set**. Axis52, Coordinates53 and Smoke11 are must-pass; all original regression assertions remain. Any failure, different total, missing/repeated suite or changed workflow stops. Historical34/3/37,35/2/37 and36/1/37 observations remain historical; matcher/join machinery stays.
 - CI runs two independent `characterize.py --matrix-run-index` workers. Each tests all 102 unchanged goldens and four composed identity contexts; only `join_characterize.py` certifies the exact repeat and all eight contexts. Both joins require the same checkout tree, app/QA/golden hashes, CI run and attempt. Missing workers, incomplete inventories and mixed artifacts fail. Checks/unit, browser shards, characterization and WebKit start independently; matrix fail-fast is disabled. Playwright binaries are cached by installed version, OS, architecture and browser; Linux dependencies are still installed. See `docs/ci.md` for timings and artifact layout. This workflow change does not authorize production or golden edits.
 - Selection’s historical complete result was **CI 34/3/37** on #18, run **38989104040 attempt 1**, tested head `518762f`, merged/pushed as `e35da9c`. All 37 suites ran once; both unchanged 102-capture passes and all **52 composed slots in eight contexts** met every firing minimum. #11 fired at **vibration after the second download**; vibration was reached. Checks/unit and WebKit passed. Looks completed both material-families paths in **17.03 minutes**, without timeout. Whole sharded CI was **31.97 minutes** against the **132.93-minute** baseline (75.95% less, 4.16×; one cold-cache measurement). The earlier dark-Calculations `#hint` incomplete is classified as a **flake** under the user's pre-decided 34/3 outcome; no gate, baseline or assertion changed. Earlier Atoms and 43-slot runs remain historical evidence. Let progression: **306 → 302 → 291 → 288 → 275**. Evidence: `tests/baselines/evidence/stage3/selection/ci-38989104040/`.
 - Issue #4 CI follow-up (merged PR #10): full picking passes an unbounded synchronous wait for the applied/presented viewport, preserving both assertions. The shared helper rejects false readiness instead of accepting an async predicate Promise. The unbounded smoke probe rejects a terminal new crop selection; native UI reproduction covers both recording exporters, filed as https://github.com/evangelistalab/vibemol/issues/11. Full normal CI reaches the original vibration failure. Both CI probes use software SwiftShader. Evidence: `tests/baselines/evidence/browser-ci-followup/` and `tests/baselines/evidence/browser-ci-gate/`.
@@ -872,7 +896,7 @@ Repo checks:
 - **Stage 3 element-cache consolidation needs the heaviest manual verification.** DOM-cache changes cross the failed panel and Looks/Appearance workflows, including the five independently wired Appearance suites. Stage 5 still has substantial feature coupling, but the cache stage has the weakest existing interaction coverage. The detailed plan and suite mapping live in `tests/baselines/refactor-stage-risk.json`.
 - Split Stage 3 by **prefix/panel group in coverage order**, with a binding inventory and full 37-suite result in every sub-PR. Merge remaining PRs into the pushed `codex/app-js-decomposition` integration branch; soak once at the stage boundary. The accepted pre-code audit (`tests/baselines/evidence/stage3/lookup-site-audit.md`) finds **41 DOM caches: 40 accessors plus one alias**, with corrected let target **306 → 265**. The earlier 313 → 270 figure used the pre-Stage-2 baseline and an unsegmented count. `canvasAdaptiveMenuEl` resolves to the same `els.displayWindowAdaptiveMenuEl` entry as its original source, without a second accessor/query. Keep `calculationsPanel` and `measurementsPanel` as module lets holding controllers, and keep `helpRestoreFocusEl` as focus-restoration state outside els. Use lazy memoized accessors at the original wiring points, preserving priming and listeners. In the first sub-PR, add 43 node-identity assertions (41 real caches plus both controller `.panel` nodes), evaluated after each mode switch, every panel open/close and session restore; a detached node with unchanged ID/ARIA must fail. The completed periodic-table recount is 19 → 18 after excluding the legacy-only launcher input, then 18 → 11 after grouping eight const DOM fields; all ten non-DOM inputs are used. Keep direct event-path verification, both themes, applicable modes, legacy/Workbench launches, responsive docks/floats, focus/keyboard and base/change evidence for affected defect workflows.
 - The historical Stage 3 prerequisite was **CI 34 passing / 3 failing / 37** by the exact accepted workflows. Build, adaptive, Atoms, Selection, Symmetry/shared launcher and the separate Colors factory hand-off are integrated, tracked let **265**. Every group requires its own full 37-suite artifact, the issue-backed **52-slot composition** in eight contexts, every reason minimum and 102 unchanged goldens twice. No new controller interface is introduced by a cache conversion; report binding/helper inventory sums separately from extraction inputs. The 41 mutable-cache conversions remain line-neutral and reference-only. The separately human-requested Colors factory regrouping and legacy-only launcher-input exclusion/wiring relocation are recorded separately: app **+1** net line, periodic module **−9**, no new helper/controller or other logic change. All stop decisions defer to the standing conversion rule immediately below. Soak once at the complete stage boundary and report the per-group results once at the end.
-- **Standing conversion rule (2026-10-15):** A failure that reproduces identically on tagged `v0.9.5-pre-refactor` is a carried finding and does not itself block a conversion PR. File it, add it to the carried-defect list, preserve its failing assertion and continue unless one of these three blocking conditions applies: **(1)** a failure present on the proposed source and absent on `v0.9.5-pre-refactor`; **(2)** a gate miss in CI count, failing-set workflow identity, goldens or the identity sweep; **(3)** a conversion that is not behavior-neutral, including a non-line-neutral conversion diff or production edits beyond `let` → `els` and call-site rewrites. Exactly these three conditions block a conversion PR; nothing else stops the sequence. An identical tagged finding does not override a gate miss. The current post-release gate is37/0/37 with an intentionally empty accepted set and all common requirements retained. No carried finding authorizes acceptance changes. Separately human-authorized production defect PRs are not cache-only conversions.
+- **Standing conversion rule (2026-10-15):** A failure that reproduces identically on tagged `v0.9.5-pre-refactor` is a carried finding and does not itself block a conversion PR. File it, add it to the carried-defect list, preserve its failing assertion and continue unless one of these three blocking conditions applies: **(1)** a failure present on the proposed source and absent on `v0.9.5-pre-refactor`; **(2)** a gate miss in CI count, failing-set workflow identity, goldens or the identity sweep; **(3)** a conversion that is not behavior-neutral, including a non-line-neutral conversion diff or production edits beyond `let` → `els` and call-site rewrites. Exactly these three conditions block a conversion PR; nothing else stops the sequence. An identical tagged finding does not override a gate miss. The current post-release gate is39/0/39 with an intentionally empty accepted set and all common requirements retained. No carried finding authorizes acceptance changes. Separately human-authorized production defect PRs are not cache-only conversions.
 - Evidence may be combined across CI runs only when those runs share the **same artifact under test**. Two runs on different trees do not establish a property of a third tree. Harness-only #12 used its own re-evaluated completed run; #8 was rebased onto it and ran CI once. Every cache group needs one CI run on its merge candidate carrying both the complete 37-suite workflow result and the current composed identity inventory with per-reason firing minima (43 original slots for Build/adaptive, 52 slots from Atoms onward). Older identity evidence is historical, never substituted for the candidate's conjunction.
 - Projection #3, axis-gizmo Escape routing, mode-consistency selection-card collision, and video crop #11 belong to the separate 0.9.x production-defect batch, after 0.10.0 or in parallel on 0.9.x. Do not merge those fixes into the refactor. Issue #11 gets one figure-export probe; that probe does not authorize a fix.
 - The cache bridge is mandatory on every non-inject characterization run, including an alternate source root. Only `--inject-harness` may return the historical-source sentinel. Each of the two characterization runs executes the four launch/theme identity sweeps and checks minimum counts for presented checkpoints, mode switches, panel transitions, DOM mutations and session restore. Explicit mode checks must not mask a dormant observer; record actual reason counts in each panel PR. The first Build sub-PR (#8) requires browser CI evidence before merging; a local 35/2/37 result alone does not satisfy that gate.

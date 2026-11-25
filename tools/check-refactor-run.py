@@ -17,12 +17,13 @@ def main():
         'issue11': (35, 2, [['tests/e2e/axis_gizmo.py', 'escape-canvas-focus'],
                             ['tests/e2e/mode_consistency.py', 'coordinates-delete-selection-card']]),
         'issue52': (36, 1, [['tests/e2e/mode_consistency.py', 'coordinates-delete-selection-card']]),
-        'issue53': (37, 0, []),  # Intentionally empty; the matcher/join stays.
+        'issue53': (37, 0, []),
+        'verification-tiers': (39, 0, []),  # Intentionally empty; the matcher/join stays.
     }
     phase = policy.get('acceptancePhase', 'issue11')
     assert phase in phases, ('Unknown pre-authorized acceptance phase', phase)
     passed, failed, expected_failures = phases[phase]
-    expected_counts = dict(passed=passed, failed=failed, total=37) if repaired else {'passed': 34, 'failed': 3, 'total': 37}
+    expected_counts = dict(passed=passed, failed=failed, total=39 if phase=='verification-tiers' else 37) if repaired else {'passed': 34, 'failed': 3, 'total': 37}
     print(json.dumps(dict(check='pre-authorized gate arithmetic', phase=phase,
         actual=policy['ordinaryExpected'], expected=expected_counts), sort_keys=True), flush=True)
     assert policy['ordinaryExpected'] == expected_counts, (policy, expected_counts)
@@ -63,23 +64,21 @@ def main():
         assert actual == expected, (actual, expected)
         print(json.dumps(dict(check='pre-authorized failure composition',
             actual=result.get('actualFailingWorkflows'), expected=expected_failures,
-            intentionallyEmpty=phase=='issue53'), sort_keys=True), flush=True)
+            intentionallyEmpty=phase in ('issue53','verification-tiers')), sort_keys=True), flush=True)
         assert result.get('actualFailingWorkflows') == expected_failures, result.get('actualFailingWorkflows')
     else:
         assert actual_workflow in allowed_workflows, (
             'STOP: #11 differs from the applicable historical group policy or ceased to fire; '
             'do not adjust the accepted set or retry', comparands)
-    if phase == 'issue53':
-        expected = {'tests/e2e/premerge.py': {'step3b-command-completion': 1}}
-        declared = policy.get('checkpointCounts')
+    if phase in ('issue53', 'verification-tiers'):
+        manifest = Path(__file__).resolve().parents[1] / 'tests/baselines/browser-suite.json'
+        expected = json.loads(manifest.read_text())['checkpointCounts']
         matching = [row for row in result.get('suites', []) if row['test'] in expected]
-        actual = {row['test']: {marker: row.get('checkpointCounts', {}).get(marker)
-                                for marker in expected[row['test']]} for row in matching}
-        readback = dict(check='Step 3b command completion', actual=actual, declared=declared, expected=expected)
+        actual = {row['test']: row.get('checkpointCounts') for row in matching}
+        readback = dict(check='Declared browser checkpoint counts', actual=actual, expected=expected)
         print(json.dumps(readback, sort_keys=True), flush=True)
-        assert declared == expected and len(matching) == len(expected) and actual == expected, readback
-        assert all(type(count) is int for counts in (declared, actual)
-                   for markers in counts.values() for count in markers.values()), readback
+        assert len(matching) == len(expected) and actual == expected, readback
+        assert all(type(count) is int for markers in actual.values() for count in markers.values()), readback
     print('Additional exporter behavior gate: passed', flush=True)
 
 

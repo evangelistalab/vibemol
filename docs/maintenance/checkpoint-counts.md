@@ -12,20 +12,44 @@ the return; a real-entry-point unit control verifies that ordering.
 
 The manifest requires these raw JSON record cardinalities:
 
+<!-- BEGIN GENERATED CHECKPOINT COUNTS -->
 | Entry point | Marker | Required records |
 | --- | --- | ---: |
-| Premerge | edit-api | 115 |
-| Premerge | edit-api-rejection | 26 |
-| Premerge | atomic-identity-rejection | 24 |
-| Premerge | commands-completion | 1 |
-| Premerge | step3b-command-completion | 1 |
-| Smoke | video-activation | 58 |
-| Smoke | video-export-completion | 2 |
-| Smoke | smoke-spinor-launcher | 8 |
-| Look references | registry-readback | 500 |
-| Axis gizmo | escape-native-case | 62 |
-| Edit tool | metal-native-case | 28 |
-| Build panel | retired-cache-case | 4 |
+| `tests/e2e/premerge.py` | `edit-api` | 115 |
+| `tests/e2e/premerge.py` | `edit-api-rejection` | 26 |
+| `tests/e2e/premerge.py` | `edit-api-catalog-site` | 7 |
+| `tests/e2e/premerge.py` | `atomic-identity-rejection` | 24 |
+| `tests/e2e/premerge.py` | `edit-testing-case` | 84 |
+| `tests/e2e/premerge.py` | `commands-completion` | 1 |
+| `tests/e2e/premerge.py` | `step3b-command-completion` | 1 |
+| `tests/e2e/premerge.py` | `embed-bridge-completion` | 1 |
+| `tests/e2e/premerge.py` | `first-molden-surface-camera` | 4 |
+| `tests/e2e/smoke.py` | `video-activation` | 58 |
+| `tests/e2e/smoke.py` | `video-export-completion` | 2 |
+| `tests/e2e/smoke.py` | `smoke-spinor-launcher` | 8 |
+| `tests/e2e/look_references.py` | `registry-readback` | 500 |
+| `tests/e2e/axis_gizmo.py` | `escape-native-case` | 62 |
+| `tests/e2e/edit_tool.py` | `metal-native-case` | 28 |
+| `tests/e2e/edit_tool.py` | `edit-tool-state` | 59 |
+| `tests/e2e/edit_tool.py` | `atom-settings` | 7 |
+| `tests/e2e/edit_tool.py` | `halo-placement-hint` | 9 |
+| `tests/e2e/edit_tool.py` | `halo-hook-site` | 10 |
+| `tests/e2e/edit_tool.py` | `ammonia-halo-cue` | 6 |
+| `tests/e2e/edit_tool.py` | `metal-oxygen-hydrogens` | 6 |
+| `tests/e2e/edit_tool.py` | `metal-build-drag` | 12 |
+| `tests/e2e/build_panel.py` | `retired-cache-case` | 4 |
+| `tests/e2e/figure.py` | `figure-runner` | 40 |
+| `tests/e2e/figure.py` | `scientific-buffer-synchronous` | 17 |
+| `tests/e2e/figure.py` | `scientific-buffer-worker` | 17 |
+| `tests/e2e/figure.py` | `scientific-buffer-coordinate-owners` | 8 |
+| `tests/e2e/figure.py` | `published-ownership` | 13 |
+| `tests/e2e/calculations.py` | `forte2-case` | 68 |
+| `tests/e2e/calculations.py` | `calculations-default` | 1 |
+| `tests/e2e/ux_review.py` | `avas-hitbox-method` | 5 |
+| `tests/e2e/measurements.py` | `measurement-connection-width` | 20 |
+| `tests/e2e/measurements.py` | `measurement-connection-fog` | 4 |
+| `tests/e2e/workbench_release.py` | `water-tutorial` | 2 |
+<!-- END GENERATED CHECKPOINT COUNTS -->
 
 The API matrix asserts its actual counters before writing a successful summary.
 Workers count records independently, preserve the real `processExitCode`, and

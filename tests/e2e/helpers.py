@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import http.client
 import json
+import os
 import pathlib
 import re
 import socket
@@ -27,6 +28,10 @@ def find_free_port() -> int:
 
 @contextlib.contextmanager
 def run_http_server(root: pathlib.Path) -> Iterator[str]:
+    shared = os.environ.get('VIBEMOL_SHARD_SERVER')
+    if shared and pathlib.Path(root).resolve() == pathlib.Path(__file__).resolve().parents[2]:
+        yield shared
+        return
     port = find_free_port()
     process = subprocess.Popen(
         [sys.executable, "-m", "http.server", str(port), "--bind", "127.0.0.1"],
@@ -203,3 +208,29 @@ def run_appearance_scenarios(root: pathlib.Path, artifact_dir: pathlib.Path, sce
                     context.close()
         finally:
             browser.close()
+
+
+def configure_chromium_gl():
+    """Apply the explicit local hardware override to Chromium launches."""
+    hardware = os.environ.get('VIBEMOL_LOCAL_GL') == 'hardware'
+    if not hardware:
+        return
+    if 'CI' in os.environ:
+        raise RuntimeError('Hardware WebGL is local only')
+
+    from playwright.sync_api import BrowserType
+
+    launch = BrowserType.launch
+    gl_options = ('--use-gl', '--use-angle', '--disable-gpu', '--enable-unsafe-swiftshader')
+
+    def launch_with_gl(browser_type, **options):
+        if browser_type.name == 'chromium':
+            args = [arg for arg in options.get('args') or [] if arg.split('=',1)[0] not in gl_options]
+            args.append('--use-angle=metal' if sys.platform == 'darwin' else '--use-angle=default')
+            options['args'] = args
+        return launch(browser_type, **options)
+
+    BrowserType.launch = launch_with_gl
+
+
+configure_chromium_gl()

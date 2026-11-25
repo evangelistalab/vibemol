@@ -1,3 +1,5 @@
+BASE ?= origin/main
+
 JS_CHECK_FILES = \
 	assets/app/js/asset-urls.js \
 	assets/app/js/element-utils.js \
@@ -84,6 +86,7 @@ version-assets:
 	python3 tools/sync_asset_versions.py
 
 check:
+	python3 tools/generate_checkpoint_docs.py --check
 	python3 tools/check_unreachable.py
 	node --check tools/audit-edit-api.cjs
 	node --check tools/audit-forte2.cjs
@@ -132,8 +135,12 @@ test-unit:
 	node --test tests/unit/*.test.mjs
 	python3 -m unittest discover -s tests/unit -p 'test_*.py'
 
+test-affected:
+	python3 tools/select_browser_suites.py --base "$(BASE)" $(if $(FAILED_REPORT),--failed-report "$(FAILED_REPORT)") $(if $(filter hardware,$(VIBEMOL_LOCAL_GL)),--hardware-gl)
+
 test-e2e:
 	python3 tests/e2e/characterize.py
-	python3 tests/e2e/browser_suite.py
+	python3 tools/run_browser_shards_parallel.py
 
 test: check test-unit test-e2e
+.PHONY: test-affected

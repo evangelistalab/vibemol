@@ -24,10 +24,12 @@ class RefactorRunPolicy(unittest.TestCase):
                     clickOnlyActivation=True, freshSaveAssertions=4) for p in ['trajectory','vibration']])
         if repaired and acceptance_phase=='issue52':
             report.update(passed=36,failed=1,actualFailingWorkflows=[['tests/e2e/mode_consistency.py','coordinates-delete-selection-card']])
-        if repaired and acceptance_phase=='issue53':
-            report.update(passed=37,failed=0,actualFailingWorkflows=[])
-            report['suites'] = [{'test': 'tests/e2e/premerge.py',
-                                 'checkpointCounts': {'step3b-command-completion': 1}}]
+        if repaired and acceptance_phase in ('issue53','verification-tiers'):
+            total = 39 if acceptance_phase=='verification-tiers' else 37
+            report.update(passed=total,failed=0,total=total,actualFailingWorkflows=[])
+            manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+            report['suites'] = [dict(test=name,checkpointCounts=counts)
+                                for name,counts in manifest['checkpointCounts'].items()]
         report.update(changes)
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder)/'result.json'
@@ -39,7 +41,7 @@ class RefactorRunPolicy(unittest.TestCase):
             policy['preserveExporterSignature'] = preserve_signature
             policy['requireVideoExportCompletion'] = repaired
             policy['acceptancePhase']=acceptance_phase
-            policy['ordinaryExpected'] = dict(passed={'issue11':35,'issue52':36,'issue53':37}[acceptance_phase],failed={'issue11':2,'issue52':1,'issue53':0}[acceptance_phase],total=37) if repaired else dict(passed=34,failed=3,total=37)
+            policy['ordinaryExpected'] = dict(passed={'issue11':35,'issue52':36,'issue53':37,'verification-tiers':39}[acceptance_phase],failed={'issue11':2,'issue52':1,'issue53':0,'verification-tiers':0}[acceptance_phase],total=39 if acceptance_phase=='verification-tiers' else 37) if repaired else dict(passed=34,failed=3,total=37)
             policy_path = Path(folder)/'policy.json'
             policy_path.write_text(json.dumps(policy))
             return subprocess.run([
@@ -94,14 +96,14 @@ class RefactorRunPolicy(unittest.TestCase):
 
     def test_current_group_uses_ordinary_site_policy(self):
         policy = json.loads((ROOT/'tests/baselines/stage5/run-policy.json').read_text())
-        self.assertEqual(policy['group'], 'Issue53 local Coordinates click clearance; intentionally empty accepted set')
-        self.assertEqual(policy['acceptancePhase'],'issue53')
+        self.assertEqual(policy['group'], 'Verification tiers with split Looks; intentionally empty accepted set')
+        self.assertEqual(policy['acceptancePhase'],'verification-tiers')
         self.assertIs(policy['preserveExporterSignature'], False)
         self.assertIs(policy['requireVideoExportCompletion'], True)
-        self.assertEqual(policy['ordinaryExpected'], dict(passed=37, failed=0, total=37))
-        self.assertEqual(policy['checkpointCounts'], {
-            'tests/e2e/premerge.py': {'step3b-command-completion': 1},
-        })
+        self.assertEqual(policy['ordinaryExpected'], dict(passed=39, failed=0, total=39))
+        self.assertNotIn('checkpointCounts',policy)
+        result = self.invoke(repaired=True, acceptance_phase='verification-tiers')
+        self.assertEqual(result.returncode,0,result.stdout+result.stderr)
 
     def test_repair_requires_both_complete_exporter_records(self):
         self.assertEqual(self.invoke(repaired=True).returncode, 0)
@@ -132,11 +134,16 @@ class RefactorRunPolicy(unittest.TestCase):
     def test_issue53_requires_one_step3b_completion_in_the_premerge_report(self):
         for checkpoints in ({}, {'step3b-command-completion': 2}):
             with self.subTest(checkpoints=checkpoints):
-                result = self.invoke(repaired=True, acceptance_phase='issue53', suites=[
-                    {'test': 'tests/e2e/premerge.py', 'checkpointCounts': checkpoints},
+                manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+                expected = manifest['checkpointCounts']
+                target = expected['tests/e2e/premerge.py']
+                del target['step3b-command-completion']
+                target.update(checkpoints)
+                result = self.invoke(repaired=True, acceptance_phase='verification-tiers', suites=[
+                    dict(test=name,checkpointCounts=counts) for name,counts in expected.items()
                 ])
                 self.assertNotEqual(result.returncode, 0, result.stdout+result.stderr)
-                self.assertIn('Step 3b command completion', result.stdout)
+                self.assertIn('step3b-command-completion', result.stdout)
 
     def test_issue53_intentionally_empty_composition_keeps_gate_machinery(self):
         self.assertEqual(self.invoke(repaired=True,acceptance_phase='issue53').returncode,0)
