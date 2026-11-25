@@ -176,7 +176,19 @@ def run(page,url):
     print('[calculations] viewport picking, shell/component states, pi planes, automatic/manual totals, RHF/GHF output, sessions, surface restoration and responsive bar: passed',flush=True)
 
 
+# Capture the picker's own dependencies so the test can read the selection bounds that
+# reposition() anchors to, instead of inferring them from the camera.
+PICKER_DEPS_OBSERVER = """(() => {
+  let value;
+  Object.defineProperty(window, 'VibeMolCalculationsPicker', { configurable: true,
+    get: () => value,
+    set: next => { value = Object.freeze({ ...next, create: deps => { window.__vmCalculationsPickerDeps = deps; return next.create(deps); } }); } });
+})()"""
+PICKER_GAP_PX = 14  # `gap` in calculations-picker.js reposition()
+
+
 def popup_selection(page,url):
+    page.add_init_script(PICKER_DEPS_OBSERVER)
     page.goto(url+'?appearanceStudy=1');page.wait_for_function('()=>window.VibeMolCalculations')
     assert p.load(page,[{'name':'CNOH.xyz','text':'C 0 0 0\nN 1.4 0 0\nO 0 1.4 0\nH 0 0 1.1'}])['ok']
     page.locator('#modeCalculationsBtn').click();ready(page)
@@ -185,10 +197,13 @@ def popup_selection(page,url):
     assert popup.is_visible() and page.evaluate('()=>VibeMolCalculations.export().counts.minao')==0
     assert not popup.locator('[data-components]').is_visible()
     assert popup.get_by_role('button',name='Deselect atoms',exact=True).count()==0
-    anchor=page.evaluate('()=>VibeMolTesting.projectActiveAtomToClient(0)')
+    # The popup sits one placement gap outside the selected atom's projected bounds, at any camera distance.
+    bounds=page.evaluate('()=>window.__vmCalculationsPickerDeps.getSelectionBounds([0])')
     box=popup.bounding_box()
-    assert max(box['x']-anchor['x'],anchor['x']-box['x']-box['width'],0)<100, (anchor,box)
-    assert max(box['y']-anchor['y'],anchor['y']-box['y']-box['height'],0)<100, (anchor,box)
+    separation=max(bounds['minX']-box['x']-box['width'],box['x']-bounds['maxX'],bounds['minY']-box['y']-box['height'],box['y']-bounds['maxY'])
+    evidence=dict(bounds=bounds,popup=box,separation=separation,expected=PICKER_GAP_PX,camera=page.evaluate('()=>VibeMolTesting.getCameraSnapshot()'))
+    print('[calculations popup] '+json.dumps(evidence),flush=True)
+    assert abs(separation-PICKER_GAP_PX)<=0.5, evidence
     popup.get_by_role('button',name='2p components',exact=True).click()
     popup.get_by_role('checkbox',name='2px orbital',exact=True).click();ready(page)
     assert page.evaluate('()=>VibeMolCalculations.export().specs')==['C(2px)']
