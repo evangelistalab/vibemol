@@ -1,12 +1,12 @@
 {
-  "group": "Issue53 local Coordinates click clearance; intentionally empty accepted set",
+  "group": "Verification tiers with split Looks; intentionally empty accepted set",
   "baselineRun": 40237309034,
   "baselineHead": "ff66e776547bf0c806ecd5a1ff9a91bf5371ac90",
-  "reason": "Direct human authorizes36/1/37 to37/0/37 by removing only repaired Coordinates53 after accepted52. The accepted set is intentionally empty; any different result stops. Both exporters and every other gate remain mandatory.",
+  "reason": "Split Looks into three suites. Every suite must pass and the accepted set remains empty.",
   "ordinaryExpected": {
-    "passed": 37,
+    "passed": 39,
     "failed": 0,
-    "total": 37
+    "total": 39
   },
   "preserveExporterSignature": false,
   "baselineIntegration": "b2eb6caa2ada6bac8b83ab2a8e36861df68f7982",
@@ -15,10 +15,5 @@
     "id": "issue-11-stop-after-second-download",
     "site": "trajectory"
   },
-  "acceptancePhase": "issue53",
-  "checkpointCounts": {
-    "tests/e2e/premerge.py": {
-      "step3b-command-completion": 1
-    }
-  }
+  "acceptancePhase": "verification-tiers"
 }

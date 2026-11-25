@@ -1,5 +1,6 @@
 """A clean process exit cannot substitute for declared checkpoint execution."""
 import contextlib
+import copy
 import io
 import json
 from pathlib import Path
@@ -40,8 +41,7 @@ class CheckpointContractTests(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()), self.subTest(actual=actual), self.assertRaises(AssertionError):
                 require_counts(actual, expected, suite='test')
 
-    def test_current_manifest_declares_new_api_and_existing_exporter_coverage(self):
-        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+    def assert_manifest_checkpoint_pin(self, manifest):
         self.assertEqual(manifest['checkpointCounts'], {
             'tests/e2e/premerge.py': {'edit-api':115, 'edit-api-rejection':26, 'edit-api-catalog-site':7,
                                       'atomic-identity-rejection':24, 'edit-testing-case':84, 'commands-completion':1,
@@ -61,17 +61,30 @@ class CheckpointContractTests(unittest.TestCase):
             'tests/e2e/workbench_release.py': {'water-tutorial':2},
         })
 
+    def test_current_manifest_declares_new_api_and_existing_exporter_coverage(self):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        self.assert_manifest_checkpoint_pin(manifest)
+
+    def test_manifest_edits_cannot_silently_change_the_independent_pin(self):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        for markers in ({}, {'step3b-command-completion':2}):
+            altered = copy.deepcopy(manifest)
+            premerge = altered['checkpointCounts']['tests/e2e/premerge.py']
+            del premerge['step3b-command-completion']
+            premerge.update(markers)
+            with self.subTest(markers=markers), self.assertRaises(AssertionError):
+                self.assert_manifest_checkpoint_pin(altered)
+
     def test_phase_guards_reject_zero_short_and_extra_counts(self):
-        for suite,marker,count in [('look_references','registry-readback',500),('axis_gizmo','escape-native-case',62),
-                                   ('edit_tool','metal-native-case',28),('edit_tool','edit-tool-state',59),
-                                   ('edit_tool','atom-settings',7),('edit_tool','halo-placement-hint',9),
-                                   ('edit_tool','halo-hook-site',10),
-                                   ('edit_tool','ammonia-halo-cue',6),
-                                   ('edit_tool','metal-oxygen-hydrogens',6),
-                                   ('edit_tool','metal-build-drag',12),
-                                   ('premerge','edit-api-catalog-site',7),
-                                   ('premerge','atomic-identity-rejection',24),
-                                   ('build_panel','retired-cache-case',4), ('ux_review','avas-hitbox-method',5)]:
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        for suite,marker in [('look_references','registry-readback'),('axis_gizmo','escape-native-case'),
+                             ('edit_tool','metal-native-case'),('edit_tool','edit-tool-state'),
+                             ('edit_tool','atom-settings'),('edit_tool','halo-placement-hint'),
+                             ('edit_tool','halo-hook-site'),('edit_tool','ammonia-halo-cue'),
+                             ('edit_tool','metal-oxygen-hydrogens'),('edit_tool','metal-build-drag'),
+                             ('premerge','edit-api-catalog-site'),('premerge','atomic-identity-rejection'),
+                             ('build_panel','retired-cache-case'),('ux_review','avas-hitbox-method')]:
+            count = manifest['checkpointCounts']['tests/e2e/'+suite+'.py'][marker]
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertTrue(require_phase_counts({marker:count},'tests/e2e/'+suite+'.py',marker)['passed'])
             for actual in (0,count-1,count+1):
@@ -90,7 +103,10 @@ class CheckpointContractTests(unittest.TestCase):
                 require_checkpoint_counts(partial,'tests/e2e/figure.py',manifest['checkpointCounts'])
 
     def test_phase_cannot_hide_missing_marker_or_use_another_phases_records(self):
-        for actual in ({'edit-api':115},{'edit-api':115,'atomic-identity-rejection':24},{}):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        counts = manifest['checkpointCounts']['tests/e2e/premerge.py']
+        edit_records = {'edit-api': counts['edit-api']}
+        for actual in (edit_records, {**edit_records, 'atomic-identity-rejection': counts['atomic-identity-rejection']}, {}):
             with self.subTest(actual=actual), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(AssertionError):
                 require_phase_counts(actual,'tests/e2e/premerge.py','edit-api','edit-api-rejection')
 

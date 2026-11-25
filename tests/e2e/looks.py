@@ -3,6 +3,7 @@
 from __future__ import annotations
 import json
 import math
+import time
 from pathlib import Path
 import premerge as p
 from surface_shadows import shadow_camera_fit, surfaces_cast_and_receive, split_surface_shadows
@@ -1001,11 +1002,12 @@ def hydrogen_bond_restrictions(page, context, url):
     print('[looks] hydrogen import repair, order cycling, saturated-H growth, sessions and H2: passed',flush=True)
 
 
-def main():
+def run_cases(cases):
     with p.run_http_server(p.ROOT) as url,p.sync_playwright() as playwright:
         browser=playwright.chromium.launch(headless=True)
         try:
-            for run in [reference_ui,reference_persistence,reference_migration,complete_look_tiles,surface_schemes,independent_colors,material_families,surface_opacity_rendering,surface_opacity_controls,shadow_camera_fit,surfaces_cast_and_receive,split_surface_shadows,bond_sphere_fit,hydrogen_bond_restrictions,bond_colors_and_preset_controls,material_color_fill,basic_surface_finish,components_and_saving,surfaces_and_sessions,shared_material_presets]:
+            for run in cases:
+                started=time.monotonic()
                 context=browser.new_context(viewport={'width':1200,'height':1000},device_scale_factor=1)
                 page=context.new_page();errors=[];console_errors=[]
                 page.on('pageerror',lambda error:errors.append(str(error)))
@@ -1016,8 +1018,8 @@ def main():
                     assert not errors,errors
                 except Exception:
                     p.write_failure_artifacts(page,p.ARTIFACTS,'looks-'+run.__name__,errors,console_errors);raise
-                finally:context.close()
+                finally:
+                    context.close()
+                    print('[looks-case-timing] '+json.dumps({'case':run.__name__,
+                        'wallTimeSeconds':time.monotonic()-started}),flush=True)
         finally:browser.close()
-
-
-if __name__=='__main__':main()

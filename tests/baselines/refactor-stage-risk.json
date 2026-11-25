@@ -167,7 +167,7 @@
       },
       "originalStage": 4,
       "periodicTableDependencyReview": {
-        "status": "Integrated measured19\u219218\u219211: ten genuine used non-DOM inputs plus els. Legacy-only launcher excluded from factory and retained/wired in app.",
+        "status": "Integrated measured19→18→11: ten genuine used non-DOM inputs plus els. Legacy-only launcher excluded from factory and retained/wired in app.",
         "module": "assets/app/js/periodic-table.js",
         "beforeExplicitDependencies": 19,
         "beforeIndividualDomDependencies": 9,
@@ -482,7 +482,7 @@
         "before": 313,
         "after": 270,
         "delta": -43,
-        "reason": "Earlier 313 \u2192 270 used the pre-Stage-2 baseline and an unsegmented count; corrected Stage 3 target is 306 \u2192 265"
+        "reason": "Earlier 313 → 270 used the pre-Stage-2 baseline and an unsegmented count; corrected Stage 3 target is 306 → 265"
       },
       "cacheDesign": {
         "status": "accepted",
@@ -917,7 +917,7 @@
               "unitExit": 0,
               "unitExecSession": 21723,
               "firstMakeCheck": "stopped at Python bytecode cache permission outside sandbox; no source/test edit; original make-check.log retained",
-              "supplementalLogReadbackCorrection": "First reader assumed CI TAP # prefixes; local Node uses spec reporter \u2139. Counts independently read as tests433/pass433/fail0; make check uses silent JS loop. No test rerun or test/gate change.",
+              "supplementalLogReadbackCorrection": "First reader assumed CI TAP # prefixes; local Node uses spec reporter ℹ. Counts independently read as tests433/pass433/fail0; make check uses silent JS loop. No test rerun or test/gate change.",
               "completedCheckLog": "make-check-pycache.log",
               "unitLog": "unit.log"
             },
@@ -925,41 +925,41 @@
               {
                 "launch": "workbench",
                 "theme": "light",
-                "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+                "route": "Panels → Properties → Look → Colors → Edit…",
                 "handler": "()=>deps.openElementColors()",
                 "opened": true,
                 "closed": true,
-                "title": "C \u2014 Carbon (Z=6)",
+                "title": "C — Carbon (Z=6)",
                 "pageErrors": []
               },
               {
                 "launch": "workbench",
                 "theme": "dark",
-                "route": "Panels \u2192 Properties \u2192 Look \u2192 Colors \u2192 Edit\u2026",
+                "route": "Panels → Properties → Look → Colors → Edit…",
                 "handler": "()=>deps.openElementColors()",
                 "opened": true,
                 "closed": true,
-                "title": "C \u2014 Carbon (Z=6)",
+                "title": "C — Carbon (Z=6)",
                 "pageErrors": []
               },
               {
                 "launch": "legacy",
                 "theme": "light",
-                "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+                "route": "Appearance → Element colors → Edit…",
                 "handler": "() => periodicTableController.setOpen(true)",
                 "opened": true,
                 "closed": true,
-                "title": "C \u2014 Carbon (Z=6)",
+                "title": "C — Carbon (Z=6)",
                 "pageErrors": []
               },
               {
                 "launch": "legacy",
                 "theme": "dark",
-                "route": "Appearance \u2192 Element colors \u2192 Edit\u2026",
+                "route": "Appearance → Element colors → Edit…",
                 "handler": "() => periodicTableController.setOpen(true)",
                 "opened": true,
                 "closed": true,
-                "title": "C \u2014 Carbon (Z=6)",
+                "title": "C — Carbon (Z=6)",
                 "pageErrors": []
               }
             ],
@@ -1523,7 +1523,7 @@
       "trackedLetBefore": 265,
       "trackedLetAfter": 262,
       "constructionOrder": "Inert constructor immediately after els, before callback exposure; all eager dependencies ready",
-      "inverseAudit": "Stages1\u20133 and corrected4 pass; original4 rejected",
+      "inverseAudit": "Stages1–3 and corrected4 pass; original4 rejected",
       "restoreFailureFinding": "Separate carried issue25; warning-only partial restoration reproduced on tagged base, not fixed here",
       "sourceAppSha256": "cd069b02c7290e71e3ab45020a2be3a051655d1a427f209b3a4404d093e97fa8",
       "productionFixCommit": "35fd791",
@@ -1869,7 +1869,7 @@
       "risk": "high feature coupling, second to Stage 3 element-cache consolidation for manual verification",
       "scope": "5a trajectory playback/scene-clock core,5b vibration runtime/panel,5c symmetry presentation; one PR each",
       "verification": "Audit dependency seams, exercise all moved controls and cancellation paths, playback/video/session preservation, and use the affected panel manual matrix. Preserve per-feature beta soak.",
-      "status": "Complete:5a/5b/5c merged and pushed,262\u2192260\u2192256\u2192249;8/13/11 used inputs; all construction gates clean. The0.10.0 release follows.",
+      "status": "Complete:5a/5b/5c merged and pushed,262→260→256→249;8/13/11 used inputs; all construction gates clean. The0.10.0 release follows.",
       "design": "docs/stage5-seam-design.md",
       "moduleLets": 17,
       "trueTrajectoryMirrors": 2,
@@ -1949,9 +1949,9 @@
       "environment": "CI"
     },
     "requiredRemainingFailures": [
-      "axis_gizmo.py \u2014 escape-canvas-focus",
-      "mode_consistency.py \u2014 coordinates-delete-selection-card",
-      "smoke.py \u2014 issue-11-stop-after-second-download"
+      "axis_gizmo.py — escape-canvas-focus",
+      "mode_consistency.py — coordinates-delete-selection-card",
+      "smoke.py — issue-11-stop-after-second-download"
     ],
     "blocksElementCacheStage": false,
     "validation": {
@@ -2259,13 +2259,13 @@
     "lineNumbers": "diagnostic only; never acceptance keys",
     "acceptedWorkflows": [],
     "expected": {
-      "passed": 37,
+      "passed": 39,
       "failed": 0,
-      "total": 37
+      "total": 39
     },
-    "authority": "Direct human issue53 authorization: remove only Coordinates; exact37/0/37 independent of observed CI.",
+    "authority": "Verification tiers authorization adds two suite entries by splitting Looks.",
     "firstAutomaticCandidateRunOnly": true,
-    "overPerformance": "All37 suites must pass exactly once. Changed totals, repeats, omissions or any failure stop. The intentionally empty accepted set is not a missing manifest.",
+    "overPerformance": "All39 suites must pass exactly once. Changed totals, repeats, omissions or any failure stop. The intentionally empty accepted set is not a missing manifest.",
     "acceptedSetIntentionallyEmpty": true
   },
   "ciArtifactEvidencePolicy": {
@@ -2286,9 +2286,9 @@
     ],
     "identicalTaggedManualFailure": "File, carry, preserve failing assertion and continue; never relax or fix production here.",
     "currentBrowserGate": {
-      "passed": 37,
+      "passed": 39,
       "failed": 0,
-      "total": 37
+      "total": 39
     },
     "humanCorrection": "Direct human issue53 repair authorization removes only Coordinates after accepted52: exactly37/0/37, intentionally empty accepted set. No other gate requirement changes.",
     "cacheOnlyRestrictionScope": "The let-to-els/line-neutral limitation applies to historical Stage3 cache conversions. The direct human separately authorizes Stage4 and Stage5 real controller extractions under their accepted seams, with preserved behavior and construction-order gate."
@@ -3769,9 +3769,9 @@
     "vibrationExportReached": false
   },
   "ordinaryExpected": {
-    "passed": 37,
+    "passed": 39,
     "failed": 0,
-    "total": 37
+    "total": 39
   },
   "currentBrowserBaseline": {
     "passed": 37,

@@ -119,8 +119,8 @@ def shard_assignments(plan, manifest):
     assert all(shard['suites'] for shard in shards), 'Empty shard'
     assert len(suites) == len(set(suites)) == manifest['expected']['total'], 'Missing or duplicate suites in shard plan'
     assert set(suites) == set(manifest['suites']), 'Shard plan differs from full suite manifest'
-    for test in ('tests/e2e/smoke.py', 'tests/e2e/looks.py'):
-        assert next(s for s in shards if test in s['suites'])['suites'] == [test], test + ' needs its own shard'
+    smoke = 'tests/e2e/smoke.py'
+    assert next(s for s in shards if smoke in s['suites'])['suites'] == [smoke], smoke + ' needs its own shard'
     return {s['name']: s['suites'] for s in shards}
 
 
@@ -150,6 +150,7 @@ def main():
     parser.add_argument('--allow-known-defects', action='store_true',
                         help='Require exactly the manifest workflows; still report them as failing.')
     parser.add_argument('--shard', help='Collect one planned shard; the join, not this worker, asserts the full gate.')
+    parser.add_argument('--select', nargs='+', help='Local subset of the named shard')
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text())
     suites, known = manifest['suites'], manifest['knownDefects']
@@ -159,6 +160,10 @@ def main():
         assignments = shard_assignments(json.loads(SHARDS.read_text()), manifest)
         assert args.shard in assignments, 'Unknown shard: ' + args.shard
         suites = assignments[args.shard]
+    if args.select:
+        assert args.shard and 'CI' not in os.environ, 'Subset shards are local diagnostics only'
+        assert len(args.select) == len(set(args.select)) and set(args.select) <= set(suites)
+        suites = [suite for suite in suites if suite in args.select]
     out = pathlib.Path(os.environ.get('VIBEMOL_TEST_ARTIFACT_DIR', ROOT / 'out/test-artifacts/browser-suite')).resolve()
     out.mkdir(parents=True, exist_ok=True)
     source_hash = hashlib.sha256((ROOT / 'assets/app/js/app.js').read_bytes()).hexdigest()

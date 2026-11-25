@@ -1,0 +1,1171 @@
+{
+  "assets/app/js/app.js": [
+    "*"
+  ],
+  "index.html": [
+    "*"
+  ],
+  "assets/app/js/asset-urls.js": [
+    "*"
+  ],
+  "tests/e2e/helpers.py": [
+    "*"
+  ],
+  ".github/workflows/ci.yml": [
+    "*"
+  ],
+  "src/*": [
+    "*"
+  ],
+  "tests/baselines/browser-*.json": [
+    "*"
+  ],
+  "tests/baselines/suite-map.json": [
+    "*"
+  ],
+  "tools/run_browser_shards_parallel.py": [
+    "*"
+  ],
+  "tools/select_browser_suites.py": [
+    "*"
+  ],
+  "assets/app/js/vector*.js": [
+    "tests/e2e/premerge.py",
+    "tests/e2e/transform_selection.py"
+  ],
+  "assets/app/js/molden*.js": [
+    "tests/e2e/premerge.py",
+    "tests/e2e/calculations.py"
+  ],
+  "assets/app/js/edit-*.js": [
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/edit_picking.py"
+  ],
+  "assets/app/js/axis*.js": [
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/camera_depth.py"
+  ],
+  "assets/app/js/preset*.js": [
+    "tests/e2e/sessions.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/looks_presets.py"
+  ],
+  "assets/app/js/look*.js": [
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_materials.py"
+  ],
+  "assets/app/js/appearance*.js": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/style_studio.py"
+  ],
+  "assets/app/js/surface*.js": [
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/workbench*.js": [
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_release.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py"
+  ],
+  "assets/app/js/measure*.js": [
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py"
+  ],
+  "assets/app/js/session*.js": [
+    "tests/e2e/sessions.py",
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/figure*.js": [
+    "tests/e2e/figure.py"
+  ],
+  "assets/app/js/trajectory*.js": [
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/vibration*.js": [
+    "tests/e2e/smoke.py",
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/calculation*.js": [
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "assets/app/js/forte2*.js": [
+    "tests/e2e/calculations.py"
+  ],
+  "assets/app/js/minao*.js": [
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "assets/app/js/property*.js": [
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/appearance_scopes.py"
+  ],
+  "assets/app/js/properties*.js": [
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/appearance_scopes.py"
+  ],
+  "assets/app/js/float*.js": [
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench_bar.py"
+  ],
+  "assets/app/js/hydrogen*.js": [
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/looks_presets.py"
+  ],
+  "assets/app/js/auto-hydrogen*.js": [
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_panel.py"
+  ],
+  "assets/app/js/autoiso*.js": [
+    "tests/e2e/premerge.py",
+    "tests/e2e/figure.py"
+  ],
+  "assets/app/js/coordination*.js": [
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/calculations.py"
+  ],
+  "assets/app/js/bond*.js": [
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/looks_presets.py"
+  ],
+  "assets/app/js/periodic-table*.js": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "assets/app/js/symmetry*.js": [
+    "tests/e2e/symmetry_panel.py"
+  ],
+  "assets/app/js/style*.js": [
+    "tests/e2e/style_lab.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/look_tiles.py"
+  ],
+  "assets/app/js/display-windows*.js": [
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "assets/app/js/command*.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/embed*.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/frag*.js": [
+    "tests/e2e/build_panel.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_tool.py"
+  ],
+  "assets/app/js/uff*.js": [
+    "tests/e2e/edit_tool.py"
+  ],
+  "assets/app/js/view*.js": [
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/axis_gizmo.py"
+  ],
+  "assets/app/js/arithmetic*.js": [
+    "tests/e2e/premerge.py",
+    "tests/e2e/figure.py"
+  ],
+  "assets/app/js/grid-store*.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "tests/e2e/accessibility.py": [
+    "tests/e2e/accessibility.py"
+  ],
+  "tests/e2e/accessibility_contract.py": [
+    "tests/e2e/accessibility.py"
+  ],
+  "tests/e2e/api_surface_recording.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/appearance_autosave.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/appearance_controls.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/appearance_registry.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/appearance_scopes.py": [
+    "tests/e2e/appearance_scopes.py"
+  ],
+  "tests/e2e/assertion_contract.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/assertion_contract_probe.py": [
+    "*"
+  ],
+  "tests/e2e/asset_cache.py": [
+    "tests/e2e/asset_cache.py"
+  ],
+  "tests/e2e/atomic_identity.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/axis_gizmo.py": [
+    "tests/e2e/axis_gizmo.py"
+  ],
+  "tests/e2e/browser_lifetime.py": [
+    "tests/e2e/floating_panels.py"
+  ],
+  "tests/e2e/browser_suite.py": [
+    "*"
+  ],
+  "tests/e2e/build_bonds.py": [
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py"
+  ],
+  "tests/e2e/build_orbit.py": [
+    "tests/e2e/build_orbit.py"
+  ],
+  "tests/e2e/build_panel.py": [
+    "tests/e2e/build_panel.py"
+  ],
+  "tests/e2e/calculations.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "tests/e2e/camera_depth.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/cas_default_recording.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/characterize.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/checkpoint_contract.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/ci_evidence.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/ci_gate_diagnostics.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/compare_ci_baselines.py": [
+    "*"
+  ],
+  "tests/e2e/coordinates_region_diagnostic.py": [
+    "*"
+  ],
+  "tests/e2e/edit_api.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/edit_picking.py": [
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/transform_selection.py"
+  ],
+  "tests/e2e/edit_testing_adapters.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/edit_tool.py": [
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "tests/e2e/escape_contract.py": [
+    "tests/e2e/axis_gizmo.py"
+  ],
+  "tests/e2e/escape_reproduction.py": [
+    "*"
+  ],
+  "tests/e2e/figure.py": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/figure_preview_diagnostics.py": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/figure_runner.py": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/floating_panels.py": [
+    "tests/e2e/floating_panels.py"
+  ],
+  "tests/e2e/forte2_export.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "tests/e2e/hydrogen_contacts.py": [
+    "tests/e2e/hydrogen_contacts.py"
+  ],
+  "tests/e2e/join_browser_shards.py": [
+    "*"
+  ],
+  "tests/e2e/join_characterize.py": [
+    "*"
+  ],
+  "tests/e2e/look_references.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/look_tiles.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/looks.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/looks_materials.py": [
+    "tests/e2e/looks_materials.py"
+  ],
+  "tests/e2e/looks_presets.py": [
+    "tests/e2e/looks_presets.py"
+  ],
+  "tests/e2e/looks_surfaces.py": [
+    "tests/e2e/looks_surfaces.py"
+  ],
+  "tests/e2e/measurements.py": [
+    "tests/e2e/measurements.py"
+  ],
+  "tests/e2e/metal_popover.py": [
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py"
+  ],
+  "tests/e2e/mode_consistency.py": [
+    "tests/e2e/mode_consistency.py"
+  ],
+  "tests/e2e/navigation_budget.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/navigation_budget_probe.py": [
+    "*"
+  ],
+  "tests/e2e/navigation_diagnostics.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/paired_controls.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/paired_controls_contract.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/periodic_table.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/pinned_figure_browser.py": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/premerge.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/presented_state_probe.py": [
+    "*"
+  ],
+  "tests/e2e/properties_disclosures.py": [
+    "tests/e2e/properties_disclosures.py"
+  ],
+  "tests/e2e/properties_inspector.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/release_baseline_recording.py": [
+    "tests/e2e/periodic_table.py"
+  ],
+  "tests/e2e/retired_edit_cache.py": [
+    "tests/e2e/build_panel.py"
+  ],
+  "tests/e2e/scientific_buffers.py": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/selection_arrival_diagnostic.py": [
+    "*"
+  ],
+  "tests/e2e/sessions.py": [
+    "tests/e2e/sessions.py"
+  ],
+  "tests/e2e/smoke.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/smoke_input_diagnostic.py": [
+    "*"
+  ],
+  "tests/e2e/step3b_product_apis.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/style_lab.py": [
+    "tests/e2e/style_lab.py"
+  ],
+  "tests/e2e/style_studio.py": [
+    "tests/e2e/style_studio.py"
+  ],
+  "tests/e2e/surface_collisions.py": [
+    "*"
+  ],
+  "tests/e2e/surface_overlap_contract.py": [
+    "*"
+  ],
+  "tests/e2e/surface_schemes.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/surface_shadows.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/symmetry_panel.py": [
+    "tests/e2e/symmetry_panel.py"
+  ],
+  "tests/e2e/transform_selection.py": [
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py"
+  ],
+  "tests/e2e/tutorials.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/ux_review.py": [
+    "tests/e2e/ux_review.py"
+  ],
+  "tests/e2e/vector_transforms.py": [
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/transform_selection.py"
+  ],
+  "tests/e2e/video_export_activation.py": [
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/wall_times.py": [
+    "tests/e2e/accessibility.py",
+    "tests/e2e/appearance_controls.py",
+    "tests/e2e/appearance_scopes.py",
+    "tests/e2e/asset_cache.py",
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/build_bonds.py",
+    "tests/e2e/build_orbit.py",
+    "tests/e2e/build_panel.py",
+    "tests/e2e/calculations.py",
+    "tests/e2e/camera_depth.py",
+    "tests/e2e/edit_picking.py",
+    "tests/e2e/edit_tool.py",
+    "tests/e2e/figure.py",
+    "tests/e2e/floating_panels.py",
+    "tests/e2e/hydrogen_contacts.py",
+    "tests/e2e/look_references.py",
+    "tests/e2e/look_tiles.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_presets.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/measurements.py",
+    "tests/e2e/mode_consistency.py",
+    "tests/e2e/periodic_table.py",
+    "tests/e2e/premerge.py",
+    "tests/e2e/properties_disclosures.py",
+    "tests/e2e/properties_inspector.py",
+    "tests/e2e/sessions.py",
+    "tests/e2e/smoke.py",
+    "tests/e2e/style_lab.py",
+    "tests/e2e/style_studio.py",
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/transform_selection.py",
+    "tests/e2e/ux_review.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py",
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/workbench.py": [
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_consistency.py"
+  ],
+  "tests/e2e/workbench_bar.py": [
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/workbench.py",
+    "tests/e2e/workbench_bar.py",
+    "tests/e2e/workbench_consistency.py"
+  ],
+  "tests/e2e/workbench_consistency.py": [
+    "tests/e2e/build_panel.py",
+    "tests/e2e/symmetry_panel.py",
+    "tests/e2e/workbench_consistency.py"
+  ],
+  "tests/e2e/workbench_release.py": [
+    "tests/e2e/workbench_release.py"
+  ],
+  "tests/e2e/workflow_contract.py": [
+    "tests/e2e/axis_gizmo.py",
+    "tests/e2e/mode_consistency.py"
+  ],
+  "assets/app/js/cloud-rendering.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/element-utils.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/file-loader.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/geometry-inference.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/interaction.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/io-utils.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/parsers.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/pubchem.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/qa-characterize.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/rendering.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/scene-export.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/scene-graph.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/scene-outliner.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/scene-sources.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/structure-transport.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/structure.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/tutorials.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/ui.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/volume-2c.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "assets/app/js/volume-geometry.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "tests/e2e/smoke_input_probe.js": [
+    "tests/e2e/smoke.py"
+  ],
+  "tests/e2e/selection_arrival_probe.js": [
+    "tests/e2e/smoke.py"
+  ],
+  "tests/e2e/assertion_runtime.js": [
+    "*"
+  ],
+  "tests/e2e/measurement_connection_widths.js": [
+    "tests/e2e/measurements.py"
+  ],
+  "tests/e2e/surface_collision_probe.js": [
+    "tests/e2e/surface_schemes.py",
+    "tests/e2e/surface_shadows.py"
+  ],
+  "tests/e2e/edit_api_probe.js": [
+    "tests/e2e/premerge.py"
+  ],
+  "tests/e2e/scientific_buffers.js": [
+    "tests/e2e/figure.py"
+  ],
+  "tests/e2e/stall_diagnostics.js": [
+    "*"
+  ],
+  "tests/e2e/paired_controls_probe.js": [
+    "tests/e2e/look_references.py"
+  ]
+}

@@ -114,7 +114,7 @@
       "proposal": "Implemented shared responsive budgets with50ms monotonic heartbeat and180000ms independent hard wall. Existing responsive values and exact predicates retained; union of observed wait-overlapping longtasks and overdue heartbeat gaps discounted once. See tests/baselines/responsive-assertion-budgets.json.",
       "evidenceCollector": "tests/e2e/figure_preview_diagnostics.py",
       "standingGateUnchanged": "37/0/37; accepted set intentionally empty; every suite including Figure must pass.",
-      "implementationPrerequisite": "Direct human authorization unheld the budget after PR72 measured24680.9ms poll gap/18500ms longtask and correct resize; #50 correct arrivals139\u2013265ms; #42 laterFailureArtifactHadBlob:true. Does not classify or close original42.",
+      "implementationPrerequisite": "Direct human authorization unheld the budget after PR72 measured24680.9ms poll gap/18500ms longtask and correct resize; #50 correct arrivals139–265ms; #42 laterFailureArtifactHadBlob:true. Does not classify or close original42.",
       "smokeSubset": "Existing completed-native/DOM-backed value contracts retained; the shared clock changes timing accounting only.",
       "diagnosticHalf": "Raw longtasks and overdue heartbeat gaps, individual overlaps, union discount, wall/responsive elapsed, nominal-deadline timestamps/lateness, drops and observer errors.",
       "budgetHalf": "Released by direct human instruction: shared engine covers original six sites plus70 resize and original43 Figure target. Never-arriving/wrong values and hard-wall crossings fail; incomplete record windows charge all wall time.",
@@ -235,9 +235,9 @@
     }
   ],
   "acceptedCiGate": {
-    "passed": 37,
+    "passed": 39,
     "failed": 0,
-    "total": 37
+    "total": 39
   },
   "stage3CompletionEvidence": "tests/baselines/evidence/stage3/completion/validation.json",
   "relativeBatchPriority": {

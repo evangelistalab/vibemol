@@ -249,9 +249,11 @@ function additiveHelpers(root, readBase, placementChanges, haloChanges) {
  }
  return files;
 }
-function kernelInventory(root, entries) {
+function kernelInventory(root, entries, appSource) {
  return entries.map(entry=>{
-  const source=fs.readFileSync(path.join(root,'assets/app/js',entry.file),'utf8'),found=[];
+  const source=entry.file==='app.js'&&appSource!==undefined ? appSource :
+   fs.readFileSync(path.join(root,'assets/app/js',entry.file),'utf8');
+  const found=[];
   traverse(parser.parse(source),{FunctionDeclaration(fn){
    if(fn.node.id?.name!==entry.name)return;
    const inputs=new Set();fn.traverse({ReferencedIdentifier(p){
@@ -263,9 +265,9 @@ function kernelInventory(root, entries) {
   }});assert.equal(found.length,1,'Kernel name must resolve once: '+entry.name);return found[0];
  });
 }
-function audit(root=path.resolve(__dirname,'..')) {
+function audit(root=path.resolve(__dirname,'..'),candidate) {
  const cp=require('node:child_process'),crypto=require('node:crypto');
- const contract=JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/edit-api.json'))),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
+ const contract=candidate??JSON.parse(fs.readFileSync(path.join(root,'tests/baselines/edit-api.json'))),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
  const readBase=file=>cp.execFileSync('git',['show',contract.baseCommit+':'+file],{cwd:root,encoding:'utf8',maxBuffer:8*1024*1024});
  const rows=inventory(source),api=surface(source);
  assert.deepEqual(rows,contract.units,'Input inventory changed; re-cut before expanding');assert(rows.every(r=>r.count<15));
@@ -279,8 +281,52 @@ function audit(root=path.resolve(__dirname,'..')) {
  const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase,contract.placementChanges,contract.haloChanges);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
-if(require.main===module) {
- const result=audit(),index=process.argv.indexOf('--out');if(index>=0)fs.writeFileSync(process.argv[index+1],JSON.stringify(result,null,2)+'\n');
- console.log(JSON.stringify(result));
+function recordProductChanges(root, source, contract, pinned, names, reason) {
+ assert(typeof reason==='string'&&reason.trim(),'Supply --reason with the authorized wording');
+ assert(names.length>0&&names.length===new Set(names).size,'Supply distinct function names');
+ assert.equal(contract.baseCommit,pinned.baseCommit,'Original baseCommit changed');
+ for(const [name,entry] of Object.entries(pinned.productChanges)) {
+  assert.equal(contract.productChanges[name]?.before,entry.before,name+' original fingerprint changed');
+ }
+ const result=structuredClone(contract);
+ const statements=parser.parse(source).program.body[0].expression.callee.body.body;
+ const hash=value=>require('node:crypto').createHash('sha256').update(value).digest('hex');
+ for(const name of names) {
+  assert(Object.hasOwn(pinned.productChanges,name),'No named product entry for '+name);
+  const nodes=statements.filter(node=>node.type==='FunctionDeclaration'&&node.id.name===name);
+  assert.equal(nodes.length,1,'Expected one named app function: '+name);
+  const entry=result.productChanges[name];
+  const existing=entry.units.find(row=>row.file==='app.js'&&row.name===name);
+  const specs=existing?entry.units:[...entry.units,{file:'app.js',name}];
+  const units=kernelInventory(root,specs,source);
+  assert(units.every(row=>row.count<15),name+' requires fewer than 15 inputs: '+JSON.stringify(units));
+  Object.assign(entry,{after:hash(source.slice(nodes[0].start,nodes[0].end)),units,reason});
+ }
+ return result;
 }
-module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,restoreDeclaredModelDefaults,audit};
+if(require.main===module) {
+ const args=process.argv.slice(2),root=path.resolve(__dirname,'..');
+ if(args[0]==='--record') {
+  const reasonIndex=args.indexOf('--reason');
+  assert(reasonIndex>1&&reasonIndex===args.length-2,'Usage: --record <function>... --reason "<text>"');
+  const names=args.slice(1,reasonIndex),file='tests/baselines/edit-api.json';
+  const pinned=JSON.parse(require('node:child_process').execFileSync('git',['show','HEAD:'+file],{cwd:root}));
+  const filename=path.join(root,file);
+  const original=fs.readFileSync(filename,'utf8');
+  const contract=JSON.parse(original),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
+  const candidate=recordProductChanges(root,source,contract,pinned,names,args.at(-1));
+  audit(root,candidate);
+  assert.equal(fs.readFileSync(filename,'utf8'),original,'Ledger changed during recording');
+  fs.writeFileSync(filename,JSON.stringify(candidate,null,2)+'\n');
+  console.table(names.map(name=>({
+   function:name,before:candidate.productChanges[name].before,previousAfter:contract.productChanges[name].after,
+   after:candidate.productChanges[name].after,units:candidate.productChanges[name].units.map(unit=>unit.count).join(', '),
+   reason:candidate.productChanges[name].reason,
+  })));
+ } else {
+  const result=audit(root),index=args.indexOf('--out');
+  if(index>=0)fs.writeFileSync(args[index+1],JSON.stringify(result,null,2)+'\n');
+  console.log(JSON.stringify(result));
+ }
+}
+module.exports={inventory,surface,additiveApp,normalizeHydrogenDefaults,kernelInventory,restoreDeclaredModelDefaults,audit,recordProductChanges};

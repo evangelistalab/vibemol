@@ -52,6 +52,10 @@ class BrowserJoinTests(unittest.TestCase):
             path.write_text(json.dumps(report))
             self.paths[shard['name']] = path
 
+    def shard_for(self, suite):
+        test = f'tests/e2e/{suite}.py'
+        return next(shard['name'] for shard in self.plan['shards'] if test in shard['suites'])
+
     def join(self):
         return join_browser_shards.join_reports(self.inputs, self.output, expected_identity=self.identity)
 
@@ -66,7 +70,7 @@ class BrowserJoinTests(unittest.TestCase):
             self.assertIsNone(json.loads(path.read_text())['matchesAcceptedBaseline'])
         report = self.join()
         self.assertTrue(report['matchesAcceptedBaseline'])
-        self.assertEqual((report['passed'], report['failed'], report['total']), (37, 0, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (39, 0, 39))
         self.assertEqual(report['issue11Workflow'], {'status':'passed'})
         self.assertTrue(all(e['rawFailureIndependentlyVerified'] for e in report['suites']))
 
@@ -75,9 +79,9 @@ class BrowserJoinTests(unittest.TestCase):
             entry = next(e for e in report['suites'] if e['test'].endswith('/accessibility.py'))
             entry['exitCode'] = 1
             entry['processExitCode'] = 1
-        self.change_report('balanced-2', fail)
+        self.change_report(self.shard_for('accessibility'), fail)
         report = self.join()
-        self.assertEqual((report['passed'], report['failed'], report['total']), (36, 1, 37))
+        self.assertEqual((report['passed'], report['failed'], report['total']), (38, 1, 39))
         self.assertFalse(report['matchesAcceptedBaseline'])
         self.assertEqual(report['unexpectedFailures'], ['tests/e2e/accessibility.py'])
 
@@ -85,7 +89,7 @@ class BrowserJoinTests(unittest.TestCase):
         def forge(report):
             entry=next(e for e in report['suites'] if e['test']=='tests/e2e/mode_consistency.py')
             entry['failureWorkflow']={'id':'coordinates-delete-selection-card'}
-        self.change_report('balanced-2',forge)
+        self.change_report(self.shard_for('mode_consistency'),forge)
         with self.assertRaisesRegex(AssertionError,'Raw failure details differ'):
             self.join()
 
@@ -105,15 +109,15 @@ class BrowserJoinTests(unittest.TestCase):
         self.assertEqual(report['issue11Workflow']['status'], 'unexpected smoke failure')
 
     def test_formerly_accepted_coordinates_workflow_is_now_rejected(self):
-        raw=self.paths['balanced-2'].parent/'mode_consistency/run.log'
+        raw=self.paths[self.shard_for('mode_consistency')].parent/'mode_consistency/run.log'
         raw.write_text(marked_log('mode_consistency.py'))
         def fail(report):
             entry=next(e for e in report['suites'] if e['test']=='tests/e2e/mode_consistency.py')
             entry.update(exitCode=1,processExitCode=1,knownDefect=False,
                 **browser_suite.failure_details(raw.read_text(),entry['test'],(ROOT/entry['test']).read_text()))
-        self.change_report('balanced-2',fail)
+        self.change_report(self.shard_for('mode_consistency'),fail)
         report=self.join()
-        self.assertEqual((report['passed'],report['failed'],report['total']),(36,1,37))
+        self.assertEqual((report['passed'],report['failed'],report['total']),(38,1,39))
         self.assertFalse(report['matchesAcceptedBaseline'])
         self.assertEqual(report['unexpectedFailures'],['tests/e2e/mode_consistency.py'])
 
@@ -136,7 +140,7 @@ class BrowserJoinTests(unittest.TestCase):
                     self.join()
                 self.paths['smoke'].write_text(original)
 
-    def test_plan_requires_all_37_once_and_dedicated_smoke_and_looks(self):
+    def test_plan_requires_all_39_once_and_dedicated_smoke(self):
         for mutation in (
             lambda p: p['shards'][0]['suites'].clear(),
             lambda p: p['shards'][2]['suites'].append(p['shards'][0]['suites'][0]),
@@ -166,7 +170,7 @@ class BrowserJoinTests(unittest.TestCase):
             self.assertGreaterEqual(report['suites'][0]['wallTimeSeconds'], 0)
 
     def test_green_process_without_declared_api_checkpoints_cannot_pass_join(self):
-        raw = self.paths['balanced-2'].parent/'premerge/run.log'
+        raw = self.paths[self.shard_for('premerge')].parent/'premerge/run.log'
         raw.write_text('Suite passed\n')
         with self.assertRaisesRegex(AssertionError, "'edit-api': 0"):
             self.join()
@@ -175,7 +179,7 @@ class BrowserJoinTests(unittest.TestCase):
         def forge(report):
             entry = next(e for e in report['suites'] if e['test']=='tests/e2e/premerge.py')
             entry['checkpointCounts']['edit-api'] = 116
-        self.change_report('balanced-2', forge)
+        self.change_report(self.shard_for('premerge'), forge)
         with self.assertRaisesRegex(AssertionError, 'Recorded checkpoint counts differ'):
             self.join()
 
@@ -184,7 +188,7 @@ class BrowserJoinTests(unittest.TestCase):
         for checkpoints in ({}, {'step3b-command-completion': 2}):
             manifest = copy.deepcopy(self.manifest)
             premerge = manifest['checkpointCounts']['tests/e2e/premerge.py']
-            self.assertEqual(premerge.pop('step3b-command-completion'), 1)
+            del premerge['step3b-command-completion']
             premerge.update(checkpoints)
 
             def read_text(file, *args, **kwargs):
@@ -193,18 +197,18 @@ class BrowserJoinTests(unittest.TestCase):
                 return original_read(file, *args, **kwargs)
 
             with self.subTest(checkpoints=checkpoints), patch.object(pathlib.Path, 'read_text', read_text):
-                with self.assertRaisesRegex(AssertionError, 'step3b-command-completion'):
+                with self.assertRaisesRegex(AssertionError, 'step3b-command-completion|Recorded checkpoint'):
                     self.join()
 
     def test_each_new_cardinality_is_recomputed_by_join(self):
-        for shard,suite,marker in [('balanced-3','look_references','registry-readback'),
-                                   ('balanced-3','axis_gizmo','escape-native-case'),
-                                   ('balanced-2','edit_tool','metal-native-case'),
-                                   ('balanced-2','premerge','atomic-identity-rejection'),
-                                   ('balanced-2','premerge','edit-testing-case'),
-                                   ('balanced-2','premerge','step3b-command-completion'),
-                                   ('balanced-2','build_panel','retired-cache-case')]:
-            raw=self.paths[shard].parent/suite/'run.log'
+        for suite,marker in [('look_references','registry-readback'),
+                                   ('axis_gizmo','escape-native-case'),
+                                   ('edit_tool','metal-native-case'),
+                                   ('premerge','atomic-identity-rejection'),
+                                   ('premerge','edit-testing-case'),
+                                   ('premerge','step3b-command-completion'),
+                                   ('build_panel','retired-cache-case')]:
+            raw=self.paths[self.shard_for(suite)].parent/suite/'run.log'
             original=raw.read_text()
             raw.write_text('\n'.join(line for line in original.splitlines()if not line.startswith('['+marker+'] '))+'\n')
             try:

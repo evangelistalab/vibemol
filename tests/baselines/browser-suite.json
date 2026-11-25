@@ -1,8 +1,8 @@
 {
   "expected": {
-    "passed": 37,
+    "passed": 39,
     "failed": 0,
-    "total": 37
+    "total": 39
   },
   "suites": [
     "tests/e2e/asset_cache.py",
@@ -29,7 +29,9 @@
     "tests/e2e/look_tiles.py",
     "tests/e2e/surface_schemes.py",
     "tests/e2e/surface_shadows.py",
-    "tests/e2e/looks.py",
+    "tests/e2e/looks_materials.py",
+    "tests/e2e/looks_surfaces.py",
+    "tests/e2e/looks_presets.py",
     "tests/e2e/camera_depth.py",
     "tests/e2e/edit_picking.py",
     "tests/e2e/mode_consistency.py",
@@ -44,9 +46,9 @@
     "tests/e2e/workbench_bar.py"
   ],
   "knownDefects": {},
-  "policy": "Direct human issue53 authorization: exactly37/0/37; remove only Coordinates Delete after accepted52. The accepted set is intentionally empty. Matcher/join machinery stays; any missing, extra or different failure or any other arithmetic stops. Smoke must complete both exporters; goldens/identity/units/WebKit/construction unchanged.",
+  "policy": "Verification tiers authorization: exactly39/0/39 after splitting Looks into three suites. The accepted set is intentionally empty. Matcher/join machinery stays; any missing, extra or different failure or any other arithmetic stops. Smoke must complete both exporters; goldens/identity/units/WebKit/construction unchanged.",
   "gateEnvironment": "CI",
-  "baselineComparison": "Current issue53 candidate requires37/0/37 with intentionally empty accepted set. Accepted52 run40237309034 was36/1/37; older35/2,34/3 and33/4 observations remain historical.",
+  "baselineComparison": "The current harness gate requires39/0/39 with an intentionally empty accepted set. Accepted52 run40237309034 was36/1/37; older35/2,34/3 and33/4 observations remain historical.",
   "synchronizationCorrection": {
     "issue": 21,
     "classification": "closed test-synchronization defect",

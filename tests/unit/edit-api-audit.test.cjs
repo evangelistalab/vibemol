@@ -137,3 +137,36 @@ test('only the declared CAS default is normalized and other settings still fail 
  assert.notEqual(semantic(restoreDeclaredModelDefaults(source.replace('sigma:.98','sigma:.97'),previous,changes)),semantic(previous));
  assert.notEqual(semantic(restoreDeclaredModelDefaults(source,previous,[])),semantic(previous));
 });
+
+test('record mode updates exactly one authorized function and preserves the reason verbatim',()=>{
+ const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
+ const name='applyVectorProductState';
+ const line='window.VibeMolVectorsModel.restore(record.vol, afterVectors);';
+ const changed=source.replace(line,line+' // record-mode control');
+ assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/changed product fingerprint/);
+ const reason='Authorized recording text. ';
+ const result=recordProductChanges(root,changed,contract,contract,[name],reason);
+ assert.notEqual(result.productChanges[name].after,contract.productChanges[name].after);
+ assert.equal(result.productChanges[name].reason,reason);
+ assert.equal(result.productChanges[name].before,contract.productChanges[name].before);
+ const restored=structuredClone(result);
+ restored.productChanges[name]=contract.productChanges[name];
+ assert.deepEqual(restored,contract);
+ audit(changed,result.productChanges);
+});
+test('record mode rejects edited pins, unnamed functions and at least fifteen inputs',()=>{
+ const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
+ const name='applyVectorProductState';
+ const altered=structuredClone(contract);
+ altered.productChanges[name].before='0'.repeat(64);
+ assert.throws(()=>recordProductChanges(root,source,altered,contract,[name],'approved'),/original fingerprint/);
+ altered.productChanges[name].before=contract.productChanges[name].before;
+ altered.baseCommit='0'.repeat(40);
+ assert.throws(()=>recordProductChanges(root,source,altered,contract,[name],'approved'),/baseCommit/);
+ assert.throws(()=>recordProductChanges(root,source,contract,contract,['unlistedFunction'],'approved'),/No named product entry/);
+ const locals=Array.from({length:15},(_,i)=>'dependency'+i);
+ const synthetic='(()=>{const '+locals.map(local=>local+'=1').join(',')+';\nfunction '+name+
+  '(){return ['+locals.join(',')+'];}})();';
+ assert.throws(()=>recordProductChanges(root,synthetic,contract,contract,[name],'approved'),/fewer than 15/);
+});
