@@ -15,9 +15,11 @@ class ParallelBrowserLoadTests(unittest.TestCase):
     def test_max_load_refuses_before_starting_any_shard(self):
         stderr = io.StringIO()
         with (patch.object(sys, 'argv', ['runner', '--max-load', '1.5']),
+              patch.dict(runner.os.environ),
               patch.object(runner.os, 'getloadavg', return_value=(2, 0, 0)),
               patch.object(runner.tempfile, 'mkdtemp') as create_artifacts,
               redirect_stderr(stderr), self.assertRaises(SystemExit) as error):
+            runner.os.environ.pop('CI', None)
             runner.main()
 
         self.assertEqual(error.exception.code, 2)
