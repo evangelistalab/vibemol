@@ -9,7 +9,7 @@ import sys
 import time
 from typing import Any
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import Error as PlaywrightError, sync_playwright
 
 if __package__ in (None, ""):
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
@@ -31,6 +31,31 @@ SMOKE_VERBOSE = os.environ.get('VIBEMOL_SMOKE_VERBOSE') == '1'
 def log_step(label: str) -> None:
     if SMOKE_VERBOSE:
         print(f'[smoke] {label}', flush=True)
+
+
+def wait_for_wboit(page, label, predicate, warnings):
+    def log(phase, failure=None):
+        evidence = {'case': label, 'phase': phase, 'failureReason': failure,
+                    'rendererWarnings': list(warnings)}
+        try:
+            evidence.update(page.evaluate("""() => ({
+                wboit: window.VibeMolTesting?.getWboitSnapshot?.() ?? null,
+                clouds: window.VibeMolTesting?.getCloudMaterialSnapshot?.() ?? null,
+                mode: window.VibeMolWorkbenchHost?.getMode?.() ?? null,
+                showSurfaces: window.VibeMolPreset?.export?.()?.settings?.['surface.enabled'] ?? null,
+                surfaceRenderSuppressed: window.VibeMolTesting?.getMeasurementSnapshot?.()?.surfacesSuppressed ?? null,
+            })"""))
+        except PlaywrightError as error:
+            evidence['readbackError'] = str(error)
+        print('[smoke-wboit] ' + json.dumps(evidence), flush=True)
+
+    log('start')
+    try:
+        page.wait_for_function(predicate)
+    except PlaywrightError as error:
+        log('failure', str(error))
+        raise
+    log('success')
 
 
 def confirm_clear_files(page) -> None:
@@ -1481,12 +1506,14 @@ def click_spinor_info(page) -> None:
 def main() -> int:
     page_errors: list[str] = []
     console_errors: list[str] = []
+    wboit_warnings: list[str] = []
     with run_http_server(REPO_ROOT) as base_url, sync_playwright() as playwright:
         browser = playwright.chromium.launch(headless=True)
         page = browser.new_page(viewport={'width': 1440, 'height': 1000})
         install_video_probe(page, REPO_ROOT, ARTIFACT_DIR)
         page.on('pageerror', lambda err: page_errors.append(str(err)))
         page.on('console', lambda msg: console_errors.append(msg.text) if msg.type == 'error' else None)
+        page.on('console', lambda msg: wboit_warnings.append(msg.text) if msg.text.startswith('[WBOIT]') else None)
         try:
             log_step('load app')
             page.goto(base_url+'?workspaceLab=0', wait_until='networkidle')
@@ -5119,11 +5146,12 @@ def main() -> int:
                 const select=document.getElementById('appearanceMaterialPreset');
                 select.value='emissive';select.dispatchEvent(new Event('change',{bubbles:true}));
             }""")
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'surface meshes',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap && snap.transparentMeshCount >= 2;
-                }"""
+                }""", wboit_warnings
             )
             page.wait_for_function(
                 """() => !document.getElementById('styleSelect')
@@ -5142,7 +5170,8 @@ def main() -> int:
                       && String(select.value || '') === 'emissive';
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'emissive environment and materials',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
@@ -5164,7 +5193,7 @@ def main() -> int:
                       && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.5) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.8) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.0) < 1e-3);
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5174,7 +5203,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'gel materials',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const materials = window.VibeMolTesting?.getSurfaceMaterialSnapshot?.() || [];
@@ -5196,7 +5226,7 @@ def main() -> int:
                       && materials.every((mat) => Math.abs(Number(mat.reflectivity || 0) - 0.5) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.emissiveIntensity || 0) - 0.2) < 1e-3)
                       && materials.every((mat) => Math.abs(Number(mat.envMapIntensity || 0) - 0.65) < 1e-3);
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5215,11 +5245,12 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'opaque emissive surface initial',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap && snap.surfaceMaterialPreset === 'emissive' && snap.surfaceStyle === 'solid' && snap.active === false;
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5230,7 +5261,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'translucent emissive surface',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
@@ -5238,7 +5270,7 @@ def main() -> int:
                       && snap.surfaceStyle === 'solid'
                       && snap.surfaceOpacity < 0.999
                       && (snap.supported ? snap.active === true : snap.fallback === true);
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5249,7 +5281,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'opaque emissive surface restored',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap
@@ -5257,7 +5290,7 @@ def main() -> int:
                       && snap.surfaceStyle === 'solid'
                       && snap.surfaceOpacity >= 0.999
                       && snap.active === false;
-                }"""
+                }""", wboit_warnings
             )
 
             log_step('wboit cloud transparency')
@@ -5270,7 +5303,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'opaque cloud cubes',
                 """() => {
                     const row = document.getElementById('rowCloudType');
                     const select = document.getElementById('cloudType');
@@ -5294,7 +5328,7 @@ def main() -> int:
                       && clouds.every((entry) => entry.cloudKind === 'scalar-cubes')
                       && snap.surfaceOpacity >= 0.999
                       && snap.active === false;
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5305,7 +5339,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'translucent cloud cubes',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
@@ -5316,7 +5351,7 @@ def main() -> int:
                       && clouds.length >= 2
                       && clouds.every((entry) => entry.objectType === 'instanced-mesh')
                       && (snap.supported ? snap.active === true : snap.fallback === true);
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5326,7 +5361,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'translucent cloud points',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     const clouds = window.VibeMolTesting?.getCloudMaterialSnapshot?.() || [];
@@ -5339,7 +5375,7 @@ def main() -> int:
                       && clouds.every((entry) => entry.cloudKind === 'scalar-points')
                       && clouds.every((entry) => entry.depthTest === true)
                       && (snap.supported ? snap.active === true : snap.fallback === true);
-                }"""
+                }""", wboit_warnings
             )
 
             log_step('2c spinor labels and info')
@@ -5504,7 +5540,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'translucent spinor surface split',
                 """() => {
                     const mode = document.getElementById('twoComponentModeSelect');
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
@@ -5512,7 +5549,7 @@ def main() -> int:
                       && !!snap
                       && snap.surfaceOpacity < 0.999
                       && (snap.supported ? snap.active === true : snap.fallback === true);
-                }"""
+                }""", wboit_warnings
             )
             page.evaluate(
                 """() => {
@@ -5523,11 +5560,12 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'opaque spinor surface split',
                 """() => {
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
                     return !!snap && snap.surfaceOpacity >= 0.999 && snap.active === false;
-                }"""
+                }""", wboit_warnings
             )
 
             log_step('wboit cloud 2c alpha/beta split view')
@@ -5555,7 +5593,8 @@ def main() -> int:
                     el.dispatchEvent(new Event('change', { bubbles: true }));
                 }"""
             )
-            page.wait_for_function(
+            wait_for_wboit(
+                page, 'translucent spinor cloud split',
                 """() => {
                     const mode = document.getElementById('twoComponentModeSelect');
                     const snap = window.VibeMolTesting?.getWboitSnapshot?.();
@@ -5569,7 +5608,7 @@ def main() -> int:
                       && clouds.length >= 2
                       && clouds.every((entry) => entry.objectType === 'points')
                       && (snap.supported ? snap.active === true : snap.fallback === true);
-                }"""
+                }""", wboit_warnings
             )
 
             log_step('final runtime error check')
