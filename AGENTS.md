@@ -1,15 +1,36 @@
 # AGENTS.md
 
-## 0.10.17 camera candidate — 2026-11-24
+## 0.10.17 release — 2026-11-25
 
+- **0.10.17** is live at merge `eddee08d9e045223a0323171e25b978506a47f6d` from
+  [PR #121](https://github.com/evangelistalab/vibemol/pull/121).
+  Annotated tag object `b43553f3520e9617f4c81f7d891cbc6dc7d59492` points to the merge.
+  The merge tree equals the tree of tested head `993eb0bf2463d7f9bedd856d50471f3ee64046cd`.
+  [PR run 45629444270](https://github.com/evangelistalab/vibemol/actions/runs/45629444270)
+  passed 39/0/39 with an empty accepted set, 68 forte2 cases, the 115/26
+  Edit API matrix, both exporters, the embed and Step 3b completion records,
+  102 captures twice with exact repeat, eight identity contexts with all
+  minima, units, WebKit, construction, and the notebook widget suite.
+- [Original PR run 45545769227](https://github.com/evangelistalab/vibemol/actions/runs/45545769227)
+  stays failed. Removing the Calculations-entry refit exposed a camera-dependent
+  test expectation for popup placement. Francesco approved measuring the popup
+  from the picker's selection bounds. The first run of the corrected head
+  measured 14.011622 px against the 14 ± 0.5 px contract.
+- [Pages run 45633649348](https://github.com/evangelistalab/vibemol/actions/runs/45633649348) deployed the merge. Live
+  `index.html` and `asset-urls.js` matched the merge byte-for-byte and
+  served 0.10.17. The embed `ready` and successful `app.info` reported
+  app version 0.10.17 and command version 1. The panel row, outliner eye and
+  Measure round-trip preserved the camera in perspective and orthographic
+  projections (30/30 live comparands).
+  [Main run 45633650662](https://github.com/evangelistalab/vibemol/actions/runs/45633650662) is monitored separately.
 - Orbital visibility and ordinary mode switches preserve position, target,
   up and zoom. Explicit view actions, new-scene fits, the Edit hidden-target
   fit, session restore and export framing retain their existing behavior.
+  The app-scope let count is 258, within the 260 cap. Projecting 0.10.17
+  changed 204 version leaves across 102 captures and preserved capture provenance.
   [Camera refit inventory](docs/maintenance/camera-refit-inventory.md) ·
-  [Release notes](docs/releases/v0.10.17.md)
-- The app-scope let count is 258, within the 260 cap. The projected baseline
-  records exactly 204 app-version leaves with the original capture
-  provenance. The first candidate CI run is the acceptance gate.
+  [Release notes](docs/releases/v0.10.17.md) ·
+  [Hidden Orbitals group follow-up](https://github.com/evangelistalab/vibemol/issues/122)
 
 ## 0.10.16 release — 2026-11-24
 
