@@ -578,8 +578,7 @@ def step3b_command_cases(page):
         if observe_fit:
             fit = observed['fit']
             check(f'{mode} native fit calls at resolution and two frames later',
-                  [fit['countAtResponse'], len(fit['fitCalls'])], [1, 1])
-            check(f'{mode} native fit ran before resolution', fit['fitCalls'][0] <= fit['responseAt'], True)
+                  [fit['countAtResponse'], len(fit['fitCalls'])], [0, 0])
             elements = {
                 f'{key}.{axis}': [fit[sample][key][index] for sample in ('before', 'atResponse', 'settled')]
                 for key in ('position', 'target', 'up') for index, axis in enumerate('xyz')
@@ -591,13 +590,13 @@ def step3b_command_cases(page):
                     'mode': mode, 'field': key, 'before': before, 'atResponse': at_response,
                     'settled': settled, 'difference': at_response - settled,
                 }), flush=True)
-            check(f'{mode} fit changed the camera pose',
-                  any(not numbers_close(before, at_response)
-                      for key, (before, at_response, _) in elements.items()
-                      if key.startswith(('position.', 'target.'))), True)
-            check(f'{mode} fits agree at resolution and two frames later',
-                  {key: numbers_close(at_response, settled) for key, (_, at_response, settled) in elements.items()},
+            check(f'{mode} resolution preserves the pre-call camera',
+                  {key: numbers_close(before, at_response) for key, (before, at_response, _) in elements.items()},
                   dict.fromkeys(elements, True))
+            # Presented near/far can follow the newly visible bounds after a render.
+            pose = {key: numbers_close(before, settled) for key, (before, _, settled) in elements.items()
+                    if key not in ('near', 'far')}
+            check(f'{mode} pose stays unchanged after two frames', pose, dict.fromkeys(pose, True))
         completed.append('view.setMode')
 
     def refusal(command, params, code, path=None, *, expected_error=None, encode_failure=False):

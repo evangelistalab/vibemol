@@ -38,7 +38,13 @@ def run(page,url):
     page.evaluate('''()=>{THREE.Mesh.prototype.onBeforeRender=function(renderer,scene,camera){if(this.userData.type==='atom'){window.avasScene=scene;window.avasCamera=camera;}};}''')
     assert page.locator('#toolbarModeRow [role="radio"]').count()==4
     assert p.load(page,[{'name':'cyclopropene.xyz','text':CYCLO}])['ok']
+    settle(page)
+    before = p.camera_pose(page, 'avasCamera')
     page.locator('#modeCalculationsBtn').click();ready(page)
+    after = p.camera_pose(page, 'avasCamera')
+    evidence = dict(action='enter Calculations', actual=after, expected=before)
+    print('[calculations camera] '+json.dumps(evidence),flush=True)
+    assert p.matching_camera(after,before), evidence
     assert page.locator('#subspacePanel').is_visible()
     assert page.locator('#modeCalculationsBtn').get_attribute('aria-checked')=='true'
     # Orbiting is not a selection click; Shift-click preserves an included atom.

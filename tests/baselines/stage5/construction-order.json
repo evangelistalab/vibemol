@@ -337,6 +337,16 @@
         "assets/app/js/commands.js"
       ],
       "expectedStatus": "passed"
+    },
+    {
+      "label": "0.10.17 camera refit removal",
+      "before": "d0c3c85a7973feaf48e7624f76ee4d4ec3a323bb",
+      "worktree": ".",
+      "consumers": [
+        "assets/app/js/scene-outliner.js"
+      ],
+      "recheck": [],
+      "expectedStatus": "passed"
     }
   ]
 }

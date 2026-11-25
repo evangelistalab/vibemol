@@ -877,11 +877,11 @@ def first_molden_surface_camera(page):
         state = page.evaluate('() => VibeMolTesting.getCameraSnapshot()')
         position, target, up = ([state[key][axis] for axis in 'xyz'] for key in ('camera', 'target', 'up'))
         distance = math.dist(position, target)
-        return dict(mode=state['mode'], direction=[(v-t)/distance for v, t in zip(position, target)],
-                    target=target, up=up, distance=distance)
+        return dict(mode=state['mode'], position=position, direction=[(v-t)/distance for v, t in zip(position, target)],
+                    target=target, up=up, distance=distance, zoom=page.evaluate('() => depthCamera.zoom'))
 
     def matches(actual, expected):
-        return len(actual) == len(expected) and all(numbers_close(a, b, abs_tol=1e-9) for a, b in zip(actual, expected))
+        return len(actual) == len(expected) and all(numbers_close(a, b) for a, b in zip(actual, expected))
 
     observe(page)
     canonical = [1 / math.sqrt(3)] * 3
@@ -893,7 +893,9 @@ def first_molden_surface_camera(page):
             assert load(page, [{'name': 'first-surface.molden', 'text': MOLDEN}])['ok']
             layers = cubes(page)
             hidden = [layer['effectiveVisible'] for layer in layers]
-            # Displace the target as well so preserving the whole camera cannot pass.
+            settle(page)
+            load_pose = pose()
+            # Displace the target so preserving orientation alone cannot pass.
             settings(page, {'view.target.x': 0.25})
             drag(page)
             before = pose()
@@ -906,7 +908,7 @@ def first_molden_surface_camera(page):
                 && VibeMolTesting.getSurfaceMaterialSnapshot().some(m => m.visible && m.sceneLayerId === id)""",
                                    arg=layer_id)
             settle(page)
-            fitted = pose()
+            after = pose()
             geometry = page.evaluate("""id => {
                 const atoms = new THREE.Box3(), surface = new THREE.Box3();
                 depthScene.traverseVisible(node => {
@@ -922,33 +924,226 @@ def first_molden_surface_camera(page):
                     fitRadius: radius(atoms.clone().union(surface)), aspect: rect.width / rect.height,
                     surfaceNdc: corners(surface).map(point => point.project(depthCamera).toArray())};
             }""", layer_id)
-            # A sphere with the scene's fit radius must clear the limiting half-FOV.
-            half_fov = min(math.pi/8, math.atan(math.tan(math.pi/8) * geometry['aspect']))
-            fit_distance = 1.12 * geometry['fitRadius'] / math.sin(half_fov)
             page.locator('#viewReset').evaluate('button => button.click()')
             reset = pose()
-            expected = dict(mode=projection, direction=before['direction'], up=before['up'],
-                            target=geometry['center'], distance=fit_distance)
-            reset_expected = dict(expected, direction=canonical, up=default_up)
             checks = dict(initiallyHidden=hidden == [False]*3,
                           rotated=not matches(before['direction'], canonical) and not matches(before['up'], default_up),
                           displacedTarget=not matches(before['target'], geometry['center']),
-                          extendsBeyondAtoms=geometry['surfaceRadius'] > geometry['atomRadius'],
-                          insideFrustum=all(numbers_close(value, max(-1, min(1, value)), abs_tol=1e-9)
-                                            for corner in geometry['surfaceNdc'] for value in corner))
-            for label, actual, wanted in [('fit', fitted, expected), ('reset', reset, reset_expected)]:
-                for key in ('target', 'direction', 'up'):
+                          extendsBeyondAtoms=geometry['surfaceRadius'] > geometry['atomRadius'])
+            for label, actual, wanted in [('show', after, before), ('reset', reset, load_pose)]:
+                for key in ('position', 'target', 'direction', 'up'):
                     checks[f'{label}.{key}'] = matches(actual[key], wanted[key])
                 checks[f'{label}.mode'] = actual['mode'] == wanted['mode']
-                checks[f'{label}.distance'] = numbers_close(actual['distance'], wanted['distance'], abs_tol=1e-9)
+                checks[f'{label}.distance'] = numbers_close(actual['distance'], wanted['distance'])
+                checks[f'{label}.zoom'] = numbers_close(actual['zoom'], wanted['zoom'])
             receipt = dict(entry=entry, projection=projection, before=before, hidden=hidden, geometry=geometry,
-                           ndcRange=[-1, 1], fit=fitted, expected=expected, reset=reset, resetExpected=reset_expected,
+                           after=after, expected=before, reset=reset, resetExpected=load_pose,
                            checks=checks)
             print('[first-molden-surface-camera] ' + json.dumps(receipt), flush=True)
             results.append((projection, entry, [name for name, passed in checks.items() if not passed]))
     require_phase_counts({'first-molden-surface-camera': len(results)}, 'tests/e2e/premerge.py',
                          'first-molden-surface-camera')
     assert all(not failures for _, _, failures in results), results
+
+
+def camera_pose(page, rendering_camera='depthCamera'):
+    return page.evaluate('''name => {
+      const {mode, camera, target, up} = VibeMolTesting.getCameraSnapshot();
+      return {mode, position: Object.values(camera), target: Object.values(target),
+              up: Object.values(up), zoom: window[name].zoom};
+    }''', rendering_camera)
+
+
+def matching_camera(actual, expected):
+    return actual['mode'] == expected['mode'] and numbers_close(actual['zoom'], expected['zoom']) and all(
+        numbers_close(left, right) for field in ('position', 'target', 'up')
+        for left, right in zip(actual[field], expected[field]))
+
+
+def single_atom_fit(page):
+    bounds = page.evaluate('''() => {
+        const atoms = new THREE.Box3();
+        depthScene.traverseVisible(node => {
+            if (node.userData.type === 'atom') atoms.expandByObject(node);
+        });
+        const rect = document.querySelector('#canvas').getBoundingClientRect();
+        return {center: atoms.getCenter(new THREE.Vector3()).toArray(),
+                radius: atoms.getSize(new THREE.Vector3()).length() / 2,
+                aspect: rect.width / rect.height};
+    }''')
+    half_fov = min(math.pi/8, math.atan(math.tan(math.pi/8) * bounds['aspect']))
+    distance = 1.12 * bounds['radius'] / math.sin(half_fov)
+    print('[camera-refit-fit-bounds] ' + json.dumps({**bounds, 'fitDistance': distance}), flush=True)
+    return bounds['center'], distance
+
+
+def camera_refit_regression(page, *, live=False):
+    from camera_depth import observe
+    from surface_shadows import settings, settle
+    from tutorials import drag
+
+    observe(page)
+    failures = []
+
+    def check(label, actual, expected, compare=None):
+        matches = compare(actual, expected) if compare else actual == expected
+        print('[camera-refit-comparand] ' + json.dumps(
+            dict(projection=projection, case=label, actual=actual, expected=expected, passed=matches)), flush=True)
+        if not matches:
+            failures.append((projection, label))
+
+    def command(name, params=None):
+        result = page.evaluate('([name, params]) => VibeMolCommands.run(name, params)', [name, params or {}])
+        check(name + ' envelope', result, True, lambda readback, ok: readback['ok'] == ok)
+        assert result['ok'], result
+        return result['value']
+
+    def visible(label, indices):
+        page.wait_for_function("() => !document.querySelector('#moldenInspectorBody .vm-list-popover__row--pending')")
+        actual = [index for index, layer in enumerate(cubes(page)) if layer['effectiveVisible']]
+        check(label + ' visible orbitals', actual, indices)
+        if actual == indices:
+            page.wait_for_function('''ids => ids.every(id => VibeMolTesting.getSurfaceMaterialSnapshot().some(surface =>
+                surface.visible && surface.sceneLayerId === id))''', arg=[layers[index]['id'] for index in indices])
+
+    def unchanged(label, action):
+        before = camera_pose(page)
+        action()
+        settle(page)
+        check(label, camera_pose(page), before, matching_camera)
+
+    def hide_all():
+        unchanged('command hide all', lambda: command('orbitals.hide'))
+        visible('command hide all', [])
+
+    def row(index):
+        return page.locator(f'.vm-outliner-row[data-id="{layers[index]["id"]}"]')
+
+    for projection in ('perspective', 'orthographic'):
+        settings(page, {'view.projection': projection, 'view.autoRotate': False,
+                        'view.damping': 1, 'global.showBox': False})
+        assert load(page, [{'name': 'camera-refit.molden', 'text': MOLDEN}])['ok']
+        page.evaluate('() => VibeMolWorkbench.open("moldenInspector")')
+        settle(page)
+        load_pose = camera_pose(page)
+        layers = cubes(page)
+        visible('load', [])
+        drag(page)
+        settle(page)
+        rotated = camera_pose(page)
+        check('pointer rotation changed position', rotated['position'], load_pose['position'],
+              lambda actual, expected: any(not numbers_close(a, b) for a, b in zip(actual, expected)))
+        canvas = page.locator('#canvas').bounding_box()
+        page.mouse.move(canvas['x'] + canvas['width'] / 2, canvas['y'] + canvas['height'] / 2)
+        page.mouse.wheel(0, -132)
+        if projection == 'orthographic':
+            page.wait_for_function('zoom => depthCamera.zoom !== zoom', arg=rotated['zoom'])
+        else:
+            page.wait_for_function('p => depthCamera.position.toArray().some((v, i) => Math.abs(v - p[i]) > 1e-9)',
+                                   arg=rotated['position'])
+        settle(page)
+        zoomed = camera_pose(page)
+        drag(page, button='right')
+        settle(page)
+        check('pointer pan changed target', camera_pose(page)['target'], zoomed['target'],
+              lambda actual, expected: any(not numbers_close(a, b) for a, b in zip(actual, expected)))
+
+        panel_row = page.locator('#moldenInspectorBody tr[data-row-index="0"]')
+        unchanged('panel row first show', panel_row.click)
+        visible('panel row first show', [0])
+        if not live:
+            unchanged('panel row with another visible',
+                      page.locator('#moldenInspectorBody tr[data-row-index="1"]').click)
+            visible('panel row with another visible', [1])
+            hide_all()
+            drag(page, button='right')
+            settle(page)
+            unchanged('outliner row first show', row(0).click)
+            visible('outliner row first show', [0])
+            unchanged('outliner row with another visible', row(1).click)
+            visible('outliner row with another visible', [1])
+        hide_all()
+        eye = row(0).locator('.vm-outliner-row__eye')
+        unchanged('outliner eye show after hide all', eye.click)
+        visible('outliner eye show after hide all', [0])
+        if not live:
+            eye_2 = row(1).locator('.vm-outliner-row__eye')
+            unchanged('outliner eye show alongside another', eye_2.click)
+            visible('outliner eye show alongside another', [0, 1])
+            unchanged('outliner eye hide', eye_2.click)
+            visible('outliner eye hide', [0])
+            group = next(layer for scene in snapshot(page)['scenes'] for layer in scene['layers']
+                         if layer['kind'] == 'orbitals_group')
+            active_id = snapshot(page)['activeLayerId']
+            active_index = next(index for index, layer in enumerate(layers) if layer['id'] == active_id)
+            group_eye = page.locator(f'.vm-outliner-row[data-id="{group["id"]}"] .vm-outliner-row__eye')
+            unchanged('group eye hide', group_eye.click)
+            visible('group eye hide', [])
+            unchanged('group eye show', group_eye.click)
+            visible('group eye show', [active_index])
+            hide_all()
+            drag(page, button='right')
+            settle(page)
+            unchanged('command first show', lambda: command('orbitals.show', {'indices': [1]}))
+            visible('command first show', [0])
+            unchanged('command show alongside another',
+                      lambda: command('orbitals.show', {'indices': [2], 'exclusive': False}))
+            visible('command show alongside another', [0, 1])
+            unchanged('command hide one', lambda: command('orbitals.hide', {'indices': [2]}))
+            visible('command hide one', [0])
+
+        unchanged('Measure entry', page.locator('#modeMeasureBtn').click)
+        panel = page.locator('#measurementsPanel')
+        page.evaluate('() => VibeMolWorkbench.open("measurementsPanel")')
+        toggle = panel.locator('[data-surfaces]')
+        check('Measure starts with surfaces suppressed', toggle.is_checked(), False)
+        unchanged('Measure Show surfaces', toggle.check)
+        unchanged('Measure Hide surfaces', toggle.uncheck)
+        unchanged('Measure exit', page.locator('#modeDisplayBtn').click)
+        if live:
+            continue
+        unchanged('Calculations entry', page.locator('#modeCalculationsBtn').click)
+        unchanged('Calculations exit', page.locator('#modeDisplayBtn').click)
+        for mode, suppressed in (('measure', True), ('view', False), ('calculations', True), ('view', False)):
+            def switch(target=mode, surfaces_suppressed=suppressed):
+                result = command('view.setMode', {'mode': target})
+                check('view.setMode readback', result, dict(mode=target, surfacesSuppressed=surfaces_suppressed))
+            unchanged(f'command mode {mode}', switch)
+
+        # Fit the single rendered atom at the current viewport aspect. The
+        # load-time default may have been computed before the dock resized.
+        hide_all()
+        drag(page)
+        settle(page)
+        center, distance = single_atom_fit(page)
+        expected_fit = dict(mode=projection, target=center, up=[0, 0, 1],
+                            position=[axis + distance / math.sqrt(3) for axis in center],
+                            zoom=camera_pose(page)['zoom'])
+        fitted = command('view.set', {'fit': True})
+        check('explicit view.set fit',
+              dict(mode=fitted['projection'], **{key: fitted[key] for key in ('position', 'target', 'up', 'zoom')}),
+              expected_fit, matching_camera)
+
+        drag(page, button='right')
+        settle(page)
+        page.locator('#modeMeasureBtn').click()
+        page.evaluate('() => VibeMolWorkbench.open("measurementsPanel")')
+        settle(page)
+        before_frame = camera_pose(page)
+        center, distance = single_atom_fit(page)
+        before_distance = math.dist(before_frame['position'], before_frame['target'])
+        frame_position = [origin + distance * (position - target) / before_distance
+                          for origin, position, target in zip(center, before_frame['position'], before_frame['target'])]
+        expected_frame = dict(mode=projection, position=frame_position, target=center, up=before_frame['up'], zoom=1)
+        panel.locator('[data-action="frame"]').click()
+        settle(page)
+        check('explicit Frame atoms', camera_pose(page), expected_frame, matching_camera)
+        page.locator('#modeDisplayBtn').click()
+        page.locator('#viewReset').evaluate('button => button.click()')
+        settle(page)
+        check('Reset view restores load-time default', camera_pose(page), load_pose, matching_camera)
+
+    assert not failures, failures
 
 
 def molden_browsing(page, dialogs):
@@ -1041,6 +1236,9 @@ def molden_browsing(page, dialogs):
     assert load(page, [{'name': 'molecule.xyz', 'text': '1\nHydrogen\nH 0 0 0\n'}])['ok']
     assert not panel.is_visible()
     first_molden_surface_camera(page)
+    page.goto(page.url.split('?', 1)[0], wait_until='domcontentloaded')
+    page.wait_for_function('() => window.VibeMolCommands && window.VibeMolWorkbench')
+    camera_refit_regression(page)
 
 
 def molden_fractional_occupations(page, dialogs):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Measurements, recovery context and compact workspace usability regressions."""
 import json
-import math
 import os
 import premerge as p
 from helpers import wait_for_presented_state
@@ -133,12 +132,18 @@ def measurements(page, url):
     hidden=page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()')
     assert [m['geometryId'] for m in before]==[m['geometryId'] for m in hidden]
     assert not any(m['visible'] for m in hidden)
-    assert page.evaluate('()=>VibeMolTesting.getCameraSnapshot()') != pose
+    def check_pose(action):
+        actual = page.evaluate('()=>VibeMolTesting.getCameraSnapshot()')
+        evidence = dict(action=action, actual=actual, expected=pose)
+        print('[measurements camera] '+json.dumps(evidence),flush=True)
+        assert actual['mode']==pose['mode'], evidence
+        assert all(p.numbers_close(actual[vector][axis],pose[vector][axis])
+                   for vector in ('camera','target','up') for axis in 'xyz'), evidence
+    check_pose('enter Measure with surfaces suppressed')
     panel.locator('[data-surfaces]').check();assert not snapshot(page)['surfacesSuppressed']
-    restored_pose=page.evaluate('()=>VibeMolTesting.getCameraSnapshot()')
-    for vector in ['camera','target','up']:
-        for axis in 'xyz': assert math.isclose(restored_pose[vector][axis],pose[vector][axis],abs_tol=1e-6)
+    check_pose('show surfaces')
     page.locator('#modeDisplayBtn').click();assert p.snapshot(page)==graph
+    check_pose('leave Measure')
     assert all(m['visible'] for m in page.evaluate('()=>VibeMolTesting.getSurfaceMaterialSnapshot()'))
     print('[measurements] persistent list, units/CSV/clipboard, undo, label layout, surfaces and camera: passed',flush=True)
 
