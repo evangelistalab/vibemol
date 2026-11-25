@@ -118,6 +118,17 @@ For local Tier 1, use `--hardware-gl` or `VIBEMOL_LOCAL_GL=hardware` to opt
 into hardware Chromium. The checks still execute. CI owns pixel-dependent
 acceptance and uses SwiftShader for ordinary Chromium tests.
 
+Use `node tools/audit-edit-api.cjs --record <target>... --reason "<text>"` to
+record authorized edits to existing functions or named top-level statements.
+Use `statement:<binding>` for an assignment or declaration and
+`statement:let:<binding>` to select a `let` declaration when the binding also
+has an assignment. Use `--delete <target>` for a function or standalone
+declaration with all references removed. The recorder derives original
+fingerprints from the pinned base commit and keeps the reason verbatim.
+The under-15 rule applies to new or declared helper units. Existing
+functions being edited keep their listed units, and `--unit <helper>`
+adds a measured helper to the preceding target.
+
 The 20 Looks cases now run in three parts, Materials, Surfaces and Presets.
 The split unit checks each original case exactly once, original case bodies
 and the original checkpoint inventory. The shard plan uses suite durations

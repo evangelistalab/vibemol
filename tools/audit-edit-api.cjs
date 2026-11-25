@@ -46,6 +46,39 @@ function normalizeHydrogenDefaults(code) {
   .replace('if (!enabled ||','if (!editAddAdjustHydrogensEnabled ||')
   .replace('applyHydrogenPlanToVolume(vol, plan, options.allocateAtomId)','applyHydrogenPlanToVolume(vol, plan)');
 }
+function appStatements(ast) {
+ return ast.program.body[0].expression.callee.body.body;
+}
+function namedAppStatement(statements, name) {
+ if(name.startsWith('statement:let:')) {
+  const binding=name.slice('statement:let:'.length);
+  return statements.filter(node=>node.type==='VariableDeclaration'&&node.kind==='let'
+    &&node.declarations.some(declaration=>declaration.id.name===binding));
+ }
+ if(name.startsWith('statement:')) {
+  const binding=name.slice('statement:'.length);
+  const assigned=statements.filter(node=>node.type==='ExpressionStatement'
+    &&node.expression.type==='AssignmentExpression'&&node.expression.left.type==='Identifier'
+    &&node.expression.left.name===binding);
+  if(assigned.length) return assigned;
+  return statements.filter(node=>node.type==='VariableDeclaration'
+    &&node.declarations.some(declaration=>declaration.id.name===binding));
+ }
+ return statements.filter(node=>node.type==='FunctionDeclaration'&&node.id.name===name);
+}
+function deletionBinding(node, name) {
+ if(!name.startsWith('statement:')) return name;
+ assert(node?.type==='VariableDeclaration'&&node.declarations.length===1&&node.declarations[0].id.type==='Identifier',
+  name+' must name a standalone declaration to delete it');
+ return node.declarations[0].id.name;
+}
+function requireDeletedBinding(ast, name) {
+ traverse(ast,{
+  Scope(p){assert(!p.scope.hasOwnBinding(name),name+' still exists');},
+  BindingIdentifier(p){assert.notEqual(p.node.name,name,name+' is still referenced');},
+  ReferencedIdentifier(p){assert.notEqual(p.node.name,name,name+' is still referenced');},
+ });
+}
 function additiveApp(source, baseline, testingChanges={}, productChanges={}, legacyStatementRemovals={}) {
  const api=surface(source),old=surface(baseline,{requireProduct:false});
  const hash=s=>require('node:crypto').createHash('sha256').update(s).digest('hex');
@@ -56,8 +89,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
   if(change){assert.equal(hash(old.testingMembers[name]),change.before,name+' original fingerprint');assert.equal(hash(api.testingMembers[name]),change.after,name+' changed fingerprint');}
   else assert.equal(api.testingMembers[name],old.testingMembers[name],'Existing Testing object changed: '+name);
  }
- const statements=s=>parser.parse(s).program.body[0].expression.callee.body.body;
- const previousNodes=statements(baseline);
+ const currentAst=parser.parse(source);
+ const previousNodes=appStatements(parser.parse(baseline));
  const previousStatements=previousNodes.map(n=>baseline.slice(n.start,n.end));
  const removed=Object.keys(legacyStatementRemovals).sort();
  // Keep the expected list hardcoded so widening it requires editing both this audit and the baseline.
@@ -77,12 +110,25 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  }
  const legacy=previousStatements.filter(code=>!Object.hasOwn(legacyStatementRemovals,code));
  const previousFunctions=new Map(previousNodes.filter(n=>n.type==='FunctionDeclaration').map(n=>[n.id.name,baseline.slice(n.start,n.end)]));
- const statementChanges=new Map(Object.entries(productChanges).filter(([name])=>name.startsWith('statement:'))
+ const statementChanges=new Map(Object.entries(productChanges).filter(([name,change])=>name.startsWith('statement:')&&change.after!==null)
   .map(([name,change])=>[change.after,name]));
- const appliedProductChanges=new Set();
+ const appliedProductChanges=new Set(), deletedStatements=new Set();
+ for(const [name,change] of Object.entries(productChanges)) {
+  if(change.after!==null) continue;
+  assert.deepEqual(Object.keys(change).sort(),['after','before','reason','units']);
+  assert(typeof change.reason==='string'&&change.reason.trim(),'Named product change requires its human-approved reason');
+  const nodes=namedAppStatement(previousNodes,name);
+  assert.equal(nodes.length,1,name+' must resolve once in the base commit');
+  const before=baseline.slice(nodes[0].start,nodes[0].end);
+  assert(before&&legacy.includes(before)&&hash(before)===change.before,name+' original product fingerprint');
+  requireDeletedBinding(currentAst,deletionBinding(nodes[0],name));
+  assert(!deletedStatements.has(before),'Product deletion must occur once');
+  deletedStatements.add(before);
+  appliedProductChanges.add(name);
+ }
  const preserved=[];let exposed=0,orbitalDeclarations=0,orbitalExposures=0,vectorDeclarations=0,vectorExposures=0;
  const fresh=/^(editApi|createEditApi|createEditSelectionApi|classifyEditApiSource|enterEditApi|callEditApiTesting|defaultEditApiMetalLigandType)/;
- for(const n of statements(source)) {
+ for(const n of appStatements(currentAst)) {
   if(n.type==='FunctionDeclaration'&&(fresh.test(n.id.name)||n.id.name==='readForte2MinaoSnapshot'))continue;
   if(n.type==='VariableDeclaration'&&n.declarations.some(d=>d.id.name==='orbitalProductApi')) {
    assert.equal(n.kind,'const','New API state must not add a module let');
@@ -166,8 +212,8 @@ function additiveApp(source, baseline, testingChanges={}, productChanges={}, leg
  assert.equal(vectorDeclarations,1,'Exactly one vector product API declaration');
  assert.equal(vectorExposures,1,'Exactly one VibeMolVectors exposure');
  assert.deepEqual([...appliedProductChanges].sort(),Object.keys(productChanges).sort(),'Every declared product change must be checked');
- assert.deepEqual(preserved,legacy,'Existing app statements changed beyond the opt-in hydrogen extensions');
- assert.equal(preserved.length,previousStatements.length-removed.length,'Legacy statement count must decrease by exactly the authorized removals');
+ assert.deepEqual(preserved,legacy.filter(statement=>!deletedStatements.has(statement)),'Existing app statements changed beyond the opt-in hydrogen extensions');
+ assert.equal(preserved.length,previousStatements.length-removed.length-deletedStatements.size,'Legacy statement count must decrease by exactly the authorized removals');
  return {legacyStatements:preserved.length,legacyStatementsBeforeRemovals:previousStatements.length,legacyStatementRemovals:removed,
   testingMembers:old.testing.length,wrappers:api.wrappers.length,retirements:0,testingChanges:Object.keys(testingChanges),...(appliedProductChanges.size?{productChanges:[...appliedProductChanges].sort()}: {})};
 }
@@ -281,45 +327,97 @@ function audit(root=path.resolve(__dirname,'..'),candidate) {
  const additive=additiveApp(source,readBase('assets/app/js/app.js'),contract.testing.changes,productChanges,contract.legacyStatementRemovals),helperExtensions=additiveHelpers(root,readBase,contract.placementChanges,contract.haloChanges);
  return {status:'passed',methods:api.methods.length,units:rows.length,maxInputs:Math.max(...rows.map(r=>r.count),...contract.kernelInputs.map(r=>r.count)),...additive,helperExtensions,retainedNativeDrag:true};
 }
-function recordProductChanges(root, source, contract, pinned, names, reason) {
+function recordProductChanges(root, source, contract, pinned, names, reason, {units={}, deletions=[]}={}) {
  assert(typeof reason==='string'&&reason.trim(),'Supply --reason with the authorized wording');
- assert(names.length>0&&names.length===new Set(names).size,'Supply distinct function names');
+ const targets=[...names,...deletions];
+ assert(targets.length>0&&targets.length===new Set(targets).size,'Supply distinct recording targets');
+ assert(Object.keys(units).every(name=>names.includes(name)),'A helper unit requires a recorded owner');
  assert.equal(contract.baseCommit,pinned.baseCommit,'Original baseCommit changed');
  for(const [name,entry] of Object.entries(pinned.productChanges)) {
   assert.equal(contract.productChanges[name]?.before,entry.before,name+' original fingerprint changed');
+  assert.deepEqual(contract.productChanges[name].units,entry.units,name+' unit list changed before recording');
  }
+ for(const name of Object.keys(contract.productChanges)) {
+  assert(Object.hasOwn(pinned.productChanges,name)||targets.includes(name),name+' is outside the recording request');
+ }
+ const baseSource=require('node:child_process').execFileSync('git',['show',pinned.baseCommit+':assets/app/js/app.js'],
+  {cwd:root,encoding:'utf8',maxBuffer:8*1024*1024});
+ const baseStatements=appStatements(parser.parse(baseSource));
  const result=structuredClone(contract);
- const statements=parser.parse(source).program.body[0].expression.callee.body.body;
+ const ast=parser.parse(source), statements=appStatements(ast);
  const hash=value=>require('node:crypto').createHash('sha256').update(value).digest('hex');
- for(const name of names) {
-  assert(Object.hasOwn(pinned.productChanges,name),'No named product entry for '+name);
-  const nodes=statements.filter(node=>node.type==='FunctionDeclaration'&&node.id.name===name);
-  assert.equal(nodes.length,1,'Expected one named app function: '+name);
-  const entry=result.productChanges[name];
-  const existing=entry.units.find(row=>row.file==='app.js'&&row.name===name);
-  const specs=existing?entry.units:[...entry.units,{file:'app.js',name}];
-  const units=kernelInventory(root,specs,source);
-  assert(units.every(row=>row.count<15),name+' requires fewer than 15 inputs: '+JSON.stringify(units));
-  Object.assign(entry,{after:hash(source.slice(nodes[0].start,nodes[0].end)),units,reason});
+ for(const name of targets) {
+  const prior=Object.hasOwn(pinned.productChanges,name)?pinned.productChanges[name]:undefined;
+  const deleting=deletions.includes(name), originalNodes=namedAppStatement(baseStatements,name);
+  const originalCount=prior?.before===null&&!deleting?0:1;
+  assert.equal(originalNodes.length,originalCount,name+' original target must resolve in baseCommit');
+  const original=originalNodes[0];
+  const before=original?hash(baseSource.slice(original.start,original.end)):null;
+  if(Object.hasOwn(contract.productChanges,name)) {
+   assert.equal(contract.productChanges[name].before,before,name+' original fingerprint differs from baseCommit');
+  }
+  let after=null;
+  if(deleting) {
+   requireDeletedBinding(ast,deletionBinding(original,name));
+  } else {
+   const nodes=namedAppStatement(statements,name);
+   assert.equal(nodes.length,1,'Expected one named app function or statement: '+name);
+   after=hash(source.slice(nodes[0].start,nodes[0].end));
+  }
+  const added=Object.hasOwn(units,name)?units[name]:[];
+  const specs=[...(prior?.units||[]),...added.map(unit=>({file:'app.js',name:unit}))];
+  assert.equal(new Set(specs.map(unit=>unit.file+':'+unit.name)).size,specs.length,name+' has duplicate helper units');
+  const measured=kernelInventory(root,specs,source);
+  assert(measured.every(row=>row.count<15),name+' requires fewer than 15 inputs per helper unit: '+JSON.stringify(measured));
+  Object.defineProperty(result.productChanges,name,{value:{before,after,reason,units:measured},
+   enumerable:true,writable:true,configurable:true});
  }
  return result;
 }
+function parseRecording(args) {
+ const usage='Usage: --record <target>... [--unit <helper>] [--delete <target>] --reason "<text>"';
+ const reasonIndex=args.indexOf('--reason');
+ assert(reasonIndex>1&&reasonIndex===args.length-2,usage);
+ const names=[], deletions=[], units=Object.create(null);
+ let recording=false, owner;
+ for(let i=0;i<reasonIndex;i++) {
+  const arg=args[i];
+  if(arg==='--record') {
+   assert(i+1<reasonIndex&&!args[i+1].startsWith('--'),usage);
+   recording=true;
+  } else if(arg==='--delete'||arg==='--unit') {
+   const name=args[++i];
+   assert(i<reasonIndex&&!name.startsWith('--'),usage);
+   if(arg==='--delete') {
+    deletions.push(name);
+    recording=false;
+    owner=undefined;
+   } else {
+    assert(owner,'--unit must follow its --record target');
+    (units[owner]??=[]).push(name);
+   }
+  } else {
+   assert(recording&&!arg.startsWith('--'),usage);
+   names.push(arg);
+   owner=arg;
+  }
+ }
+ return {names,deletions,units,reason:args.at(-1)};
+}
 if(require.main===module) {
  const args=process.argv.slice(2),root=path.resolve(__dirname,'..');
- if(args[0]==='--record') {
-  const reasonIndex=args.indexOf('--reason');
-  assert(reasonIndex>1&&reasonIndex===args.length-2,'Usage: --record <function>... --reason "<text>"');
-  const names=args.slice(1,reasonIndex),file='tests/baselines/edit-api.json';
+ if(['--record','--delete'].includes(args[0])) {
+  const {names,deletions,units,reason}=parseRecording(args),file='tests/baselines/edit-api.json';
   const pinned=JSON.parse(require('node:child_process').execFileSync('git',['show','HEAD:'+file],{cwd:root}));
   const filename=path.join(root,file);
   const original=fs.readFileSync(filename,'utf8');
   const contract=JSON.parse(original),source=fs.readFileSync(path.join(root,'assets/app/js/app.js'),'utf8');
-  const candidate=recordProductChanges(root,source,contract,pinned,names,args.at(-1));
+  const candidate=recordProductChanges(root,source,contract,pinned,names,reason,{units,deletions});
   audit(root,candidate);
   assert.equal(fs.readFileSync(filename,'utf8'),original,'Ledger changed during recording');
   fs.writeFileSync(filename,JSON.stringify(candidate,null,2)+'\n');
-  console.table(names.map(name=>({
-   function:name,before:candidate.productChanges[name].before,previousAfter:contract.productChanges[name].after,
+  console.table([...names,...deletions].map(name=>({
+   target:name,before:candidate.productChanges[name].before,previousAfter:contract.productChanges[name]?.after,
    after:candidate.productChanges[name].after,units:candidate.productChanges[name].units.map(unit=>unit.count).join(', '),
    reason:candidate.productChanges[name].reason,
   })));

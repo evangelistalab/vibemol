@@ -54,6 +54,10 @@
   members or DOM changes. Preserve capture provenance.
 - **Hardware WebGL.** Tier 1 may use `VIBEMOL_LOCAL_GL=hardware` locally.
   CI uses SwiftShader and supplies the result for pixel-dependent assertions.
+- **Edit API record mode.** Use the recorder for authorized edits and
+  deletions. It derives original fingerprints from the pinned base commit.
+  The under-15 rule applies to new or declared helper units. Existing
+  functions being edited keep their listed units.
 - **Rule A and existing stop conditions remain in force.** Correct a newly
   written test only when logged comparands show correct product behavior and
   the replacement expectation is derived from a shared comparator or a
