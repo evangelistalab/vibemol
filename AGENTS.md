@@ -1,5 +1,16 @@
 # AGENTS.md
 
+## 0.10.17 camera candidate — 2026-11-24
+
+- Orbital visibility and ordinary mode switches preserve position, target,
+  up and zoom. Explicit view actions, new-scene fits, the Edit hidden-target
+  fit, session restore and export framing retain their existing behavior.
+  [Camera refit inventory](docs/maintenance/camera-refit-inventory.md) ·
+  [Release notes](docs/releases/v0.10.17.md)
+- The app-scope let count is 258, within the 260 cap. The projected baseline
+  records exactly 204 app-version leaves with the original capture
+  provenance. The first candidate CI run is the acceptance gate.
+
 ## 0.10.16 release — 2026-11-24
 
 - **0.10.16** is live at merge `082bc6b6b3c4ef2b404b20bd79ff4be71025336b`
@@ -43,6 +54,9 @@
   load at launch and every 30 seconds. Samples above the logical core count
   mark the run contended and invalidate its timings. Use `--max-load N` to
   refuse to start above N.
+- If the load guard holds a local browser run for more than 5 minutes, skip
+  the local browser tier, record the load in the PR body, and use the first
+  CI run as the gate. Tier 1 is still required.
 - **Tier 3 — acceptance.** Require the complete CI conjunction on the
   candidate's first run. Only Tier 3 supplies acceptance evidence.
 - **Merge rule.** If the merge tree equals the tested PR tree, use the PR run

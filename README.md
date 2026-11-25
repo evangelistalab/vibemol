@@ -20,6 +20,7 @@ It also accepts vibrational data from sidecar JSON (`.vib.json`, `.vmodes.json`,
 - Publication Figure grids and a [reproducible headless figure runner](docs/figure-runner.md)
 - Interactive water tutorial, live molecular formula/electron count, and reset-to-defaults in App settings
 - Click a scene's **Orbitals** header to edit all its surfaces together in Appearance: colors, iso value, Auto-iso, opacity, material, and surface/cloud mode. Hidden and uncomputed orbitals receive the settings too; Molden grids are still computed only when needed. Click an individual orbital to adjust it separately. Differing settings are marked **(mixed)**.
+- Showing or hiding orbitals and switching interaction modes preserve the camera pose. Use **Reset view**, **Frame atoms**, or `view.set(fit=True)` to refit. Edit can still frame a hidden target when it reveals it.
 
 ## Web Quick Start
 ```bash
