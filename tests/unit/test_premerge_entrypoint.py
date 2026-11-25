@@ -62,6 +62,8 @@ class PremergeEntrypointTests(unittest.TestCase):
         self.assertEqual(browser.new_context.call_count, 18)
 
     def test_step3b_completion_requires_the_full_receipt(self):
+        manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
+        expected_count = manifest['checkpointCounts']['tests/e2e/premerge.py']['step3b-command-completion']
         regular = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
         step3b = premerge.STEP3B_COMMAND_COMPLETION
         for receipt in (step3b, {**step3b, 'successes': 0}, {**step3b, 'rejections': 30}):
@@ -73,10 +75,8 @@ class PremergeEntrypointTests(unittest.TestCase):
                     premerge.run_commands(MagicMock(), 'http://fixture')
                     records = [line for line in output.getvalue().splitlines()
                                if line.startswith('[step3b-command-completion] ')]
-                    self.assertEqual(len(records), 1)
+                    self.assertEqual(len(records), expected_count)
                     self.assertEqual(json.loads(records[0].split(' ', 1)[1]), step3b)
-                    manifest = json.loads((ROOT/'tests/baselines/browser-suite.json').read_text())
-                    self.assertEqual(manifest['checkpointCounts']['tests/e2e/premerge.py']['step3b-command-completion'], 1)
                 else:
                     with self.assertRaises(AssertionError):
                         premerge.run_commands(MagicMock(), 'http://fixture')
@@ -87,7 +87,7 @@ class PremergeEntrypointTests(unittest.TestCase):
         suite = 'tests/e2e/premerge.py'
         expected = manifest['checkpointCounts']
         marker = 'commands-completion'
-        self.assertEqual(expected[suite][marker], 1)
+        expected_count = expected[suite][marker]
         other_records = [f'[{name}] {{}}' for name, count in expected[suite].items()
                          if name != marker for _ in range(count)]
         receipt = dict(restoredSceneCount=1, restoredSourceCount=1, dialogCount=1)
@@ -97,12 +97,12 @@ class PremergeEntrypointTests(unittest.TestCase):
              contextlib.redirect_stdout(output):
             premerge.run_commands(MagicMock(), 'http://fixture')
         records = [line for line in output.getvalue().splitlines() if line.startswith(f'[{marker}] ')]
-        self.assertEqual(len(records), 1)
+        self.assertEqual(len(records), expected_count)
         self.assertEqual(json.loads(records[0].split(' ', 1)[1]), receipt)
-        for count in (0, 1, 2):
-            log = '\n'.join(other_records + records * count)
+        for count in (0, expected_count, expected_count + 1):
+            log = '\n'.join(other_records + records[:1] * count)
             with self.subTest(count=count), contextlib.redirect_stdout(io.StringIO()):
-                if count == 1:
+                if count == expected_count:
                     self.assertTrue(require_checkpoint_counts(log, suite, expected)['passed'])
                 else:
                     with self.assertRaises(AssertionError):

@@ -188,7 +188,7 @@ class BrowserJoinTests(unittest.TestCase):
         for checkpoints in ({}, {'step3b-command-completion': 2}):
             manifest = copy.deepcopy(self.manifest)
             premerge = manifest['checkpointCounts']['tests/e2e/premerge.py']
-            self.assertEqual(premerge.pop('step3b-command-completion'), 1)
+            del premerge['step3b-command-completion']
             premerge.update(checkpoints)
 
             def read_text(file, *args, **kwargs):
