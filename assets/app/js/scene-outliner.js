@@ -622,8 +622,6 @@
         event.stopPropagation();
         const scene = options.scene || (options.layer ? sceneGraphController.getSceneForLayer(options.layer) : null);
         const wasVisible = !!options.visible;
-        const firstMoldenSurface = !wasVisible && Number.isInteger(options.layer?.moldenMoIndex)
-          && getVisibleCubeLayerCount(scene) === 0;
         sceneGraphController.toggleVisibility(options.id);
         if (options.layer && options.layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP && wasVisible === false) {
           const activeCube = getSceneActiveCubeLayer(scene);
@@ -634,8 +632,7 @@
             visible: options.layer.visible !== false,
           });
         }
-        const revealedSurface = firstMoldenSurface && sceneGraphController.isLayerEffectivelyVisible(options.layer);
-        rebuildScene({ preserveView: !revealedSurface, syncGraph: false });
+        rebuildScene({ preserveView: true, syncGraph: false });
         renderSceneOutliner();
       });
       row.appendChild(eye);

@@ -1,4 +1,4 @@
-"""Project the authorized VibeMol 0.10.16 version change in existing goldens."""
+"""Project a VibeMol version change in existing goldens."""
 
 import argparse
 import copy
@@ -41,9 +41,9 @@ def rewrite_version_leaves(captures, before, after):
     return changed
 
 
-def verify_projection(before, after):
+def verify_projection(before, after, source_version=SOURCE_VERSION, target_version=TARGET_VERSION):
     restored = copy.deepcopy(after)
-    changed = rewrite_version_leaves(restored, TARGET_VERSION, SOURCE_VERSION)
+    changed = rewrite_version_leaves(restored, target_version, source_version)
     difference = exact_difference(before, restored)
     if difference is not None:
         raise ValueError(f'Unexpected non-version capture change: {difference}')
@@ -54,7 +54,10 @@ def sha256(data):
     return hashlib.sha256(data).hexdigest()
 
 
-def project(source_golden, source_summary, commit):
+def project(source_golden, source_summary, commit, source_version=SOURCE_VERSION, target_version=TARGET_VERSION):
+    if source_version == target_version or not all(re.fullmatch(r'[0-9]+\.[0-9]+\.[0-9]+', version)
+                                                   for version in (source_version, target_version)):
+        raise ValueError('Expected two different release versions')
     if not re.fullmatch(r'[0-9a-f]{40}', commit):
         raise ValueError('Expected a full source commit SHA')
     source_raw = gzip.decompress(source_golden)
@@ -66,16 +69,16 @@ def project(source_golden, source_summary, commit):
 
     previous = document['captures']
     projected = copy.deepcopy(previous)
-    rewrite_version_leaves(projected, SOURCE_VERSION, TARGET_VERSION)
+    rewrite_version_leaves(projected, source_version, target_version)
     document['captures'] = projected
-    document['baseline'].update(tag=f'v{TARGET_VERSION}', commit=commit, recordingMode='version-projection')
+    document['baseline'].update(tag=f'v{target_version}', commit=commit, recordingMode='version-projection')
     raw = (json.dumps(document, indent=2) + '\n').encode()
     compressed = io.BytesIO()
     with gzip.GzipFile(fileobj=compressed, mode='wb', mtime=0) as stream:
         stream.write(raw)
     golden = compressed.getvalue()
     readback = json.loads(gzip.decompress(golden))
-    changed = verify_projection(previous, readback['captures'])
+    changed = verify_projection(previous, readback['captures'], source_version, target_version)
     summary.update(baseline=document['baseline'], goldenSha256=sha256(raw))
     receipt = {
         'sourceGoldenSha256': sha256(source_golden),
@@ -88,16 +91,19 @@ def project(source_golden, source_summary, commit):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--commit', required=True, help='Commit containing the 0.10.16 runtime stamp')
+    parser.add_argument('--commit', required=True, help='Commit containing the target runtime stamp')
+    parser.add_argument('--from-version', default=SOURCE_VERSION)
+    parser.add_argument('--to-version', default=TARGET_VERSION)
     args = parser.parse_args()
-    require_version(ROOT, TARGET_VERSION)
+    require_version(ROOT, args.to_version)
     baselines = ROOT / 'tests/baselines'
     golden_path = baselines / 'characterize.json.gz'
     summary_path = baselines / 'characterize-summary.json'
-    golden, summary, receipt = project(golden_path.read_bytes(), summary_path.read_bytes(), args.commit)
+    golden, summary, receipt = project(golden_path.read_bytes(), summary_path.read_bytes(), args.commit,
+                                      args.from_version, args.to_version)
     golden_path.write_bytes(golden)
     summary_path.write_text(json.dumps(summary, indent=2) + '\n')
-    (baselines / f'version-projection-{TARGET_VERSION}.json').write_text(json.dumps(receipt, indent=2) + '\n')
+    (baselines / f'version-projection-{args.to_version}.json').write_text(json.dumps(receipt, indent=2) + '\n')
     print(json.dumps(receipt))
 
 

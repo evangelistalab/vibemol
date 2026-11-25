@@ -8,7 +8,8 @@ const audit=(s,productChanges=contract.productChanges||{},removals=contract.lega
 test('risk batch preserves app statements except separately fingerprinted product repairs',()=>{
  const result=audit(source);assert.equal(result.wrappers,2);assert.equal(result.retirements,0);assert.equal(result.testingChanges.length,4);assert(result.testingMembers>40&&result.legacyStatements>1000);
  const actual={before:result.legacyStatementsBeforeRemovals,after:result.legacyStatements,removed:result.legacyStatementRemovals};
- const expected={before:2502,after:2496,removed:[
+ const declaredDeletions=Object.values(contract.productChanges).filter(change=>change.after===null).length;
+ const expected={before:2502,after:2496-declaredDeletions,removed:[
   "bind('down', 'global', 'a', () => {\n    window.__showAxes__ = !window.__showAxes__;\n    if (toggleAxes) toggleAxes.checked = !!window.__showAxes__;\n    syncAllAppearanceActionToggleButtons();\n    scheduleAppearancePresetAutosave();\n  });",
   "bind('down', 'global', 'b', () => batchBtn && batchBtn.click());",
   "bind('down', 'global', 'i', () => {\n    toggleActiveSurfaceVisibility();\n  });",
@@ -155,7 +156,7 @@ test('record mode updates exactly one authorized function and preserves the reas
  assert.deepEqual(restored,contract);
  audit(changed,result.productChanges);
 });
-test('record mode rejects edited pins, unnamed functions and at least fifteen inputs',()=>{
+test('record mode rejects edits to baseCommit or original fingerprints',()=>{
  const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
  const name='applyVectorProductState';
  const altered=structuredClone(contract);
@@ -164,9 +165,59 @@ test('record mode rejects edited pins, unnamed functions and at least fifteen in
  altered.productChanges[name].before=contract.productChanges[name].before;
  altered.baseCommit='0'.repeat(40);
  assert.throws(()=>recordProductChanges(root,source,altered,contract,[name],'approved'),/baseCommit/);
- assert.throws(()=>recordProductChanges(root,source,contract,contract,['unlistedFunction'],'approved'),/No named product entry/);
+ assert.throws(()=>recordProductChanges(root,source,contract,contract,['unlistedFunction'],'approved'),/original target must resolve/);
+ const statement='statement:let:measurementLayoutKey';
+ const typed=structuredClone(contract);
+ typed.productChanges[statement]={before:'0'.repeat(64),after:null,reason:'approved',units:[]};
+ assert.throws(()=>recordProductChanges(root,source,typed,contract,[statement],'approved'),/original fingerprint differs from baseCommit/);
+});
+test('record mode keeps the existing units and measures only explicitly added helpers',()=>{
+ const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
+ const name='setMode', unit='cameraAuditControl';
+ const anchor='function setMode(newMode, options = {}) {';
+ const changed=source.replace(anchor,anchor+'\n    function '+unit+'() { return currentMode; }');
+ assert.notEqual(changed,source);
+ assert.throws(()=>audit(changed),/changed product fingerprint/);
+ const recorded=recordProductChanges(root,changed,contract,contract,[name],'approved');
+ assert.deepEqual(recorded.productChanges[name].units,contract.productChanges[name].units);
+ audit(changed,recorded.productChanges);
+ const withHelper=recordProductChanges(root,changed,contract,contract,[name],'approved',{units:{[name]:[unit]}});
+ assert.deepEqual(withHelper.productChanges[name].units,[{file:'app.js',name:unit,count:1,inputs:['currentMode']}]);
  const locals=Array.from({length:15},(_,i)=>'dependency'+i);
- const synthetic='(()=>{const '+locals.map(local=>local+'=1').join(',')+';\nfunction '+name+
+ const synthetic='(()=>{const '+locals.map(local=>local+'=1').join(',')+';\nfunction '+name+'(){}\nfunction '+unit+
   '(){return ['+locals.join(',')+'];}})();';
- assert.throws(()=>recordProductChanges(root,synthetic,contract,contract,[name],'approved'),/fewer than 15/);
+ assert.throws(()=>recordProductChanges(root,synthetic,contract,contract,[name],'approved',{units:{[name]:[unit]}}),/fewer than 15/);
+});
+test('record mode derives a new statement fingerprint from the verified base',()=>{
+ const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
+ const name='statement:let:measurementLayoutKey';
+ const edited=source.replace("let measurementLayoutKey = '';","let measurementLayoutKey = 'fixture';");
+ assert.notEqual(edited,source);
+ assert.throws(()=>audit(edited),/Existing app statements changed/);
+ const result=recordProductChanges(root,edited,contract,contract,[name],'approved');
+ assert.notEqual(result.productChanges[name].before,result.productChanges[name].after);
+ assert.deepEqual(result.productChanges[name].units,[]);
+ audit(edited,result.productChanges);
+});
+test('recorded deletions require the entire binding and every reference to be gone',()=>{
+ const {recordProductChanges}=require('../../tools/audit-edit-api.cjs');
+ const deletions=['restoreMeasurementSurfaceView','statement:measurementViewBeforeFit'];
+ const result=recordProductChanges(root,'(()=>{})();',contract,contract,[],'approved',{deletions});
+ const anchor='const BOHR_TO_ANG = 0.529177210903;';
+ const parser=require(path.join(process.env.VIBEMOL_BABEL_ROOT,'parser'));
+ const statements=parser.parse(source).program.body[0].expression.callee.body.body;
+ for(const name of deletions) {
+  const entry=result.productChanges[name];
+  assert.match(entry.before,/^[0-9a-f]{64}$/);
+  assert.equal(entry.after,null);
+  const changes={...contract.productChanges,[name]:entry};
+  const binding=name.replace('statement:','');
+  const isStatement=name.startsWith('statement:');
+  const declaration=isStatement?'let '+binding+' = null;':'function '+binding+'() {}';
+  const node=statements.find(statement=>isStatement
+   ?statement.declarations?.some(item=>item.id.name===binding):statement.id?.name===binding);
+  const without=node?source.slice(0,node.start)+source.slice(node.end):source;
+  assert.throws(()=>audit(without.replace(anchor,anchor+'\n  '+declaration),changes),/still exists/);
+  assert.throws(()=>audit(without.replace(anchor,anchor+'\n  void '+binding+';'),changes),/still referenced/);
+ }
 });

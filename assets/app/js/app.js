@@ -2344,11 +2344,10 @@
   const measurements = window.VibeMolMeasurements;
   let measurementsPanel = null;
   const calculationsModel = window.VibeMolCalculationsModel;
-  let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = "", calculationsViewBeforeFit = null;
+  let calculationsPanel = null, calculationsPicker = null, calculationsRenderer = null, calculationsSignature = "";
   let calculationsPanelIntroduced = false;
   let measureShowSurfaces = false;
   let measurementPanelIntroduced = false;
-  let measurementViewBeforeFit = null;
   let measurementLayoutKey = '';
   const measurementRecord = () => (getFocusedScene() || sceneGraphController.getActiveScene())?.moleculeRecord || volumes[currentIndex];
   let displayAdaptiveMenuAutoHideController = null;
@@ -6462,16 +6461,11 @@
    * Apply one computed camera fit to the active view/camera.
    * @param {THREE.Vector3} center
    * @param {number} distance
-   * @param {{keepOrientation?:boolean}} options
    */
-  function applySceneCameraFit(center, distance, { keepOrientation = false } = {}) {
-    const dir = camera.position.clone().sub(controls.target);
-    const lengthSq = dir.lengthSq();
-    const useCurrent = keepOrientation && Number.isFinite(lengthSq) && lengthSq > 1e-12;
-    if (!useCurrent) dir.set(1, 1, 1);
-    const up = useCurrent ? camera.up : DEFAULT_VIEW_UP;
-    perspectiveCamera.up.copy(up);
-    orthographicCamera.up.copy(up);
+  function applySceneCameraFit(center, distance) {
+    const dir = camera.position.clone().set(1, 1, 1);
+    perspectiveCamera.up.copy(DEFAULT_VIEW_UP);
+    orthographicCamera.up.copy(DEFAULT_VIEW_UP);
     camera.position.copy(center).addScaledVector(dir.normalize(), distance);
     controls.target.copy(center);
     updateActiveCameraProjection(currentViewportMetrics.cssWidth, currentViewportMetrics.cssHeight);
@@ -6482,7 +6476,7 @@
   /**
    * Fit camera position and clipping planes to the current visible content bounds.
    */
-  function fitCameraToScene({ buildSpace = false, keepOrientation = false } = {}) {
+  function fitCameraToScene({ buildSpace = false } = {}) {
     const metrics = readRendererViewportMetrics();
     const bounds = collectVisibleSceneBounds();
     if (!bounds.hasContent || bounds.contentBox.isEmpty()) return false;
@@ -6499,7 +6493,7 @@
       metrics.cssWidth / Math.max(1, metrics.cssHeight),
       perspectiveCamera.fov || DEFAULT_PERSPECTIVE_FOV
     );
-    applySceneCameraFit(center, fit.distance, { keepOrientation });
+    applySceneCameraFit(center, fit.distance);
     return true;
   }
 
@@ -9443,8 +9437,6 @@
     ensureMoldenGridForRecord(record, vol);
     const layer = sceneSources.addOrbital(record, rowIndex);
     syncSceneGraphFromVolumes({ preferActiveRecord: true });
-    const scene = layer ? sceneGraphController.getSceneForLayer(layer) : null;
-    const showFirstSurface = !!(scene && options.selectOnly && getVisibleCubeLayerCount(scene) === 0);
     if (layer && options.selectOnly) setActiveSceneGraphLayer(layer.id, {
       ensureSceneVisible: true,
       ensureLayerVisible: true,
@@ -9459,7 +9451,7 @@
     moldenRenderFrameId = window.requestAnimationFrame(() => {
       moldenRenderFrameId = 0;
       try {
-        rebuildScene({ preserveView: !showFirstSurface, keepOrientation: showFirstSurface });
+        rebuildScene({ preserveView: true });
       } finally {
         moldenPendingRowIndex = -1;
         syncMoldenOrbitalsPanel(currentIndex >= 0 ? volumes[currentIndex] : null);
@@ -10654,7 +10646,7 @@
     }
     const record = layer.record || (layer.kind === SCENE_LAYER_KIND.ORBITALS_GROUP ? getSceneFocusRecord(scene) : null);
     const recordIndex = getRecordIndex(record);
-    const showFirstMoldenSurface = visibleCubeCount === 0 && Number.isInteger(layer.moldenMoIndex)
+    const firstMoldenSurfaceVisible = visibleCubeCount === 0 && Number.isInteger(layer.moldenMoIndex)
       && sceneGraphController.isLayerEffectivelyVisible(layer);
     if (recordIndex >= 0) sceneGraphController.setMoleculeRecord(scene, record);
     if (revealEditTarget || (recordIndex >= 0 && currentIndex !== recordIndex)) {
@@ -10662,16 +10654,15 @@
       syncLoadedSceneControls();
       if (revealEditTarget || options.rebuild !== false) {
         rebuildScene({
-          preserveView: !revealEditTarget && !showFirstMoldenSurface,
-          keepOrientation: !revealEditTarget && showFirstMoldenSurface,
+          preserveView: !revealEditTarget,
           syncGraph: false,
         });
       }
     } else {
       syncLoadedSceneControls();
       const switchedCubeLayer = !!(previousLayer && previousLayer.id !== layer.id && isCubeLikeLayer(layer));
-      if ((switchedCubeLayer || showFirstMoldenSurface) && options.rebuild !== false) {
-        rebuildScene({ preserveView: !showFirstMoldenSurface, keepOrientation: showFirstMoldenSurface, syncGraph: false });
+      if ((switchedCubeLayer || firstMoldenSurfaceVisible) && options.rebuild !== false) {
+        rebuildScene({ preserveView: true, syncGraph: false });
       } else if (options.rebind !== false) {
         syncAppearanceControlsToActiveLayer();
       }
@@ -11494,11 +11485,6 @@
     }
     const prevMode = currentMode;
     if (prevMode === MODES.EDIT && moleculePlaceActive && !commitMoleculePlacement()) return;
-    if (newMode === MODES.CALCULATIONS) calculationsViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
-    const hadSurfaceContext = meshes.some(mesh => mesh.visible !== false) || cloudGroup.children.length > 0;
-    if (newMode === MODES.MEASURE && hadSurfaceContext && !measureShowSurfaces) {
-      measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
-    }
     coordsListPopover?.cancelInlineEdit({ focusButton: false });
     window.VibeMolWorkbench?.beforeModeChange();
     if (prevMode === MODES.EDIT && newMode !== MODES.EDIT) {
@@ -11610,13 +11596,6 @@
         window.VibeMolWorkbench.open('measurementsPanel', false);
         measurementPanelIntroduced = true;
       }
-      if (hadSurfaceContext && !measureShowSurfaces) requestAnimationFrame(() => {
-        if (currentMode === MODES.MEASURE && !measureShowSurfaces) frameMeasurementAtoms();
-      });
-    }
-    if (prevMode === MODES.MEASURE && currentMode !== MODES.MEASURE) {
-      if (currentMode === MODES.DISPLAY) restoreMeasurementSurfaceView();
-      measurementViewBeforeFit = null;
     }
     if (currentMode === MODES.EDIT && !workspaceEnabled) measurementsPanel?.setOpen(false);
     if (currentMode === MODES.CALCULATIONS) {
@@ -11625,10 +11604,6 @@
         calculationsPanelIntroduced = true;
       }
       calculationsPanel.ensureBasis();
-      requestAnimationFrame(() => { if (currentMode === MODES.CALCULATIONS) frameMeasurementAtoms(); });
-    } else if (prevMode === MODES.CALCULATIONS) {
-      if (currentMode === MODES.DISPLAY && calculationsViewBeforeFit?.record === measurementRecord()) restoreSessionView(calculationsViewBeforeFit.view);
-      calculationsViewBeforeFit = null;
     }
     syncCalculations(true); updateSelectedHalos();
   }
@@ -12355,13 +12330,10 @@
     isMeasuring: () => currentMode === MODES.MEASURE,
     showSurfaces: () => measureShowSurfaces,
     setShowSurfaces: value => {
-      if (!value && measureShowSurfaces) measurementViewBeforeFit = { record: measurementRecord(), view: captureSessionView() };
       measureShowSurfaces = value;
       surfaceRenderSuppressed = currentMode === MODES.EDIT || (currentMode === MODES.MEASURE && !value);
       if (!surfaceRenderSuppressed && surfaceGeometryDeferred) rebuildScene({ preserveView: true });
       else syncSurfaceModeVisibility();
-      if (value) restoreMeasurementSurfaceView();
-      else frameMeasurementAtoms();
       measurementsPanel.sync();
     },
     frameAtoms: frameMeasurementAtoms,
@@ -23427,11 +23399,6 @@
     syncMeasurementLabelCursor();
   }
 
-  function restoreMeasurementSurfaceView() {
-    if (measurementViewBeforeFit?.record === measurementRecord()) restoreSessionView(measurementViewBeforeFit.view);
-    measurementViewBeforeFit = null;
-  }
-
   function frameMeasurementAtoms() {
     if (!atomGroup?.children.length) return;
     const bounds = new THREE.Box3().setFromObject(atomGroup);
@@ -32824,15 +32791,8 @@
     }
     const scene = getFocusedScene();
     if (fitCameraToScene(options) && scene) {
-      const defaultCamera = camera.clone();
-      if (options.keepOrientation) {
-        const distance = camera.position.distanceTo(controls.target);
-        defaultCamera.position.set(1, 1, 1).setLength(distance).add(controls.target);
-        defaultCamera.up.copy(DEFAULT_VIEW_UP);
-        defaultCamera.lookAt(controls.target);
-      }
       viewState.defaultViews.set(scene, {
-        cam: defaultCamera,
+        cam: camera.clone(),
         target: controls.target.clone(),
         contentPos: contentGroup.position.clone(),
         projectionMode: viewState.mode,
@@ -32842,7 +32802,7 @@
 
   /**
    * Recompute scene content for the active file and current render settings.
-   * @param {{preserveView?:boolean, skipAutoIso?:boolean, buildSpace?:boolean, keepOrientation?:boolean}} options
+   * @param {{preserveView?:boolean, skipAutoIso?:boolean, buildSpace?:boolean}} options
    */
   function rebuildScene(options = {}) {
     if (applyingSession) return;
@@ -32936,9 +32896,7 @@
     }
 
     refreshSimulationBoxes();
-    applyCameraStrategy(preserveView, savedCam, savedTarget, {
-      buildSpace: options.buildSpace, keepOrientation: options.keepOrientation,
-    });
+    applyCameraStrategy(preserveView, savedCam, savedTarget, { buildSpace: options.buildSpace });
     if (figureRendering) return;
     updateSidePanel();
     updatePostRebuildUI(activeSurfaceVol || moleculeVol, activeSurfaceCompMode);
@@ -34000,8 +33958,6 @@
       return { value: input.mode };
     });
     if (!pending.ok) return pending;
-    // The toolbar handler schedules the atom fit on the next frame.
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     return editApiCall(() => {
       const applied = readProductMode();
       if (applied.mode !== pending.value) {
@@ -34083,7 +34039,6 @@
   function presentMoldenProductSelection(target, indices, exclusive) {
     const { record, scene } = target;
     const previous = getCubeLayersInScene(scene).filter(layer => layer.visible);
-    const preserveView = getVisibleCubeLayerCount(scene) > 0;
     const selected = indices.map(index => sceneSources.addOrbital(record, index, { visible: false }));
     const active = selected.at(-1);
     const group = sceneGraphController.getLayerById(scene.orbitalsGroupId);
@@ -34094,7 +34049,7 @@
     });
     if (!exclusive) for (const layer of previous) setMoldenProductLayerVisibility(layer, true);
     for (const layer of selected) setMoldenProductLayerVisibility(layer, true);
-    rebuildScene({ preserveView, syncGraph: false });
+    rebuildScene({ preserveView: true, syncGraph: false });
   }
 
   async function showProductOrbitals(input = {}) {

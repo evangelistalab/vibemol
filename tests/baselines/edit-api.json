@@ -956,8 +956,8 @@
     },
     "fitCameraToScene": {
       "before": "f3251df5119af77ff1711782703c14385bc74c1869617556a1ab3d37882aa777",
-      "after": "006668b951629b083e680eff2b7e1c03b084912da38c0f37fe5da99a9eeb4c14",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "a92f9b1b8bd3968262391cbc03ff922bf62a7aa79276ac750e67ce6a3c57fe14",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": [
         {
           "file": "app.js",
@@ -977,15 +977,14 @@
     },
     "applyCameraStrategy": {
       "before": "3a746c06dc91057ecd244ecdde0ec87873d89f2f7c0fc1589a4bec2c6381fd3e",
-      "after": "65d9fc399891fe3fe2ac17e776c88d363a6bf1a966b9ece3b4e40b146caf17c9",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "67208e34b217f74adb05e8f24c1528474a1cd2ea89e019e509f5426f255f1cfb",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": [
         {
           "file": "app.js",
           "name": "applyCameraStrategy",
-          "count": 7,
+          "count": 6,
           "inputs": [
-            "DEFAULT_VIEW_UP",
             "camera",
             "contentGroup",
             "controls",
@@ -1139,14 +1138,14 @@
     },
     "setActiveSceneGraphLayer": {
       "before": "3a098bc23a47d6aea86c868dc1f30a1856c7404a9840f374d6dffae1a6f122e5",
-      "after": "33ef8e7c7285e03859008c97267baff8527d87028f3d346c247eceb5eba3a86f",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "f4faa4450020380a51a01841d1d81152b9c7a834313308892aeeafdabd641679",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": []
     },
     "setMode": {
       "before": "f81b8aef246cdf3078796d4e0a7695e76b6f7c7cceddeb721b77d019d2b923ed",
-      "after": "cfc0cc2fe03bec7b17c09b5a4eafc635b1ca312daba281d26852f015c126010a",
-      "reason": "Retain dropped molecules on mode exit and reveal the target when entering Edit. Explain restrictions when entering Edit on a trajectory.",
+      "after": "e226198336ad11193bee291b86c49950f61133f702cd30fdf713dd0e270a1a20",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": []
     },
     "getEditToolState": {
@@ -1395,8 +1394,8 @@
     },
     "rebuildScene": {
       "before": "cfc7c8c6876cbadb4b7f8af148a4cd242b232174d9d761dd46a5d7871651c11f",
-      "after": "00e70c756f8986b02fe9cecc70918085237a7bfdd0a21462f8f67771698e198a",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "1eae0538275e4434e60585f8f59e0b573d957824743607784d266ea46ec83bb8",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": []
     },
     "getDisplayedMetalBondStyle": {
@@ -2104,8 +2103,8 @@
     },
     "requestMoldenOrbitalRender": {
       "before": "6389d73db2539f11f5d0e3085061de303547e6e58b04a9ae3b923748c2434517",
-      "after": "730b7f9e7b886a7ce97a045282f2a980d45820ae01c2781105096323030fef58",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "6389d73db2539f11f5d0e3085061de303547e6e58b04a9ae3b923748c2434517",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": []
     },
     "createAutoHydrogenGeometryResolver": {
@@ -2218,8 +2217,8 @@
     },
     "applySceneCameraFit": {
       "before": "e1d2b2800113337b82dc3377fd4fcc6c7ee1a9ef3e08f6f8af74332fb48997eb",
-      "after": "bd03d5193140d27fcfb8cce911e7be63de0f5ef9397002c443f220952e671da4",
-      "reason": "Keep the user's camera orientation when the first Molden surface triggers a refit (0.10.15).",
+      "after": "f841dd5fdb0c906b91d05edc413d872f410ab450d767b68099eedbfee7097cec",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": [
         {
           "file": "app.js",
@@ -2737,16 +2736,15 @@
     },
     "presentMoldenProductSelection": {
       "before": null,
-      "after": "a84d0a48d87c3324368095b5f45c46f6606b57594edc6ab77b92c9a6a0f05afb",
-      "reason": "Construct the VibeMolOrbitals and VibeMolVectors product APIs (Step 3b).",
+      "after": "d22f21d1f67b7a28d6b1aa6d5308b195b98154b3be2f681aec03919da87a3863",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": [
         {
           "file": "app.js",
           "name": "presentMoldenProductSelection",
-          "count": 7,
+          "count": 6,
           "inputs": [
             "getCubeLayersInScene",
-            "getVisibleCubeLayerCount",
             "rebuildScene",
             "sceneGraphController",
             "sceneSources",
@@ -3246,8 +3244,8 @@
     },
     "setProductMode": {
       "before": null,
-      "after": "69c70357a215516f178d61c2394fef87d3e2fec60e39c38f54fe9afe52610de9",
-      "reason": "Expose the existing mode switch to command clients (Step 3b).",
+      "after": "3facb43f9ac887afaf39426296958f237538ee1b122da7c235f47a0307a53089",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
       "units": [
         {
           "file": "app.js",
@@ -3280,6 +3278,30 @@
           ]
         }
       ]
+    },
+    "statement:let:calculationsPanel": {
+      "before": "57e2d366d5a8d27065a9d6d472d67c0a9f8affb209e697f0c5af0bbc1b1b432f",
+      "after": "5fcd9c561e1f54f8c263202fb37a2350d6965425f4d7a08370dae03324b16e22",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
+      "units": []
+    },
+    "statement:measurementsPanel": {
+      "before": "c4578e9bb3d32294b3db658f93c12822d9f5e5531213e28a0f8eeb64da9642ab",
+      "after": "b95919922e238501ccd688792bae4dec108c889bb13d64545e5745a48aa9eba2",
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
+      "units": []
+    },
+    "restoreMeasurementSurfaceView": {
+      "before": "19b06f4dbf89a736255ee5366a8aafd8ad3fd47eee664011d31c8fabbeb39791",
+      "after": null,
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
+      "units": []
+    },
+    "statement:measurementViewBeforeFit": {
+      "before": "79d08fd805434e11039f121aa2d806ed060557ed6cbf2398e86aa9b0b96e16f0",
+      "after": null,
+      "reason": "Move the camera only on new content or explicit user actions (0.10.17)",
+      "units": []
     }
   },
   "placementChanges": {

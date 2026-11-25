@@ -174,7 +174,11 @@ class Viewer(anywidget.AnyWidget):
         return self.run("files.load", files=records, options=options)
 
     def set_mode(self, mode: str) -> CommandFuture:
-        """Request View, Measure, Edit, or Calculations mode."""
+        """Resolve when the requested mode is applied.
+
+        View, Measure, Edit and Calculations preserve the camera pose unless
+        Edit reveals a hidden target.
+        """
         return self.run("view.setMode", mode=mode)
 
     def orbitals(self) -> CommandFuture:
