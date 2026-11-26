@@ -141,9 +141,10 @@ def _png_image(value):
 class Viewer(anywidget.AnyWidget):
     """Display a VibeMol workspace and mirror its selection into the kernel.
 
-    Commands and state arrive asynchronously. The kernel processes comm replies
-    after the current cell finishes, so read a command result in the next cell
-    or register a done callback.
+    Commands run one at a time in the order sent. Adapters can check
+    `Viewer.sequential_commands` for this guarantee. The kernel processes
+    replies after the current cell finishes. Read results in a later cell,
+    register a done callback, or use `future.display()`.
     """
 
     _esm = Path(__file__).parent / "static" / "widget.js"
@@ -196,7 +197,9 @@ class Viewer(anywidget.AnyWidget):
         """Resolve when the requested mode is applied.
 
         View, Measure, Edit and Calculations preserve the camera pose unless
-        Edit reveals a hidden target.
+        Edit reveals a hidden target. This command runs in order with the
+        other viewer commands. Read the result in a later cell, register a
+        done callback, or use `future.display()`.
         """
         return self.run("view.setMode", mode=mode)
 

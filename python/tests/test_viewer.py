@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 import re
 from types import SimpleNamespace
 
@@ -7,7 +8,7 @@ import numpy as np
 import pytest
 
 from api.vibemol_client import vibemol
-from vibemol import CommandError, CommandFuture, PendingResult, Viewer
+from vibemol import CommandError, CommandFuture, PendingResult, Viewer, __version__
 
 
 @pytest.fixture
@@ -241,6 +242,14 @@ def test_incompatible_ready_fails_pending_and_future_requests(viewer):
 
 def test_sequential_commands_capability():
     assert Viewer.sequential_commands is True
+
+
+def test_widget_version_matches_project_metadata():
+    pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    project = pyproject.read_text().split("[project]", 1)[1].split("\n[", 1)[0]
+    version = re.search(r'^version\s*=\s*"([^"]+)"$', project, re.MULTILINE)
+    assert version is not None
+    assert __version__ == version[1] == "0.2.0"
 
 
 @pytest.mark.parametrize(("method", "args", "kwargs", "command", "expected"), [
