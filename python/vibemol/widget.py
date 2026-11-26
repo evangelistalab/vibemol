@@ -52,6 +52,23 @@ class CommandFuture:
         error = self._response["error"]
         raise CommandError(error["code"], error["message"], error.get("details"))
 
+    def display(self):
+        """Display the result when it arrives and return the IPython display handle."""
+        from IPython.display import display
+
+        if self.done():
+            return display(self._display_content(), display_id=True)
+        handle = display("VibeMol command pending…", display_id=True)
+        if handle is not None:
+            self.add_done_callback(lambda future: handle.update(future._display_content()))
+        return handle
+
+    def _display_content(self):
+        try:
+            return self.result()
+        except CommandError as error:
+            return f"VibeMol {error.code}: {error.message}"
+
     def add_done_callback(self, fn: Callable[[CommandFuture], None]) -> None:
         if self.done():
             self._notify(fn)

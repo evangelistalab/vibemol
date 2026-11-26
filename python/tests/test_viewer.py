@@ -1,5 +1,6 @@
 import json
 import re
+from types import SimpleNamespace
 
 from IPython.display import Image
 import numpy as np
@@ -298,3 +299,63 @@ def test_snapshot_returns_an_image_and_preserves_release_errors(viewer):
         future.result()
     assert raised.value.code == error["code"]
     assert str(raised.value) == error["message"]
+
+
+@pytest.mark.parametrize("already_finished", [False, True])
+@pytest.mark.parametrize("kind", ["value", "snapshot", "failure"])
+def test_future_display_shows_decoded_result(viewer, monkeypatch, kind, already_finished):
+    model, sent = viewer
+    shown, updated = [], []
+    handle = SimpleNamespace(update=updated.append)
+
+    def display(content, *, display_id):
+        assert display_id is True
+        shown.append(content)
+        return handle
+
+    monkeypatch.setattr("IPython.display.display", display)
+    future = model.snapshot(width=64, height=48) if kind == "snapshot" else model.run("app.info")
+    result = {
+        "value": {"ok": True, "value": {"commandVersion": 1}},
+        "snapshot": {"ok": True, "value": {"mime": "image/png", "dataBase64": "iVBORw0KGgo="}},
+        "failure": {"ok": False, "error": {"code": "not-available", "message": "No active structure."}},
+    }[kind]
+
+    def finish():
+        deliver(model, kind="response", id=sent[0]["id"], result=result)
+
+    if already_finished:
+        finish()
+    assert future.display() is handle
+    if already_finished:
+        content, = shown
+        assert updated == []
+    else:
+        assert shown == ["VibeMol command pending…"]
+        assert updated == []
+        finish()
+        content, = updated
+
+    if kind == "snapshot":
+        assert isinstance(content, Image)
+        assert content.data == b"\x89PNG\r\n\x1a\n"
+    elif kind == "failure":
+        assert content == "VibeMol not-available: No active structure."
+    else:
+        assert content == result["value"]
+
+
+def test_future_display_logs_update_errors_as_callback_errors(viewer, monkeypatch, caplog):
+    model, sent = viewer
+
+    def update(_):
+        raise RuntimeError("cannot update the display")
+
+    handle = SimpleNamespace(update=update)
+    monkeypatch.setattr("IPython.display.display", lambda *_args, **_kwargs: handle)
+    future = model.run("app.info")
+    assert future.display() is handle
+    deliver(model, kind="response", id=sent[0]["id"], result={"ok": True, "value": 1})
+    assert future.result() == 1
+    assert "VibeMol command callback failed" in caplog.text
+    assert "RuntimeError: cannot update the display" in caplog.text
