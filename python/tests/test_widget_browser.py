@@ -223,6 +223,67 @@ def test_python_widget_vector_commands_follow_edit_history(page, app_url, monkey
         model.close()
 
 
+def test_python_widget_runs_commands_in_order(page, app_url, monkeypatch, capsys):
+    page.goto(app_url + "python/tests/harness.html", wait_until="domcontentloaded")
+    page.wait_for_function("() => window.harness?.model.get('ready')")
+    water = "3\nWater\nO 0 0 0\nH 0.96 0 0\nH -0.24 0.93 0"
+    molden = MOLDEN.with_name("cyclopropene_sa2cas43.molden")
+    atoms = [1, 1, 1, 1, 6, 6, 6]
+    values = [[0, 0, 1] for _ in atoms]
+    model = Viewer(url=app_url)
+    outgoing = []
+
+    def collect_responses():
+        # Send each batch to the real widget ESM before delivering any replies to Python.
+        results = []
+        while outgoing:
+            batch = outgoing[:]
+            outgoing.clear()
+            page.evaluate("requests => requests.forEach(request => harness.model.emit(request))", batch)
+            for request in batch:
+                raw = response(page, request["id"])
+                value = raw.get("value")
+                if request["command"] == "view.snapshot" and raw["ok"]:
+                    value = {key: value[key] for key in ("mime", "width", "height")}
+                results.append({"command": request["command"], **raw, "value": value})
+                model._handle_custom_msg({"kind": "response", "id": request["id"], "result": raw}, [])
+        return results
+
+    try:
+        monkeypatch.setattr(model, "send", outgoing.append)
+        futures = [
+            model.load(("water.xyz", water)),
+            model.load(molden),
+            model.set_atom_vectors("forces", values, "#BB3388", atomic_numbers=atoms, scale=1),
+            model.set_view(axis="+x"),
+            model.snapshot(width=320, height=240),
+        ]
+        results = collect_responses()
+        vectors = model.run("vectors.list")
+        results.extend(collect_responses())
+
+        expected_commands = ["files.load", "files.load", "vectors.setAtoms", "view.set", "view.snapshot", "vectors.list"]
+        evidence = {
+            "results": results,
+            "completed": [future.done() for future in [*futures, vectors]],
+            "expected": {"commands": expected_commands, "atomicNumbers": atoms, "sets": ["forces"]},
+        }
+        with capsys.disabled():
+            print("[widget-command-order] " + json.dumps(evidence, sort_keys=True), flush=True)
+        assert [row["command"] for row in results] == expected_commands, evidence
+        assert all(future.done() for future in [*futures, vectors]), evidence
+        assert all(row["ok"] for row in results), evidence
+        first, second, _, _, image = [future.result() for future in futures]
+        assert first["loadedNames"] == ["water.xyz"]
+        assert second["loadedNames"] == [molden.name]
+        assert image.data.startswith(b"\x89PNG\r\n\x1a\n")
+        state = vectors.result()
+        assert state["atomicNumbers"] == atoms, state
+        assert [row["name"] for row in state["sets"]] == ["forces"], state
+    finally:
+        model.close()
+
+
 def test_incompatible_viewer_never_gets_a_queued_request(page, app_url):
     def incompatible(route):
         route.fulfill(content_type="text/html", body="""<!doctype html>
