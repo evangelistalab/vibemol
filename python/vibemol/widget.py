@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from base64 import b64decode
+from collections import deque
 import logging
 from itertools import count
 from pathlib import Path
@@ -50,6 +51,23 @@ class CommandFuture:
             return self._decode(value) if self._decode else value
         error = self._response["error"]
         raise CommandError(error["code"], error["message"], error.get("details"))
+
+    def display(self):
+        """Display the result when it arrives and return the IPython display handle."""
+        from IPython.display import display
+
+        if self.done():
+            return display(self._display_content(), display_id=True)
+        handle = display("VibeMol command pending…", display_id=True)
+        if handle is not None:
+            self.add_done_callback(lambda future: handle.update(future._display_content()))
+        return handle
+
+    def _display_content(self):
+        try:
+            return self.result()
+        except CommandError as error:
+            return f"VibeMol {error.code}: {error.message}"
 
     def add_done_callback(self, fn: Callable[[CommandFuture], None]) -> None:
         if self.done():
@@ -123,12 +141,14 @@ def _png_image(value):
 class Viewer(anywidget.AnyWidget):
     """Display a VibeMol workspace and mirror its selection into the kernel.
 
-    Commands and state arrive asynchronously. The kernel processes comm replies
-    after the current cell finishes, so read a command result in the next cell
-    or register a done callback.
+    Commands run one at a time in the order sent. Adapters can check
+    `Viewer.sequential_commands` for this guarantee. The kernel processes
+    replies after the current cell finishes. Read results in a later cell,
+    register a done callback, or use `future.display()`.
     """
 
     _esm = Path(__file__).parent / "static" / "widget.js"
+    sequential_commands = True
 
     url = traitlets.Unicode("https://vibemol.org/").tag(sync=True)
     height = traitlets.Int(640, min=1).tag(sync=True)
@@ -141,13 +161,15 @@ class Viewer(anywidget.AnyWidget):
 
     def __init__(self, *, url=None, source="web", local_port=8000, height=640):
         self._next_request = count(1)
-        self._pending: dict[str, CommandFuture] = {}
-        self._startup_requests = {}
+        self._queue: deque[tuple[dict, CommandFuture]] = deque()
+        self._in_flight: tuple[dict, CommandFuture] | None = None
+        self._dispatching = False
+        self._frontend_attached = False
         super().__init__(url=_viewer_url(url, source, local_port), height=height, token=secrets.token_urlsafe(32))
         self.on_msg(self._handle_viewer_message)
 
     def run(self, command: str, **params) -> CommandFuture:
-        """Send a command now and return a handle for a later cell."""
+        """Queue a command and return a handle for a later cell."""
         return self._run(command, params)
 
     def _run(self, command, params, *, decode=None):
@@ -159,10 +181,8 @@ class Viewer(anywidget.AnyWidget):
             return future
         id_ = str(next(self._next_request))
         request = {"kind": "request", "id": id_, "command": command, "params": params}
-        self._pending[id_] = future
-        if self._startup_requests is not None:
-            self._startup_requests[id_] = request
-        self._send_request(request)
+        self._queue.append((request, future))
+        self._dispatch_next()
         return future
 
     def load(self, *files, clear_first=True, **options) -> CommandFuture:
@@ -177,7 +197,9 @@ class Viewer(anywidget.AnyWidget):
         """Resolve when the requested mode is applied.
 
         View, Measure, Edit and Calculations preserve the camera pose unless
-        Edit reveals a hidden target.
+        Edit reveals a hidden target. This command runs in order with the
+        other viewer commands. Read the result in a later cell, register a
+        done callback, or use `future.display()`.
         """
         return self.run("view.setMode", mode=mode)
 
@@ -229,6 +251,20 @@ class Viewer(anywidget.AnyWidget):
         """Remove all vector sets and free arrows from the active structure."""
         return self.run("vectors.clear")
 
+    def _dispatch_next(self):
+        if self._dispatching:
+            return
+        self._dispatching = True
+        try:
+            # A synchronous send error frees the slot. Drain those failures
+            # in this loop so a long queue does not recurse through _finish.
+            while self._in_flight is None and self._queue:
+                self._in_flight = self._queue.popleft()
+                request, _ = self._in_flight
+                self._send_request(request)
+        finally:
+            self._dispatching = False
+
     def _send_request(self, request):
         try:
             self.send(request)
@@ -236,11 +272,14 @@ class Viewer(anywidget.AnyWidget):
             self._finish(request["id"], {"ok": False, "error": {"code": "failed", "message": str(exc)}})
 
     def _finish(self, id_, result):
-        future = self._pending.pop(id_, None)
-        if self._startup_requests is not None:
-            self._startup_requests.pop(id_, None)
-        if future is not None:
-            future._complete(result)
+        if self._in_flight is None:
+            return
+        request, future = self._in_flight
+        if request["id"] != id_:
+            return
+        self._in_flight = None
+        future._complete(result)
+        self._dispatch_next()
 
     def _handle_viewer_message(self, _widget, message, _buffers):
         if not isinstance(message, dict):
@@ -248,11 +287,12 @@ class Viewer(anywidget.AnyWidget):
         kind = message.get("kind")
         if kind == "frontend-attached":
             # A request from the creation cell can arrive before the ESM is
-            # listening. Replay just that initial window with the same IDs.
-            startup, self._startup_requests = self._startup_requests, None
+            # listening. Replay only the in-flight request on first attach.
+            replay = self._in_flight if not self._frontend_attached else None
+            self._frontend_attached = True
             self.send({"kind": "frontend-sync"})
-            for request in (startup or {}).values():
-                self._send_request(request)
+            if replay is not None and self._in_flight is replay:
+                self._send_request(replay[0])
         elif kind == "ready":
             info = message.get("info", {})
             if not isinstance(info, dict):
@@ -266,8 +306,12 @@ class Viewer(anywidget.AnyWidget):
                 error = {"code": "incompatible", "message": "The viewer does not support command registry version 1",
                          "details": {"commandVersion": version}}
                 self.last_error = error
-                for id_ in list(self._pending):
-                    self._finish(id_, {"ok": False, "error": error})
+                pending, self._queue = self._queue, deque()
+                if self._in_flight is not None:
+                    pending.appendleft(self._in_flight)
+                    self._in_flight = None
+                for _, future in pending:
+                    future._complete({"ok": False, "error": error})
         elif kind == "response" and isinstance(message.get("id"), str):
             result = message.get("result")
             if not _valid_response(result):

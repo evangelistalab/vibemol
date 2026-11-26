@@ -26,6 +26,18 @@ loading = viewer.load("assets/fragments/water.xyz")
 
 The file path above is relative to a notebook opened at the repository root. You can pass paths, `{"name": ..., "text": ...}` or `{"name": ..., "base64": ...}` dictionaries, `(name, text)` pairs or lists of these forms. Use `local_port` for a different local port, or `url` for an explicit HTTP(S) VibeMol address.
 
+### Commands run in order
+
+Starting with vibemol-widget 0.2.0, each `Viewer` sends one command at a time in the order issued. Adapters can check `Viewer.sequential_commands is True` for this guarantee. These three commands can run in the same cell, including with Run All.
+
+```python
+viewer.load("python/tests/data/cyclopropene_sa2cas43.molden")
+viewer.show_orbitals([10])
+viewer.snapshot(width=640, height=480).display()
+```
+
+`future.display()` shows a placeholder and updates it with the result or command error when the reply arrives. There is no timeout. A command that never replies holds the queue.
+
 ### Read a result in a later cell
 
 The kernel processes the browser's responses and selection updates asynchronously after the current cell finishes. A blocking wait in the cell would prevent its reply from arriving. Run the following in a later cell after the molecule appears.
