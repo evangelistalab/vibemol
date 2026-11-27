@@ -2,16 +2,21 @@
 """Browser regressions for scene ownership, imports, arithmetic, and export."""
 from __future__ import annotations
 
+from base64 import b64decode
+import hashlib
 import math
 import json
 import os
 import pathlib
 import re
+import secrets
 import subprocess
 import sys
 import tempfile
+import time
+from urllib.parse import urlsplit
 
-from playwright.sync_api import expect, sync_playwright
+from playwright.sync_api import Error, expect, sync_playwright
 from assertion_contract import numbers_close
 from checkpoint_contract import require_phase_counts
 from helpers import ensure_artifact_dir, read_app_version, run_http_server, write_failure_artifacts
@@ -1637,6 +1642,122 @@ def embed_bridge(page, url):
     return dict(responses=len(messages('response')), snapshots=len(messages('state')), ignoredRequests=3)
 
 
+def embed_offscreen(page, url, *, app_url=None):
+    port = urlsplit(url).port
+    host = f'http://localhost:{port}'
+    app_url = app_url or f'http://127.0.0.1:{port}/'
+    app = urlsplit(app_url)
+    origin = f'{app.scheme}://{app.netloc}'
+    assert host != origin, (host, origin)
+    token = secrets.token_urlsafe(32)
+    fixture = ROOT / 'python/tests/data/cyclopropene_sa2cas43.molden'
+    load_params = {'files': [{'name': fixture.name, 'text': fixture.read_text()}]}
+    atoms = [1, 1, 1, 1, 6, 6, 6]
+    evidence = dict(host=host, appOrigin=origin, ready=None, intersections=[], replies=[], hashes={})
+    expected_info = dict(appVersion=read_app_version(), commandVersion=1)
+
+    def intersection():
+        return page.evaluate("""() => {
+            const rect = document.querySelector('#offscreen-viewer')?.getBoundingClientRect();
+            return rect ? { ...offscreenCase.intersection, top: rect.top, bottom: rect.bottom,
+                viewportHeight: innerHeight } : null;
+        }""")
+
+    def move_into_view(visible):
+        page.evaluate("visible => window.scrollTo(0, visible ? 0 : document.documentElement.scrollHeight)", visible)
+        page.wait_for_function("""visible => {
+            const frame = document.querySelector('#offscreen-viewer');
+            const observed = offscreenCase.intersection;
+            if (!observed || observed.intersecting !== visible) return false;
+            const {top, bottom} = frame.getBoundingClientRect();
+            return visible ? observed.ratio === 1 && top >= 0 && bottom <= innerHeight
+                : observed.ratio === 0 && (bottom <= 0 || top >= innerHeight);
+        }""", arg=visible, timeout=5_000)
+        evidence['intersections'].append(intersection())
+
+    def request(command, params=None):
+        id_ = str(len(evidence['replies']) + 1)
+        started = time.monotonic()
+        row = dict(id=id_, command=command, intersection=intersection(), reply=None)
+        evidence['replies'].append(row)
+        try:
+            page.evaluate("""({origin, request}) => {
+                document.querySelector('#offscreen-viewer').contentWindow.postMessage(request, origin);
+            }""", dict(origin=origin, request=dict(channel='vibemol.embed', v=1, token=token,
+                                                   kind='request', id=id_, command=command, params=params or {})))
+            result = page.wait_for_function(
+                'id => offscreenCase.replies.get(id)', arg=id_, timeout=5_000
+            ).json_value()
+        finally:
+            row['elapsedMs'] = round(1000 * (time.monotonic() - started), 1)
+        row['reply'] = result
+        if result.get('ok') and command == 'view.snapshot':
+            value = result['value']
+            row['reply'] = {'ok': True, 'value': {key: value[key] for key in ('mime', 'width', 'height')}}
+        assert result.get('ok') is True, row
+        return result['value']
+
+    def png(position):
+        value = request('view.snapshot', dict(width=320, height=230))
+        assert (value['mime'], value['width'], value['height']) == ('image/png', 320, 230), value.keys()
+        data = b64decode(value['dataBase64'], validate=True)
+        assert data.startswith(b'\x89PNG\r\n\x1a\n'), data[:8]
+        evidence['hashes'][position] = hashlib.sha256(data).hexdigest()
+        return data
+
+    try:
+        navigation = page.goto(f'{host}/tests/fixtures/embed-bridge.html', wait_until='domcontentloaded')
+        assert navigation and navigation.ok, (host, navigation.status if navigation else None)
+        page.evaluate("""({origin, src, token}) => {
+            const state = window.offscreenCase = { replies: new Map(), ready: null, intersection: null };
+            const iframe = document.createElement('iframe');
+            iframe.id = 'offscreen-viewer';
+            iframe.width = 1100;
+            iframe.height = 650;
+            addEventListener('message', ({source, origin: sender, data}) => {
+                if (source !== iframe.contentWindow || sender !== origin || data?.channel !== 'vibemol.embed'
+                    || data.v !== 1 || data.token !== token) return;
+                if (data.kind === 'ready') state.ready = data.info;
+                if (data.kind === 'response') state.replies.set(data.id, data.result);
+            });
+            new IntersectionObserver(([entry]) => {
+                state.intersection = { intersecting: entry.isIntersecting, ratio: entry.intersectionRatio };
+            }, {threshold: [0, 1]}).observe(iframe);
+            iframe.src = src;
+            const spacer = document.createElement('div');
+            spacer.style.height = '2400px';
+            document.body.append(iframe, spacer);
+        }""", dict(origin=origin, src=f'{app_url}?embed=commands#vmtoken={token}', token=token))
+        evidence['ready'] = page.wait_for_function('() => offscreenCase.ready').json_value()
+        assert evidence['ready'] == expected_info, (evidence['ready'], expected_info)
+
+        move_into_view(False)
+        assert request('files.load', load_params)['loadedNames'] == [fixture.name]
+        assert request('orbitals.show', {'indices': [12]}) == {'visibleIndices': [12]}
+        configured = request('orbitals.configure', {'indices': [12], 'iso': 0.04})['orbitals']
+        assert [(item['index'], item['iso']) for item in configured] == [(12, 0.04)], configured
+        vector_set = request('vectors.setAtoms', dict(name='forces', values=[[0, 0, 1] for _ in atoms],
+                                                    color='#B22D73', scale=1, atomicNumbers=atoms))
+        assert vector_set['atomicNumbers'] == atoms, vector_set
+        arrow = request('vectors.setArrow', dict(name='dipole', vector=[0, 1, 0], color='#208375', length=1))
+        assert [item['name'] for item in arrow['sets']] == ['forces', 'dipole'], arrow
+        request('view.set', {'axis': '+x'})
+        assert request('view.setMode', {'mode': 'measure'}) == dict(mode='measure', surfacesSuppressed=True)
+        assert request('view.setMode', {'mode': 'view'}) == dict(mode='view', surfacesSuppressed=False)
+        offscreen = png('offscreen')
+        move_into_view(True)
+        visible = png('visible')
+        assert offscreen == visible, evidence['hashes']
+        assert request('app.info') == expected_info
+    finally:
+        try:
+            evidence['lastIntersection'] = intersection()
+        except Error as error:
+            evidence['lastIntersection'] = str(error)
+        print('[embed-offscreen] ' + json.dumps(evidence, sort_keys=True), flush=True)
+    return evidence
+
+
 def run_embed_bridge(browser, url):
     context = browser.new_context(viewport={'width': 1440, 'height': 1000})
     page = context.new_page()
@@ -1652,6 +1773,12 @@ def run_embed_bridge(browser, url):
     finally:
         context.close()
     print('[embed-bridge-completion] ' + json.dumps(completion, sort_keys=True), flush=True)
+
+    context = browser.new_context(viewport={'width': 1440, 'height': 1000})
+    try:
+        embed_offscreen(context.new_page(), url)
+    finally:
+        context.close()
 
 
 def main():
