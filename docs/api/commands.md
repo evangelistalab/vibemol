@@ -47,6 +47,8 @@ Every schema specifies a supported `type`. Object and array schemas use `object`
 
 `run` always returns a Promise that resolves to `{ ok: true, value }` or `{ ok: false, error: { code, message, details? } }`. The definition's optional `outcome` selects how its adapter result is interpreted. `value` is the default and returns a structured clone of the result as data, including any `ok` field. `envelope` requires a boolean `ok` with exactly one matching payload field, `value` for success or `error` for refusal. The registry unwraps success once and reports a refusal as `rejected`. Outcome declarations belong to definitions. Discovery descriptors retain the fields described above.
 
+A command’s reply never waits for the page to draw. By the time a command succeeds, its state is applied, and `view.snapshot` renders that state directly. Commands can therefore complete while the viewer is scrolled out of view, in a background tab, or in a hidden panel.
+
 | Code | Meaning |
 | --- | --- |
 | `unknown-command` | The ID is absent from the registry. |

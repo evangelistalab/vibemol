@@ -34053,7 +34053,7 @@
   }
 
   async function showProductOrbitals(input = {}) {
-    const result = editApiCall(() => {
+    return editApiCall(() => {
       step3bRequest(input, ['indices', 'exclusive']);
       requireProductOrbitalSurfaces();
       const target = moldenProductSource();
@@ -34073,8 +34073,6 @@
       presentMoldenProductSelection(target, indices, input.exclusive !== false);
       return { value: { visibleIndices: readVisibleMoldenProductIndices(target) } };
     });
-    if (result.ok) await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    return result;
   }
 
   function hideProductOrbitals(input = {}) {
