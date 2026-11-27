@@ -2756,8 +2756,8 @@
     },
     "showProductOrbitals": {
       "before": null,
-      "after": "b7bf2316b6606ddd2d564c3e18ef527a51b746ca42925dd8e189ebe7633477f6",
-      "reason": "Return the active mode and surface suppression in orbital availability errors (Step 3b).",
+      "after": "402c376ca0c054f38034a08aac6f3ed4c34f905f64f6a71d125ba3d257616e0b",
+      "reason": "Commands reply once their state is applied; display timing is the caller's concern. Waiting for a painted frame stalled cross-origin embeds scrolled out of view.",
       "units": [
         {
           "file": "app.js",

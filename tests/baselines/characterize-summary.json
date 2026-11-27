@@ -1,7 +1,7 @@
 {
   "baseline": {
-    "commit": "6806827e5e0f4d315d69c82b878ddfb9ceb38df8",
-    "tag": "v0.10.17",
+    "commit": "4639887457fd2d89bf15dab2582ddf2581725053",
+    "tag": "v0.10.18",
     "appSha256": "43f47ec7cd530dbeed4292e48eace0ff14b31160cc6d8949488d84ba8a80f2e2",
     "viewport": {
       "width": 1512,
@@ -878,7 +878,7 @@
       "resolveId"
     ]
   },
-  "goldenSha256": "ef1dc8a430199c4b020dd9d23352d9ba403d6138f1d9ed701f700cb253f2a7e9",
+  "goldenSha256": "757d65387f4f2ba021423543c6dc613a685d3b40af32d8ea692862cf797741f4",
   "pixelDiagnostic": {
     "hashesPerRun": 64,
     "changedSnapshots": []
